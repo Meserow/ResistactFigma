@@ -1,7 +1,7 @@
 
-  # Grassroots Political Resistance Tracker
+  # ResistAct
 
-  This is a code bundle for Grassroots Political Resistance Tracker. The original project is available at https://www.figma.com/design/HnrvXWAcNcaqjGVqk4ejgb/Grassroots-Political-Resistance-Tracker.
+  This is a code bundle for ResistAct. The original project is available at https://www.figma.com/design/HnrvXWAcNcaqjGVqk4ejgb/ResistAct.
 
   ## Running the code
 

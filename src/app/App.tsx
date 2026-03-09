@@ -258,14 +258,14 @@ export default function App() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.access_token) {
         setAccessToken(session.access_token);
-        fetchApprovalStatus(session.access_token);
+        fetchApprovalStatus(session.access_token, session.user);
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.access_token) {
         setAccessToken(session.access_token);
-        fetchApprovalStatus(session.access_token);
+        fetchApprovalStatus(session.access_token, session.user);
       } else {
         setAccessToken(null);
         setApproval(null);
@@ -274,7 +274,7 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  async function fetchApprovalStatus(token: string) {
+  async function fetchApprovalStatus(token: string, user?: any) {
     try {
       const res = await fetch(`${API}/auth/status`, {
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -282,9 +282,29 @@ export default function App() {
       if (res.ok) {
         const data = await res.json();
         setApproval(data.approval);
+        return;
       }
+      console.error("Approval status fetch failed:", res.status, await res.text());
     } catch (err) {
       console.error("Could not fetch approval status:", err);
+    }
+    // Fallback: build a minimal approval record from the Supabase session so
+    // the navbar always reflects the signed-in user even if the server is slow.
+    if (user) {
+      setApproval({
+        userId: user.id,
+        email: user.email ?? "",
+        name:
+          user.user_metadata?.full_name ??
+          user.user_metadata?.name ??
+          user.email?.split("@")[0] ??
+          "Resistor",
+        avatar: user.user_metadata?.avatar_url ?? null,
+        status: "pending",
+        isAdmin: false,
+        provider: user.app_metadata?.provider ?? "email",
+        createdAt: new Date().toISOString(),
+      });
     }
   }
 
