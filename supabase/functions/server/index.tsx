@@ -426,4 +426,59 @@ app.post("/make-server-9eb1ae04/actions/:id/act", async (c) => {
   }
 });
 
+// ─── PUT /actions/:id — edit a card (admin or original author) ────────────────
+app.put("/make-server-9eb1ae04/actions/:id", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    if (!token) return c.json({ error: "Unauthorized" }, 401);
+
+    const user = await getUser(token);
+    if (!user) return c.json({ error: "Invalid or expired token" }, 401);
+
+    const approval = await kv.get(`user:approval:${user.id}`) as any;
+    if (!approval || approval.status !== "approved") {
+      return c.json({ error: "Your account must be approved to edit acts." }, 403);
+    }
+
+    const id = Number(c.req.param("id"));
+
+    // Try seed card first, then user-created card
+    let cardKey = `action:${id}`;
+    let card = await kv.get(cardKey) as any;
+    if (!card) {
+      cardKey = `user-action:${id}`;
+      card = await kv.get(cardKey) as any;
+    }
+    if (!card) return c.json({ error: `Card ${id} not found` }, 404);
+
+    // Permission: admin can edit any card; others can only edit cards they created
+    const isAdmin = approval.isAdmin === true;
+    const isAuthor = card.createdBy && card.createdBy === user.id;
+    if (!isAdmin && !isAuthor) {
+      return c.json({ error: "You can only edit acts you created." }, 403);
+    }
+
+    const body = await c.req.json();
+
+    // Strip immutable fields from the update payload
+    const { id: _id, createdBy: _createdBy, spotsUsed: _spotsUsed,
+            createdAt: _createdAt, authorAvatarKey: _avatarKey,
+            topImageKey: _topImageKey, ...safeUpdates } = body;
+
+    const updated = {
+      ...card,
+      ...safeUpdates,
+      updatedAt: new Date().toISOString(),
+      updatedBy: user.id,
+    };
+
+    await kv.set(cardKey, updated);
+    console.log(`${approval.name} edited card #${id}: "${updated.title}"`);
+    return c.json({ card: updated });
+  } catch (err) {
+    console.log("Edit card error:", err);
+    return c.json({ error: `Failed to edit card: ${err}` }, 500);
+  }
+});
+
 Deno.serve(app.fetch);

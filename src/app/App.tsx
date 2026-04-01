@@ -6,6 +6,7 @@ import { AdminPanel } from "./components/AdminPanel";
 import { AskFlowModal } from "./components/AskFlowModal";
 import { JoinACTersModal } from "./components/JoinACTersModal";
 import { InfoModal } from "./components/InfoModal";
+import { EditCardModal } from "./components/EditCardModal";
 import svgPaths from "../imports/svg-77lgd1zdt6";
 import { projectId, publicAnonKey } from "/utils/supabase/info";
 import { supabase } from "./lib/supabase";
@@ -85,6 +86,7 @@ interface ServerCard {
   authorLink?: string;
   topImageKey?: string | null;
   authorAvatarKey?: string | null;
+  createdBy?: string;
 }
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
@@ -178,6 +180,8 @@ export default function App() {
   const [infoOpen, setInfoOpen] = useState(false);
   const [actOpen, setActOpen] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
+  const [editCardId, setEditCardId] = useState<number | null>(null);
+  const [isDemoMode, setIsDemoMode] = useState(false);
 
   // ── Live stats from server ──
   const [statsCitiesCount, setStatsCitiesCount] = useState<number | null>(null);
@@ -269,6 +273,7 @@ export default function App() {
       } else {
         setAccessToken(null);
         setApproval(null);
+        setIsDemoMode(false);
       }
     });
     return () => subscription.unsubscribe();
@@ -308,10 +313,17 @@ export default function App() {
     }
   }
 
+  function handleDemoLogin(ellenApproval: UserApproval, fakeToken: string) {
+    setApproval(ellenApproval);
+    setAccessToken(fakeToken);
+    setIsDemoMode(true);
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut();
     setApproval(null);
     setAccessToken(null);
+    setIsDemoMode(false);
   }
 
   // ── Sync cards from Supabase ──
@@ -432,8 +444,35 @@ export default function App() {
     setServerOffset((prev) => prev + 1);
   }
 
+  // ── Determine if logged-in user can edit a given card ──
+  function canEditCard(card: ActionCardData): boolean {
+    if (!approval || approval.status !== "approved") return false;
+    if (approval.isAdmin) return true;
+    if (card.createdBy && card.createdBy === approval.userId) return true;
+    return false;
+  }
+
+  // ── Handle card update from EditCardModal ──
+  function handleCardSaved(updated: ActionCardData) {
+    setCards((prev) =>
+      prev.map((c) => c.id === updated.id ? { ...c, ...updated } : c)
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 font-['Poppins',sans-serif]">
+      {/* Demo mode banner */}
+      {isDemoMode && (
+        <div className="bg-amber-400 text-amber-900 text-center py-1.5 px-4 font-['Poppins',sans-serif] text-xs font-semibold flex items-center justify-center gap-2">
+          <span>⚠️ DEMO MODE — Simulated as Ellen Escarcega (Admin). API writes are disabled.</span>
+          <button
+            onClick={handleLogout}
+            className="underline hover:no-underline ml-2 font-bold"
+          >
+            Exit demo
+          </button>
+        </div>
+      )}
       <Navbar
         approval={approval}
         onLoginClick={() => setAuthModalOpen(true)}
@@ -460,8 +499,10 @@ export default function App() {
               onAct={handleAct}
               onShare={handleShare}
               onBookmark={handleBookmark}
+              onEdit={(id) => setEditCardId(id)}
               isActed={actedCards.has(card.id)}
               isBookmarked={bookmarkedCards.has(card.id)}
+              canEdit={canEditCard(card)}
             />
           ))}
         </div>
@@ -501,6 +542,7 @@ export default function App() {
         <AuthModal
           onClose={() => setAuthModalOpen(false)}
           onApproval={(a) => setApproval(a)}
+          onDemoLogin={handleDemoLogin}
         />
       )}
 
@@ -537,6 +579,19 @@ export default function App() {
           onNewCard={handleNewCard}
         />
       )}
+
+      {/* Edit Card Modal */}
+      {editCardId !== null && accessToken && (() => {
+        const card = cards.find((c) => c.id === editCardId);
+        return card ? (
+          <EditCardModal
+            card={card}
+            accessToken={accessToken}
+            onClose={() => setEditCardId(null)}
+            onSaved={(updated) => { handleCardSaved(updated); }}
+          />
+        ) : null;
+      })()}
     </div>
   );
 }

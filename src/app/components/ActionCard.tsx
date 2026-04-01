@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bookmark, BookmarkCheck, Globe, MapPin, Share2 } from "lucide-react";
+import { Bookmark, BookmarkCheck, Globe, MapPin, Pencil, Share2 } from "lucide-react";
 import { ShareModal } from "./ShareModal";
 
 export interface ActionCardData {
@@ -22,6 +22,7 @@ export interface ActionCardData {
   authorAvatar?: string;
   isFeatured?: boolean;
   featuredIllustration?: React.ReactNode;
+  createdBy?: string;
 }
 
 interface ActionCardProps {
@@ -29,11 +30,13 @@ interface ActionCardProps {
   onAct?: (id: number) => void;
   onShare?: (id: number) => void;
   onBookmark?: (id: number) => void;
+  onEdit?: (id: number) => void;
   isActed?: boolean;
   isBookmarked?: boolean;
+  canEdit?: boolean;
 }
 
-export function ActionCard({ card, onAct, onShare, onBookmark, isActed, isBookmarked }: ActionCardProps) {
+export function ActionCard({ card, onAct, onShare, onBookmark, onEdit, isActed, isBookmarked, canEdit }: ActionCardProps) {
   const [shareOpen, setShareOpen] = useState(false);
 
   const progressPct = card.spotsTotal === "Unlimited"
@@ -44,6 +47,29 @@ export function ActionCard({ card, onAct, onShare, onBookmark, isActed, isBookma
     ? `${card.spotsUsed.toLocaleString()} joined`
     : `${card.spotsUsed} / ${card.spotsTotal} spots taken`;
 
+  // ── Shared top-right controls (pencil + bookmark) ──────────────────────────
+  function TopControls({ light = true }: { light?: boolean }) {
+    return (
+      <div className="flex items-center gap-1">
+        {canEdit && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onEdit?.(card.id); }}
+            title="Edit this act"
+            className={`${light ? "text-white" : "text-gray-500"} drop-shadow hover:scale-110 transition-transform`}
+          >
+            <Pencil size={15} />
+          </button>
+        )}
+        <button
+          onClick={() => onBookmark?.(card.id)}
+          className={`${light ? "text-white" : "text-gray-500"} drop-shadow hover:scale-110 transition-transform`}
+        >
+          {isBookmarked ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
+        </button>
+      </div>
+    );
+  }
+
   /* ── Featured (navy) card ─────────────────────────────── */
   if (card.isFeatured) {
     return (
@@ -52,12 +78,9 @@ export function ActionCard({ card, onAct, onShare, onBookmark, isActed, isBookma
           {/* Illustration */}
           <div className="relative h-[220px] shrink-0 bg-[#23297e] flex items-center justify-center">
             {card.featuredIllustration}
-            <button
-              onClick={() => onBookmark?.(card.id)}
-              className="absolute top-2.5 right-3 text-white drop-shadow hover:scale-110 transition-transform"
-            >
-              {isBookmarked ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
-            </button>
+            <div className="absolute top-2.5 right-3">
+              <TopControls light={true} />
+            </div>
           </div>
 
           {/* Content */}
@@ -125,7 +148,7 @@ export function ActionCard({ card, onAct, onShare, onBookmark, isActed, isBookma
     <>
       <div className="bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full hover:shadow-lg transition-shadow">
         {/* Top image */}
-        {card.topImage && (
+        {card.topImage ? (
           <div className="relative h-[220px] shrink-0">
             <img
               src={card.topImage}
@@ -135,13 +158,10 @@ export function ActionCard({ card, onAct, onShare, onBookmark, isActed, isBookma
             {/* Gradient overlay for readability */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
 
-            {/* Bookmark */}
-            <button
-              onClick={() => onBookmark?.(card.id)}
-              className="absolute top-2.5 right-3 text-white drop-shadow hover:scale-110 transition-transform"
-            >
-              {isBookmarked ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
-            </button>
+            {/* Pencil + Bookmark */}
+            <div className="absolute top-2.5 right-3">
+              <TopControls light={true} />
+            </div>
 
             {/* Type tag */}
             {card.typeTag && (
@@ -159,6 +179,13 @@ export function ActionCard({ card, onAct, onShare, onBookmark, isActed, isBookma
                 }
               </div>
             )}
+          </div>
+        ) : (
+          /* No image — show controls in top-right corner of card */
+          <div className="relative h-8 shrink-0">
+            <div className="absolute top-2 right-3">
+              <TopControls light={false} />
+            </div>
           </div>
         )}
 
