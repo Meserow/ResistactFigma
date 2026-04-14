@@ -1,5 +1,5 @@
 import { X } from "lucide-react";
-import diagramImg from "figma:asset/3a930cb92932029145f5289a4b745deaa43e0aa6.png";
+import diagramImg from "../../assets/3a930cb92932029145f5289a4b745deaa43e0aa6.png";
 
 interface InfoModalProps {
   onClose: () => void;

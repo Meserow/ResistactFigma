@@ -7,6 +7,7 @@ export interface ActionCardData {
   category: string;
   categoryColor: string;
   title: string;
+  targetUrl?: string;
   description: string;
   typeTag?: string;
   location?: string;
@@ -27,25 +28,19 @@ export interface ActionCardData {
 
 interface ActionCardProps {
   card: ActionCardData;
-  onAct?: (id: number) => void;
+  onBoost?: (id: number) => void;
   onShare?: (id: number) => void;
   onBookmark?: (id: number) => void;
   onEdit?: (id: number) => void;
-  isActed?: boolean;
+  isBoosted?: boolean;
   isBookmarked?: boolean;
   canEdit?: boolean;
 }
 
-export function ActionCard({ card, onAct, onShare, onBookmark, onEdit, isActed, isBookmarked, canEdit }: ActionCardProps) {
+export function ActionCard({ card, onBoost, onShare, onBookmark, onEdit, isBoosted, isBookmarked, canEdit }: ActionCardProps) {
   const [shareOpen, setShareOpen] = useState(false);
 
-  const progressPct = card.spotsTotal === "Unlimited"
-    ? Math.min(100, (card.spotsUsed / 5000) * 100)
-    : Math.min(100, (card.spotsUsed / (card.spotsTotal as number)) * 100);
-
-  const spotsLabel = card.spotsTotal === "Unlimited"
-    ? `${card.spotsUsed.toLocaleString()} joined`
-    : `${card.spotsUsed} / ${card.spotsTotal} spots taken`;
+  const boostLabel = `${card.spotsUsed.toLocaleString()} boost${card.spotsUsed === 1 ? "" : "s"}`;
 
   // ── Shared top-right controls (pencil + bookmark) ──────────────────────────
   function TopControls({ light = true }: { light?: boolean }) {
@@ -90,20 +85,19 @@ export function ActionCard({ card, onAct, onShare, onBookmark, onEdit, isActed, 
             </span>
 
             <h3 className="font-['Poppins',sans-serif] font-bold text-[15px] text-gray-900 leading-snug">
-              {card.title}
+              {(card.targetUrl || card.authorLink) ? (
+                <a href={card.targetUrl ?? card.authorLink} target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-[#23297e] transition-colors">
+                  {card.title}
+                </a>
+              ) : card.title}
             </h3>
 
             <p className="font-['Poppins',sans-serif] text-[13px] text-gray-600 leading-relaxed line-clamp-3 flex-1">
               {card.description}
             </p>
 
-            {/* Progress */}
-            <div className="space-y-1.5 pt-1">
-              <div className="h-2 bg-[#ffd5b3] rounded-full overflow-hidden">
-                <div className="h-full bg-[#fd8e33] rounded-full transition-all" style={{ width: `${progressPct}%` }} />
-              </div>
-              <p className="font-['Poppins',sans-serif] font-semibold text-[12px] text-[#de7c2d]">{spotsLabel}</p>
-            </div>
+            {/* Boost count */}
+            <p className="font-['Poppins',sans-serif] font-semibold text-[13px] text-[#de7c2d] pt-1">🔥 {boostLabel}</p>
 
             {/* Author + Buttons */}
             <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-100">
@@ -119,12 +113,12 @@ export function ActionCard({ card, onAct, onShare, onBookmark, onEdit, isActed, 
 
               <div className="flex gap-1.5 shrink-0">
                 <button
-                  onClick={() => onAct?.(card.id)}
+                  onClick={() => onBoost?.(card.id)}
                   className={`flex items-center gap-1 px-3.5 py-2 rounded-xl font-['Poppins',sans-serif] font-bold text-[13px] transition-all ${
-                    isActed ? "bg-[#fd8e33]/80 text-white" : "bg-[#fd8e33] hover:bg-[#e07a28] text-white shadow-sm"
+                    isBoosted ? "bg-[#fd8e33]/80 text-white" : "bg-[#fd8e33] hover:bg-[#e07a28] text-white shadow-sm"
                   }`}
                 >
-                  ✊ {isActed ? "Acting!" : "Act"}
+                  🔥 {isBoosted ? "Boosted!" : "Boost"}
                 </button>
                 <button
                   onClick={() => setShareOpen(true)}
@@ -201,7 +195,11 @@ export function ActionCard({ card, onAct, onShare, onBookmark, onEdit, isActed, 
 
           {/* Title */}
           <h3 className="font-['Poppins',sans-serif] font-bold text-[15px] text-gray-900 leading-snug">
-            {card.title}
+            {(card.targetUrl || card.authorLink) ? (
+              <a href={card.targetUrl ?? card.authorLink} target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-[#23297e] transition-colors">
+                {card.title}
+              </a>
+            ) : card.title}
           </h3>
 
           {/* Description */}
@@ -209,13 +207,8 @@ export function ActionCard({ card, onAct, onShare, onBookmark, onEdit, isActed, 
             {card.description}
           </p>
 
-          {/* Progress */}
-          <div className="space-y-1.5 pt-1">
-            <div className="h-2 bg-[#ffd5b3] rounded-full overflow-hidden">
-              <div className="h-full bg-[#fd8e33] rounded-full transition-all" style={{ width: `${progressPct}%` }} />
-            </div>
-            <p className="font-['Poppins',sans-serif] font-semibold text-[12px] text-[#de7c2d]">{spotsLabel}</p>
-          </div>
+          {/* Boost count */}
+          <p className="font-['Poppins',sans-serif] font-semibold text-[12px] text-[#de7c2d] pt-1">🔥 {boostLabel}</p>
 
           {/* Author + Buttons */}
           <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-100">
@@ -250,14 +243,14 @@ export function ActionCard({ card, onAct, onShare, onBookmark, onEdit, isActed, 
             {/* Buttons */}
             <div className="flex gap-1.5 shrink-0">
               <button
-                onClick={() => onAct?.(card.id)}
+                onClick={() => onBoost?.(card.id)}
                 className={`flex items-center gap-1 px-3.5 py-2 rounded-xl font-['Poppins',sans-serif] font-bold text-[13px] transition-all ${
-                  isActed
+                  isBoosted
                     ? "bg-[#fd8e33]/80 text-white"
                     : "bg-[#fd8e33] hover:bg-[#e07a28] text-white shadow-sm"
                 }`}
               >
-                ✊ {isActed ? "Acting!" : "Act"}
+                🔥 {isBoosted ? "Boosted!" : "Boost"}
               </button>
               <button
                 onClick={() => setShareOpen(true)}

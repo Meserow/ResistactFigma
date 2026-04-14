@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Navbar } from "./components/Navbar";
 import { ActionCard, ActionCardData } from "./components/ActionCard";
+import { FactCard } from "./components/FactCard";
+import { FACT_CARDS } from "./data/factCards";
 import { AuthModal } from "./components/AuthModal";
 import { AdminPanel } from "./components/AdminPanel";
 import { AskFlowModal } from "./components/AskFlowModal";
@@ -13,31 +15,31 @@ import { supabase } from "./lib/supabase";
 import type { UserApproval } from "./lib/supabase";
 
 // ─── Figma bundled assets ─────────────────────────────────────────────────────
-import imgImage    from "figma:asset/8845f14cf11ec3b7059898cd8adda5059833c2c7.png";
-import imgImage1   from "figma:asset/6dd4ba1639105589e2d4bcdd59e21ad50a4f0db2.png";
-import imgImage2   from "figma:asset/17ae6a615bc1a99b8cbc5240e532f4d9a2e76ba9.png";
-import imgImage3   from "figma:asset/2122e5681fca2a67fa8c21ce938335204646f5f3.png";
-import imgImage4   from "figma:asset/81cfc6786bc36ca734bbdefbda22c4ed8f215998.png";
-import imgImage5   from "figma:asset/83f5ff48d560ab0e0bf359f87c6066ed854f2614.png";
-import imgImage6   from "figma:asset/672f9df1a029464f302dfcd18d0af1213faee70d.png";
-import imgImage7   from "figma:asset/df2e72270a76b043f5ae0dab18876bdf49110ecf.png";
-import imgImage8   from "figma:asset/d7d24dcae11e3763828c0a43fac7fc22a50cef19.png";
-import imgImage9   from "figma:asset/985494e2d4efacbac6fe9eeab8b3bb05987c598b.png";
-import imgImage10  from "figma:asset/6fb5e9741ea7c952728321cc45c7b5643d390520.png";
-import imgImage11  from "figma:asset/5b1a9d6121b57c97b38ed951d385ab4fb571380c.png";
-import imgImage12  from "figma:asset/feb6ae285a92a2b1c606d3ef7402227e137292e9.png";
-import imgImage13  from "figma:asset/cfca6ec0f7d46bd37209105f50f378c7291dd60e.png";
-import imgImage14  from "figma:asset/77dc333618263389c5c551cb5201f1417ba52106.png";
-import imgImage15  from "figma:asset/f086c5ab52082a738351d7d2ac485a119b3fed97.png";
-import imgImage16  from "figma:asset/f55ceb9640e90e362c0b56f89883b2d57199d1a8.png";
-import imgImage17  from "figma:asset/f6b1f90b5d4a6453a308692cef5c384b793b5cbc.png";
-import imgImage18  from "figma:asset/8e3b35fdf8b10fb6307188626c720152ca6b1ae9.png";
-import imgImage19  from "figma:asset/2c8e6a99c675347c7cec3aea8f490848603746ed.png";
-import imgImage20  from "figma:asset/3fc52741865fd1c68c6b1fa7e0dd59c90346bd31.png";
-import imgImage21  from "figma:asset/50c8572422ebf0309458e2b1f0d4bea2e682d9f3.png";
-import imgImage22  from "figma:asset/50c8572422ebf0309458e2b1f0d4bea2e682d9f3.png";
-import imgImage25  from "figma:asset/0e573958d76815ca5260107ddbc78923948e1490.png";
-import imgImage34  from "figma:asset/f757504534bf51b4afc042b9ec12280b63be51da.png";
+import imgImage    from "../assets/8845f14cf11ec3b7059898cd8adda5059833c2c7.png";
+import imgImage1   from "../assets/6dd4ba1639105589e2d4bcdd59e21ad50a4f0db2.png";
+import imgImage2   from "../assets/17ae6a615bc1a99b8cbc5240e532f4d9a2e76ba9.png";
+import imgImage3   from "../assets/2122e5681fca2a67fa8c21ce938335204646f5f3.png";
+import imgImage4   from "../assets/81cfc6786bc36ca734bbdefbda22c4ed8f215998.png";
+import imgImage5   from "../assets/83f5ff48d560ab0e0bf359f87c6066ed854f2614.png";
+import imgImage6   from "../assets/672f9df1a029464f302dfcd18d0af1213faee70d.png";
+import imgImage7   from "../assets/df2e72270a76b043f5ae0dab18876bdf49110ecf.png";
+import imgImage8   from "../assets/d7d24dcae11e3763828c0a43fac7fc22a50cef19.png";
+import imgImage9   from "../assets/985494e2d4efacbac6fe9eeab8b3bb05987c598b.png";
+import imgImage10  from "../assets/6fb5e9741ea7c952728321cc45c7b5643d390520.png";
+import imgImage11  from "../assets/5b1a9d6121b57c97b38ed951d385ab4fb571380c.png";
+import imgImage12  from "../assets/feb6ae285a92a2b1c606d3ef7402227e137292e9.png";
+import imgImage13  from "../assets/cfca6ec0f7d46bd37209105f50f378c7291dd60e.png";
+import imgImage14  from "../assets/77dc333618263389c5c551cb5201f1417ba52106.png";
+import imgImage15  from "../assets/f086c5ab52082a738351d7d2ac485a119b3fed97.png";
+import imgImage16  from "../assets/f55ceb9640e90e362c0b56f89883b2d57199d1a8.png";
+import imgImage17  from "../assets/f6b1f90b5d4a6453a308692cef5c384b793b5cbc.png";
+import imgImage18  from "../assets/8e3b35fdf8b10fb6307188626c720152ca6b1ae9.png";
+import imgImage19  from "../assets/2c8e6a99c675347c7cec3aea8f490848603746ed.png";
+import imgImage20  from "../assets/3fc52741865fd1c68c6b1fa7e0dd59c90346bd31.png";
+import imgImage21  from "../assets/50c8572422ebf0309458e2b1f0d4bea2e682d9f3.png";
+import imgImage22  from "../assets/50c8572422ebf0309458e2b1f0d4bea2e682d9f3.png";
+import imgImage25  from "../assets/0e573958d76815ca5260107ddbc78923948e1490.png";
+import imgImage34  from "../assets/f757504534bf51b4afc042b9ec12280b63be51da.png";
 
 // ─── Image key → imported asset map ──────────────────────────────────────────
 const IMAGE_MAP: Record<string, string> = {
@@ -84,8 +86,11 @@ interface ServerCard {
   authorName: string;
   authorRole: string;
   authorLink?: string;
+  targetUrl?: string | null;
   topImageKey?: string | null;
+  topImageUrl?: string | null;
   authorAvatarKey?: string | null;
+  authorAvatarUrl?: string | null;
   createdBy?: string;
 }
 
@@ -95,13 +100,14 @@ const HEADERS = { "Content-Type": "application/json", Authorization: `Bearer ${p
 function resolveCard(raw: ServerCard): ActionCardData {
   return {
     ...raw,
-    topImage:     raw.topImageKey     ? IMAGE_MAP[raw.topImageKey]     : undefined,
-    authorAvatar: raw.authorAvatarKey ? IMAGE_MAP[raw.authorAvatarKey] : undefined,
+    targetUrl:    raw.targetUrl ?? undefined,
+    topImage:     raw.topImageKey ? IMAGE_MAP[raw.topImageKey] : (raw.topImageUrl ?? undefined),
+    authorAvatar: raw.authorAvatarKey ? IMAGE_MAP[raw.authorAvatarKey] : (raw.authorAvatarUrl ?? undefined),
   };
 }
 
 // ─── Featured illustration ────────────────────────────────────────────────────
-import diagramImg from "figma:asset/3a930cb92932029145f5289a4b745deaa43e0aa6.png";
+import diagramImg from "../assets/3a930cb92932029145f5289a4b745deaa43e0aa6.png";
 
 function FeaturedIllustration() {
   return (
@@ -164,12 +170,13 @@ const STATIC_CARDS: ActionCardData[] = [
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
   // ── Card state ──
-  const [cards, setCards] = useState<ActionCardData[]>(STATIC_CARDS);
+  const [cards, setCards] = useState<ActionCardData[]>([]);
   const [synced, setSynced] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [serverTotal, setServerTotal] = useState(0);
   const [serverOffset, setServerOffset] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [actedCards, setActedCards] = useState<Set<number>>(new Set());
+  const [boostedCards, setActedCards] = useState<Set<number>>(new Set());
   const [bookmarkedCards, setBookmarkedCards] = useState<Set<number>>(new Set());
 
   // ── Auth state ──
@@ -189,9 +196,17 @@ export default function App() {
 
   // ── Filters ──
   const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>({});
+  const [activeTab, setActiveTab] = useState<"facts" | "acts">("acts");
+  const [searchQuery, setSearchQuery] = useState("");
 
   function handleFilterChange(filterName: string, selected: string[]) {
     setActiveFilters((prev) => ({ ...prev, [filterName]: selected }));
+  }
+
+  function handleTabChange(tab: "facts" | "acts") {
+    setActiveTab(tab);
+    setActiveFilters({});
+    setSearchQuery("");
   }
 
   // ── Apply filters client-side ──
@@ -224,25 +239,6 @@ export default function App() {
         if (!matchesOnline && !matchesLoc) return false;
       }
 
-      // Time Commitment
-      const times = activeFilters["Time Commitment"] ?? [];
-      if (times.length > 0) {
-        if (!card.timeCommitment || !times.includes(card.timeCommitment)) return false;
-      }
-
-      // Spots Left
-      const spots = activeFilters["Spots Left"] ?? [];
-      if (spots.length > 0) {
-        let spotsLabel: string;
-        if (card.spotsTotal === "Unlimited") {
-          spotsLabel = "Open (< 50% full)";
-        } else {
-          const ratio = card.spotsUsed / (card.spotsTotal as number);
-          spotsLabel = ratio >= 0.9 ? "Almost Full (> 90%)" : ratio >= 0.5 ? "Filling Up (50–90%)" : "Open (< 50% full)";
-        }
-        if (!spots.includes(spotsLabel)) return false;
-      }
-
       // My Interests — maps interest labels to categories
       const interests = activeFilters["My Interests"] ?? [];
       if (interests.length > 0) {
@@ -254,7 +250,7 @@ export default function App() {
     });
   }
 
-  const displayedCards = applyFilters(cards);
+  const displayedCards = applyFilters(cards).sort((a, b) => b.spotsUsed - a.spotsUsed);
 
   // ── On mount: restore session + listen for OAuth redirects ──
   useEffect(() => {
@@ -336,6 +332,8 @@ export default function App() {
         if (!res.ok) {
           const text = await res.text();
           console.error(`Failed to sync cards from server (${res.status}): ${text}`);
+          setCards(STATIC_CARDS);
+          setLoading(false);
           return;
         }
         const data = await res.json();
@@ -344,9 +342,14 @@ export default function App() {
           setServerTotal(data.total ?? data.cards.length);
           setServerOffset(data.cards.length);
           setSynced(true);
+        } else {
+          setCards(STATIC_CARDS);
         }
       } catch (err) {
         console.error("Network error syncing cards:", err);
+        setCards(STATIC_CARDS);
+      } finally {
+        setLoading(false);
       }
     }
     syncCards();
@@ -388,8 +391,8 @@ export default function App() {
   };
 
   // ── Act ──
-  const handleAct = async (id: number) => {
-    const alreadyActed = actedCards.has(id);
+  const handleBoost = async (id: number) => {
+    const alreadyActed = boostedCards.has(id);
     const delta = alreadyActed ? -1 : 1;
 
     setActedCards((prev) => {
@@ -487,46 +490,94 @@ export default function App() {
         statsSynced={synced}
         activeFilters={activeFilters}
         onFilterChange={handleFilterChange}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
       />
 
       <main className="px-4 md:px-8 py-8">
-        {/* Cards grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {displayedCards.map((card) => (
-            <ActionCard
-              key={card.id}
-              card={card.isFeatured ? { ...card, featuredIllustration: <FeaturedIllustration /> } : card}
-              onAct={handleAct}
-              onShare={handleShare}
-              onBookmark={handleBookmark}
-              onEdit={(id) => setEditCardId(id)}
-              isActed={actedCards.has(card.id)}
-              isBookmarked={bookmarkedCards.has(card.id)}
-              canEdit={canEditCard(card)}
-            />
-          ))}
-        </div>
+        {activeTab === "facts" ? (
+          /* ── Facts view ── */
+          (() => {
+            const q = searchQuery.toLowerCase().trim();
+            const catFilters = activeFilters["Category"] ?? [];
+            const filteredFacts = FACT_CARDS.filter((fc) => {
+              // Search overrides category filters
+              if (q) {
+                return fc.claim.toLowerCase().includes(q) || fc.response.toLowerCase().includes(q) || fc.category.toLowerCase().includes(q) || fc.askBack.toLowerCase().includes(q) || fc.proof.toLowerCase().includes(q);
+              }
+              if (catFilters.length > 0 && !catFilters.includes(fc.category)) return false;
+              return true;
+            });
+            return (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+                  {filteredFacts.map((fc) => (
+                    <FactCard key={fc.id} card={fc} />
+                  ))}
+                </div>
+                {filteredFacts.length === 0 && (
+                  <div className="text-center py-20">
+                    <p className="font-['Poppins',sans-serif] text-gray-400 text-lg">No facts match your filters.</p>
+                    <button
+                      onClick={() => { setActiveFilters({}); setSearchQuery(""); }}
+                      className="mt-3 font-['Poppins',sans-serif] text-sm text-[#23297e] hover:underline"
+                    >
+                      Clear all filters
+                    </button>
+                  </div>
+                )}
+              </>
+            );
+          })()
+        ) : (
+          /* ── Acts view ── */
+          <>
+            {loading ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {Array.from({ length: 10 }).map((_, i) => <CardSkeleton key={i} />)}
+              </div>
+            ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {displayedCards.map((card) => (
+                <ActionCard
+                  key={card.id}
+                  card={card.isFeatured ? { ...card, featuredIllustration: <FeaturedIllustration /> } : card}
+                  onBoost={handleBoost}
+                  onShare={handleShare}
+                  onBookmark={handleBookmark}
+                  onEdit={(id) => setEditCardId(id)}
+                  isBoosted={boostedCards.has(card.id)}
+                  isBookmarked={bookmarkedCards.has(card.id)}
+                  canEdit={canEditCard(card)}
+                />
+              ))}
+            </div>
+            )}
 
-        {/* Load more — only shown when the server has more cards than we've fetched */}
-        {synced && serverOffset < serverTotal && (
-          <div className="mt-12 flex flex-col items-center gap-2">
-            <button
-              onClick={handleLoadMore}
-              disabled={loadingMore}
-              className="px-10 py-3.5 bg-[#23297e] hover:bg-[#1a2060] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-semibold text-base rounded-xl transition-colors shadow-sm flex items-center gap-2"
-            >
-              {loadingMore && (
-                <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                </svg>
-              )}
-              {loadingMore ? "Loading…" : "Load More Acts"}
-            </button>
-            <p className="font-['Poppins',sans-serif] text-xs text-gray-400">
-              Showing {cards.length} of {serverTotal} acts
-            </p>
-          </div>
+            {/* Load more — only shown when the server has more cards than we've fetched */}
+            {synced && serverOffset < serverTotal && (
+              <div className="mt-12 flex flex-col items-center gap-2">
+                <button
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                  className="px-10 py-3.5 bg-[#23297e] hover:bg-[#1a2060] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-semibold text-base rounded-xl transition-colors shadow-sm flex items-center gap-2"
+                >
+                  {loadingMore && (
+                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                    </svg>
+                  )}
+                  {loadingMore ? "Loading…" : "Load More Campaigns"}
+                </button>
+                <p className="font-['Poppins',sans-serif] text-xs text-gray-400">
+                  Showing {cards.length} of {serverTotal} campaigns
+                </p>
+              </div>
+            )}
+          </>
         )}
       </main>
 

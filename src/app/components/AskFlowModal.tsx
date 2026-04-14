@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { X, ChevronLeft, Check, Loader2, CheckCircle2 } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
 import type { UserApproval } from "../lib/supabase";
-import askPersonImg from "figma:asset/d06c5b16d92e1a52be9ade580dea6c66dabb478c.png";
+import askPersonImg from "../../assets/d06c5b16d92e1a52be9ade580dea6c66dabb478c.png";
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
 

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>US Federal Deficit by President 1981–2026</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #fff; color: #222; margin: 0; padding: 12px 8px 8px; box-sizing: border-box; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 10px; font-size: 11px; color: #555; }
+  .legend span { display: flex; align-items: center; gap: 5px; }
+  .swatch { width: 10px; height: 10px; border-radius: 2px; }
+  .chart-wrap { position: relative; width: 100%; height: 440px; }
+  .footnote { font-size: 10px; color: #888; margin-top: 6px; }
+  h2 { font-size: 13px; font-weight: 500; margin: 0 0 8px; color: #222; }
+</style>
+</head>
+<body>
+<h2>US Federal Deficit / Surplus by Administration, 1981–2026</h2>
+<div class="legend">
+  <span><span class="swatch" style="background:#c9392b;"></span>Republican — deficits grew ▲</span>
+  <span><span class="swatch" style="background:#2563a8;"></span>Democrat — deficits shrank ▼</span>
+</div>
+<div class="chart-wrap">
+  <canvas id="deficitChart" role="img"
+    aria-label="Inverted line chart of US federal deficit or surplus 1981 to 2026 with end-of-term labels. Trump era labels in trillions, all others in billions.">
+    US federal deficit/surplus 1981–2026 inverted. Trump era end-of-term labels in trillions, all others in billions.
+  </canvas>
+</div>
+<p class="footnote">Labels show end-of-term deficit/surplus.</p>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-annotation/3.0.1/chartjs-plugin-annotation.min.js"></script>
+<script>
+const labels = [
+  '1981','1982','1983','1984','1985','1986','1987','1988','1989','1990',
+  '1991','1992','1993','1994','1995','1996','1997','1998','1999','2000',
+  '2001','2002','2003','2004','2005','2006','2007','2008','2009','2010',
+  '2011','2012','2013','2014','2015','2016','2017','2018','2019','2020',
+  '2021','2022','2023','2024','2025','2026'
+];
+const values = [
+  -74,-128,-208,-185,-212,-221,-150,-155,-152,-221,
+  -269,-290,-255,-203,-164,-107,-22,69,126,236,
+  128,-158,-378,-413,-318,-248,-161,-459,-1413,-1294,
+  -1300,-1087,-680,-485,-439,-585,-665,-779,-984,-3132,
+  -2772,-1375,-1695,-1833,-1900,-1800
+];
+
+const projected = new Set(['2025','2026']);
+
+const eras = [
+  { label: 'Reagan',   start: '1981', end: '1989', rep: true,  trump: false },
+  { label: 'GHW Bush', start: '1989', end: '1993', rep: true,  trump: false },
+  { label: 'Clinton',  start: '1993', end: '2001', rep: false, trump: false },
+  { label: 'GW Bush',  start: '2001', end: '2009', rep: true,  trump: false },
+  { label: 'Obama',    start: '2009', end: '2017', rep: false, trump: false },
+  { label: 'Trump',    start: '2017', end: '2021', rep: true,  trump: true  },
+  { label: 'Biden',    start: '2021', end: '2025', rep: false, trump: false },
+  { label: 'Trump',    start: '2025', end: '2027', rep: true,  trump: true  },
+];
+
+const RED = '#c9392b';
+const BLUE = '#2563a8';
+const Y_MIN = -3900, Y_MAX = 900;
+const ARROW_Y = -3680, NAME_Y = -3450;
+
+function eraForYear(yr) {
+  return eras.slice().reverse().find(e => yr >= e.start && yr < e.end) ||
+         eras.find(e => yr === e.start) || null;
+}
+
+const lastPoints = eras.map(era => {
+  const endIdx = labels.indexOf(era.end);
+  const lastIdx = endIdx === -1 ? labels.length - 1 : endIdx - 1;
+  return { era, yr: labels[lastIdx], val: values[lastIdx] };
+});
+
+function fmtVal(v, isTrump) {
+  const sign = v >= 0 ? '+' : '-';
+  const abs = Math.abs(v);
+  return isTrump
+    ? sign + '$' + (abs / 1000).toFixed(2) + 'T'
+    : sign + '$' + abs.toLocaleString() + 'B';
+}
+
+const annotations = {};
+
+annotations['stripLine'] = {
+  type: 'line', yMin: -3380, yMax: -3380,
+  borderColor: 'rgba(0,0,0,0.1)', borderWidth: 1,
+};
+
+eras.forEach((era, i) => {
+  const si = labels.indexOf(era.start);
+  const eiRaw = labels.indexOf(era.end);
+  const eiClamped = eiRaw === -1 ? labels.length - 1 : Math.min(eiRaw, labels.length - 1);
+
+  annotations['box' + i] = {
+    type: 'box', xMin: era.start, xMax: era.end,
+    yMin: -3380, yMax: Y_MAX,
+    backgroundColor: era.rep ? 'rgba(201,57,43,0.07)' : 'rgba(37,99,168,0.07)',
+    borderWidth: 0,
+  };
+  annotations['strip' + i] = {
+    type: 'box', xMin: era.start, xMax: era.end,
+    yMin: Y_MIN, yMax: -3380,
+    backgroundColor: era.rep ? 'rgba(201,57,43,0.12)' : 'rgba(37,99,168,0.12)',
+    borderWidth: 0,
+  };
+
+  const midIdx = Math.round((si + eiClamped) / 2);
+  annotations['name' + i] = {
+    type: 'label', xValue: labels[midIdx], yValue: NAME_Y,
+    content: era.label + (era.start === '2025' ? '*' : ''),
+    font: { size: 9, weight: '400' },
+    color: era.rep ? 'rgba(160,40,20,0.8)' : 'rgba(20,60,140,0.8)',
+  };
+  annotations['arrow' + i] = {
+    type: 'label', xValue: labels[midIdx], yValue: ARROW_Y,
+    content: era.rep ? '▲' : '▼',
+    font: { size: 15, weight: '500' },
+    color: era.rep ? RED : BLUE,
+  };
+});
+
+lastPoints.forEach(({ era, yr, val }) => {
+  const isHigh = val < -900;
+  const isLow  = val > 0;
+  annotations['dotlabel_' + yr] = {
+    type: 'label',
+    xValue: yr, yValue: val,
+    xAdjust: yr === '2026' ? -18 : 4,
+    yAdjust: (isHigh || isLow) ? 22 : -20,
+    content: fmtVal(val, era.trump),
+    font: { size: 9, weight: '500' },
+    color: era.rep ? RED : BLUE,
+    backgroundColor: 'rgba(255,255,255,0.82)',
+    padding: { top: 2, bottom: 2, left: 4, right: 4 },
+    borderRadius: 3,
+  };
+});
+
+const pointColors = labels.map(yr => {
+  if (projected.has(yr)) return 'rgba(201,57,43,0.45)';
+  return eraForYear(yr)?.rep ? RED : BLUE;
+});
+
+new Chart(document.getElementById('deficitChart'), {
+  type: 'line',
+  data: {
+    labels,
+    datasets: [{
+      label: 'Deficit / Surplus ($B)',
+      data: values,
+      segment: {
+        borderColor: ctx => {
+          const yr = labels[ctx.p0DataIndex];
+          const era = eraForYear(yr);
+          if (projected.has(yr)) return era?.rep ? 'rgba(201,57,43,0.55)' : 'rgba(37,99,168,0.55)';
+          if (yr === '2020') return 'rgba(136,136,136,0.7)';
+          return era?.rep ? RED : BLUE;
+        },
+        borderDash: ctx => {
+          const yr = labels[ctx.p0DataIndex];
+          if (yr === '2020') return [5,3];
+          if (projected.has(yr)) return [6,3];
+          return [];
+        },
+      },
+      pointBackgroundColor: pointColors,
+      pointBorderColor: labels.map(yr =>
+        lastPoints.some(lp => lp.yr === yr) ? 'rgba(255,255,255,0.9)' : 'transparent'
+      ),
+      pointBorderWidth: 1.5,
+      pointStyle: labels.map(yr => projected.has(yr) ? 'triangle' : 'circle'),
+      pointRadius: labels.map(yr => (projected.has(yr) || lastPoints.some(lp => lp.yr === yr)) ? 5 : 3),
+      pointHoverRadius: 6,
+      tension: 0.35,
+      fill: { target: { value: 0 }, above: 'rgba(37,99,168,0.12)', below: 'rgba(201,57,43,0.08)' },
+      borderWidth: 2,
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    layout: { padding: { right: 8, left: 0, top: 4, bottom: 0 } },
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          title: ctx => ctx[0].label + (projected.has(ctx[0].label) ? ' (projected)' : ''),
+          label: ctx => {
+            const v = ctx.raw;
+            return ` ${v >= 0 ? '+' : '-'}$${Math.abs(v).toLocaleString()}B`;
+          }
+        }
+      },
+      annotation: { annotations }
+    },
+    scales: {
+      x: {
+        ticks: { color: '#555', font: { size: 10 }, autoSkip: true, maxTicksLimit: 13, maxRotation: 0 },
+        grid: { display: false }
+      },
+      y: {
+        reverse: true, min: Y_MIN, max: Y_MAX,
+        ticks: { display: false },
+        grid: { display: false },
+        border: { display: false }
+      }
+    }
+  }
+});
+</script>
+</body>
+</html>
