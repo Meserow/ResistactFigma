@@ -7,7 +7,15 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    // figma:asset stub removed — all imports now use direct asset paths
+    {
+      name: 'figma-asset-stub',
+      resolveId(id) {
+        if (id.startsWith('figma:asset/')) return id;
+      },
+      load(id) {
+        if (id.startsWith('figma:asset/')) return 'export default ""';
+      }
+    }
   ],
   resolve: {
     alias: {
