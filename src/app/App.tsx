@@ -176,7 +176,12 @@ export default function App() {
   const [serverTotal, setServerTotal] = useState(0);
   const [serverOffset, setServerOffset] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [boostedCards, setActedCards] = useState<Set<number>>(new Set());
+  const [boostedCards, setActedCards] = useState<Set<number>>(() => {
+    try {
+      const stored = localStorage.getItem("resistact_boosted");
+      return stored ? new Set<number>(JSON.parse(stored)) : new Set<number>();
+    } catch { return new Set<number>(); }
+  });
   const [bookmarkedCards, setBookmarkedCards] = useState<Set<number>>(new Set());
 
   // ── Auth state ──
@@ -398,6 +403,7 @@ export default function App() {
     setActedCards((prev) => {
       const next = new Set(prev);
       alreadyActed ? next.delete(id) : next.add(id);
+      try { localStorage.setItem("resistact_boosted", JSON.stringify([...next])); } catch {}
       return next;
     });
     setCards((prev) =>
@@ -510,14 +516,15 @@ export default function App() {
               if (catFilters.length > 0 && !catFilters.includes(fc.category)) return false;
               return true;
             });
+            const shuffledFacts = [...filteredFacts].sort(() => Math.random() - 0.5);
             return (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-                  {filteredFacts.map((fc) => (
+                  {shuffledFacts.map((fc) => (
                     <FactCard key={fc.id} card={fc} />
                   ))}
                 </div>
-                {filteredFacts.length === 0 && (
+                {shuffledFacts.length === 0 && (
                   <div className="text-center py-20">
                     <p className="font-['Poppins',sans-serif] text-gray-400 text-lg">No facts match your filters.</p>
                     <button

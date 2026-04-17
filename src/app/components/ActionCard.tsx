@@ -118,7 +118,7 @@ export function ActionCard({ card, onBoost, onShare, onBookmark, onEdit, isBoost
                     isBoosted ? "bg-[#fd8e33]/80 text-white" : "bg-[#fd8e33] hover:bg-[#e07a28] text-white shadow-sm"
                   }`}
                 >
-                  🔥 {isBoosted ? "Boosted!" : "Boost"}
+                  🔥 {isBoosted ? "Boosted!" : "Boost"} · {card.spotsUsed.toLocaleString()}
                 </button>
                 <button
                   onClick={() => setShareOpen(true)}
@@ -250,7 +250,7 @@ export function ActionCard({ card, onBoost, onShare, onBookmark, onEdit, isBoost
                     : "bg-[#fd8e33] hover:bg-[#e07a28] text-white shadow-sm"
                 }`}
               >
-                🔥 {isBoosted ? "Boosted!" : "Boost"}
+                🔥 {isBoosted ? "Boosted!" : "Boost"} · {card.spotsUsed.toLocaleString()}
               </button>
               <button
                 onClick={() => setShareOpen(true)}
