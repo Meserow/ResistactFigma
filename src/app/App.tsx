@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Navbar } from "./components/Navbar";
 import { ActionCard, ActionCardData } from "./components/ActionCard";
 import { FactCard } from "./components/FactCard";
@@ -183,6 +183,32 @@ export default function App() {
     } catch { return new Set<number>(); }
   });
   const [bookmarkedCards, setBookmarkedCards] = useState<Set<number>>(new Set());
+  const [boostedFacts, setBoostedFacts] = useState<Set<number>>(new Set());
+  const [factBoostCounts, setFactBoostCounts] = useState<Record<number, number>>({});
+
+  // Stable random ordering for facts — shuffled once on mount.
+  const factOrder = useMemo<Record<number, number>>(() => {
+    const ids = FACT_CARDS.map((f) => f.id);
+    for (let i = ids.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [ids[i], ids[j]] = [ids[j], ids[i]];
+    }
+    return Object.fromEntries(ids.map((id, idx) => [id, idx]));
+  }, []);
+
+  const handleFactBoost = (id: number) => {
+    const alreadyBoosted = boostedFacts.has(id);
+    const delta = alreadyBoosted ? -1 : 1;
+    setBoostedFacts((prev) => {
+      const next = new Set(prev);
+      alreadyBoosted ? next.delete(id) : next.add(id);
+      return next;
+    });
+    setFactBoostCounts((prev) => ({
+      ...prev,
+      [id]: Math.max(0, (prev[id] ?? 0) + delta),
+    }));
+  };
 
   // ── Auth state ──
   const [approval, setApproval] = useState<UserApproval | null>(null);
@@ -515,16 +541,25 @@ export default function App() {
               }
               if (catFilters.length > 0 && !catFilters.includes(fc.category)) return false;
               return true;
+            }).sort((a, b) => {
+              const boostDiff = (factBoostCounts[b.id] ?? 0) - (factBoostCounts[a.id] ?? 0);
+              if (boostDiff !== 0) return boostDiff;
+              return (factOrder[a.id] ?? 0) - (factOrder[b.id] ?? 0);
             });
-            const shuffledFacts = [...filteredFacts].sort(() => Math.random() - 0.5);
             return (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-                  {shuffledFacts.map((fc) => (
-                    <FactCard key={fc.id} card={fc} />
+                  {filteredFacts.map((fc) => (
+                    <FactCard
+                      key={fc.id}
+                      card={fc}
+                      onBoost={handleFactBoost}
+                      isBoosted={boostedFacts.has(fc.id)}
+                      boostCount={factBoostCounts[fc.id] ?? 0}
+                    />
                   ))}
                 </div>
-                {shuffledFacts.length === 0 && (
+                {filteredFacts.length === 0 && (
                   <div className="text-center py-20">
                     <p className="font-['Poppins',sans-serif] text-gray-400 text-lg">No facts match your filters.</p>
                     <button
