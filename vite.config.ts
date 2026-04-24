@@ -4,6 +4,10 @@ import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
+  server: {
+    port: parseInt(process.env.PORT ?? '5173'),
+    strictPort: true,
+  },
   plugins: [
     react(),
     tailwindcss(),

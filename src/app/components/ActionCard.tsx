@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Bookmark, BookmarkCheck, Globe, MapPin, Pencil, Share2 } from "lucide-react";
 import { ShareModal } from "./ShareModal";
+import { ImageWithFallback } from "./figma/ImageWithFallback";
 
 export interface ActionCardData {
   id: number;
@@ -103,7 +104,7 @@ export function ActionCard({ card, onBoost, onShare, onBookmark, onEdit, isBoost
             <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-100">
               <div className="flex items-center gap-2.5 min-w-0">
                 {card.authorAvatar && (
-                  <img src={card.authorAvatar} alt={card.authorName} className="w-8 h-8 rounded-full object-cover ring-1 ring-gray-200 shrink-0" />
+                  <ImageWithFallback src={card.authorAvatar} alt={card.authorName} className="w-8 h-8 rounded-full object-cover ring-1 ring-gray-200 shrink-0" />
                 )}
                 <div className="min-w-0">
                   <p className="font-['Poppins',sans-serif] font-semibold text-[12px] text-gray-800 truncate leading-tight">{card.authorName}</p>
@@ -144,7 +145,7 @@ export function ActionCard({ card, onBoost, onShare, onBookmark, onEdit, isBoost
         {/* Top image */}
         {card.topImage ? (
           <div className="relative h-[220px] shrink-0">
-            <img
+            <ImageWithFallback
               src={card.topImage}
               alt={card.title}
               className="w-full h-full object-cover"
@@ -215,7 +216,7 @@ export function ActionCard({ card, onBoost, onShare, onBookmark, onEdit, isBoost
             {/* Author */}
             <div className="flex items-center gap-2.5 min-w-0">
               {card.authorAvatar && (
-                <img
+                <ImageWithFallback
                   src={card.authorAvatar}
                   alt={card.authorName}
                   className="w-8 h-8 rounded-full object-cover ring-1 ring-gray-200 shrink-0"

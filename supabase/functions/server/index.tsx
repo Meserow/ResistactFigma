@@ -243,12 +243,12 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     // Seed check: if card 1 is missing, write every card individually
     const firstCard = await kv.get("action:1") as any;
     const seedVersion = await kv.get("seed:cards:version");
-    if (!firstCard || seedVersion !== "v2") {
-      console.log("Seeding action cards one by one (v2 — with actionType + timeCommitment)...");
+    if (!firstCard || seedVersion !== "v4") {
+      console.log("Seeding action cards one by one (v4 — full curated spreadsheet list)...");
       for (const card of SEED_CARDS) {
         await kv.set(`action:${card.id}`, card);
       }
-      await kv.set("seed:cards:version", "v2");
+      await kv.set("seed:cards:version", "v4");
       console.log(`Seeded ${SEED_CARDS.length} cards.`);
     }
 
@@ -478,6 +478,40 @@ app.put("/make-server-9eb1ae04/actions/:id", async (c) => {
   } catch (err) {
     console.log("Edit card error:", err);
     return c.json({ error: `Failed to edit card: ${err}` }, 500);
+  }
+});
+
+// ─── DELETE /actions/:id — admin-only card removal ────────────────────────────
+app.delete("/make-server-9eb1ae04/actions/:id", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const id = Number(c.req.param("id"));
+
+    // Try seed card first
+    const seedCard = await kv.get(`action:${id}`);
+    if (seedCard) {
+      await kv.delete(`action:${id}`);
+      console.log(`Admin ${admin.record.name} deleted seed card #${id}`);
+      return c.json({ success: true });
+    }
+
+    // Try user-created card
+    const userCard = await kv.get(`user-action:${id}`);
+    if (userCard) {
+      await kv.delete(`user-action:${id}`);
+      const currentIds = (await kv.get("user-action:ids") ?? []) as number[];
+      await kv.set("user-action:ids", currentIds.filter((x) => x !== id));
+      console.log(`Admin ${admin.record.name} deleted user card #${id}`);
+      return c.json({ success: true });
+    }
+
+    return c.json({ error: `Card ${id} not found` }, 404);
+  } catch (err) {
+    console.log("Delete card error:", err);
+    return c.json({ error: `Failed to delete card: ${err}` }, 500);
   }
 });
 
