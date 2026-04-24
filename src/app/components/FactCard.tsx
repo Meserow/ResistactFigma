@@ -34,9 +34,12 @@ const CATEGORY_IMAGES: Record<string, string> = {
 
 interface FactCardProps {
   card: FactCardData;
+  onBoost?: (id: number) => void;
+  isBoosted?: boolean;
+  boostCount?: number;
 }
 
-export function FactCard({ card }: FactCardProps) {
+export function FactCard({ card, onBoost, isBoosted, boostCount = 0 }: FactCardProps) {
   const [proofOpen, setProofOpen] = useState(false);
   const color = CATEGORY_COLORS[card.category] ?? "#475569";
   const image = CATEGORY_IMAGES[card.category];
@@ -131,6 +134,23 @@ export function FactCard({ card }: FactCardProps) {
             {card.askBack}
           </p>
         </div>
+      </div>
+
+      {/* Boost row */}
+      <div className="px-4 pb-3 flex items-center justify-between gap-2">
+        <p className="font-['Poppins',sans-serif] font-semibold text-[12px] text-[#de7c2d]">
+          🔥 {boostCount.toLocaleString()} boost{boostCount === 1 ? "" : "s"}
+        </p>
+        <button
+          onClick={() => onBoost?.(card.id)}
+          className={`flex items-center gap-1 px-3 py-1.5 rounded-xl font-['Poppins',sans-serif] font-bold text-[12px] transition-all ${
+            isBoosted
+              ? "bg-[#fd8e33]/80 text-white"
+              : "bg-[#fd8e33] hover:bg-[#e07a28] text-white shadow-sm"
+          }`}
+        >
+          🔥 {isBoosted ? "Boosted!" : "Boost"}
+        </button>
       </div>
 
       {/* Proof accordion */}
