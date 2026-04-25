@@ -17,6 +17,7 @@ const CATEGORIES: { name: string; emoji: string; color: string }[] = [
   { name: "Crafting",                   emoji: "🔨",  color: "#c34e00" },
   { name: "Petition",                   emoji: "✍️",  color: "#05737f" },
   { name: "Flash Mob",                  emoji: "👥",  color: "#ff00d5" },
+  { name: "Join a Group",               emoji: "🫂",  color: "#0891b2" },
   { name: "Housing",                    emoji: "🏠",  color: "#896312" },
   { name: "Labor",                      emoji: "👷",  color: "#127f05" },
   { name: "Prayer",                     emoji: "🙏",  color: "#8a00e6" },

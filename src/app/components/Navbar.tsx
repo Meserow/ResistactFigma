@@ -11,8 +11,9 @@ function ResistActLogo() {
 }
 
 // ─── Filter config ────────────────────────────────────────────────────────────
-const ACTS_FILTER_OPTIONS: Record<string, string[]> = {
-  Category: ["ART PIECE", "BOOST", "BOYCOTT", "CRAFTING", "FLASH MOB", "FUNDING", "LETTER WRITING", "PETITION", "PROTEST", "SOCIAL MEDIA", "TRAINING"],
+// Category is dynamic — derived from actually-loaded cards in App.tsx and
+// passed in via the `actsCategories` prop. Everything else stays static.
+const ACTS_STATIC_FILTERS: Record<string, string[]> = {
   Type: ["Online", "In Person"],
   Location: ["Online Only", "National", "Minnesota / Twin Cities", "California", "Maryland", "Illinois", "Washington State", "Massachusetts", "Other Local"],
   "My Interests": ["Art & Creativity", "Social Media", "Advocacy & Legal", "Street Action", "Fundraising"],
@@ -35,6 +36,7 @@ interface NavbarProps {
   statsCitiesCount?: number | null;
   statsSynced?: boolean;
   activeFilters: Record<string, string[]>;
+  actsCategories?: string[];
   onFilterChange: (filterName: string, selected: string[]) => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
@@ -42,7 +44,12 @@ interface NavbarProps {
   onTabChange: (tab: "facts" | "acts") => void;
 }
 
-export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, onAskClick, statsActsCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange }: NavbarProps) {
+export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, onAskClick, statsActsCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange }: NavbarProps) {
+  // Build the full Acts filter map: dynamic Category + static rest.
+  const ACTS_FILTER_OPTIONS: Record<string, string[]> = {
+    Category: actsCategories ?? [],
+    ...ACTS_STATIC_FILTERS,
+  };
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [openFilter, setOpenFilter] = useState<string | null>(null);

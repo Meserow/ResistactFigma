@@ -283,6 +283,21 @@ export default function App() {
 
   const displayedCards = applyFilters(cards).sort((a, b) => b.spotsUsed - a.spotsUsed);
 
+  // True when any filter chip is selected — pagination should be bypassed in this case
+  const hasActiveFilters = Object.values(activeFilters).some((arr) => (arr ?? []).length > 0);
+
+  // Distinct categories from currently-loaded cards, sorted alphabetically.
+  // Drives the Category filter dropdown so the list always reflects the
+  // actual data instead of a hand-maintained constant.
+  const dynamicCategories = useMemo(() => {
+    const set = new Set<string>();
+    for (const c of cards) {
+      const cat = (c.category ?? "").trim();
+      if (cat) set.add(cat);
+    }
+    return Array.from(set).sort();
+  }, [cards]);
+
   // ── On mount: restore session + listen for OAuth redirects ──
   useEffect(() => {
     // Check for an existing session (including OAuth redirects)
@@ -359,27 +374,48 @@ export default function App() {
   useEffect(() => {
     async function syncCards() {
       try {
-        const res = await fetch(`${API}/actions?limit=${PAGE_SIZE}&offset=0`, { headers: HEADERS });
-        if (!res.ok) {
-          const text = await res.text();
-          console.error(`Failed to sync cards from server (${res.status}): ${text}`);
+        // Fetch first page to learn the total
+        const firstRes = await fetch(`${API}/actions?limit=100&offset=0`, { headers: HEADERS });
+        if (!firstRes.ok) {
+          const text = await firstRes.text();
+          console.error(`Failed to sync cards from server (${firstRes.status}): ${text}`);
           setCards(STATIC_CARDS);
           setLoading(false);
           return;
         }
-        const data = await res.json();
-        if (data.cards && data.cards.length > 0) {
-          setCards((data.cards as ServerCard[]).map(resolveCard));
-          setServerTotal(data.total ?? data.cards.length);
-          setServerOffset(data.cards.length);
-          setSynced(true);
-        } else {
+        const firstData = await firstRes.json();
+        const firstBatch = (firstData.cards as ServerCard[] | undefined) ?? [];
+        if (firstBatch.length === 0) {
           setCards(STATIC_CARDS);
+          setLoading(false);
+          return;
+        }
+        const total = firstData.total ?? firstBatch.length;
+        const all: ActionCardData[] = firstBatch.map(resolveCard);
+        // Show the first page immediately so the user sees something fast.
+        setCards(all);
+        setServerTotal(total);
+        setServerOffset(all.length);
+        setSynced(true);
+        setLoading(false);
+
+        // Drain the rest in the background — small payload, keeps the
+        // category filter list and search complete for power users.
+        let offset = all.length;
+        while (offset < total) {
+          const res = await fetch(`${API}/actions?limit=100&offset=${offset}`, { headers: HEADERS });
+          if (!res.ok) break;
+          const data = await res.json();
+          const batch = (data.cards as ServerCard[] | undefined) ?? [];
+          if (batch.length === 0) break;
+          const resolved = batch.map(resolveCard);
+          setCards((prev) => [...prev, ...resolved]);
+          offset += batch.length;
+          setServerOffset(offset);
         }
       } catch (err) {
         console.error("Network error syncing cards:", err);
         setCards(STATIC_CARDS);
-      } finally {
         setLoading(false);
       }
     }
@@ -401,6 +437,41 @@ export default function App() {
     }
     fetchStats();
   }, []);
+
+  // ── When any filter is active, eagerly fetch the rest of the cards so
+  //    client-side filtering sees the full dataset (server pagination would
+  //    otherwise hide matching cards behind the Load More button). ───────────
+  useEffect(() => {
+    if (!hasActiveFilters || !synced || loadingMore) return;
+    if (cards.length >= serverTotal) return;
+
+    let cancelled = false;
+    (async () => {
+      setLoadingMore(true);
+      try {
+        let offset = serverOffset;
+        const collected: ActionCardData[] = [];
+        // Server caps per-request at 100; loop until we've drained.
+        while (offset < serverTotal && !cancelled) {
+          const res = await fetch(`${API}/actions?limit=100&offset=${offset}`, { headers: HEADERS });
+          if (!res.ok) break;
+          const data = await res.json();
+          const batch = (data.cards as ServerCard[] | undefined) ?? [];
+          if (batch.length === 0) break;
+          collected.push(...batch.map(resolveCard));
+          offset += batch.length;
+        }
+        if (!cancelled && collected.length > 0) {
+          setCards((prev) => [...prev, ...collected]);
+          setServerOffset(offset);
+        }
+      } finally {
+        if (!cancelled) setLoadingMore(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [hasActiveFilters, synced, serverTotal]);
 
   // ── Load more ──
   const handleLoadMore = async () => {
@@ -521,6 +592,7 @@ export default function App() {
         statsCitiesCount={statsCitiesCount}
         statsSynced={synced}
         activeFilters={activeFilters}
+        actsCategories={dynamicCategories}
         onFilterChange={handleFilterChange}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -598,8 +670,9 @@ export default function App() {
             </div>
             )}
 
-            {/* Load more — only shown when the server has more cards than we've fetched */}
-            {synced && serverOffset < serverTotal && (
+            {/* Load more — only shown when the server has more cards than we've fetched
+                AND no filter is active (filters auto-load all remaining). */}
+            {synced && !hasActiveFilters && serverOffset < serverTotal && (
               <div className="mt-12 flex flex-col items-center gap-2">
                 <button
                   onClick={handleLoadMore}
