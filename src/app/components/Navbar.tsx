@@ -1,5 +1,5 @@
 import logoImg from "../../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { FACT_CARDS } from "../data/factCards";
 import { Bell, ChevronDown, Clock, Info, LogIn, LogOut, Menu, Plus, Search, ShieldCheck, X } from "lucide-react";
 import type { UserApproval } from "../lib/supabase";
@@ -85,6 +85,33 @@ export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoC
 
   const totalActiveFilters = Object.values(activeFilters).reduce((sum, arr) => sum + arr.length, 0);
 
+  // ── Facts: rank categories by count desc, ties broken by first-appearance.
+  //   Top 5 always show as inline pills; the rest go into a "More" dropdown.
+  //   Anything currently selected stays visible as a pill regardless. ───────
+  const FACTS_INLINE_PILL_LIMIT = 5;
+  const factsCategoriesRanked = useMemo(() => {
+    const counts = new Map<string, number>();
+    const firstSeen = new Map<string, number>();
+    FACT_CARDS.forEach((f, i) => {
+      const c = f.category;
+      counts.set(c, (counts.get(c) ?? 0) + 1);
+      if (!firstSeen.has(c)) firstSeen.set(c, i);
+    });
+    return Array.from(counts.keys()).sort((a, b) => {
+      const diff = (counts.get(b)! - counts.get(a)!);
+      if (diff !== 0) return diff;
+      return firstSeen.get(a)! - firstSeen.get(b)!;
+    });
+  }, []);
+  const factsSelected = activeFilters["Category"] ?? [];
+  const factsTopVisible = factsCategoriesRanked.slice(0, FACTS_INLINE_PILL_LIMIT);
+  const factsOverflow = factsCategoriesRanked.slice(FACTS_INLINE_PILL_LIMIT);
+  // If a selected category is in overflow, surface it inline alongside the top pills.
+  const factsExtraVisible = factsOverflow.filter((c) => factsSelected.includes(c));
+  const factsInlinePills = [...factsTopVisible, ...factsExtraVisible];
+  const factsMoreOpen = openFilter === "facts-more";
+  const factsMoreSelectedCount = factsOverflow.filter((c) => factsSelected.includes(c)).length;
+
   function handleActClick() {
     if (!isLoggedIn) { onLoginClick(); return; }
     if (isPending) { return; }
@@ -155,24 +182,15 @@ export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoC
             />
           </div>
 
-          {/* Ask Button */}
+          {/* Add Action Button */}
           <button
             onClick={onAskClick}
             className="shrink-0 bg-[#23297e] hover:bg-[#1a2060] transition-colors text-white font-['Poppins',sans-serif] font-semibold text-base px-5 py-2.5 rounded-xl flex items-center gap-2 whitespace-nowrap shadow-sm"
           >
-            <Search size={16} strokeWidth={2.5} />
-            Ask
+            <Plus size={16} strokeWidth={2.5} />
+            Add Action
           </button>
 
-          {/* About / Info button */}
-          <button
-            onClick={onInfoClick}
-            title="How does ResistAct work?"
-            className="shrink-0 flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-gray-300 text-gray-500 hover:border-[#23297e] hover:text-[#23297e] hover:bg-[#23297e]/5 transition-all font-['Poppins',sans-serif] font-semibold text-sm whitespace-nowrap"
-          >
-            <Info size={16} />
-            <span className="hidden lg:inline">About</span>
-          </button>
         </div>
 
         {/* ── Auth / User section ── */}
@@ -260,23 +278,71 @@ export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoC
         <span className="font-['Poppins',sans-serif] text-[#888] text-sm font-medium shrink-0 mr-2">Filter by:</span>
 
         {activeTab === "facts" ? (
-          /* ── Facts: inline category pills ── */
-          FACTS_FILTER_OPTIONS.Category.map((option) => {
-            const selected = (activeFilters["Category"] ?? []).includes(option);
-            return (
-              <button
-                key={option}
-                onClick={() => toggleFilterOption("Category", option)}
-                className={`px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
-                  selected
-                    ? "bg-[#23297e] text-white border-[#23297e]"
-                    : "bg-white text-gray-600 border-gray-200 hover:border-[#23297e] hover:text-[#23297e]"
-                }`}
-              >
-                {option}
-              </button>
-            );
-          })
+          /* ── Facts: top-N category pills + "More" dropdown ───────────── */
+          <>
+            {factsInlinePills.map((option) => {
+              const selected = factsSelected.includes(option);
+              return (
+                <button
+                  key={option}
+                  onClick={() => toggleFilterOption("Category", option)}
+                  className={`px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
+                    selected
+                      ? "bg-[#23297e] text-white border-[#23297e]"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-[#23297e] hover:text-[#23297e]"
+                  }`}
+                >
+                  {option}
+                </button>
+              );
+            })}
+            {factsOverflow.length > 0 && (
+              <div className="relative shrink-0">
+                <button
+                  onClick={() => setOpenFilter(factsMoreOpen ? null : "facts-more")}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium whitespace-nowrap border transition-all ${
+                    factsMoreSelectedCount > 0
+                      ? "border-[#23297e] text-[#23297e] bg-[#23297e]/5"
+                      : "border-gray-200 text-gray-600 bg-white hover:border-[#23297e] hover:text-[#23297e]"
+                  }`}
+                >
+                  + {factsOverflow.length - factsExtraVisible.length} more
+                  {factsMoreSelectedCount > 0 && (
+                    <span className="w-4 h-4 rounded-full bg-[#fd8e33] text-white text-[9px] flex items-center justify-center font-bold shrink-0">
+                      {factsMoreSelectedCount}
+                    </span>
+                  )}
+                  <ChevronDown size={12} className={`text-[#5a5a5a] transition-transform duration-150 ${factsMoreOpen ? "rotate-180" : ""}`} />
+                </button>
+                {factsMoreOpen && (
+                  <div className="absolute top-full left-0 mt-1.5 w-64 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50">
+                    <p className="px-4 pt-1 pb-2 font-['Poppins',sans-serif] text-[10px] uppercase tracking-widest text-gray-400 font-semibold border-b border-gray-50">
+                      More categories
+                    </p>
+                    {factsOverflow.map((option) => (
+                      <label key={option} className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={factsSelected.includes(option)}
+                          onChange={() => toggleFilterOption("Category", option)}
+                          className="accent-[#23297e] w-3.5 h-3.5 rounded shrink-0"
+                        />
+                        <span className="font-['Poppins',sans-serif] text-sm text-gray-700">{option}</span>
+                      </label>
+                    ))}
+                    {factsMoreSelectedCount > 0 && (
+                      <button
+                        onClick={() => onFilterChange("Category", factsSelected.filter((c) => !factsOverflow.includes(c)))}
+                        className="w-full text-center text-xs text-red-400 hover:text-red-600 py-2 border-t border-gray-50 mt-1 font-['Poppins',sans-serif] font-medium transition-colors"
+                      >
+                        Clear these
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         ) : (
           /* ── Acts: dropdown filters ── */
           Object.entries(ACTS_FILTER_OPTIONS).map(([filterName, options]) => {
@@ -356,6 +422,15 @@ export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoC
               <strong className="text-[#127f05] font-bold">{FACT_CARDS.length}</strong>{" "}facts in the database
             </span>
           </div>
+          {/* About / Info button — moved next to the stats */}
+          <button
+            onClick={onInfoClick}
+            title="How does ResistAct work?"
+            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 text-gray-500 hover:border-[#23297e] hover:text-[#23297e] hover:bg-[#23297e]/5 transition-all font-['Poppins',sans-serif] font-semibold text-xs whitespace-nowrap"
+          >
+            <Info size={14} />
+            About
+          </button>
         </div>
       </div>
 
@@ -383,33 +458,59 @@ export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoC
           </div>
         </div>
 
-        {/* Filter row — scrollable pills for Facts, dropdown buttons for Acts */}
+        {/* Filter row — single Category dropdown for Facts, scrollable dropdown buttons for Acts */}
         {activeTab === "facts" ? (
-          <div className="flex flex-wrap gap-1.5 px-4 pb-2">
-            {FACTS_FILTER_OPTIONS.Category.map((option) => {
-              const selected = (activeFilters["Category"] ?? []).includes(option);
+          <div className="px-4 pb-2">
+            {(() => {
+              const isOpen = openFilter === "facts-mobile";
+              const selectedCount = factsSelected.length;
               return (
-                <button
-                  key={option}
-                  onClick={() => toggleFilterOption("Category", option)}
-                  className={`px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
-                    selected
-                      ? "bg-[#23297e] text-white border-[#23297e]"
-                      : "bg-white text-gray-600 border-gray-200"
-                  }`}
-                >
-                  {option}
-                </button>
+                <div className="relative">
+                  <button
+                    onClick={() => setOpenFilter(isOpen ? null : "facts-mobile")}
+                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
+                      selectedCount > 0
+                        ? "border-[#23297e] text-[#23297e] bg-[#23297e]/5"
+                        : "border-gray-200 text-gray-600 bg-white"
+                    }`}
+                  >
+                    Category
+                    {selectedCount > 0 && (
+                      <span className="w-4 h-4 rounded-full bg-[#fd8e33] text-white text-[9px] flex items-center justify-center font-bold shrink-0">
+                        {selectedCount}
+                      </span>
+                    )}
+                    <ChevronDown size={13} className={`text-[#5a5a5a] transition-transform duration-150 ${isOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  {isOpen && (
+                    <div className="absolute top-full left-0 mt-1.5 w-64 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50 max-h-80 overflow-y-auto">
+                      <p className="px-4 pt-1 pb-2 font-['Poppins',sans-serif] text-[10px] uppercase tracking-widest text-gray-400 font-semibold border-b border-gray-50">
+                        Category
+                      </p>
+                      {factsCategoriesRanked.map((option) => (
+                        <label key={option} className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={factsSelected.includes(option)}
+                            onChange={() => toggleFilterOption("Category", option)}
+                            className="accent-[#23297e] w-3.5 h-3.5 rounded shrink-0"
+                          />
+                          <span className="font-['Poppins',sans-serif] text-sm text-gray-700">{option}</span>
+                        </label>
+                      ))}
+                      {selectedCount > 0 && (
+                        <button
+                          onClick={() => onFilterChange("Category", [])}
+                          className="w-full text-center text-xs text-red-400 hover:text-red-600 py-2 border-t border-gray-50 mt-1 font-['Poppins',sans-serif] font-medium transition-colors"
+                        >
+                          Clear filter
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
               );
-            })}
-            {(activeFilters["Category"] ?? []).length > 0 && (
-              <button
-                onClick={() => onFilterChange("Category", [])}
-                className="flex-none px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium border border-red-200 text-red-400 bg-white whitespace-nowrap"
-              >
-                Clear
-              </button>
-            )}
+            })()}
           </div>
         ) : (
           <div className="flex gap-1.5 overflow-x-auto px-4 pb-2" style={{ scrollbarWidth: "none" }}>
