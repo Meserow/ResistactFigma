@@ -116,7 +116,7 @@ export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoC
             onClick={() => onTabChange("acts")}
             className={`px-5 py-3 rounded-xl font-['Poppins',sans-serif] font-bold text-base transition-all whitespace-nowrap ${
               activeTab === "acts"
-                ? "bg-white text-[#23297e] shadow-sm"
+                ? "bg-white text-[#fd8e33] shadow-sm"
                 : "text-gray-500 hover:text-gray-700"
             }`}
           >
@@ -360,7 +360,7 @@ export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoC
             <button
               onClick={() => onTabChange("acts")}
               className={`flex-1 py-2 rounded-lg font-['Poppins',sans-serif] font-bold text-sm transition-all ${
-                activeTab === "acts" ? "bg-white text-[#23297e] shadow-sm" : "text-gray-500"
+                activeTab === "acts" ? "bg-white text-[#fd8e33] shadow-sm" : "text-gray-500"
               }`}
             >
               The Acts
