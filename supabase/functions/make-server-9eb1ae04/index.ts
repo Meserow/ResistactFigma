@@ -2,7 +2,7 @@ import { Hono } from "npm:hono";
 import { cors } from "npm:hono/cors";
 import { logger } from "npm:hono/logger";
 import { createClient } from "npm:@supabase/supabase-js@2";
-import * as kv from "./kv_store.tsx";
+import * as kv from "./kv_store.ts";
 
 const app = new Hono();
 
@@ -126,6 +126,7 @@ const SEED_CARDS = [
   { id: 16, category: "PROTEST", categoryColor: "#23297e", actionType: "In Person Group", timeCommitment: "< 1 hour", title: "Towns Across America Blackout", description: "On Tuesday, April 22, 2025, we invite you to participate in a nationwide television blackout in protest of Trump's signing of the bill to defund Planned Parenthood.", location: "Austin, TX", spotsUsed: 500, spotsTotal: "Unlimited", authorName: "Nancie Kosnoff", authorRole: "Citizen Activist", topImageKey: "imgImage18", authorAvatarKey: "imgImage2" },
   { id: 17, category: "ART PIECE", categoryColor: "#896312", actionType: "In Person Group", timeCommitment: "Half day", title: "Puppets for March on Washington", description: "We are making effigies of Trump and his minions for the March on Washington on July 4th. Join in even if you can't attend — we will help the attendees get them!", location: "Austin, TX", spotsUsed: 500, spotsTotal: "Unlimited", authorName: "Adam Jordan", authorRole: "Catholic Legal Immigration Network", authorLink: "https://www.cliniclegal.org/", topImageKey: "imgImage9", authorAvatarKey: "imgImage3" },
   { id: 18, category: "FUNDING", categoryColor: "#127f05", actionType: "Online", timeCommitment: "Ongoing", title: "Help Fund my Elon Mural!", description: "I am making a mural to show Elon as a reincarnation of Adolf Hitler, using a real photo of Trump giving the Nazi salute! It will be in my community center's parking lot!", isOnline: true, spotsUsed: 500, spotsTotal: "Unlimited", authorName: "Nancie Kosnoff", authorRole: "Citizen Activist", topImageKey: "imgImage11", authorAvatarKey: "imgImage2" },
+  { id: 19, category: "ART PIECE", categoryColor: "#896312", actionType: "Online", timeCommitment: "< 1 hour", title: "SH*T Bag: Two Bags, One Movement", description: "Dog poop bags featuring Trump — made from plant-based materials (PBAT + PLA + Corn Starch), leak-proof, strong, traps odors, and 'resistant to hate.' Fair-trade and BSCI-compliant. Buy a pack and put it to good use.", isOnline: true, spotsUsed: 0, spotsTotal: "Unlimited", authorName: "Smolotov LLC", authorRole: "Resistance Merch", targetUrl: "https://www.smolotov.com/products/smolotov-unscented-leakproof-dog-poop-bags", topImageUrl: "https://www.smolotov.com/cdn/shop/files/4-Rolls_Box_Bag_2400px.jpg?v=1771553420&width=800" },
 ];
 
 // ─── Health check ─────────────────────────────────────────────────────────────
@@ -240,33 +241,38 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     const limit  = Math.min(Number(c.req.query("limit")  ?? 20), 100);
     const offset = Math.max(Number(c.req.query("offset") ?? 0),   0);
 
-    // Seed check: if card 1 is missing, write every card individually
-    const firstCard = await kv.get("action:1") as any;
-    const seedVersion = await kv.get("seed:cards:version");
-    if (!firstCard || seedVersion !== "v2") {
-      console.log("Seeding action cards one by one (v2 — with actionType + timeCommitment)...");
-      for (const card of SEED_CARDS) {
-        await kv.set(`action:${card.id}`, card);
-      }
-      await kv.set("seed:cards:version", "v2");
-      console.log(`Seeded ${SEED_CARDS.length} cards.`);
-    }
-
     // Seed Ellen user if not done yet
     await seedEllenUser();
 
-    // Fetch each seed card individually
+    // One-time: remove fake placeholder seed cards (IDs 1–18) from the DB
+    const fakePurged = await kv.get("cleanup:fake-seeds:v1");
+    if (!fakePurged) {
+      const fakeIds = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18];
+      for (const id of fakeIds) await kv.del(`action:${id}`);
+      await kv.set("cleanup:fake-seeds:v1", true);
+      console.log("Purged fake seed cards 1–18.");
+    }
+
+    // Fetch ALL action:* cards from the KV store (real cards only after purge)
+    const allActionCards = await kv.getByPrefix("action:");
+    const seenIds = new Set<number>();
     const allCards: any[] = [];
-    for (const seed of SEED_CARDS) {
-      const card = await kv.get(`action:${seed.id}`);
-      if (card && typeof card === "object") allCards.push(card);
+    for (const card of allActionCards) {
+      if (card && typeof card === "object" && typeof card.id === "number" && !seenIds.has(card.id)) {
+        seenIds.add(card.id);
+        allCards.push(card);
+      }
     }
 
     // Also fetch user-created cards
     const userCardIds = (await kv.get("user-action:ids") ?? []) as number[];
     for (const id of userCardIds) {
+      if (seenIds.has(id)) continue;
       const card = await kv.get(`user-action:${id}`);
-      if (card && typeof card === "object") allCards.push(card);
+      if (card && typeof card === "object") {
+        seenIds.add(id);
+        allCards.push(card);
+      }
     }
 
     allCards.sort((a, b) => a.id - b.id);
@@ -285,15 +291,18 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
 app.get("/make-server-9eb1ae04/stats", async (c) => {
   try {
     // Gather all cards
+    const seenIds = new Set<number>();
     const allCards: any[] = [];
-    for (const seed of SEED_CARDS) {
-      const card = await kv.get(`action:${seed.id}`);
-      if (card && typeof card === "object") allCards.push(card);
+    for (const card of await kv.getByPrefix("action:")) {
+      if (card && typeof card === "object" && typeof card.id === "number" && !seenIds.has(card.id)) {
+        seenIds.add(card.id); allCards.push(card);
+      }
     }
     const userCardIds = (await kv.get("user-action:ids") ?? []) as number[];
     for (const id of userCardIds) {
+      if (seenIds.has(id)) continue;
       const card = await kv.get(`user-action:${id}`);
-      if (card && typeof card === "object") allCards.push(card);
+      if (card && typeof card === "object") { seenIds.add(id); allCards.push(card); }
     }
 
     // Distinct non-empty locations = cities

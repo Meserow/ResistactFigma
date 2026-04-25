@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Bookmark, BookmarkCheck, Globe, MapPin, Pencil, Share2 } from "lucide-react";
 import { ShareModal } from "./ShareModal";
 
@@ -39,6 +39,9 @@ interface ActionCardProps {
 
 export function ActionCard({ card, onBoost, onShare, onBookmark, onEdit, isBoosted, isBookmarked, canEdit }: ActionCardProps) {
   const [shareOpen, setShareOpen] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
+  useEffect(() => { setImageFailed(false); }, [card.topImage]);
+  const showTopImage = !!card.topImage && !imageFailed;
 
   const boostLabel = `${card.spotsUsed.toLocaleString()} boost${card.spotsUsed === 1 ? "" : "s"}`;
 
@@ -142,12 +145,13 @@ export function ActionCard({ card, onBoost, onShare, onBookmark, onEdit, isBoost
     <>
       <div className="bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full hover:shadow-lg transition-shadow">
         {/* Top image */}
-        {card.topImage ? (
+        {showTopImage ? (
           <div className="relative h-[220px] shrink-0">
             <img
               src={card.topImage}
               alt={card.title}
               className="w-full h-full object-cover"
+              onError={() => setImageFailed(true)}
             />
             {/* Gradient overlay for readability */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />

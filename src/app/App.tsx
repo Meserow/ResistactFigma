@@ -516,7 +516,7 @@ export default function App() {
         onInfoClick={() => setInfoOpen(true)}
         onActClick={() => setActOpen(true)}
         onAskClick={() => setAskOpen(true)}
-        statsActsCount={cards.length}
+        statsActsCount={synced && serverTotal > 0 ? serverTotal : cards.length}
         statsResistorsCount={statsUsersCount}
         statsCitiesCount={statsCitiesCount}
         statsSynced={synced}
@@ -577,11 +577,11 @@ export default function App() {
           /* ── Acts view ── */
           <>
             {loading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 {Array.from({ length: 10 }).map((_, i) => <CardSkeleton key={i} />)}
               </div>
             ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {displayedCards.map((card) => (
                 <ActionCard
                   key={card.id}
