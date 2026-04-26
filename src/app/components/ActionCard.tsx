@@ -15,7 +15,7 @@ export interface ActionCardData {
   isOnline?: boolean;
   actionType?: string;
   timeCommitment?: string;
-  spotsUsed: number;
+  boosts: number;
   spotsTotal: number | "Unlimited";
   authorName: string;
   authorRole: string;
@@ -44,7 +44,7 @@ export function ActionCard({ card, onBoost, onShare, onBookmark, onEdit, isBoost
   useEffect(() => { setImageFailed(false); }, [card.topImage]);
   const showTopImage = !!card.topImage && !imageFailed;
 
-  const boostLabel = `${card.spotsUsed.toLocaleString()} boost${card.spotsUsed === 1 ? "" : "s"}`;
+  const boostLabel = `${card.boosts.toLocaleString()} boost${card.boosts === 1 ? "" : "s"}`;
 
   // ── Shared top-right controls (pencil + bookmark) ──────────────────────────
   function TopControls({ light = true }: { light?: boolean }) {
@@ -122,7 +122,7 @@ export function ActionCard({ card, onBoost, onShare, onBookmark, onEdit, isBoost
                     isBoosted ? "bg-[#fd8e33]/80 text-white" : "bg-[#fd8e33] hover:bg-[#e07a28] text-white shadow-sm"
                   }`}
                 >
-                  🔥 {isBoosted ? "Boosted!" : "Boost"} · {card.spotsUsed.toLocaleString()}
+                  🔥 {isBoosted ? "Boosted!" : "Boost"} · {card.boosts.toLocaleString()}
                 </button>
                 <button
                   onClick={() => setShareOpen(true)}
@@ -255,7 +255,7 @@ export function ActionCard({ card, onBoost, onShare, onBookmark, onEdit, isBoost
                     : "bg-[#fd8e33] hover:bg-[#e07a28] text-white shadow-sm"
                 }`}
               >
-                🔥 {isBoosted ? "Boosted!" : "Boost"} · {card.spotsUsed.toLocaleString()}
+                🔥 {isBoosted ? "Boosted!" : "Boost"} · {card.boosts.toLocaleString()}
               </button>
               <button
                 onClick={() => setShareOpen(true)}

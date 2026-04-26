@@ -3,6 +3,7 @@ import { Navbar } from "./components/Navbar";
 import { ActionCard, ActionCardData } from "./components/ActionCard";
 import { FactCard } from "./components/FactCard";
 import { FACT_CARDS } from "./data/factCards";
+import { STATIC_CARDS, IMAGE_MAP } from "./data/actionCards";
 import { AuthModal } from "./components/AuthModal";
 import { AdminPanel } from "./components/AdminPanel";
 import { AskFlowModal } from "./components/AskFlowModal";
@@ -14,63 +15,9 @@ import { projectId, publicAnonKey } from "/utils/supabase/info";
 import { supabase } from "./lib/supabase";
 import type { UserApproval } from "./lib/supabase";
 
-// ─── Figma bundled assets ─────────────────────────────────────────────────────
-import imgImage    from "../assets/8845f14cf11ec3b7059898cd8adda5059833c2c7.png";
-import imgImage1   from "../assets/6dd4ba1639105589e2d4bcdd59e21ad50a4f0db2.png";
-import imgImage2   from "../assets/17ae6a615bc1a99b8cbc5240e532f4d9a2e76ba9.png";
-import imgImage3   from "../assets/2122e5681fca2a67fa8c21ce938335204646f5f3.png";
-import imgImage4   from "../assets/81cfc6786bc36ca734bbdefbda22c4ed8f215998.png";
-import imgImage5   from "../assets/83f5ff48d560ab0e0bf359f87c6066ed854f2614.png";
-import imgImage6   from "../assets/672f9df1a029464f302dfcd18d0af1213faee70d.png";
-import imgImage7   from "../assets/df2e72270a76b043f5ae0dab18876bdf49110ecf.png";
-import imgImage8   from "../assets/d7d24dcae11e3763828c0a43fac7fc22a50cef19.png";
-import imgImage9   from "../assets/985494e2d4efacbac6fe9eeab8b3bb05987c598b.png";
-import imgImage10  from "../assets/6fb5e9741ea7c952728321cc45c7b5643d390520.png";
-import imgImage11  from "../assets/5b1a9d6121b57c97b38ed951d385ab4fb571380c.png";
-import imgImage12  from "../assets/feb6ae285a92a2b1c606d3ef7402227e137292e9.png";
-import imgImage13  from "../assets/cfca6ec0f7d46bd37209105f50f378c7291dd60e.png";
-import imgImage14  from "../assets/77dc333618263389c5c551cb5201f1417ba52106.png";
-import imgImage15  from "../assets/f086c5ab52082a738351d7d2ac485a119b3fed97.png";
-import imgImage16  from "../assets/f55ceb9640e90e362c0b56f89883b2d57199d1a8.png";
-import imgImage17  from "../assets/f6b1f90b5d4a6453a308692cef5c384b793b5cbc.png";
-import imgImage18  from "../assets/8e3b35fdf8b10fb6307188626c720152ca6b1ae9.png";
-import imgImage19  from "../assets/2c8e6a99c675347c7cec3aea8f490848603746ed.png";
-import imgImage20  from "../assets/3fc52741865fd1c68c6b1fa7e0dd59c90346bd31.png";
-import imgImage21  from "../assets/50c8572422ebf0309458e2b1f0d4bea2e682d9f3.png";
-import imgImage22  from "../assets/50c8572422ebf0309458e2b1f0d4bea2e682d9f3.png";
-import imgImage25  from "../assets/0e573958d76815ca5260107ddbc78923948e1490.png";
-import imgImage34  from "../assets/f757504534bf51b4afc042b9ec12280b63be51da.png";
-
-// ─── Image key → imported asset map ──────────────────────────────────────────
-const IMAGE_MAP: Record<string, string> = {
-  imgImage,
-  imgImage1,
-  imgImage2,
-  imgImage3,
-  imgImage4,
-  imgImage5,
-  imgImage6,
-  imgImage7,
-  imgImage8,
-  imgImage9,
-  imgImage10,
-  imgImage11,
-  imgImage12,
-  imgImage13,
-  imgImage14,
-  imgImage15,
-  imgImage16,
-  imgImage17,
-  imgImage18,
-  imgImage19,
-  imgImage20,
-  imgImage21,
-  imgImage22,
-  imgImage25,
-  imgImage34,
-};
-
-// Raw shape coming back from the server (uses string keys instead of imports)
+// Raw shape coming back from the server (uses string keys instead of imports).
+// Older deployments persist cards with `spotsUsed` from before the rename, so
+// accept both — `resolveCard` normalizes to `boosts` for the UI.
 interface ServerCard {
   id: number;
   isFeatured?: boolean;
@@ -81,7 +28,8 @@ interface ServerCard {
   typeTag?: string;
   location?: string;
   isOnline?: boolean;
-  spotsUsed: number;
+  boosts?: number;
+  spotsUsed?: number;
   spotsTotal: number | "Unlimited";
   authorName: string;
   authorRole: string;
@@ -100,6 +48,7 @@ const HEADERS = { "Content-Type": "application/json", Authorization: `Bearer ${p
 function resolveCard(raw: ServerCard): ActionCardData {
   return {
     ...raw,
+    boosts:       raw.boosts ?? raw.spotsUsed ?? 0,
     targetUrl:    raw.targetUrl ?? undefined,
     topImage:     raw.topImageKey ? IMAGE_MAP[raw.topImageKey] : (raw.topImageUrl ?? undefined),
     authorAvatar: raw.authorAvatarKey ? IMAGE_MAP[raw.authorAvatarKey] : (raw.authorAvatarUrl ?? undefined),
@@ -144,28 +93,6 @@ function CardSkeleton() {
     </div>
   );
 }
-
-// ─── Static fallback cards (shown immediately; replaced by live data on fetch) ─
-const STATIC_CARDS: ActionCardData[] = [
-  { id: 1, isFeatured: true, category: "BOOST", categoryColor: "#8a00e6", title: "Spread the Word about ResistAct", description: "The immigrant and refugee community has received direct threats about deportations and immigration raids. Our community needs your help spreading awareness about ResistAct so we can build a stronger resistance network together.", spotsUsed: 3020, spotsTotal: "Unlimited", authorName: "Ellen Meserow", authorRole: "ResistAct Founder", authorAvatar: imgImage34 },
-  { id: 2, category: "CRAFTING", categoryColor: "#c34e00", title: "Make 1460 Orange Paper Chains", description: "Help trans kids survive the next 4 years by sending them paper chains with 365x4 links to will help them see that there will be an end to this persecution of them.", spotsUsed: 500, spotsTotal: 1000, authorName: "Jo Jones", authorRole: "Citizen Activist", topImage: imgImage12, authorAvatar: imgImage },
-  { id: 3, category: "FLASH MOB", categoryColor: "#ff00d5", title: "Join us in forming human RESIST", description: "The immigrant and refugee community has received direct threats about deportations and immigration raids. Our community is forming a human 'RESIST' sign visible from above — join us!", location: "Boston, MA", spotsUsed: 50, spotsTotal: 200, authorName: "Meg Jones", authorRole: "Franklin High School", topImage: imgImage6, authorAvatar: imgImage4 },
-  { id: 4, category: "FUNDING", categoryColor: "#127f05", title: "Help Me Launch Over Los Angeles", description: "I have the land to protect and the people to set up a massive Trump balloon over my house, but I need the funding to purchase it. Go to my GoFundMe and help me buy it!", isOnline: true, spotsUsed: 739, spotsTotal: "Unlimited", authorName: "Patrick Escarcega", authorRole: "Citizen Activist", topImage: imgImage19, authorAvatar: imgImage1 },
-  { id: 5, category: "PROTEST", categoryColor: "#23297e", title: "Show Trump We Are United", description: "March on the Capitol with us to show Trump the size of the resistance. Spread the word about July 4th Patriotic Resistance March and bring all your friends and family!", location: "Washington DC", spotsUsed: 2, spotsTotal: 10, authorName: "John Smith", authorRole: "MoveOn.org", topImage: imgImage13, authorAvatar: imgImage20 },
-  { id: 6, category: "SOCIAL MEDIA", categoryColor: "#e44b4b", title: "Here Let me Pray for You", description: "We are social media warriors who prove the religious left lives its values. Join us online to pray for our conservative brothers/sisters in Christ who have strayed from His teachings.", isOnline: true, spotsUsed: 52, spotsTotal: 75, authorName: "McKenna Hartman", authorRole: "Citizen Activist", topImage: imgImage7, authorAvatar: imgImage16 },
-  { id: 7, category: "BOOST", categoryColor: "#8a00e6", title: "Spread the Word about ResistAct", description: "The immigrant and refugee community has received direct threats about deportations and immigration raids. Our community needs your help spreading awareness about ResistAct.", spotsUsed: 3020, spotsTotal: "Unlimited", authorName: "Ellen Meserow", authorRole: "ResistAct Founder", topImage: imgImage25, authorAvatar: imgImage34 },
-  { id: 8, category: "FLASH MOB", categoryColor: "#ff00d5", title: "Petition the Leftist Billionaires", description: "We need electronic billboards that show the daily price of eggs/gas since Trump took office. Another to show the Trump deficit versus Elon Musk's wealth. Another to show...", typeTag: "FLASH MOB", spotsUsed: 5, spotsTotal: 10, authorName: "Nancie Kosnoff", authorRole: "Citizen Activist", topImage: imgImage14, authorAvatar: imgImage2 },
-  { id: 9, category: "PETITION", categoryColor: "#05737f", title: "Stop Funding Fox", description: "MoveOn Civic Action has a long history of taking on Fox's lies. With actions taken by thousands of MoveOn members, we've been able to put pressure on cable providers to drop Fox News.", location: "Austin, TX", spotsUsed: 5, spotsTotal: 10, authorName: "Meg Jones", authorRole: "Franklin High School", topImage: imgImage21, authorAvatar: imgImage4 },
-  { id: 10, category: "PROTEST", categoryColor: "#23297e", title: "Towns Across America Blackout", description: "On Tuesday, April 22, 2025, we invite you to participate in a nationwide television blackout in protest of Trump's signing of the bill to defund Planned Parenthood.", location: "Austin, TX", spotsUsed: 5, spotsTotal: 10, authorName: "Patrick Escarcega", authorRole: "Citizen Activist", topImage: imgImage17, authorAvatar: imgImage1 },
-  { id: 11, category: "ART PIECE", categoryColor: "#896312", title: "Puppets for March on Washington", description: "We are making effigies of Trump and his minions for the March on Washington on July 4th. Join in even if you can't attend — we will help the attendees get them!", location: "Austin, TX", spotsUsed: 5, spotsTotal: 10, authorName: "John Smith", authorRole: "MoveOn.org", topImage: imgImage8, authorAvatar: imgImage20 },
-  { id: 12, category: "FUNDING", categoryColor: "#127f05", title: "Help Fund my Elon Mural!", description: "I am making a mural to show Elon as a reincarnation of Adolf Hitler, using a real photo of Trump giving the Nazi salute! It will be in my community center's parking lot!", isOnline: true, spotsUsed: 500, spotsTotal: "Unlimited", authorName: "McKenna Hartman", authorRole: "Citizen Activist", topImage: imgImage10, authorAvatar: imgImage16 },
-  { id: 13, category: "TRAINING", categoryColor: "#126d89", title: "Online ICE Rapid Response", description: "The immigrant and refugee community has received direct threats about deportations and immigration raids. Our community has set up a rapid response network — join us.", location: "Austin, TX", spotsUsed: 5, spotsTotal: 10, authorName: "Adam Jordan", authorRole: "Catholic Legal Immigration Network", authorLink: "https://www.cliniclegal.org/", topImage: imgImage5, authorAvatar: imgImage3 },
-  { id: 14, category: "FLASH MOB", categoryColor: "#ff00d5", title: "Petition the Leftist Billionaires", description: "We need electronic billboards that show the daily price of eggs/gas since Trump took office. Another to show the Trump deficit versus Elon Musk's wealth. Another to show...", typeTag: "FLASH MOB", spotsUsed: 500, spotsTotal: "Unlimited", authorName: "Nancie Kosnoff", authorRole: "Citizen Activist", topImage: imgImage15, authorAvatar: imgImage2 },
-  { id: 15, category: "PETITION", categoryColor: "#05737f", title: "Stop Funding Fox", description: "MoveOn Civic Action has a long history of taking on Fox's lies. With actions taken by thousands of MoveOn members, we've been able to put pressure on cable providers.", location: "Austin, TX", spotsUsed: 500, spotsTotal: "Unlimited", authorName: "Adam Jordan", authorRole: "Catholic Legal Immigration Network", authorLink: "https://www.cliniclegal.org/", topImage: imgImage22, authorAvatar: imgImage3 },
-  { id: 16, category: "PROTEST", categoryColor: "#23297e", title: "Towns Across America Blackout", description: "On Tuesday, April 22, 2025, we invite you to participate in a nationwide television blackout in protest of Trump's signing of the bill to defund Planned Parenthood.", location: "Austin, TX", spotsUsed: 500, spotsTotal: "Unlimited", authorName: "Nancie Kosnoff", authorRole: "Citizen Activist", topImage: imgImage18, authorAvatar: imgImage2 },
-  { id: 17, category: "ART PIECE", categoryColor: "#896312", title: "Puppets for March on Washington", description: "We are making effigies of Trump and his minions for the March on Washington on July 4th. Join in even if you can't attend — we will help the attendees get them!", location: "Austin, TX", spotsUsed: 500, spotsTotal: "Unlimited", authorName: "Adam Jordan", authorRole: "Catholic Legal Immigration Network", authorLink: "https://www.cliniclegal.org/", topImage: imgImage9, authorAvatar: imgImage3 },
-  { id: 18, category: "FUNDING", categoryColor: "#127f05", title: "Help Fund my Elon Mural!", description: "I am making a mural to show Elon as a reincarnation of Adolf Hitler, using a real photo of Trump giving the Nazi salute! It will be in my community center's parking lot!", isOnline: true, spotsUsed: 500, spotsTotal: "Unlimited", authorName: "Nancie Kosnoff", authorRole: "Citizen Activist", topImage: imgImage11, authorAvatar: imgImage2 },
-];
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
@@ -281,7 +208,7 @@ export default function App() {
     });
   }
 
-  const displayedCards = applyFilters(cards).sort((a, b) => b.spotsUsed - a.spotsUsed);
+  const displayedCards = applyFilters(cards).sort((a, b) => b.boosts - a.boosts);
 
   // True when any filter chip is selected — pagination should be bypassed in this case
   const hasActiveFilters = Object.values(activeFilters).some((arr) => (arr ?? []).length > 0);
@@ -504,7 +431,7 @@ export default function App() {
       return next;
     });
     setCards((prev) =>
-      prev.map((c) => c.id === id ? { ...c, spotsUsed: Math.max(0, c.spotsUsed + delta) } : c)
+      prev.map((c) => c.id === id ? { ...c, boosts: Math.max(0, c.boosts + delta) } : c)
     );
 
     try {
@@ -519,7 +446,7 @@ export default function App() {
       } else {
         const { card: updated } = await res.json();
         setCards((prev) =>
-          prev.map((c) => (c.id === id ? { ...resolveCard(updated), spotsUsed: updated.spotsUsed } : c))
+          prev.map((c) => (c.id === id ? resolveCard(updated) : c))
         );
       }
     } catch (err) {
