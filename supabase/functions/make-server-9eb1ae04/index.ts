@@ -366,31 +366,6 @@ const SEED_CARDS = [
 // ─── Health check ─────────────────────────────────────────────────────────────
 app.get("/make-server-9eb1ae04/health", (c) => c.json({ status: "ok" }));
 
-// ─── AUTH: Register with email + password ─────────────────────────────────────
-app.post("/make-server-9eb1ae04/auth/register", async (c) => {
-  try {
-    const { email, password, name } = await c.req.json<{ email: string; password: string; name: string }>();
-    if (!email || !password || !name) return c.json({ error: "email, password and name are required" }, 400);
-
-    const { data, error } = await adminClient().auth.admin.createUser({
-      email,
-      password,
-      user_metadata: { name, full_name: name },
-      // Auto-confirm — no email server configured
-      email_confirm: true,
-    });
-
-    if (error) return c.json({ error: error.message }, 400);
-
-    const approval = await ensureApprovalRecord(data.user);
-    console.log(`Registered user ${email} — status: ${approval.status}`);
-    return c.json({ approval });
-  } catch (err) {
-    console.log("Register error:", err);
-    return c.json({ error: `Registration failed: ${err}` }, 500);
-  }
-});
-
 // ─── AUTH: Status — verify JWT & return/create approval record ────────────────
 app.get("/make-server-9eb1ae04/auth/status", async (c) => {
   try {

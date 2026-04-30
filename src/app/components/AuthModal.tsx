@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { X, Eye, EyeOff, Loader2, CheckCircle2, Clock } from "lucide-react";
+import { X, Eye, EyeOff, Loader2, CheckCircle2, Clock, Mail } from "lucide-react";
 import { supabase } from "../lib/supabase";
-import { projectId, publicAnonKey } from "/utils/supabase/info";
+import { projectId } from "/utils/supabase/info";
 import type { UserApproval } from "../lib/supabase";
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
@@ -24,14 +24,6 @@ function GoogleIcon() {
   );
 }
 
-function FacebookIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="#1877F2">
-      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-    </svg>
-  );
-}
-
 // ─── Component ────────────────────────────────────────────────────────────────
 export function AuthModal({ onClose, onApproval, onDemoLogin }: AuthModalProps) {
   const [tab, setTab] = useState<"signin" | "register">("signin");
@@ -40,9 +32,9 @@ export function AuthModal({ onClose, onApproval, onDemoLogin }: AuthModalProps) 
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [oauthLoading, setOauthLoading] = useState<"google" | "facebook" | null>(null);
+  const [oauthLoading, setOauthLoading] = useState<"google" | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [postRegState, setPostRegState] = useState<"pending" | "approved" | null>(null);
+  const [postRegState, setPostRegState] = useState<"verify-email" | "pending" | "approved" | null>(null);
 
   const clearError = () => setError(null);
 
@@ -83,25 +75,23 @@ export function AuthModal({ onClose, onApproval, onDemoLogin }: AuthModalProps) 
     if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
     setLoading(true);
     try {
-      // Create user server-side (auto email-confirm)
-      const res = await fetch(`${API}/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${publicAnonKey}` },
-        body: JSON.stringify({ email, password, name }),
+      const { data, error: signUpErr } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { name, full_name: name },
+          emailRedirectTo: window.location.origin,
+        },
       });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error ?? "Registration failed."); return; }
+      if (signUpErr) { setError(signUpErr.message); return; }
 
-      // Now sign in to get a session
-      const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
-      if (signInErr) { setError(signInErr.message); return; }
-
-      const approval = data.approval as UserApproval;
-      setPostRegState(approval.status === "approved" ? "approved" : "pending");
-      onApproval(approval);
-
-      if (approval.status === "approved") {
-        setTimeout(() => onClose(), 2000);
+      // If Supabase returned a session, email confirmation is disabled in the
+      // project — the user is already signed in. Let the app's auth listener
+      // pick it up and just close. Otherwise, prompt them to verify.
+      if (data.session) {
+        onClose();
+      } else {
+        setPostRegState("verify-email");
       }
     } finally {
       setLoading(false);
@@ -109,7 +99,7 @@ export function AuthModal({ onClose, onApproval, onDemoLogin }: AuthModalProps) 
   }
 
   // ── OAuth ──
-  async function handleOAuth(provider: "google" | "facebook") {
+  async function handleOAuth(provider: "google") {
     setOauthLoading(provider);
     clearError();
     try {
@@ -124,6 +114,28 @@ export function AuthModal({ onClose, onApproval, onDemoLogin }: AuthModalProps) 
   }
 
   // ── Post-register state screens ──
+  if (postRegState === "verify-email") {
+    return (
+      <Backdrop onClose={onClose}>
+        <div className="flex flex-col items-center gap-4 py-4 px-2 text-center">
+          <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
+            <Mail size={32} className="text-[#23297e]" />
+          </div>
+          <h2 className="font-['Poppins',sans-serif] font-bold text-gray-900 text-xl">Check your email</h2>
+          <p className="font-['Poppins',sans-serif] text-gray-500 text-sm leading-relaxed max-w-xs">
+            We sent a confirmation link to <span className="font-semibold text-gray-700">{email}</span>. Click it to finish creating your account, then come back here to sign in.
+          </p>
+          <button
+            onClick={onClose}
+            className="mt-2 px-8 py-2.5 bg-[#23297e] text-white rounded-xl font-['Poppins',sans-serif] font-semibold text-sm hover:bg-[#1a2060] transition-colors"
+          >
+            Got it
+          </button>
+        </div>
+      </Backdrop>
+    );
+  }
+
   if (postRegState === "pending") {
     return (
       <Backdrop onClose={onClose}>
@@ -188,14 +200,6 @@ export function AuthModal({ onClose, onApproval, onDemoLogin }: AuthModalProps) 
         >
           {oauthLoading === "google" ? <Loader2 size={18} className="animate-spin" /> : <GoogleIcon />}
           Continue with Google
-        </button>
-        <button
-          onClick={() => handleOAuth("facebook")}
-          disabled={!!oauthLoading}
-          className="w-full flex items-center justify-center gap-3 py-2.5 border border-gray-200 rounded-xl font-['Poppins',sans-serif] font-medium text-sm text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-60"
-        >
-          {oauthLoading === "facebook" ? <Loader2 size={18} className="animate-spin" /> : <FacebookIcon />}
-          Continue with Facebook
         </button>
       </div>
 

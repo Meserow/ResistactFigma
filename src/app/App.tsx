@@ -178,7 +178,22 @@ export default function App() {
   };
 
   function applyFilters(allCards: ActionCardData[]): ActionCardData[] {
+    const q = searchQuery.toLowerCase().trim();
     return allCards.filter((card) => {
+      // Search — matches across title, description, category, author, location, type
+      if (q) {
+        const haystack = [
+          card.title,
+          card.description,
+          card.category,
+          card.authorName,
+          card.authorRole,
+          card.location ?? "",
+          card.actionType ?? "",
+        ].join(" ").toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+
       // Category
       const cats = activeFilters["Category"] ?? [];
       if (cats.length > 0 && !cats.includes(card.category)) return false;
@@ -211,8 +226,11 @@ export default function App() {
 
   const displayedCards = applyFilters(cards).sort((a, b) => b.boosts - a.boosts);
 
-  // True when any filter chip is selected — pagination should be bypassed in this case
-  const hasActiveFilters = Object.values(activeFilters).some((arr) => (arr ?? []).length > 0);
+  // True when any filter chip is selected OR a search is active — bypasses
+  // server pagination so client-side filtering sees the full dataset.
+  const hasActiveFilters =
+    searchQuery.trim().length > 0 ||
+    Object.values(activeFilters).some((arr) => (arr ?? []).length > 0);
 
   // Distinct categories from currently-loaded cards, sorted alphabetically.
   // Drives the Category filter dropdown so the list always reflects the
