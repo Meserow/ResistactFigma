@@ -492,6 +492,12 @@ export default function App() {
     );
   }
 
+  // ── Remove a deleted card from the local feed (admin only) ──
+  function handleCardDeleted(id: number) {
+    setCards((prev) => prev.filter((c) => c.id !== id));
+    setServerTotal((t) => Math.max(0, t - 1));
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 font-['Poppins',sans-serif]">
       {/* Demo mode banner */}
@@ -680,8 +686,10 @@ export default function App() {
           <EditCardModal
             card={card}
             accessToken={accessToken}
+            isAdmin={approval?.isAdmin === true}
             onClose={() => setEditCardId(null)}
             onSaved={(updated) => { handleCardSaved(updated); }}
+            onDeleted={(id) => { handleCardDeleted(id); }}
           />
         ) : null;
       })()}

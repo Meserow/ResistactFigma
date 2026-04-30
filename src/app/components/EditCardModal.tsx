@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Loader2, CheckCircle2, Pencil } from "lucide-react";
+import { X, Loader2, CheckCircle2, Pencil, Trash2 } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
 import type { ActionCardData } from "./ActionCard";
 
@@ -38,6 +38,9 @@ interface EditCardModalProps {
   accessToken: string;
   onClose: () => void;
   onSaved: (updated: ActionCardData) => void;
+  /** Admins see a delete button. Non-admins (card authors) don't. */
+  isAdmin?: boolean;
+  onDeleted?: (id: number) => void;
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -51,7 +54,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-export function EditCardModal({ card, accessToken, onClose, onSaved }: EditCardModalProps) {
+export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, onDeleted }: EditCardModalProps) {
   // ── Form state ────────────────────────────────────────────────────────────────
   const [title,          setTitle]          = useState(card.title);
   const [description,    setDescription]    = useState(card.description);
@@ -72,12 +75,45 @@ export function EditCardModal({ card, accessToken, onClose, onSaved }: EditCardM
   const [loading,  setLoading]  = useState(false);
   const [success,  setSuccess]  = useState(false);
   const [error,    setError]    = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting,       setDeleting]       = useState(false);
 
   // Sync category colour whenever category changes via the dropdown
   function handleCategoryChange(val: string) {
     setCategory(val);
     const found = CATEGORY_OPTIONS.find((o) => o.label === val);
     if (found) setCategoryColor(found.color);
+  }
+
+  async function handleDelete() {
+    setError(null);
+    setDeleting(true);
+    try {
+      // Demo mode uses a fake token the server rejects — short-circuit so the
+      // admin UI still demonstrates correctly. Real deletes require a real
+      // logged-in admin.
+      if (accessToken.startsWith("demo-")) {
+        onDeleted?.(card.id);
+        onClose();
+        return;
+      }
+      const res = await fetch(`${API}/actions/${card.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error ?? `Delete failed (${res.status}).`);
+        return;
+      }
+      onDeleted?.(card.id);
+      onClose();
+    } catch (err) {
+      console.error("Delete card error:", err);
+      setError("Network error — please try again.");
+    } finally {
+      setDeleting(false);
+    }
   }
 
   async function handleSave() {
@@ -315,7 +351,28 @@ export function EditCardModal({ card, accessToken, onClose, onSaved }: EditCardM
 
         {/* ── Footer ── */}
         {!success && (
-          <div className="shrink-0 px-5 py-4 border-t border-gray-100 flex gap-3">
+          <div className="shrink-0 px-5 py-4 border-t border-gray-100 flex items-center gap-3">
+            {isAdmin && (
+              confirmDelete ? (
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  title="Tap again to confirm"
+                  className="px-3 py-2.5 bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-['Poppins',sans-serif] font-bold text-sm rounded-xl transition-colors flex items-center justify-center gap-2 shrink-0"
+                >
+                  {deleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={15} />}
+                  Confirm Delete
+                </button>
+              ) : (
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  title="Delete this act (admin only)"
+                  className="w-10 h-10 flex items-center justify-center rounded-xl border border-red-200 text-red-600 hover:bg-red-50 transition-colors shrink-0"
+                >
+                  <Trash2 size={16} />
+                </button>
+              )
+            )}
             <button
               onClick={onClose}
               className="flex-1 py-2.5 border border-gray-200 rounded-xl font-['Poppins',sans-serif] font-semibold text-sm text-gray-600 hover:bg-gray-50 transition-colors"
@@ -324,7 +381,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved }: EditCardM
             </button>
             <button
               onClick={handleSave}
-              disabled={loading}
+              disabled={loading || deleting}
               className="flex-1 py-2.5 bg-[#23297e] hover:bg-[#1a2060] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-bold text-sm rounded-xl transition-colors flex items-center justify-center gap-2"
             >
               {loading ? <Loader2 size={16} className="animate-spin" /> : <Pencil size={15} />}
