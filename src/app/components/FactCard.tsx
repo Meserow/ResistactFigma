@@ -59,6 +59,7 @@ export function FactCard({ card, onBoost, isBoosted, boostCount = 0 }: FactCardP
           {/* Image fills the full banner */}
           <img src={image} alt={card.category}
             className="absolute inset-0 w-full h-full object-cover"
+            loading="lazy"
           />
           {/* Bottom fade into card */}
           <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white to-transparent" />

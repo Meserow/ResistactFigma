@@ -9,6 +9,7 @@ import { AskFlowModal } from "./components/AskFlowModal";
 import { JoinACTersModal } from "./components/JoinACTersModal";
 import { InfoModal } from "./components/InfoModal";
 import { EditCardModal } from "./components/EditCardModal";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import svgPaths from "../imports/svg-77lgd1zdt6";
 import { projectId, publicAnonKey } from "/utils/supabase/info";
 import { supabase } from "./lib/supabase";
@@ -601,6 +602,7 @@ export default function App() {
       />
 
       <main className="px-4 md:px-8 py-8">
+        <ErrorBoundary>
         {activeTab === "facts" ? (
           /* ── Facts view ── */
           (() => {
@@ -694,6 +696,7 @@ export default function App() {
             )}
           </>
         )}
+        </ErrorBoundary>
       </main>
 
       {/* Footer */}

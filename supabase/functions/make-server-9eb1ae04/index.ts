@@ -253,6 +253,22 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       console.log("Purged fake seed cards 1–18.");
     }
 
+    // One-time migrations for user-created cards
+    const migrationV1 = await kv.get("migration:user-cards:v1");
+    if (!migrationV1) {
+      console.log("Running user-card migration v1...");
+      const card30 = await kv.get("user-action:30") as any;
+      if (card30 && typeof card30 === "object") {
+        card30.title = "Baby Trump Balloon";
+        card30.targetUrl = "https://www.amazon.com/Jumbo-Orange-Baby-Blimp-Inflatable/dp/B07FQ7TFMH/";
+        card30.description = "Show your resistance with this giant 47.2-inch inflatable orange Baby Trump balloon! Perfect for protests, marches, and rooftop displays. Makes a powerful visual statement — buy one and fly it high to show Trump the resistance won't be silenced.";
+        await kv.set("user-action:30", card30);
+        console.log("Migrated card 30: Baby Trump Balloon");
+      }
+      await kv.set("migration:user-cards:v1", true);
+      console.log("User-card migration v1 complete.");
+    }
+
     // Fetch ALL action:* cards from the KV store (real cards only after purge)
     const allActionCards = await kv.getByPrefix("action:");
     const seenIds = new Set<number>();
