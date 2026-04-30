@@ -13,7 +13,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 1,
     category: "Economy",
-    claim: "Trump alone created the strong pre-COVID economy.",
+    claim: "Trump's policies drove the strong economy we had before COVID.",
     response: "The pre-2020 expansion began in 2009 and continued into 2020; presidents influence economies, but they do not start from zero.",
     askBack: "How much credit should any president get for trends already underway?",
     sourceUrl: "https://www.bea.gov/data/gdp/gross-domestic-product",
@@ -22,7 +22,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 2,
     category: "Economy",
-    claim: "Inflation was caused by Biden alone.",
+    claim: "Biden's spending was the main cause of the inflation we've been dealing with.",
     response: "Inflation spiked across many countries after COVID because of supply shocks, energy shocks, and policy responses worldwide.",
     askBack: "If inflation was global, what part do you think was U.S. policy versus global disruption?",
     sourceUrl: "https://www.imf.org/en/publications/weo",
@@ -31,7 +31,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 3,
     category: "Economy",
-    claim: "Presidents directly control gas prices.",
+    claim: "Presidents have a lot of direct control over gas prices.",
     response: "Gas prices are heavily driven by global crude-oil prices, refining capacity, distribution, and taxes—not by one White House switch.",
     askBack: "What would count as evidence that gas prices mostly follow global oil markets?",
     sourceUrl: "https://www.eia.gov/energyexplained/gasoline/factors-affecting-gasoline-prices.php",
@@ -49,7 +49,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 5,
     category: "Economy",
-    claim: "Only Democrats run big deficits.",
+    claim: "Republicans are much better at managing deficits than Democrats.",
     response: "Every Republican administration since Reagan has left office with a larger deficit than it inherited; every Democratic administration has left with a smaller one.",
     chartUrl: "/charts/deficit-by-admin.html",
     askBack: "Should people judge fiscal policy by which party is in power or by the actual budget numbers?",
@@ -59,7 +59,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 6,
     category: "Economy",
-    claim: "Democrats only create government jobs.",
+    claim: "Most job growth under Democrats ends up being in government, not the private sector.",
     response: "Recent job growth has included private industries such as health care, construction, leisure and hospitality, and manufacturing-related activity.",
     askBack: "When you say 'real jobs,' which sectors count and which do not?",
     sourceUrl: "https://www.bls.gov/charts/employment-situation/employment-levels-by-industry.htm",
@@ -68,7 +68,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 7,
     category: "Economy",
-    claim: "Manufacturing is dead because Democrats care more about regulation than work.",
+    claim: "Heavy regulation under Democrats has driven manufacturing jobs away.",
     response: "U.S. manufacturing output and investment move with business cycles, technology, global trade, and industrial policy—not just regulation alone.",
     askBack: "What matters more to manufacturing jobs: trade, automation, taxes, or regulation?",
     sourceUrl: "https://www.census.gov/construction/c30/current/index.html",
@@ -77,7 +77,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 8,
     category: "Economy",
-    claim: "Tax cuts always pay for themselves.",
+    claim: "Tax cuts tend to pay for themselves by growing the economy.",
     response: "Many analysts find tax cuts can raise output some, but usually not enough to fully offset lost revenue.",
     askBack: "If a tax cut boosts growth but still raises deficits, is that a success or a failure?",
     sourceUrl: "https://taxpolicycenter.org/briefing-book/how-did-tcja-affect-federal-budget-outlook",
@@ -86,7 +86,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 9,
     category: "Economy",
-    claim: "High prices prove Democrats are bad at economics.",
+    claim: "High prices under Biden show Democrats don't understand how to manage the economy.",
     response: "Prices can rise even when employment and output are growing; inflation, wages, and growth are different indicators and can move differently at the same time.",
     askBack: "Which matters more to you: low inflation, low unemployment, or rising wages?",
     sourceUrl: "https://www.imf.org/en/publications/weo",
@@ -95,7 +95,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 10,
     category: "Economy",
-    claim: "A president can flip the economy fast if he just wants to.",
+    claim: "A strong president with the right policies could turn the economy around pretty quickly.",
     response: "Large economies react slowly to interest rates, supply chains, demographics, and business investment, so results usually lag policy changes.",
     askBack: "How long do you think it should take before a president fully 'owns' the economy?",
     sourceUrl: "https://www.bea.gov/data/gdp/gross-domestic-product",
@@ -104,7 +104,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 11,
     category: "Immigration",
-    claim: "The border is basically open.",
+    claim: "The border has felt pretty wide open, with record crossings under Biden.",
     response: "Border enforcement still includes apprehensions, removals, detention, and asylum processing under federal law.",
     askBack: "What does 'open border' mean to you: no rules, weak enforcement, or too many arrivals?",
     sourceUrl: "https://www.cbp.gov/newsroom/stats/southwest-land-border-encounters",
@@ -113,7 +113,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 12,
     category: "Immigration",
-    claim: "Every border encounter is a successful illegal entry.",
+    claim: "With so many border encounters, most of those people end up staying in the country.",
     response: "An encounter is a law-enforcement interaction; it is not the same thing as someone quietly entering and staying undetected.",
     askBack: "Do you think people often confuse encounters with successful unlawful entry?",
     sourceUrl: "https://www.cbp.gov/newsroom/stats/southwest-land-border-encounters",
@@ -122,7 +122,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 13,
     category: "Immigration",
-    claim: "Democrats stopped deportations.",
+    claim: "Deportations basically stopped under Biden.",
     response: "The government still removes noncitizens and enforces immigration law under both parties, though priorities differ.",
     askBack: "Is your objection about enforcement existing at all, or about how it is prioritized?",
     sourceUrl: "https://www.dhs.gov/immigration-statistics",
@@ -131,7 +131,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 14,
     category: "Immigration",
-    claim: "Asylum claims are fake by definition.",
+    claim: "A lot of asylum claims are exaggerated or made up just to get into the country.",
     response: "U.S. law allows people to seek asylum, and claims are evaluated through legal processes; some are granted, many are denied.",
     askBack: "Should your concern be the law itself, the speed of the process, or fraud within the process?",
     sourceUrl: "https://www.dhs.gov/topics/immigration",
@@ -140,7 +140,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 15,
     category: "Immigration",
-    claim: "Mailing migrants into cities proves Democrats want chaos.",
+    claim: "Busing migrants to Democratic cities shows just how out of control the border situation really is.",
     response: "City strain is real, but local stress does not by itself prove there are no border controls or no federal processing.",
     askBack: "When cities are overwhelmed, what is the best metric for judging policy success?",
     sourceUrl: "https://ohss.dhs.gov/khsm/cbp-encounters",
@@ -149,7 +149,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 16,
     category: "Immigration",
-    claim: "Undocumented immigrants do not pay taxes.",
+    claim: "Undocumented immigrants mostly avoid paying taxes since they're working off the books.",
     response: "Many do pay sales taxes, property taxes indirectly through rent, and in many cases payroll taxes through withholding or ITIN filings.",
     askBack: "Does paying taxes change how you think about who benefits from and contributes to the system?",
     sourceUrl: "https://www.irs.gov/individuals/international-taxpayers/taxpayer-identification-numbers-tin",
@@ -158,7 +158,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 17,
     category: "Immigration",
-    claim: "Immigrants drive most violent crime.",
+    claim: "Illegal immigration has made crime worse in a lot of communities.",
     response: "Research generally finds immigrants, including undocumented immigrants in several studies, are not more likely than native-born Americans to commit violent crime.",
     askBack: "If crime is the concern, do you want data by offense type or just anecdotes?",
     sourceUrl: "https://www.cato.org/research-briefs-economic-policy/does-immigration-increase-crime",
@@ -167,7 +167,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 18,
     category: "Immigration",
-    claim: "Fentanyl mostly comes in with migrants crossing between ports.",
+    claim: "A lot of fentanyl is coming in through the southern border with migrants.",
     response: "Federal data show most seized fentanyl enters through legal ports of entry, often trafficked by U.S. citizens, not by asylum-seeking families.",
     askBack: "Would a better response focus more on ports and trafficking networks than slogans?",
     sourceUrl: "https://www.cbp.gov/newsroom/stats/cbp-enforcement-statistics",
@@ -176,7 +176,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 19,
     category: "Immigration",
-    claim: "A wall would solve the whole problem.",
+    claim: "A real border wall would make a huge difference in stopping illegal crossings.",
     response: "Physical barriers can affect routes, but migration flows also depend on legal pathways, processing capacity, smuggling networks, and conditions in origin countries.",
     askBack: "Which mix matters most to you: barriers, judges, visas, or anti-smuggling operations?",
     sourceUrl: "https://www.dhs.gov/immigration-statistics",
@@ -185,7 +185,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 20,
     category: "Immigration",
-    claim: "Noncitizens are voting in large numbers for Democrats.",
+    claim: "With millions of undocumented immigrants here, some are probably voting and affecting elections.",
     response: "Voting by noncitizens in federal elections is illegal, and there is no evidence of mass noncitizen voting deciding national results.",
     askBack: "What evidence threshold would convince you something is rare instead of widespread?",
     sourceUrl: "https://www.brennancenter.org/our-work/research-reports/beware-novel-claims-2020-election-fraud",
@@ -194,7 +194,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 21,
     category: "Crime & Policing",
-    claim: "Violent crime is exploding under Democrats.",
+    claim: "Crime has gotten a lot worse in many cities under Democratic leadership.",
     response: "National reported violent crime fell in 2024 versus 2023, according to FBI estimates.",
     askBack: "What do you trust more: national data over time or the worst story on cable that week?",
     sourceUrl: "https://www.fbi.gov/news/press-releases/fbi-releases-2024-reported-crimes-in-the-nation-statistics",
@@ -203,7 +203,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 22,
     category: "Crime & Policing",
-    claim: "Murder is still rising after the pandemic.",
+    claim: "Murder rates are still much higher than they were before the pandemic.",
     response: "Preliminary and final data showed murders fell sharply after the 2020-2021 spike in many cities and nationally.",
     askBack: "If murder falls for two years, when do you update your mental picture of crime?",
     sourceUrl: "https://www.justice.gov/archives/opa/pr/readout-justice-departments-violent-crime-reduction-steering-committee-meeting-1",
@@ -212,7 +212,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 23,
     category: "Crime & Policing",
-    claim: "Democrats defunded the police everywhere.",
+    claim: "Democrats pushed to defund or cut police budgets in cities across the country after 2020.",
     response: "Most large cities did not permanently abolish policing and many restored or increased police budgets after 2020.",
     askBack: "What counts as 'defund' to you: rhetoric, one-year cuts, or long-term budget reality?",
     sourceUrl: "https://www.urban.org/urban-wire/did-cities-really-defund-police",
@@ -221,7 +221,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 24,
     category: "Crime & Policing",
-    claim: "Democratic cities are uniquely dangerous because of ideology alone.",
+    claim: "Democrat-run cities tend to have much worse crime than those with Republican leadership.",
     response: "Crime levels reflect poverty, guns, drug markets, local management, and state law; one party label rarely explains everything.",
     askBack: "What variables would you want to control for before blaming a party label?",
     sourceUrl: "https://counciloncj.org/crime-trends-in-u-s-cities-year-end-2024-update/",
@@ -230,7 +230,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 25,
     category: "Crime & Policing",
-    claim: "Bail reform caused the crime wave.",
+    claim: "No-cash bail let dangerous people back on the street and contributed to the crime surge.",
     response: "Researchers have not found a simple one-cause story; crime changed differently across places with and without bail reform.",
     askBack: "Do you want one explanation because it is true, or because it is simple?",
     sourceUrl: "https://counciloncj.org/crime-trends-research/",
@@ -239,7 +239,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 26,
     category: "Crime & Policing",
-    claim: "If reported crime falls, officials must be cooking the books.",
+    claim: "When crime numbers improve under the same officials who caused the problem, it's worth asking if the data is accurate.",
     response: "The U.S. tracks crime through multiple systems, including FBI reported crime data and the victimization survey, and both have limits but are transparent about methods.",
     askBack: "If two systems both show stabilization or decline, what would you still need to see?",
     sourceUrl: "https://bjs.ojp.gov/library/publications/nations-two-crime-measures-2015-2024",
@@ -248,7 +248,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 27,
     category: "Crime & Policing",
-    claim: "More guns automatically make communities safer.",
+    claim: "When more law-abiding citizens are armed, communities tend to be safer.",
     response: "Gun prevalence and safety do not move in a simple straight line; the U.S. has far more civilian guns than peer countries and also far higher firearm death rates.",
     askBack: "What outcome do you care about most: rights, homicide, suicide, or accidental deaths?",
     sourceUrl: "https://www.smallarmssurvey.org",
@@ -257,7 +257,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 28,
     category: "Crime & Policing",
-    claim: "Prosecutors stopped charging crime, so criminals run cities now.",
+    claim: "Soft-on-crime prosecutors going easy on offenders have made some cities feel lawless.",
     response: "Charging policy matters, but crime trends also shift with police staffing, economic conditions, clearance rates, and local street dynamics.",
     askBack: "Which specific charging change do you think had the biggest measurable effect?",
     sourceUrl: "https://counciloncj.org/crime-trends-in-u-s-cities-year-end-2024-update/",
@@ -266,7 +266,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 29,
     category: "Crime & Policing",
-    claim: "Property crime proves cities are collapsing.",
+    claim: "Shoplifting and property crime have gotten so bad that some cities feel like they've given up.",
     response: "Property crime moved differently than violent crime and fell nationally in 2024 according to FBI estimates.",
     askBack: "Should we talk about burglary, robbery, shoplifting, and homicide as one thing or four different things?",
     sourceUrl: "https://www.fbi.gov/news/press-releases/fbi-releases-2024-reported-crimes-in-the-nation-statistics",
@@ -275,7 +275,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 30,
     category: "Crime & Policing",
-    claim: "Crime is mostly a city problem caused by Democrats.",
+    claim: "The worst crime problems seem concentrated in big cities run by Democrats.",
     response: "Red and blue states both have high-crime places; state policy, local policing, poverty, and firearm access all play roles.",
     askBack: "When you blame a city mayor, how much weight do you also give state law and gun policy?",
     sourceUrl: "https://www.fbi.gov/news/press-releases/fbi-releases-2024-reported-crimes-in-the-nation-statistics",
@@ -284,7 +284,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 31,
     category: "Elections & Democracy",
-    claim: "The 2020 election was stolen.",
+    claim: "There was so much unusual activity in the 2020 election that something must have gone wrong.",
     response: "Dozens of court cases, recounts, and audits did not find outcome-changing fraud.",
     askBack: "If a claim survives after courts reject it, what would count as proof against it?",
     sourceUrl: "https://www.reuters.com/article/factcheck-election-courts-idUSL1N2XP2AI/",
@@ -293,7 +293,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 32,
     category: "Elections & Democracy",
-    claim: "Courts refused to hear the evidence.",
+    claim: "The courts dismissed those election lawsuits so fast it felt like they weren't willing to look at the evidence.",
     response: "Courts did hear and dismiss many election cases on merits or for lack of evidence sufficient to proceed.",
     askBack: "Do you distinguish between 'I dislike the ruling' and 'the court refused to look'?",
     sourceUrl: "https://www.reuters.com/article/factcheck-election-courts-idUSL1N2XP2AI/",
@@ -302,7 +302,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 33,
     category: "Elections & Democracy",
-    claim: "Mail voting is inherently insecure.",
+    claim: "Expanding mail voting so quickly made it hard to be confident the results were fully secure.",
     response: "States use signature checks, barcodes, voter-file matching, curing processes, and criminal penalties; widespread fraud remains rare.",
     askBack: "Would you support mail voting if security controls were stronger and transparent?",
     sourceUrl: "https://www.brennancenter.org/our-work/research-reports/mail-voting-accuracy",
@@ -311,7 +311,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 34,
     category: "Elections & Democracy",
-    claim: "Drop boxes made fraud easy.",
+    claim: "Unmonitored drop boxes seem like an obvious opportunity for ballot tampering.",
     response: "Drop boxes are monitored and governed by chain-of-custody rules in the jurisdictions that use them.",
     askBack: "What specific vulnerability worries you most: tampering, harvesting, or verification?",
     sourceUrl: "https://www.brennancenter.org/voting-mail-and-using-drop-boxes-are-safe-and-trustworthy-ways-vote-thanks-numerous-security",
@@ -320,7 +320,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 35,
     category: "Elections & Democracy",
-    claim: "Dead people voted in big numbers.",
+    claim: "There were real cases of ballots cast in the names of dead people, and we don't know how widespread it got.",
     response: "Investigations have repeatedly found isolated errors, not mass deceased-voter ballots swinging national results.",
     askBack: "How many confirmed fraudulent ballots would it take to change your claim from 'systemic' to 'rare'?",
     sourceUrl: "https://www.brennancenter.org/our-work/research-reports/beware-novel-claims-2020-election-fraud",
@@ -329,7 +329,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 36,
     category: "Elections & Democracy",
-    claim: "Voting machines switched votes at scale.",
+    claim: "There were enough anomalies in the voting machine data to make people question whether some votes were changed.",
     response: "Audits, recounts, and court cases did not substantiate nationwide machine-flipping claims that changed the outcome.",
     askBack: "What is the strongest independently verified machine evidence you have seen?",
     sourceUrl: "https://www.reuters.com/article/factcheck-election-courts-idUSL1N2XP2AI/",
@@ -338,7 +338,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 37,
     category: "Elections & Democracy",
-    claim: "Democrats want noncitizens voting.",
+    claim: "Democratic opposition to voter ID makes it easier for noncitizens to vote, even if that's not the stated goal.",
     response: "Federal law bars noncitizens from voting in federal elections; the recurring claim is broader than the evidence.",
     askBack: "Is your concern about rhetoric, local experiments, or federal elections specifically?",
     sourceUrl: "https://www.brennancenter.org/our-work/research-reports/beware-novel-claims-2020-election-fraud",
@@ -347,7 +347,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 38,
     category: "Elections & Democracy",
-    claim: "Voter fraud is widespread but hidden.",
+    claim: "Voter fraud is probably more common than what actually gets prosecuted, given how hard it is to detect.",
     response: "Documented fraud exists but remains rare relative to the number of ballots cast.",
     askBack: "If something is possible but rare, how should policy respond without making voting much harder?",
     sourceUrl: "https://www.brennancenter.org/our-work/research-reports/mail-voting-accuracy",
@@ -356,7 +356,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 39,
     category: "Elections & Democracy",
-    claim: "A fair election means my side trusts it.",
+    claim: "Half the country doesn't trust the 2020 results — that's hard to just dismiss.",
     response: "Trust matters, but legitimacy depends on rules, counts, audits, and courts—not on whether supporters feel satisfied.",
     askBack: "Should legitimacy be based on feelings, procedures, or both?",
     sourceUrl: "https://www.idea.int/data-tools/data/voter-turnout-database",
@@ -365,7 +365,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 40,
     category: "Elections & Democracy",
-    claim: "January 6 was just a peaceful protest.",
+    claim: "Most people at January 6 were there to protest peacefully — a small group got out of hand.",
     response: "Hundreds of defendants were charged, officers were assaulted, and Congress was interrupted during certification.",
     askBack: "What makes a protest peaceful once police are attacked and the proceeding stops?",
     sourceUrl: "https://www.justice.gov/usao-dc/36-months-jan-6-attack-capitol",
@@ -374,8 +374,8 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 41,
     category: "Energy & Climate",
-    claim: "Biden killed U.S. energy production.",
-    response: "The U.S. remained the world’s largest crude-oil producer, and output hit record levels in recent years.",
+    claim: "Biden's energy policies put real constraints on domestic production and cost jobs.",
+    response: "The U.S. remained the world's largest crude-oil producer, and output hit record levels in recent years.",
     askBack: "If output hits records, what exactly do you mean by 'killed energy'?",
     sourceUrl: "https://www.eia.gov/todayinenergy/detail.php?id=61545",
     proof: "• U.S. oil production remained historically high and the country has stayed a major producer.\n• Output responds to market prices, company investment, and global demand as well as policy.\n• The word 'killed' does not match production data.",
@@ -383,7 +383,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 42,
     category: "Energy & Climate",
-    claim: "America lost energy independence under Democrats.",
+    claim: "Biden's first-day energy decisions moved us away from the energy independence Trump had built.",
     response: "The U.S. has remained a major energy producer and net exporter of petroleum products in recent years.",
     askBack: "What matters more to you: imports of a given fuel, total production, or pump prices?",
     sourceUrl: "https://www.eia.gov/energyexplained/us-energy-facts/",
@@ -392,7 +392,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 43,
     category: "Energy & Climate",
-    claim: "Gas prices prove climate policy failed.",
+    claim: "Biden's push for green energy is part of why gas prices went so high.",
     response: "Gasoline prices are influenced mainly by crude-oil markets and refinery conditions; climate policy is not the only lever.",
     askBack: "When gas rises after a global oil shock, who do you think is really setting the price?",
     sourceUrl: "https://www.eia.gov/energyexplained/oil-and-petroleum-products/prices-and-outlook.php",
@@ -401,7 +401,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 44,
     category: "Energy & Climate",
-    claim: "Keystone XL would have solved gas prices.",
+    claim: "Canceling Keystone XL hurt American energy security and contributed to higher gas prices.",
     response: "One pipeline cannot override global crude prices, refinery outages, or worldwide shocks.",
     askBack: "Why do you think one project should outweigh a global oil market?",
     sourceUrl: "https://www.eia.gov/energyexplained/gasoline/factors-affecting-gasoline-prices.php",
@@ -410,7 +410,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 45,
     category: "Energy & Climate",
-    claim: "Renewables destroy jobs.",
+    claim: "Pushing renewables too fast costs good fossil fuel jobs before clean energy can replace them.",
     response: "Wind, solar, and related technician roles are among the fastest-growing occupations in BLS projections.",
     askBack: "If a sector creates jobs but changes which jobs grow, is that destruction or transition?",
     sourceUrl: "https://www.bls.gov/emp/tables/fastest-growing-occupations.htm",
@@ -419,7 +419,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 46,
     category: "Energy & Climate",
-    claim: "Electric vehicles are a Democratic ban on freedom.",
+    claim: "EV mandates limit people's choices and push costs up for families who can't afford a new electric car.",
     response: "EV policy includes subsidies, standards, and infrastructure, but Americans still buy millions of gasoline vehicles and used cars.",
     askBack: "What matters more to you: preserving every option forever or lowering fuel and pollution costs over time?",
     sourceUrl: "https://www.energy.gov/eere/vehicles/electric-vehicles",
@@ -428,7 +428,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 47,
     category: "Energy & Climate",
-    claim: "Climate change is too uncertain to act on.",
+    claim: "Climate science still has enough unknowns that we should be careful about costly regulations.",
     response: "Major scientific agencies report the planet is warming and that human activity is the main driver.",
     askBack: "What level of scientific agreement would be enough for preventive action?",
     sourceUrl: "https://climate.nasa.gov/evidence/",
@@ -437,8 +437,8 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 48,
     category: "Energy & Climate",
-    claim: "The U.S. should do nothing because China emits more.",
-    response: "China’s emissions matter, but U.S. policy still affects technology, global markets, and cumulative emissions.",
+    claim: "It doesn't make sense for the U.S. to hurt its own economy when China keeps building coal plants.",
+    response: "China's emissions matter, but U.S. policy still affects technology, global markets, and cumulative emissions.",
     askBack: "Do you think leadership matters only if you are first, or also if you can move prices and technology?",
     sourceUrl: "https://ourworldindata.org/co2/country/united-states",
     proof: "• China emits more in total, but U.S. policy still affects domestic health, technology, and credibility.\n• Per-capita emissions and historical emissions also matter in climate arguments.\n• One country's larger total does not make another country's choices irrelevant.",
@@ -446,7 +446,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 49,
     category: "Energy & Climate",
-    claim: "Drilling permits stopped under Democrats.",
+    claim: "Biden's drilling restrictions sent a clear signal against fossil fuel production.",
     response: "Permit and lease policy changed in some areas, but production continued and national output reached record highs.",
     askBack: "If production rises while permit rhetoric is intense, which signal should carry more weight?",
     sourceUrl: "https://www.eia.gov/todayinenergy/detail.php?id=61545",
@@ -455,7 +455,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 50,
     category: "Energy & Climate",
-    claim: "Environmental rules are the main reason families are poor.",
+    claim: "Overregulation raises energy and business costs that end up hurting working families the most.",
     response: "Family budgets are affected by wages, housing, health costs, child care, taxes, and energy—not environmental rules alone.",
     askBack: "Which household cost hits families hardest in your community right now?",
     sourceUrl: "https://www.imf.org/en/publications/weo",
@@ -464,7 +464,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 51,
     category: "Health & COVID",
-    claim: "COVID was basically just the flu.",
+    claim: "For most healthy people, COVID wasn't much worse than a bad flu season.",
     response: "COVID caused far more deaths than a typical flu season and produced much higher excess mortality.",
     askBack: "What makes two diseases 'the same' to you: symptoms, death toll, or policy response?",
     sourceUrl: "https://ourworldindata.org/covid-deaths",
@@ -473,7 +473,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 52,
     category: "Health & COVID",
-    claim: "The U.S. would have had the same COVID deaths no matter what.",
+    claim: "COVID was so contagious that the U.S. was probably going to have high deaths no matter what policies were put in place.",
     response: "Countries with different responses had very different death outcomes, so policy and uptake mattered.",
     askBack: "If outcomes varied a lot across peer countries, doesn't that suggest choices mattered?",
     sourceUrl: "https://ourworldindata.org/coronavirus",
@@ -482,7 +482,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 53,
     category: "Health & COVID",
-    claim: "Vaccines did not meaningfully reduce severe COVID.",
+    claim: "The COVID vaccines didn't prevent infection the way we were promised, so their real benefits are hard to measure.",
     response: "CDC analyses found much lower hospitalization and death rates among vaccinated groups during key periods.",
     askBack: "What kind of evidence would convince you a vaccine helped even if it was not perfect?",
     sourceUrl: "https://www.cdc.gov/mmwr/volumes/71/wr/mm7104e2.htm",
@@ -491,7 +491,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 54,
     category: "Health & COVID",
-    claim: "The pandemic response hurt more people than the virus.",
+    claim: "The shutdowns and school closures may have caused as much harm as the virus itself for a lot of people.",
     response: "Pandemic policies had costs, but COVID itself killed over a million Americans and disrupted the labor force, health system, and schools.",
     askBack: "How do you weigh policy harms against preventable deaths?",
     sourceUrl: "https://covid.cdc.gov/covid-data-tracker/#trends_totaldeaths",
@@ -500,7 +500,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 55,
     category: "Health & COVID",
-    claim: "Masking never worked at all.",
+    claim: "After years of mask mandates, there wasn't much evidence they actually stopped the spread.",
     response: "Mask effectiveness varied by setting and quality, but 'never worked' is stronger than the evidence supports.",
     askBack: "Would you accept 'limited help in some settings' or only 'total failure' and 'total success'?",
     sourceUrl: "https://www.cdc.gov/mmwr/",
@@ -509,7 +509,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 56,
     category: "Health & COVID",
-    claim: "America has the best health system because it spends the most.",
+    claim: "America's healthcare may be expensive, but the quality of care you get is hard to match anywhere else.",
     response: "The U.S. spends more than peer countries yet ranks poorly on many health outcomes and access measures.",
     askBack: "If cost is highest but outcomes are mediocre, what does 'best' mean?",
     sourceUrl: "https://www.commonwealthfund.org/publications/fund-reports/2024/sep/mirror-mirror-2024",
@@ -518,7 +518,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 57,
     category: "Health & COVID",
-    claim: "Universal healthcare cannot work in advanced countries.",
+    claim: "Universal healthcare in a country as large as the U.S. would lead to long waits and rationed care.",
     response: "All peer wealthy countries cover everyone in some way, though their systems differ a lot.",
     askBack: "Which countries do you think count as proof that universal coverage can exist without ending private medicine entirely?",
     sourceUrl: "https://www.commonwealthfund.org/international-health-policy-center/system-profiles",
@@ -527,7 +527,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 58,
     category: "Health & COVID",
-    claim: "Long waits abroad prove the U.S. model is better.",
+    claim: "Long wait times in countries with universal healthcare show those systems are struggling.",
     response: "Wait times are one measure, but uninsured people in the U.S. often face delayed or forgone care too.",
     askBack: "Would you rather wait with coverage or skip care because of cost?",
     sourceUrl: "https://www.commonwealthfund.org/publications/issue-briefs/2023/jan/us-health-care-global-perspective-2022",
@@ -536,7 +536,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 59,
     category: "Health & COVID",
-    claim: "Public health agencies lied about everything, so none of their data matter.",
+    claim: "After all the reversals during COVID, it's hard to know what to trust from public health agencies anymore.",
     response: "Agencies made mistakes and revised guidance, but that is not the same as every dataset being fabricated.",
     askBack: "How do you separate changed guidance from deliberate deception?",
     sourceUrl: "https://www.cdc.gov/mmwr/",
@@ -545,7 +545,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 60,
     category: "Health & COVID",
-    claim: "Red-state versus blue-state COVID outcomes were all the same.",
+    claim: "States that stayed open during COVID didn't end up with dramatically worse outcomes than those that locked down.",
     response: "After vaccine rollout, death rates diverged meaningfully across places with different vaccination levels and politics.",
     askBack: "If outcomes differ after an intervention exists, what explanation seems strongest to you?",
     sourceUrl: "https://www.nytimes.com/2021/11/08/briefing/covid-death-toll-red-states.html",
@@ -554,7 +554,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 61,
     category: "Women & Families",
-    claim: "America already protects women as well as other rich democracies.",
+    claim: "American women have more economic opportunity than almost anywhere else in the world.",
     response: "The U.S. lacks some protections common in peer countries, including national paid maternity leave and stronger social supports.",
     askBack: "Which family support used abroad would you be comfortable trying here?",
     sourceUrl: "https://bipartisanpolicy.org/wp-content/uploads/2020/01/PFL6-FInal_.pdf",
@@ -563,7 +563,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 62,
     category: "Women & Families",
-    claim: "Abortion bans do not affect emergency care.",
+    claim: "Abortion bans have clear exceptions for medical emergencies, so doctors can still do what they need to.",
     response: "Doctors in ban states have reported legal uncertainty affecting treatment for miscarriage and other emergencies.",
     askBack: "Should any law leave doctors unsure whether they can stabilize a patient?",
     sourceUrl: "https://www.kff.org/womens-health-policy/issue-brief/abortions-later-in-pregnancy-in-a-post-dobbs-era/",
@@ -572,8 +572,8 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 63,
     category: "Women & Families",
-    claim: "Women already have equal economic opportunity, so policy is not the issue.",
-    response: "Women’s earnings, care burdens, and paid-leave access still differ substantially from men’s on average.",
+    claim: "Women have made so much progress that most of the pay gap today comes down to choices, not discrimination.",
+    response: "Women's earnings, care burdens, and paid-leave access still differ substantially from men's on average.",
     askBack: "Which gap matters more to you: wages, leave, child care, or representation?",
     sourceUrl: "https://www.pewresearch.org/social-trends/2023/03/01/the-enduring-grip-of-the-gender-pay-gap/",
     proof: "• Gender pay gaps narrow when comparing similar workers but do not disappear.\n• Workplace structure, caregiving burdens, occupational sorting, and discrimination all affect outcomes.\n• Saying opportunity is already equal leaves no room for the persistent measurable gaps.",
@@ -581,7 +581,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 64,
     category: "Women & Families",
-    claim: "Paid family leave is unrealistic in a large country like the U.S.",
+    claim: "Paid family leave sounds appealing, but small businesses can't afford the burden and it's hard to pay for nationally.",
     response: "Most OECD countries offer paid parental leave in some form; the policy question is design, not possibility.",
     askBack: "Would you rather debate whether paid leave should exist or how to pay for it?",
     sourceUrl: "https://bipartisanpolicy.org/wp-content/uploads/2020/01/PFL6-FInal_.pdf",
@@ -590,7 +590,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 65,
     category: "Women & Families",
-    claim: "Maternal deaths are mostly personal choices, not system failures.",
+    claim: "Maternal deaths are mostly tied to personal health choices and circumstances, not system failures.",
     response: "The U.S. maternal mortality rate remains high compared with peer countries, and disparities are large.",
     askBack: "If maternal risk is much worse here than in similar countries, what system factor do you suspect first?",
     sourceUrl: "https://www.cdc.gov/nchs/data/hestat/hestat113.htm",
@@ -599,7 +599,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 66,
     category: "Women & Families",
-    claim: "Infant mortality is just bad luck and not a policy issue.",
+    claim: "Infant mortality involves so many individual factors that it's hard to connect it to policy.",
     response: "The U.S. has worse infant mortality than many peer countries, which points to broader health-system and social-policy differences.",
     askBack: "Why do you think richer countries with universal care often do better on infant survival?",
     sourceUrl: "https://www.oecd.org/en/data/indicators/infant-mortality-rates.html",
@@ -608,7 +608,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 67,
     category: "Women & Families",
-    claim: "Child care costs are just a private family responsibility.",
+    claim: "Child care is expensive, but it's ultimately a family responsibility — government shouldn't be subsidizing parenting choices.",
     response: "In many states, child care costs rival housing or college costs, which shapes labor-force participation and family income.",
     askBack: "If child care prices keep parents out of work, is that purely a private problem?",
     sourceUrl: "https://www.childcareaware.org/the-us-and-the-high-price-of-child-care-2024/",
@@ -617,8 +617,8 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 68,
     category: "Women & Families",
-    claim: "Women in politics are already represented enough.",
-    response: "The U.S. still trails many democracies in women’s legislative representation.",
+    claim: "Women have made huge gains in politics — we've had a female vice president and many women in Congress.",
+    response: "The U.S. still trails many democracies in women's legislative representation.",
     askBack: "If representation shapes policy, what level would feel 'enough' to you?",
     sourceUrl: "https://data.ipu.org/women-ranking",
     proof: "• The U.S. still trails many peers in women's representation in national politics.\n• Descriptive representation affects agenda setting, committee power, and lived-experience perspectives.\n• Saying 'enough' is a value judgment, not a fact.",
@@ -626,7 +626,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 69,
     category: "Women & Families",
-    claim: "Domestic-abuse protections are already strong everywhere.",
+    claim: "We have strong domestic violence laws on the books — the problem is more about enforcement than new legislation.",
     response: "Protection levels vary by state, and legal access can shape safety and reporting.",
     askBack: "Should basic protection from abuse depend heavily on your ZIP code?",
     sourceUrl: "https://www.ncsl.org/human-services/domestic-violence-domestic-partner-violence",
@@ -635,7 +635,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 70,
     category: "Women & Families",
-    claim: "A family-friendly country does not need paid leave, abortion access, or affordable care.",
+    claim: "Being pro-family is about strong communities and values, not just more government programs.",
     response: "Peer countries that support families often pair several of those policies rather than treating them as isolated issues.",
     askBack: "What does being 'pro-family' require in practice, not just in rhetoric?",
     sourceUrl: "https://nationalpartnership.org/economic-justice/paid-leave-research/",
@@ -644,7 +644,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 71,
     category: "Work, Wages & Education",
-    claim: "The federal minimum wage is fine where it is.",
+    claim: "Dramatic minimum wage hikes could hurt the small businesses that hire entry-level workers.",
     response: "The federal minimum wage has been $7.25 since 2009, and many states and cities have moved above it.",
     askBack: "If the federal floor stays frozen for 17 years, is it still functioning as a floor?",
     sourceUrl: "https://www.dol.gov/agencies/whd/minimum-wage/history/chart",
@@ -653,7 +653,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 72,
     category: "Work, Wages & Education",
-    claim: "Raising the minimum wage always kills jobs.",
+    claim: "Raising the minimum wage too high tends to lead to layoffs and reduced hours for entry-level workers.",
     response: "Economic studies show mixed results, and many find modest increases have small employment effects while raising pay.",
     askBack: "How much job loss would you accept in exchange for higher pay for millions?",
     sourceUrl: "https://www.cbo.gov/publication/55681",
@@ -662,7 +662,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 73,
     category: "Work, Wages & Education",
-    claim: "A full-time minimum-wage job should not be expected to support a person.",
+    claim: "Minimum wage was meant to be a starting point for first jobs, not a full-time living wage for adults.",
     response: "That is a value choice, not an economic law; the debate is whether full-time work should keep someone above poverty.",
     askBack: "Do you think full-time work should guarantee basic survival?",
     sourceUrl: "https://www.dol.gov/agencies/whd/minimum-wage/history/chart",
@@ -671,7 +671,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 74,
     category: "Work, Wages & Education",
-    claim: "Unions only protect lazy workers.",
+    claim: "Union rules make it really hard to let go of underperforming workers, which is unfair to everyone else.",
     response: "Union workers on average earn more, though the gap also reflects industry and workforce differences.",
     askBack: "If unions raise bargaining power and pay in many workplaces, why call them only protective dead weight?",
     sourceUrl: "https://www.bls.gov/news.release/union2.nr0.htm",
@@ -680,7 +680,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 75,
     category: "Work, Wages & Education",
-    claim: "Unions are dying because workers do not want them anymore.",
+    claim: "If workers really wanted unions, they'd organize — declining membership shows many prefer to negotiate on their own.",
     response: "Public approval of unions is high even while legal and employer barriers affect organizing outcomes.",
     askBack: "How do you explain high approval alongside lower membership?",
     sourceUrl: "https://news.gallup.com/poll/398303/approval-labor-unions-highest-point-1965.aspx",
@@ -689,7 +689,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 76,
     category: "Work, Wages & Education",
-    claim: "Student debt is just personal irresponsibility.",
+    claim: "People knew what they were signing when they took out student loans — expecting forgiveness isn't fair to those who made different choices.",
     response: "Student debt is also a policy outcome tied to tuition levels, grant aid, family wealth, and loan design.",
     askBack: "When millions carry the same burden, when does it stop being only an individual mistake?",
     sourceUrl: "https://www.federalreserve.gov/publications/2025-economic-well-being-of-us-households-in-2024-higher-education-and-student-loans.htm",
@@ -698,7 +698,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 77,
     category: "Work, Wages & Education",
-    claim: "Only elites care about student loans.",
+    claim: "Student loan forgiveness mostly benefits people who went to expensive schools and earn good incomes.",
     response: "Federal Reserve data show student debt spans many borrowers, and many balances are well below the stereotype of huge graduate-school debt.",
     askBack: "Who do you picture when you hear 'student borrower,' and is that picture accurate?",
     sourceUrl: "https://www.newyorkfed.org/microeconomics/topics/student-debt",
@@ -707,7 +707,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 78,
     category: "Work, Wages & Education",
-    claim: "Tuition-free college is fantasy socialism.",
+    claim: "Free college would cost taxpayers a fortune and mostly benefit people who were already going to attend expensive schools.",
     response: "Many OECD countries offer public college that is tuition-free or low-cost for domestic students.",
     askBack: "If other market democracies do it, is the real argument affordability or ideology?",
     sourceUrl: "https://www.oecd.org/en/publications/2024/09/education-at-a-glance-2024_5ea68448/full-report/how-much-do-tertiary-students-pay-and-what-public-support-do-they-receive_a48eab74.html",
@@ -716,7 +716,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 79,
     category: "Work, Wages & Education",
-    claim: "College costs this much because government got involved.",
+    claim: "Federal student loan programs made it easier to borrow, which let colleges raise prices without limits.",
     response: "Tuition growth reflects reduced state support, institutional spending, enrollment patterns, and loan design—not one cause.",
     askBack: "Which do you think mattered more: state disinvestment or federal aid?",
     sourceUrl: "https://www.federalreserve.gov/publications/2025-economic-well-being-of-us-households-in-2024-higher-education-and-student-loans.htm",
@@ -725,7 +725,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 80,
     category: "Work, Wages & Education",
-    claim: "Workers do better without collective bargaining.",
+    claim: "Workers who can negotiate their own deals often do just as well as those under a union contract.",
     response: "Whether unions help depends on goals, but official BLS data show higher median weekly earnings for union workers than nonunion workers.",
     askBack: "What matters more to you: absolute flexibility or stronger bargaining power?",
     sourceUrl: "https://www.bls.gov/news.release/union2.nr0.htm",
@@ -743,7 +743,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 82,
     category: "Media & Institutions",
-    claim: "Only liberal media shape narratives.",
+    claim: "Liberal-leaning media dominates the major networks and platforms, giving it outsized influence over what people hear.",
     response: "Conservative outlets also reach mass audiences, and ownership concentration cuts across ideological brands.",
     askBack: "Which matters more: the ideology of a host or the incentives of a parent company?",
     sourceUrl: "https://www.pewresearch.org/journalism/fact-sheet/news-platform-fact-sheet/",
@@ -752,7 +752,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 83,
     category: "Media & Institutions",
-    claim: "Distrusting all institutions is just realism.",
+    claim: "After the failures of the last few years, healthy skepticism about what you're told is just common sense.",
     response: "Institutions can fail and still produce usable data; rejecting all institutions leaves only vibes, influencers, and rumors.",
     askBack: "How do you decide which institutions deserve partial trust instead of none?",
     sourceUrl: "https://www.pewresearch.org/politics/2024/11/25/trust-in-government-1958-2024/",
@@ -761,7 +761,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 84,
     category: "Media & Institutions",
-    claim: "The FBI and DOJ only target conservatives.",
+    claim: "The way Trump and his allies have been targeted by the Justice Department looks like political prosecution.",
     response: "Federal law enforcement has investigated officials and citizens from both parties; selective perception is not the same as selective law.",
     askBack: "Can you name a standard of evidence that would tell you prosecution is partisan rather than fact-based?",
     sourceUrl: "https://www.justice.gov/usao-dc/36-months-jan-6-attack-capitol",
@@ -770,7 +770,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 85,
     category: "Media & Institutions",
-    claim: "Fact-checking is just censorship with nicer branding.",
+    claim: "So-called fact-checkers often end up labeling conservative viewpoints as misinformation.",
     response: "Fact-checking evaluates truth claims after publication; censorship blocks speech before or instead of debate.",
     askBack: "Would you rather have disputed claims labeled, ignored, or removed?",
     sourceUrl: "https://www.brennancenter.org/our-work/research-reports/mail-voting-accuracy",
@@ -788,7 +788,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 87,
     category: "Media & Institutions",
-    claim: "Experts are just politicians with degrees.",
+    claim: "A lot of 'expert consensus' seems to line up suspiciously well with one political side.",
     response: "Experts can be wrong, but domain knowledge still matters when interpreting data, disease, energy systems, or budgets.",
     askBack: "When a topic gets technical, who do you trust more than a subject-matter expert?",
     sourceUrl: "https://www.commonwealthfund.org/publications/fund-reports/2024/sep/mirror-mirror-2024",
@@ -797,7 +797,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 88,
     category: "Media & Institutions",
-    claim: "Local news decline has nothing to do with national politics.",
+    claim: "Local news is struggling mainly because people get information online now — it's a business model problem.",
     response: "Consolidation and newsroom losses affect what communities know, which changes democratic accountability.",
     askBack: "If local reporting shrinks, who fills the gap: neighbors, party media, or rumors?",
     sourceUrl: "https://www.pewresearch.org/journalism/fact-sheet/state-of-the-news-media/",
@@ -806,7 +806,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 89,
     category: "Media & Institutions",
-    claim: "Government statistics are fake when they clash with experience.",
+    claim: "When official numbers look great but everyday life feels harder, something doesn't add up.",
     response: "Personal experience matters, but national statistics exist because no one person sees the whole country.",
     askBack: "What is the best way to combine lived experience with broader data?",
     sourceUrl: "https://www.fbi.gov/news/press-releases/fbi-releases-2024-reported-crimes-in-the-nation-statistics",
@@ -815,7 +815,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 90,
     category: "Media & Institutions",
-    claim: "If institutions made mistakes once, everything they say is worthless forever.",
+    claim: "After all the COVID reversals and credibility hits, it's reasonable to take official guidance more skeptically.",
     response: "Credibility can fall without going to zero; otherwise no correction or transparency would ever count.",
     askBack: "What would redemption look like for an institution you currently distrust?",
     sourceUrl: "https://www.cdc.gov/mmwr/",
@@ -824,8 +824,8 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 91,
     category: "Foreign Policy & Security",
-    claim: "Biden weakened NATO.",
-    response: "NATO expanded with Finland and Sweden after Russia invaded Ukraine, increasing the alliance’s military and geographic strength.",
+    claim: "Biden's chaotic handling of Afghanistan sent a damaging message to our NATO allies about U.S. reliability.",
+    response: "NATO expanded with Finland and Sweden after Russia invaded Ukraine, increasing the alliance's military and geographic strength.",
     askBack: "If an alliance gets larger and more unified, in what sense is it weaker?",
     sourceUrl: "https://www.nato.int/en/what-we-do/partnerships-and-cooperation/relations-with-finland",
     proof: "• NATO expanded and allied coordination intensified after Russia's invasion of Ukraine.\n• Alliance strength is measured by membership, deployments, and joint commitments, not rhetoric alone.\n• The claim that Biden weakened NATO does not fit those developments.",
@@ -833,7 +833,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 92,
     category: "Foreign Policy & Security",
-    claim: "NATO allies still pay nothing.",
+    claim: "Most NATO allies are still not meeting the 2% defense spending commitment they agreed to.",
     response: "Many allies have increased defense spending sharply since 2022, though burden-sharing debates remain.",
     askBack: "Do you want absolute equality or meaningful movement toward shared costs?",
     sourceUrl: "https://www.nato.int/cps/en/natohq/topics_67655.htm",
@@ -842,7 +842,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 93,
     category: "Foreign Policy & Security",
-    claim: "Helping Ukraine only drains America and achieves nothing.",
+    claim: "We've spent enormous amounts in Ukraine without a clear end goal or measure of success.",
     response: "Aid has helped Ukraine resist invasion and has also pushed allies to rearm and join NATO.",
     askBack: "How do you weigh the cost of aid against the cost of letting invasions succeed?",
     sourceUrl: "https://www.nato.int/en/what-we-do/partnerships-and-cooperation/relations-with-finland",
@@ -851,7 +851,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 94,
     category: "Foreign Policy & Security",
-    claim: "The Afghanistan withdrawal proves every alliance is pointless.",
+    claim: "The Afghanistan withdrawal raised serious questions about whether allies can count on us when things get hard.",
     response: "Afghanistan was a collapse in one theater; it does not logically show all alliances fail or all deterrence is useless.",
     askBack: "Which lesson is specific to Afghanistan, and which lesson do you think applies everywhere?",
     sourceUrl: "https://www.state.gov/u-s-relations-with-nato/",
@@ -860,7 +860,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 95,
     category: "Foreign Policy & Security",
-    claim: "America is weaker abroad because Democrats avoid military strength.",
+    claim: "America's credibility abroad took a real hit under Biden, from Afghanistan to the border to Ukraine.",
     response: "The U.S. still spends more on defense than any other country, and capability depends on alliances, readiness, and strategy—not rhetoric alone.",
     askBack: "What matters more in deterrence: raw spending, alliances, or political will?",
     sourceUrl: "https://www.sipri.org/media/press-release/2025/unprecedented-rise-global-military-expenditure-european-and-middle-east-spending-surges",
@@ -869,7 +869,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 96,
     category: "Foreign Policy & Security",
-    claim: "China is winning because Democrats focus on climate and diversity.",
+    claim: "While China is racing ahead on manufacturing and military capability, we're focused on climate pledges and social issues.",
     response: "U.S.-China competition spans semiconductors, trade, military posture, alliances, education, and industrial policy.",
     askBack: "Which arena worries you most: military, industrial, or technological?",
     sourceUrl: "https://www.state.gov/u-s-relations-with-the-peoples-republic-of-china/",
@@ -878,7 +878,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 97,
     category: "Foreign Policy & Security",
-    claim: "Foreign aid means Americans get nothing at home.",
+    claim: "With so many urgent needs at home — veterans, infrastructure, healthcare — it's hard to justify sending billions abroad.",
     response: "Foreign aid is a small share of federal spending; most federal dollars go to Social Security, health, defense, and interest.",
     askBack: "If aid is small relative to the budget, why does it dominate political anger?",
     sourceUrl: "https://fiscaldata.treasury.gov/americas-finance-guide/federal-spending/",
@@ -887,7 +887,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 98,
     category: "Foreign Policy & Security",
-    claim: "Trump alone deterred Russia better than Biden.",
+    claim: "Russia never invaded Ukraine during Trump's presidency — that timeline speaks for itself.",
     response: "Russia did not invade Ukraine in 2022 because of one personality alone; deterrence depends on many factors and cannot be proved by counterfactual certainty.",
     askBack: "How confident can anyone be about 'what would have happened' under a different president?",
     sourceUrl: "https://www.nato.int/cps/en/natohq/topics_67655.htm",
@@ -896,7 +896,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 99,
     category: "Foreign Policy & Security",
-    claim: "The world respects only toughness, not alliances.",
+    claim: "Countries like Russia and China respond to hard power and strength, not diplomatic agreements.",
     response: "Toughness can matter, but alliances multiply logistics, intelligence, and legitimacy in ways one country cannot replicate alone.",
     askBack: "What does 'strength' mean without partners and basing access?",
     sourceUrl: "https://www.state.gov/u-s-relations-with-nato/",
@@ -905,7 +905,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 100,
     category: "Foreign Policy & Security",
-    claim: "Domestic problems mean the U.S. should mostly withdraw from world commitments.",
+    claim: "With so much to fix at home, it's worth asking whether some of our overseas commitments are still worth the cost.",
     response: "Retrenchment can lower some costs but can also create new risks if allies, trade routes, or deterrence weaken.",
     askBack: "Which international commitment would you cut first, and what downstream risk would you accept?",
     sourceUrl: "https://www.cfr.org/backgrounder/how-does-us-spend-its-money-defense",
@@ -914,7 +914,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 101,
     category: "Taxes",
-    claim: "Taxes are too high.",
+    claim: "We're already paying so much in taxes — there's no justification for the government taking even more.",
     response: "The U.S. leaves roughly $90 billion a year on the table by exempting religious organizations from property, income, and sales taxes — money that could fund schools, infrastructure, or reduce the deficit.",
     askBack: "If we're worried about the tax burden, why should churches, which own billions in property and run profitable businesses, pay nothing?",
     sourceUrl: "https://www.fastcompany.com/90665449/taxthechurches-how-much-do-u-s-religious-organizations-not-pay-in-taxes",
@@ -923,7 +923,7 @@ export const FACT_CARDS: FactCard[] = [
   {
     id: 102,
     category: "Taxes",
-    claim: "We can't raise taxes on the wealthy — it would hurt the economy.",
+    claim: "Raising taxes on the wealthy and businesses would just drive investment and jobs overseas.",
     response: "A 70% top rate on income above $10 million would raise $25–29 billion per year with minimal economic disruption. That's real money that could fund schools, healthcare, or reduce the deficit — paid only by those earning can spend in a lifetime.",
     askBack: "If a 70% rate on income above $10 million is so harmful, why did the U.S. economy boom for decades when top rates were above 70%?",
     sourceUrl: "https://taxfoundation.org/blog/70-tax-proposal/",
