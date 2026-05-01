@@ -513,6 +513,22 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       console.log(`Migrated ${migrated} cards from spotsUsed → boosts.`);
     }
 
+    // One-time migration: zero out boosts on all org seed cards (id >= 1000)
+    // that were incorrectly seeded with boosts: 4.
+    const boostsZeroed = await kv.get("migration:reset-boosts:v1");
+    if (!boostsZeroed) {
+      let zeroed = 0;
+      for (const card of (await kv.getByPrefix("action:")) as any[]) {
+        if (card && typeof card === "object" && typeof card.id === "number" && card.id >= 1000) {
+          card.boosts = 0;
+          await kv.set(`action:${card.id}`, card);
+          zeroed++;
+        }
+      }
+      await kv.set("migration:reset-boosts:v1", true);
+      console.log(`Reset boosts to 0 on ${zeroed} org seed cards.`);
+    }
+
     // One-time migrations for user-created cards (from origin/develop)
     const migrationV1 = await kv.get("migration:user-cards:v1");
     if (!migrationV1) {
