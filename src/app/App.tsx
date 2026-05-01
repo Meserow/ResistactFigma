@@ -583,7 +583,7 @@ export default function App() {
         onInfoClick={() => setInfoOpen(true)}
         onActClick={() => setActOpen(true)}
         onAskClick={() => setAskOpen(true)}
-        statsActsCount={synced && serverTotal > 0 ? serverTotal : cards.length}
+        statsActsCount={hasActiveFilters ? displayedCards.length : (synced && serverTotal > 0 ? serverTotal : cards.length)}
         statsResistorsCount={statsUsersCount}
         statsCitiesCount={statsCitiesCount}
         statsSynced={synced}

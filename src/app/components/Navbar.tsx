@@ -140,10 +140,22 @@ export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoC
     onFilterChange(filterName, next);
   }
 
+  // Measure the top bar so the filter bar can sticky-pin directly below it,
+  // even though the hero (in normal flow) sits between them in the DOM.
+  const topBarRef = useRef<HTMLDivElement>(null);
+  const [topBarHeight, setTopBarHeight] = useState(0);
+  useEffect(() => {
+    const update = () => setTopBarHeight(topBarRef.current?.offsetHeight ?? 0);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
-      {/* Top bar */}
-      <div className="px-5 md:px-8 py-3 flex items-center gap-4">
+    <>
+      {/* Top bar — sticks to top of viewport */}
+      <header className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm px-5 md:px-8 py-3" ref={topBarRef}>
+       <div className="flex items-center gap-4">
         {/* Logo + Brand */}
         <div className="flex items-center gap-3 shrink-0">
           <ResistActLogo />
@@ -199,7 +211,7 @@ export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoC
           {/* Add Action Button */}
           <button
             onClick={onAskClick}
-            className="shrink-0 bg-[#23297e] hover:bg-[#1a2060] transition-colors text-white font-['Poppins',sans-serif] font-semibold text-base px-5 py-2.5 rounded-xl flex items-center gap-2 whitespace-nowrap shadow-sm"
+            className="shrink-0 bg-[#23297e] hover:bg-[#1a2060] transition-colors text-white font-['Poppins',sans-serif] font-bold text-base px-5 py-3 rounded-xl flex items-center gap-2 whitespace-nowrap shadow-sm"
           >
             <Plus size={16} strokeWidth={2.5} />
             Add Action
@@ -270,7 +282,7 @@ export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoC
           ) : (
             <button
               onClick={onLoginClick}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[#23297e] text-[#23297e] font-['Poppins',sans-serif] font-semibold text-sm hover:bg-[#23297e]/5 transition-colors"
+              className="flex items-center gap-2 px-5 py-3 rounded-xl border border-[#23297e] text-[#23297e] font-['Poppins',sans-serif] font-bold text-base hover:bg-[#23297e]/5 transition-colors"
             >
               <LogIn size={16} />
               Sign In
@@ -285,13 +297,32 @@ export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoC
         >
           {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
-      </div>
+       </div>
+
+        {/* Helper text — sits below Add Action / Sign In on desktop */}
+        {!isLoggedIn && (
+          <p className="hidden md:block mt-2 text-right font-['Poppins',sans-serif] text-[12px] text-gray-500 italic">
+            Want to add actions to the site?{" "}
+            <button
+              type="button"
+              onClick={onLoginClick}
+              className="not-italic font-semibold text-[#23297e] hover:underline"
+            >
+              Join the Resistance
+            </button>.
+          </p>
+        )}
+      </header>
 
       {/* ── Hero slot (optional) — sits between top bar and filter row ── */}
       {heroSlot}
 
-      {/* ── Filter bar ── */}
-      <div className="px-5 md:px-8 py-2 bg-[#f7f7f7] border-t border-gray-100 hidden md:flex items-center gap-1 flex-wrap" ref={filterBarRef}>
+      {/* ── Filter bar — sticks directly below the top bar ── */}
+      <div
+        className="sticky z-30 px-5 md:px-8 py-2 bg-[#f7f7f7] border-t border-b border-gray-100 hidden md:flex items-center gap-1 flex-wrap"
+        style={{ top: topBarHeight }}
+        ref={filterBarRef}
+      >
         <span className="font-['Poppins',sans-serif] text-[#888] text-sm font-medium shrink-0 mr-2">Filter by:</span>
 
         {/* Quick-actions toggle (Acts tab only) */}
@@ -539,8 +570,8 @@ export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoC
         </div>
       </div>
 
-      {/* ── Mobile persistent tab + filter bar ── */}
-      <div className="md:hidden border-t border-gray-100 bg-[#f7f7f7]">
+      {/* ── Mobile persistent tab + filter bar — sticks below top bar ── */}
+      <div className="sticky z-30 md:hidden border-t border-gray-100 bg-[#f7f7f7]" style={{ top: topBarHeight }}>
         {/* Tab switcher — always visible */}
         <div className="px-4 pt-2 pb-1.5">
           <div className="flex items-center bg-gray-200 rounded-xl p-1 gap-0.5">
@@ -677,6 +708,6 @@ export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoC
           )}
         </div>
       )}
-    </header>
+    </>
   );
 }
