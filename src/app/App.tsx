@@ -705,7 +705,7 @@ export default function App() {
       {/* Footer */}
       <footer className="mt-12 border-t border-gray-200 py-8 px-8 text-center">
         <p className="font-['Poppins',sans-serif] text-sm text-gray-400">
-          © 2025 ResistAct · Building grassroots resistance, one act at a time.
+          © 2026 ResistAct · Building grassroots resistance, one act at a time.
         </p>
       </footer>
 
