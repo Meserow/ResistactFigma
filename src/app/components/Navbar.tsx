@@ -11,11 +11,10 @@ function ResistActLogo() {
 }
 
 // ─── Filter config ────────────────────────────────────────────────────────────
-// Category is dynamic — derived from actually-loaded cards in App.tsx and
-// passed in via the `actsCategories` prop. Everything else stays static.
+// Category and Location are dynamic — derived from actually-loaded cards in
+// App.tsx and passed in via the `actsCategories` / `actsLocations` props.
+// Everything else stays static.
 const ACTS_STATIC_FILTERS: Record<string, string[]> = {
-  Type: ["Online", "In Person"],
-  Location: ["Online Only", "National", "Minnesota / Twin Cities", "California", "Maryland", "Illinois", "Washington State", "Massachusetts", "Other Local"],
   "My Interests": ["Art & Creativity", "Social Media", "Advocacy & Legal", "Street Action", "Fundraising"],
 };
 
@@ -37,6 +36,7 @@ interface NavbarProps {
   statsSynced?: boolean;
   activeFilters: Record<string, string[]>;
   actsCategories?: string[];
+  actsLocations?: string[];
   onFilterChange: (filterName: string, selected: string[]) => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
@@ -44,10 +44,11 @@ interface NavbarProps {
   onTabChange: (tab: "facts" | "acts") => void;
 }
 
-export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, onAskClick, statsActsCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange }: NavbarProps) {
-  // Build the full Acts filter map: dynamic Category + static rest.
+export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, onAskClick, statsActsCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange }: NavbarProps) {
+  // Build the full Acts filter map: dynamic Category + dynamic Location + static rest.
   const ACTS_FILTER_OPTIONS: Record<string, string[]> = {
     Category: actsCategories ?? [],
+    Location: actsLocations ?? [],
     ...ACTS_STATIC_FILTERS,
   };
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -367,25 +368,27 @@ export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoC
                   <ChevronDown size={13} className={`text-[#5a5a5a] transition-transform duration-150 ${isOpen ? "rotate-180" : ""}`} />
                 </button>
                 {isOpen && (
-                  <div className="absolute top-full left-0 mt-1.5 w-56 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50">
-                    <p className="px-4 pt-1 pb-2 font-['Poppins',sans-serif] text-[10px] uppercase tracking-widest text-gray-400 font-semibold border-b border-gray-50">
+                  <div className="absolute top-full left-0 mt-1.5 w-56 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50 flex flex-col max-h-[min(28rem,80vh)]">
+                    <p className="px-4 pt-1 pb-2 font-['Poppins',sans-serif] text-[10px] uppercase tracking-widest text-gray-400 font-semibold border-b border-gray-50 shrink-0">
                       {filterName}
                     </p>
-                    {options.map((option) => (
-                      <label key={option} className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={selected.includes(option)}
-                          onChange={() => toggleFilterOption(filterName, option)}
-                          className="accent-[#23297e] w-3.5 h-3.5 rounded shrink-0"
-                        />
-                        <span className="font-['Poppins',sans-serif] text-sm text-gray-700">{option}</span>
-                      </label>
-                    ))}
+                    <div className="overflow-y-auto flex-1">
+                      {options.map((option) => (
+                        <label key={option} className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={selected.includes(option)}
+                            onChange={() => toggleFilterOption(filterName, option)}
+                            className="accent-[#23297e] w-3.5 h-3.5 rounded shrink-0"
+                          />
+                          <span className="font-['Poppins',sans-serif] text-sm text-gray-700">{option}</span>
+                        </label>
+                      ))}
+                    </div>
                     {selected.length > 0 && (
                       <button
                         onClick={() => onFilterChange(filterName, [])}
-                        className="w-full text-center text-xs text-red-400 hover:text-red-600 py-2 border-t border-gray-50 mt-1 font-['Poppins',sans-serif] font-medium transition-colors"
+                        className="w-full text-center text-xs text-red-400 hover:text-red-600 py-2 border-t border-gray-50 mt-1 font-['Poppins',sans-serif] font-medium transition-colors shrink-0"
                       >
                         Clear filter
                       </button>

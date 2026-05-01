@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { X, Loader2, CheckCircle2, Pencil, Trash2 } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
 import type { ActionCardData } from "./ActionCard";
+import { LOCATION_OPTIONS } from "../lib/locations";
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
 
@@ -62,8 +63,17 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
   const [categoryColor,  setCategoryColor]  = useState(card.categoryColor);
   const [actionType,     setActionType]     = useState(card.actionType ?? "In Person Group");
   const [timeCommitment, setTimeCommitment] = useState(card.timeCommitment ?? "");
-  const [isOnline,       setIsOnline]       = useState(card.isOnline ?? false);
-  const [location,       setLocation]       = useState(card.location ?? "");
+  // Map the card's current location/isOnline into a single canonical option.
+  // Legacy free-form values that don't match the canonical list show as blank
+  // and require the editor to pick a value before saving.
+  const initialLocation = card.isOnline
+    ? "Online"
+    : (LOCATION_OPTIONS as readonly string[]).includes(card.location ?? "")
+      ? (card.location as string)
+      : "";
+  const [location, setLocation] = useState(initialLocation);
+  const isOnline = location === "Online";
+  const isLegacyLocation = !card.isOnline && !!card.location && !initialLocation;
   const [spotsTotal,     setSpotsTotal]     = useState<string>(
     card.spotsTotal === "Unlimited" ? "" : String(card.spotsTotal)
   );
@@ -131,7 +141,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
         actionType,
         timeCommitment: timeCommitment || undefined,
         isOnline,
-        location:       isOnline ? undefined : (location.trim() || undefined),
+        location:       isOnline ? undefined : (location || undefined),
         spotsTotal:     unlimited ? "Unlimited" : (Number(spotsTotal) || 10),
         authorName:     authorName.trim(),
         authorRole:     authorRole.trim(),
@@ -264,27 +274,23 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
               </select>
             </Field>
 
-            {/* Online toggle + Location */}
-            <div className="space-y-2.5">
-              <label className="flex items-center gap-2.5 cursor-pointer">
-                <input
-                  type="checkbox" checked={isOnline}
-                  onChange={(e) => { setIsOnline(e.target.checked); if (e.target.checked) setLocation(""); }}
-                  className="w-4 h-4 rounded accent-[#23297e]"
-                />
-                <span className="font-['Poppins',sans-serif] text-sm font-semibold text-gray-700">
-                  Online / virtual — no physical location
-                </span>
-              </label>
-              {!isOnline && (
-                <input
-                  type="text" value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  placeholder="City, State  (e.g. Austin, TX)"
-                  className={INPUT_CLS}
-                />
+            <Field label="Location">
+              <select
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                className={INPUT_CLS}
+              >
+                <option value="">— select —</option>
+                {LOCATION_OPTIONS.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+              {isLegacyLocation && (
+                <p className="mt-1.5 font-['Poppins',sans-serif] text-xs text-amber-600">
+                  Previous value: <span className="font-semibold">{card.location}</span> — pick a canonical location to update.
+                </p>
               )}
-            </div>
+            </Field>
 
             {/* Spots */}
             <Field label="Spots needed">

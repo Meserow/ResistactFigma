@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { X, ChevronLeft, Loader2, CheckCircle2, Search, Megaphone } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
 import type { UserApproval } from "../lib/supabase";
+import { LOCATION_OPTIONS } from "../lib/locations";
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
 
@@ -58,7 +59,6 @@ export function AskFlowModal({
   const [formSponsor,     setFormSponsor]     = useState("");
   const [formLink,        setFormLink]        = useState("");
   const [formLocation,    setFormLocation]    = useState("");
-  const [formIsOnline,    setFormIsOnline]    = useState(false);
   const [formSpots,       setFormSpots]       = useState("10");
   const [formUnlimited,   setFormUnlimited]   = useState(false);
   const [formVettingInfo, setFormVettingInfo] = useState("");
@@ -84,15 +84,16 @@ export function AskFlowModal({
     setFormError(null);
     setCreateLoading(true);
     try {
+      const isOnline = formLocation === "Online";
       const res = await fetch(`${API}/actions/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
         body: JSON.stringify({
           title: formTitle.trim(), description: formDesc.trim(),
           category: selectedCategory!, categoryColor: selectedCat?.color ?? "#23297e",
-          location: formIsOnline ? undefined : formLocation.trim() || undefined,
-          isOnline: formIsOnline,
-          actionType: formIsOnline ? "Online" : "In Person Group",
+          location: isOnline ? undefined : formLocation || undefined,
+          isOnline,
+          actionType: isOnline ? "Online" : "In Person Group",
           sponsor: formSponsor.trim() || undefined,
           link: formLink.trim() || undefined,
           vettingInfo: formVettingInfo.trim() || undefined,
@@ -190,23 +191,18 @@ export function AskFlowModal({
 
                 {/* Section: Logistics */}
                 <Section title="Logistics">
-                  <Toggle
-                    checked={formIsOnline}
-                    onChange={setFormIsOnline}
-                    label="Online or virtual"
-                    sub="No physical meeting place needed"
-                  />
-
-                  {!formIsOnline && (
-                    <Field label="Location">
-                      <input
-                        type="text" value={formLocation}
-                        onChange={(e) => setFormLocation(e.target.value)}
-                        placeholder="City, State (e.g. Austin, TX)"
-                        className={inputCls}
-                      />
-                    </Field>
-                  )}
+                  <Field label="Location" required>
+                    <select
+                      value={formLocation}
+                      onChange={(e) => setFormLocation(e.target.value)}
+                      className={inputCls}
+                    >
+                      <option value="">— select —</option>
+                      {LOCATION_OPTIONS.map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </Field>
 
                   <Field label="People needed">
                     <div className="flex items-center gap-3">

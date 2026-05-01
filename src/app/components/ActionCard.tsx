@@ -157,6 +157,18 @@ export function ActionCard({ card, onBoost, onShare, onBookmark, onEdit, isBoost
             {/* Gradient overlay for readability */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
 
+            {/* Stretched link — image area opens the same URL as the title.
+                Placed before badges/buttons so they remain clickable. */}
+            {(card.targetUrl || card.authorLink) && (
+              <a
+                href={card.targetUrl ?? card.authorLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={card.title}
+                className="absolute inset-0"
+              />
+            )}
+
             {/* Pencil + Bookmark */}
             <div className="absolute top-2.5 right-3">
               <TopControls light={true} />

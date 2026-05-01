@@ -158,7 +158,7 @@ const SEED_CARDS = [
   { id: 1028, category: "NEWS STORY", categoryColor: "#3b4a73", actionType: "Online", title: "Pitch a labor story (video)", description: "Worker-power video journalism.", isOnline: true, boosts: 4, spotsTotal: "Unlimited", authorName: "More Perfect Union", authorRole: "Movement Organization", targetUrl: "https://perfectunion.us/", topImageKey: "org_more-perfect-union" },
   { id: 1029, category: "NEWS STORY", categoryColor: "#3b4a73", actionType: "Online", title: "Send a dark-money tip", description: "David Sirota's outfit; dark money + corruption.", isOnline: true, boosts: 4, spotsTotal: "Unlimited", authorName: "The Lever", authorRole: "Movement Organization", targetUrl: "https://www.levernews.com/", topImageKey: "org_the-lever" },
   { id: 1030, category: "NEWS STORY", categoryColor: "#3b4a73", actionType: "Online", title: "Submit a campaign-finance tip", description: "Specialist on campaign-finance corruption.", isOnline: true, boosts: 4, spotsTotal: "Unlimited", authorName: "Sludge", authorRole: "Movement Organization", targetUrl: "https://readsludge.com/", topImageKey: "org_sludge" },
-  { id: 1031, category: "NEWS STORY", categoryColor: "#3b4a73", actionType: "Online", title: "Report a press-freedom violation", description: "Log a press-freedom incident.", isOnline: true, boosts: 4, spotsTotal: "Unlimited", authorName: "U.S. Press Freedom Tracker", authorRole: "Movement Organization", targetUrl: "https://pressfreedomtracker.us/", topImageKey: "org_u-s-press-freedom-tracker" },
+  { id: 1031, category: "NEWS STORY", categoryColor: "#3b4a73", actionType: "Online", title: "Report a press-freedom violation", description: "Log a press-freedom incident.", isOnline: true, boosts: 4, spotsTotal: "Unlimited", authorName: "U.S. Press Freedom Tracker", authorRole: "Movement Organization", targetUrl: "https://pressfreedomtracker.us/submit-incident/", topImageKey: "org_u-s-press-freedom-tracker" },
   { id: 1032, category: "MEETING", categoryColor: "#5a3e9e", actionType: "Online", title: "Find your nearest chapter + meeting time", description: "Largest socialist org in the US.", isOnline: true, boosts: 4, spotsTotal: "Unlimited", authorName: "DSA (Democratic Socialists of America)", authorRole: "Movement Organization", targetUrl: "https://www.dsausa.org/", topImageKey: "org_dsa-democratic-socialists-of-america" },
   { id: 1033, category: "MEETING", categoryColor: "#5a3e9e", actionType: "Online", title: "Apply to a virtual intro call", description: "White-organized solidarity work.", isOnline: true, boosts: 4, spotsTotal: "Unlimited", authorName: "SURJ (Showing Up for Racial Justice)", authorRole: "Movement Organization", targetUrl: "https://surj.org/", topImageKey: "org_surj-showing-up-for-racial-justice" },
   { id: 1034, category: "MEETING", categoryColor: "#5a3e9e", actionType: "Online", title: "Sign up for a hub welcome call", description: "Climate-led; remote-friendly hubs.", isOnline: true, boosts: 4, spotsTotal: "Unlimited", authorName: "Sunrise Movement", authorRole: "Movement Organization", targetUrl: "https://www.sunrisemovement.org/", topImageKey: "org_sunrise-movement" },
@@ -466,7 +466,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     // key (e.g. v2 → v3) whenever you've edited SEED_CARDS and want the live
     // feed to pick up the new title/url/image. Existing user activity (current
     // `boosts` count) is preserved — only metadata is overwritten.
-    const orgsSeeded = await kv.get("seed:org-actions:v2");
+    const orgsSeeded = await kv.get("seed:org-actions:v3");
     if (!orgsSeeded) {
       let count = 0;
       for (const card of SEED_CARDS) {
@@ -481,8 +481,8 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
         await kv.set(`action:${card.id}`, merged);
         count++;
       }
-      await kv.set("seed:org-actions:v2", true);
-      console.log(`Re-seeded ${count} org-action cards (v2).`);
+      await kv.set("seed:org-actions:v3", true);
+      console.log(`Re-seeded ${count} org-action cards (v3).`);
     }
 
     // One-time migration: any pre-rename card still using `spotsUsed` gets a

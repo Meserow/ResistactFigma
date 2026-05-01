@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Navbar } from "./components/Navbar";
 import { ActionCard, ActionCardData } from "./components/ActionCard";
 import { FactCard } from "./components/FactCard";
@@ -198,13 +198,6 @@ export default function App() {
       const cats = activeFilters["Category"] ?? [];
       if (cats.length > 0 && !cats.includes(card.category)) return false;
 
-      // Type
-      const types = activeFilters["Type"] ?? [];
-      if (types.length > 0) {
-        const cardType = card.actionType ?? (card.isOnline ? "Online" : "In Person");
-        if (!types.includes(cardType)) return false;
-      }
-
       // Location
       const locs = activeFilters["Location"] ?? [];
       if (locs.length > 0) {
@@ -224,7 +217,23 @@ export default function App() {
     });
   }
 
-  const displayedCards = applyFilters(cards).sort((a, b) => b.boosts - a.boosts);
+  // Stable random key per card id — break ties when sorting by boost so cards
+  // of the same boost count don't cluster by category. Keys persist across
+  // re-renders; new cards arriving via pagination get a fresh key on first
+  // sight.
+  const tieBreakKeysRef = useRef(new Map<number, number>());
+  for (const c of cards) {
+    if (!tieBreakKeysRef.current.has(c.id)) {
+      tieBreakKeysRef.current.set(c.id, Math.random());
+    }
+  }
+
+  const displayedCards = applyFilters(cards).sort((a, b) => {
+    if (b.boosts !== a.boosts) return b.boosts - a.boosts;
+    const aKey = tieBreakKeysRef.current.get(a.id) ?? 0;
+    const bKey = tieBreakKeysRef.current.get(b.id) ?? 0;
+    return aKey - bKey;
+  });
 
   // True when any filter chip is selected OR a search is active — bypasses
   // server pagination so client-side filtering sees the full dataset.
@@ -242,6 +251,17 @@ export default function App() {
       if (cat) set.add(cat);
     }
     return Array.from(set).sort();
+  }, [cards]);
+
+  // Distinct locations from currently-loaded cards. "Online Only" stays at
+  // the top as a special option that maps to `card.isOnline` in applyFilters.
+  const dynamicLocations = useMemo(() => {
+    const set = new Set<string>();
+    for (const c of cards) {
+      const loc = (c.location ?? "").trim();
+      if (loc) set.add(loc);
+    }
+    return ["Online Only", ...Array.from(set).sort()];
   }, [cards]);
 
   // ── On mount: restore session + listen for OAuth redirects ──
@@ -545,6 +565,7 @@ export default function App() {
         statsSynced={synced}
         activeFilters={activeFilters}
         actsCategories={dynamicCategories}
+        actsLocations={dynamicLocations}
         onFilterChange={handleFilterChange}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
