@@ -169,14 +169,6 @@ export default function App() {
   }
 
   // ── Apply filters client-side ──
-  const INTEREST_MAP: Record<string, string[]> = {
-    "Art & Creativity": ["ART PIECE", "CRAFTING"],
-    "Social Media": ["SOCIAL MEDIA", "BOOST"],
-    "Advocacy & Legal": ["PETITION", "TRAINING"],
-    "Street Action": ["FLASH MOB", "PROTEST"],
-    "Fundraising": ["FUNDING"],
-  };
-
   function applyFilters(allCards: ActionCardData[]): ActionCardData[] {
     const q = searchQuery.toLowerCase().trim();
     return allCards.filter((card) => {
@@ -206,34 +198,59 @@ export default function App() {
         if (!matchesOnline && !matchesLoc) return false;
       }
 
-      // My Interests — maps interest labels to categories
-      const interests = activeFilters["My Interests"] ?? [];
-      if (interests.length > 0) {
-        const validCats = interests.flatMap((i) => INTEREST_MAP[i] ?? []);
-        if (!validCats.includes(card.category)) return false;
-      }
-
       return true;
     });
   }
 
-  // Stable random key per card id — break ties when sorting by boost so cards
-  // of the same boost count don't cluster by category. Keys persist across
-  // re-renders; new cards arriving via pagination get a fresh key on first
-  // sight.
+  // Stable random key per card id — used for shuffling within boost groups.
+  // Keys persist across re-renders so card order doesn't reshuffle when a
+  // user boosts something; new cards from pagination get a fresh key on
+  // first sight.
   const tieBreakKeysRef = useRef(new Map<number, number>());
   for (const c of cards) {
     if (!tieBreakKeysRef.current.has(c.id)) {
       tieBreakKeysRef.current.set(c.id, Math.random());
     }
   }
+  const keyOf = (c: ActionCardData) => tieBreakKeysRef.current.get(c.id) ?? 0;
 
-  const displayedCards = applyFilters(cards).sort((a, b) => {
-    if (b.boosts !== a.boosts) return b.boosts - a.boosts;
-    const aKey = tieBreakKeysRef.current.get(a.id) ?? 0;
-    const bKey = tieBreakKeysRef.current.get(b.id) ?? 0;
-    return aKey - bKey;
-  });
+  // Sort: boost desc → within each boost level, round-robin by category so
+  // same-category cards never cluster. Order inside each (boost, category)
+  // bucket is the stable random key.
+  function interleaveByCategory(group: ActionCardData[]): ActionCardData[] {
+    const buckets = new Map<string, ActionCardData[]>();
+    for (const c of group) {
+      const cat = c.category || "_other";
+      if (!buckets.has(cat)) buckets.set(cat, []);
+      buckets.get(cat)!.push(c);
+    }
+    for (const arr of buckets.values()) arr.sort((a, b) => keyOf(a) - keyOf(b));
+    // Stable random category visit order (uses the first card in each bucket
+    // as a proxy seed — same input always produces the same order).
+    const cats = Array.from(buckets.keys()).sort((a, b) => keyOf(buckets.get(a)![0]) - keyOf(buckets.get(b)![0]));
+    const out: ActionCardData[] = [];
+    while (out.length < group.length) {
+      for (const cat of cats) {
+        const bucket = buckets.get(cat)!;
+        if (bucket.length > 0) out.push(bucket.shift()!);
+      }
+    }
+    return out;
+  }
+
+  const displayedCards = (() => {
+    const filtered = applyFilters(cards);
+    const byBoost = new Map<number, ActionCardData[]>();
+    for (const c of filtered) {
+      const b = c.boosts ?? 0;
+      if (!byBoost.has(b)) byBoost.set(b, []);
+      byBoost.get(b)!.push(c);
+    }
+    const boostLevels = Array.from(byBoost.keys()).sort((a, b) => b - a);
+    const out: ActionCardData[] = [];
+    for (const b of boostLevels) out.push(...interleaveByCategory(byBoost.get(b)!));
+    return out;
+  })();
 
   // True when any filter chip is selected OR a search is active — bypasses
   // server pagination so client-side filtering sees the full dataset.
@@ -242,8 +259,7 @@ export default function App() {
     Object.values(activeFilters).some((arr) => (arr ?? []).length > 0);
 
   // Distinct categories from currently-loaded cards, sorted alphabetically.
-  // Drives the Category filter dropdown so the list always reflects the
-  // actual data instead of a hand-maintained constant.
+  // Drives the Category pills in the navbar.
   const dynamicCategories = useMemo(() => {
     const set = new Set<string>();
     for (const c of cards) {

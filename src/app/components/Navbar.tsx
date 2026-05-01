@@ -11,12 +11,10 @@ function ResistActLogo() {
 }
 
 // ─── Filter config ────────────────────────────────────────────────────────────
-// Category and Location are dynamic — derived from actually-loaded cards in
-// App.tsx and passed in via the `actsCategories` / `actsLocations` props.
-// Everything else stays static.
-const ACTS_STATIC_FILTERS: Record<string, string[]> = {
-  "My Interests": ["Art & Creativity", "Social Media", "Advocacy & Legal", "Street Action", "Fundraising"],
-};
+// Both Acts filters (Category, Location) are dynamic — derived from the
+// loaded cards in App.tsx and passed in via the `actsCategories` /
+// `actsLocations` props. Category is rendered as inline pills (top N + a
+// "more" overflow dropdown), Location as a single dropdown.
 
 const FACTS_FILTER_OPTIONS: Record<string, string[]> = {
   Category: ["Economy", "Immigration", "Crime & Policing", "Elections & Democracy", "Energy & Climate", "Health & COVID", "Women & Families", "Work, Wages & Education", "Media & Institutions", "Foreign Policy & Security", "Taxes"],
@@ -45,11 +43,11 @@ interface NavbarProps {
 }
 
 export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, onAskClick, statsActsCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange }: NavbarProps) {
-  // Build the full Acts filter map: dynamic Category + dynamic Location + static rest.
+  // Acts filters in render order: Location dropdown first, Category pills second.
+  // Used for "Clear all" and the mobile filter row that shows just the names.
   const ACTS_FILTER_OPTIONS: Record<string, string[]> = {
-    Category: actsCategories ?? [],
     Location: actsLocations ?? [],
-    ...ACTS_STATIC_FILTERS,
+    Category: actsCategories ?? [],
   };
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -86,23 +84,14 @@ export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoC
 
   const totalActiveFilters = Object.values(activeFilters).reduce((sum, arr) => sum + arr.length, 0);
 
-  // ── Facts: rank categories by count desc, ties broken by first-appearance.
-  //   Top 5 always show as inline pills; the rest go into a "More" dropdown.
+  // ── Facts: distinct categories sorted alphabetically.
+  //   First 5 show as inline pills; the rest go into a "More" dropdown.
   //   Anything currently selected stays visible as a pill regardless. ───────
   const FACTS_INLINE_PILL_LIMIT = 5;
   const factsCategoriesRanked = useMemo(() => {
-    const counts = new Map<string, number>();
-    const firstSeen = new Map<string, number>();
-    FACT_CARDS.forEach((f, i) => {
-      const c = f.category;
-      counts.set(c, (counts.get(c) ?? 0) + 1);
-      if (!firstSeen.has(c)) firstSeen.set(c, i);
-    });
-    return Array.from(counts.keys()).sort((a, b) => {
-      const diff = (counts.get(b)! - counts.get(a)!);
-      if (diff !== 0) return diff;
-      return firstSeen.get(a)! - firstSeen.get(b)!;
-    });
+    const set = new Set<string>();
+    for (const f of FACT_CARDS) set.add(f.category);
+    return Array.from(set).sort();
   }, []);
   const factsSelected = activeFilters["Category"] ?? [];
   const factsTopVisible = factsCategoriesRanked.slice(0, FACTS_INLINE_PILL_LIMIT);
@@ -112,6 +101,22 @@ export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoC
   const factsInlinePills = [...factsTopVisible, ...factsExtraVisible];
   const factsMoreOpen = openFilter === "facts-more";
   const factsMoreSelectedCount = factsOverflow.filter((c) => factsSelected.includes(c)).length;
+
+  // ── Acts: same pattern as Facts, but the source list is `actsCategories`
+  //   which App.tsx already ranks by card count (popular categories first).
+  //   "More" dropdown holds the long tail. ───────────────────────────────────
+  const ACTS_INLINE_PILL_LIMIT = 5;
+  const actsCats = actsCategories ?? [];
+  const actsCatsSelected = activeFilters["Category"] ?? [];
+  const actsTopVisible = actsCats.slice(0, ACTS_INLINE_PILL_LIMIT);
+  const actsOverflow = actsCats.slice(ACTS_INLINE_PILL_LIMIT);
+  const actsExtraVisible = actsOverflow.filter((c) => actsCatsSelected.includes(c));
+  const actsInlinePills = [...actsTopVisible, ...actsExtraVisible];
+  const actsMoreOpen = openFilter === "acts-more";
+  const actsMoreSelectedCount = actsOverflow.filter((c) => actsCatsSelected.includes(c)).length;
+  const locOptions = actsLocations ?? [];
+  const locSelected = activeFilters["Location"] ?? [];
+  const locOpen = openFilter === "Location";
 
   function handleActClick() {
     if (!isLoggedIn) { onLoginClick(); return; }
@@ -345,59 +350,122 @@ export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoC
             )}
           </>
         ) : (
-          /* ── Acts: dropdown filters ── */
-          Object.entries(ACTS_FILTER_OPTIONS).map(([filterName, options]) => {
-            const selected = activeFilters[filterName] ?? [];
-            const isOpen = openFilter === filterName;
-            return (
-              <div key={filterName} className="relative shrink-0">
+          /* ── Acts: Location dropdown + Category pills (mirrors Facts UX) ── */
+          <>
+            {/* Location dropdown — first */}
+            <div className="relative shrink-0">
+              <button
+                onClick={() => setOpenFilter(locOpen ? null : "Location")}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
+                  locSelected.length > 0
+                    ? "border-[#23297e] text-[#23297e] bg-[#23297e]/5"
+                    : "border-transparent text-gray-600 hover:bg-white hover:shadow-sm hover:border-gray-200"
+                }`}
+              >
+                Location
+                {locSelected.length > 0 && (
+                  <span className="w-4 h-4 rounded-full bg-[#fd8e33] text-white text-[9px] flex items-center justify-center font-bold shrink-0">
+                    {locSelected.length}
+                  </span>
+                )}
+                <ChevronDown size={13} className={`text-[#5a5a5a] transition-transform duration-150 ${locOpen ? "rotate-180" : ""}`} />
+              </button>
+              {locOpen && (
+                <div className="absolute top-full left-0 mt-1.5 w-56 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50 flex flex-col max-h-[min(28rem,80vh)]">
+                  <p className="px-4 pt-1 pb-2 font-['Poppins',sans-serif] text-[10px] uppercase tracking-widest text-gray-400 font-semibold border-b border-gray-50 shrink-0">
+                    Location
+                  </p>
+                  <div className="overflow-y-auto flex-1">
+                    {locOptions.map((option) => (
+                      <label key={option} className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={locSelected.includes(option)}
+                          onChange={() => toggleFilterOption("Location", option)}
+                          className="accent-[#23297e] w-3.5 h-3.5 rounded shrink-0"
+                        />
+                        <span className="font-['Poppins',sans-serif] text-sm text-gray-700">{option}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {locSelected.length > 0 && (
+                    <button
+                      onClick={() => onFilterChange("Location", [])}
+                      className="w-full text-center text-xs text-red-400 hover:text-red-600 py-2 border-t border-gray-50 mt-1 font-['Poppins',sans-serif] font-medium transition-colors shrink-0"
+                    >
+                      Clear filter
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Category pills + "more" overflow — mirrors Facts UX */}
+            {actsInlinePills.map((option) => {
+              const selected = actsCatsSelected.includes(option);
+              return (
                 <button
-                  onClick={() => setOpenFilter(isOpen ? null : filterName)}
-                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
-                    selected.length > 0
-                      ? "border-[#23297e] text-[#23297e] bg-[#23297e]/5"
-                      : "border-transparent text-gray-600 hover:bg-white hover:shadow-sm hover:border-gray-200"
+                  key={option}
+                  onClick={() => toggleFilterOption("Category", option)}
+                  className={`px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
+                    selected
+                      ? "bg-[#23297e] text-white border-[#23297e]"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-[#23297e] hover:text-[#23297e]"
                   }`}
                 >
-                  {filterName}
-                  {selected.length > 0 && (
+                  {option}
+                </button>
+              );
+            })}
+            {actsOverflow.length > 0 && (
+              <div className="relative shrink-0">
+                <button
+                  onClick={() => setOpenFilter(actsMoreOpen ? null : "acts-more")}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium whitespace-nowrap border transition-all ${
+                    actsMoreSelectedCount > 0
+                      ? "border-[#23297e] text-[#23297e] bg-[#23297e]/5"
+                      : "border-gray-200 text-gray-600 bg-white hover:border-[#23297e] hover:text-[#23297e]"
+                  }`}
+                >
+                  + {actsOverflow.length - actsExtraVisible.length} more
+                  {actsMoreSelectedCount > 0 && (
                     <span className="w-4 h-4 rounded-full bg-[#fd8e33] text-white text-[9px] flex items-center justify-center font-bold shrink-0">
-                      {selected.length}
+                      {actsMoreSelectedCount}
                     </span>
                   )}
-                  <ChevronDown size={13} className={`text-[#5a5a5a] transition-transform duration-150 ${isOpen ? "rotate-180" : ""}`} />
+                  <ChevronDown size={12} className={`text-[#5a5a5a] transition-transform duration-150 ${actsMoreOpen ? "rotate-180" : ""}`} />
                 </button>
-                {isOpen && (
-                  <div className="absolute top-full left-0 mt-1.5 w-56 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50 flex flex-col max-h-[min(28rem,80vh)]">
+                {actsMoreOpen && (
+                  <div className="absolute top-full left-0 mt-1.5 w-64 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50 flex flex-col max-h-[min(28rem,80vh)]">
                     <p className="px-4 pt-1 pb-2 font-['Poppins',sans-serif] text-[10px] uppercase tracking-widest text-gray-400 font-semibold border-b border-gray-50 shrink-0">
-                      {filterName}
+                      More categories
                     </p>
                     <div className="overflow-y-auto flex-1">
-                      {options.map((option) => (
+                      {actsOverflow.map((option) => (
                         <label key={option} className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
                           <input
                             type="checkbox"
-                            checked={selected.includes(option)}
-                            onChange={() => toggleFilterOption(filterName, option)}
+                            checked={actsCatsSelected.includes(option)}
+                            onChange={() => toggleFilterOption("Category", option)}
                             className="accent-[#23297e] w-3.5 h-3.5 rounded shrink-0"
                           />
                           <span className="font-['Poppins',sans-serif] text-sm text-gray-700">{option}</span>
                         </label>
                       ))}
                     </div>
-                    {selected.length > 0 && (
+                    {actsMoreSelectedCount > 0 && (
                       <button
-                        onClick={() => onFilterChange(filterName, [])}
+                        onClick={() => onFilterChange("Category", actsCatsSelected.filter((c) => !actsOverflow.includes(c)))}
                         className="w-full text-center text-xs text-red-400 hover:text-red-600 py-2 border-t border-gray-50 mt-1 font-['Poppins',sans-serif] font-medium transition-colors shrink-0"
                       >
-                        Clear filter
+                        Clear these
                       </button>
                     )}
                   </div>
                 )}
               </div>
-            );
-          })
+            )}
+          </>
         )}
 
         {/* Clear all */}
