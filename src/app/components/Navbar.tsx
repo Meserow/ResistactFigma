@@ -83,6 +83,8 @@ export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoC
   const isAdmin = approval?.isAdmin === true;
 
   const totalActiveFilters = Object.values(activeFilters).reduce((sum, arr) => sum + arr.length, 0);
+  const hasActiveSearch = searchQuery.trim().length > 0;
+  const totalActiveAll = totalActiveFilters + (hasActiveSearch ? 1 : 0);
 
   // ── Facts: distinct categories sorted alphabetically.
   //   First 5 show as inline pills; the rest go into a "More" dropdown.
@@ -468,14 +470,17 @@ export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoC
           </>
         )}
 
-        {/* Clear all */}
-        {totalActiveFilters > 0 && (
+        {/* Clear all — clears filter chips AND the search box */}
+        {totalActiveAll > 0 && (
           <button
-            onClick={() => Object.keys(activeTab === "facts" ? FACTS_FILTER_OPTIONS : ACTS_FILTER_OPTIONS).forEach((f) => onFilterChange(f, []))}
+            onClick={() => {
+              Object.keys(activeTab === "facts" ? FACTS_FILTER_OPTIONS : ACTS_FILTER_OPTIONS).forEach((f) => onFilterChange(f, []));
+              if (hasActiveSearch) onSearchChange("");
+            }}
             className="shrink-0 ml-1 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-['Poppins',sans-serif] font-semibold text-red-400 hover:text-red-600 hover:bg-red-50 transition-all border border-transparent hover:border-red-100"
           >
             <X size={11} />
-            Clear all ({totalActiveFilters})
+            Clear all ({totalActiveAll})
           </button>
         )}
 
