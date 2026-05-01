@@ -11,6 +11,7 @@ import { JoinACTersModal } from "./components/JoinACTersModal";
 import { InfoModal } from "./components/InfoModal";
 import { EditCardModal } from "./components/EditCardModal";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { HomeHero } from "./components/HomeHero";
 import svgPaths from "../imports/svg-77lgd1zdt6";
 import { projectId, publicAnonKey } from "/utils/supabase/info";
 import { supabase } from "./lib/supabase";
@@ -41,6 +42,7 @@ interface ServerCard {
   authorAvatarKey?: string | null;
   authorAvatarUrl?: string | null;
   createdBy?: string;
+  quickAction?: boolean;
 }
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
@@ -157,6 +159,7 @@ export default function App() {
   const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>({});
   const [activeTab, setActiveTab] = useState<"facts" | "acts">("acts");
   const [searchQuery, setSearchQuery] = useState("");
+  const [quickActionsOnly, setQuickActionsOnly] = useState(false);
 
   function handleFilterChange(filterName: string, selected: string[]) {
     setActiveFilters((prev) => ({ ...prev, [filterName]: selected }));
@@ -166,6 +169,7 @@ export default function App() {
     setActiveTab(tab);
     setActiveFilters({});
     setSearchQuery("");
+    setQuickActionsOnly(false);
   }
 
   // ── Apply filters client-side ──
@@ -197,6 +201,9 @@ export default function App() {
         const matchesLoc = card.location && locs.includes(card.location);
         if (!matchesOnline && !matchesLoc) return false;
       }
+
+      // Quick actions only (5–10 min wins)
+      if (quickActionsOnly && !card.quickAction) return false;
 
       return true;
     });
@@ -256,6 +263,7 @@ export default function App() {
   // server pagination so client-side filtering sees the full dataset.
   const hasActiveFilters =
     searchQuery.trim().length > 0 ||
+    quickActionsOnly ||
     Object.values(activeFilters).some((arr) => (arr ?? []).length > 0);
 
   // Distinct categories from currently-loaded cards, sorted alphabetically.
@@ -587,6 +595,13 @@ export default function App() {
         onSearchChange={setSearchQuery}
         activeTab={activeTab}
         onTabChange={handleTabChange}
+        quickActionsOnly={quickActionsOnly}
+        onQuickActionsChange={setQuickActionsOnly}
+        heroSlot={
+          activeTab === "acts" && !approval ? (
+            <HomeHero onJoinClick={() => setAuthModalOpen(true)} />
+          ) : null
+        }
       />
 
       <main className="px-4 md:px-8 py-8">

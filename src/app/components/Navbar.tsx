@@ -1,7 +1,8 @@
 import logoImg from "../../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
 import { useState, useRef, useEffect, useMemo } from "react";
+import type { ReactNode } from "react";
 import { FACT_CARDS } from "../data/factCards";
-import { Bell, ChevronDown, Clock, Info, LogIn, LogOut, Menu, Plus, Search, ShieldCheck, X } from "lucide-react";
+import { Bell, ChevronDown, Clock, Info, LogIn, LogOut, Menu, Plus, Search, ShieldCheck, X, Zap } from "lucide-react";
 import type { UserApproval } from "../lib/supabase";
 
 function ResistActLogo() {
@@ -40,9 +41,14 @@ interface NavbarProps {
   onSearchChange: (q: string) => void;
   activeTab: "facts" | "acts";
   onTabChange: (tab: "facts" | "acts") => void;
+  /** Render between the top bar and the filter row (e.g. the homepage hero). */
+  heroSlot?: ReactNode;
+  /** Quick-actions toggle: when true, only show 5–10 min "quick win" cards. */
+  quickActionsOnly?: boolean;
+  onQuickActionsChange?: (v: boolean) => void;
 }
 
-export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, onAskClick, statsActsCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange }: NavbarProps) {
+export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, onAskClick, statsActsCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange }: NavbarProps) {
   // Acts filters in render order: Location dropdown first, Category pills second.
   // Used for "Clear all" and the mobile filter row that shows just the names.
   const ACTS_FILTER_OPTIONS: Record<string, string[]> = {
@@ -84,7 +90,7 @@ export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoC
 
   const totalActiveFilters = Object.values(activeFilters).reduce((sum, arr) => sum + arr.length, 0);
   const hasActiveSearch = searchQuery.trim().length > 0;
-  const totalActiveAll = totalActiveFilters + (hasActiveSearch ? 1 : 0);
+  const totalActiveAll = totalActiveFilters + (hasActiveSearch ? 1 : 0) + (quickActionsOnly ? 1 : 0);
 
   // ── Facts: distinct categories sorted alphabetically.
   //   First 5 show as inline pills; the rest go into a "More" dropdown.
@@ -281,9 +287,31 @@ export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoC
         </button>
       </div>
 
+      {/* ── Hero slot (optional) — sits between top bar and filter row ── */}
+      {heroSlot}
+
       {/* ── Filter bar ── */}
       <div className="px-5 md:px-8 py-2 bg-[#f7f7f7] border-t border-gray-100 hidden md:flex items-center gap-1 flex-wrap" ref={filterBarRef}>
         <span className="font-['Poppins',sans-serif] text-[#888] text-sm font-medium shrink-0 mr-2">Filter by:</span>
+
+        {/* Quick-actions toggle (Acts tab only) */}
+        {activeTab === "acts" && onQuickActionsChange && (
+          <button
+            onClick={() => onQuickActionsChange(!quickActionsOnly)}
+            className={`shrink-0 mr-1 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
+              quickActionsOnly
+                ? "border-[#fd8e33] text-[#fd8e33] bg-[#fd8e33]/10"
+                : "border-transparent text-gray-600 hover:bg-white hover:shadow-sm hover:border-gray-200"
+            }`}
+            title="Show only actions that take 5–10 minutes"
+          >
+            <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center ${quickActionsOnly ? "bg-[#fd8e33] border-[#fd8e33]" : "border-gray-300"}`}>
+              {quickActionsOnly && <X size={10} className="text-white rotate-45" strokeWidth={3} />}
+            </span>
+            <Zap size={13} className={quickActionsOnly ? "text-[#fd8e33]" : "text-gray-400"} fill={quickActionsOnly ? "#fd8e33" : "none"} />
+            Quick wins
+          </button>
+        )}
 
         {activeTab === "facts" ? (
           /* ── Facts: top-N category pills + "More" dropdown ───────────── */
@@ -476,6 +504,7 @@ export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoC
             onClick={() => {
               Object.keys(activeTab === "facts" ? FACTS_FILTER_OPTIONS : ACTS_FILTER_OPTIONS).forEach((f) => onFilterChange(f, []));
               if (hasActiveSearch) onSearchChange("");
+              if (quickActionsOnly && onQuickActionsChange) onQuickActionsChange(false);
             }}
             className="shrink-0 ml-1 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-['Poppins',sans-serif] font-semibold text-red-400 hover:text-red-600 hover:bg-red-50 transition-all border border-transparent hover:border-red-100"
           >

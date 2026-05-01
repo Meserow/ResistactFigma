@@ -25,6 +25,8 @@ export interface ActionCardData {
   isFeatured?: boolean;
   featuredIllustration?: React.ReactNode;
   createdBy?: string;
+  /** True for actions that take ~5–10 minutes — drives the "Quick wins" filter. */
+  quickAction?: boolean;
 }
 
 interface ActionCardProps {
