@@ -56,7 +56,11 @@ function resolveCard(raw: ServerCard): ActionCardData {
     boosts:       raw.boosts ?? raw.spotsUsed ?? 0,
     completions:  raw.completions ?? 0,
     targetUrl:    raw.targetUrl ?? undefined,
-    topImage:     raw.topImageKey ? IMAGE_MAP[raw.topImageKey] : (raw.topImageUrl ?? undefined),
+    // Explicit topImageUrl wins over topImageKey so admin edits to the image
+    // override the seed-provided org logo. Empty/null URL falls back to the key.
+    topImage:     (raw.topImageUrl && raw.topImageUrl.length > 0)
+                    ? raw.topImageUrl
+                    : (raw.topImageKey ? IMAGE_MAP[raw.topImageKey] : undefined),
     authorAvatar: raw.authorAvatarKey ? IMAGE_MAP[raw.authorAvatarKey] : (raw.authorAvatarUrl ?? undefined),
   };
 }
@@ -691,11 +695,11 @@ export default function App() {
           /* ── Acts view ── */
           <>
             {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {Array.from({ length: 10 }).map((_, i) => <CardSkeleton key={i} />)}
               </div>
             ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {displayedCards.map((card) => (
                 <ActionCard
                   key={card.id}

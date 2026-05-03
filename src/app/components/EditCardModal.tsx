@@ -81,6 +81,10 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
   const [authorName,     setAuthorName]     = useState(card.authorName);
   const [authorRole,     setAuthorRole]     = useState(card.authorRole);
   const [authorLink,     setAuthorLink]     = useState(card.authorLink ?? "");
+  // Header image URL — the resolved card.topImage may be a Vite-bundled asset
+  // path (e.g. /assets/foo.svg) when topImageKey is set; only seed the field
+  // from the raw URL the server stored, so we don't write a bundled path back.
+  const [topImageUrl,    setTopImageUrl]    = useState<string>((card as any).topImageUrl ?? "");
 
   const [loading,  setLoading]  = useState(false);
   const [success,  setSuccess]  = useState(false);
@@ -146,6 +150,8 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
         authorName:     authorName.trim(),
         authorRole:     authorRole.trim(),
         authorLink:     authorLink.trim() || undefined,
+        // null clears the URL so the seed-provided topImageKey can take over again.
+        topImageUrl:    topImageUrl.trim() || null,
       };
 
       const res = await fetch(`${API}/actions/${card.id}`, {
@@ -310,6 +316,29 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
                   <span className="font-['Poppins',sans-serif] text-sm text-gray-600">Unlimited</span>
                 </label>
               </div>
+            </Field>
+
+            {/* Header image */}
+            <Field label="Header Image URL">
+              <input
+                type="url" value={topImageUrl}
+                onChange={(e) => setTopImageUrl(e.target.value)}
+                placeholder="https://… (paste any image URL; leave blank for default)"
+                className={INPUT_CLS}
+              />
+              {(topImageUrl.trim() || card.topImage) && (
+                <div className="mt-2 relative h-24 rounded-lg overflow-hidden bg-gray-50 border border-gray-200">
+                  <img
+                    src={topImageUrl.trim() || card.topImage}
+                    alt="Header preview"
+                    className="w-full h-full object-cover"
+                    onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = "none"; }}
+                  />
+                </div>
+              )}
+              <p className="mt-1.5 font-['Poppins',sans-serif] text-[11px] text-gray-400">
+                Paste an image URL (e.g. an org logo or photo). Tip: right-click → Copy Image Address on any web image.
+              </p>
             </Field>
 
             {/* Divider */}
