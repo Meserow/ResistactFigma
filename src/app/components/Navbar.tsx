@@ -183,9 +183,15 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
             <p className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-2xl leading-tight tracking-tight">
               ResistAct
             </p>
-            <p className="font-['Poppins',sans-serif] text-[#767574] text-[11px] leading-snug hidden lg:block max-w-[200px] italic">
-              "Never doubt that a small group of thoughtful, committed citizens can change the world; indeed, it's the only thing that ever has."
-              <span className="not-italic font-semibold block">— Margaret Mead</span>
+            <p
+              onClick={onInfoClick}
+              title="How does ResistAct work?"
+              className="font-['Poppins',sans-serif] text-[#767574] text-[11px] leading-snug hidden lg:block max-w-[200px] italic cursor-pointer hover:text-[#23297e] transition-colors"
+            >
+              "Never doubt that a small group of thoughtful, committed citizens can change the world.
+              <br />
+              Indeed, it's the only thing that ever has."{" "}
+              <span className="not-italic font-semibold">— Margaret Mead</span>
             </p>
           </div>
         </div>
@@ -515,6 +521,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
             </div>
 
             {/* Category pills + "more" overflow — mirrors Facts UX */}
+            <span className="font-['Poppins',sans-serif] text-[#888] text-sm font-medium shrink-0">Category:</span>
             {actsInlinePills.map((option) => {
               const selected = actsCatsSelected.includes(option);
               return (
@@ -602,24 +609,15 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-[#fd8e33]" />
             <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
-              <strong className="text-[#23297e] font-bold">{statsSynced ? statsActsCount : "—"}</strong>{" "}resistance acts active
+              <strong className="text-[#23297e] font-bold">{statsSynced ? statsActsCount : "—"}</strong>{" "}resistance acts
             </span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-[#127f05]" />
             <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
-              <strong className="text-[#127f05] font-bold">{FACT_CARDS.length}</strong>{" "}facts in the database
+              <strong className="text-[#127f05] font-bold">{FACT_CARDS.length}</strong>{" "}resistance facts
             </span>
           </div>
-          {/* About / Info button — moved next to the stats */}
-          <button
-            onClick={onInfoClick}
-            title="How does ResistAct work?"
-            className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 text-gray-500 hover:border-[#23297e] hover:text-[#23297e] hover:bg-[#23297e]/5 transition-all font-['Poppins',sans-serif] font-semibold text-xs whitespace-nowrap"
-          >
-            <Info size={14} />
-            About
-          </button>
         </div>
       </div>
 

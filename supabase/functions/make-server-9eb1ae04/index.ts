@@ -932,7 +932,7 @@ app.delete("/make-server-9eb1ae04/actions/:id", async (c) => {
     // Try seed card first
     const seedCard = await kv.get(`action:${id}`);
     if (seedCard) {
-      await kv.delete(`action:${id}`);
+      await kv.del(`action:${id}`);
       console.log(`Admin ${admin.record.name} deleted seed card #${id}`);
       return c.json({ success: true });
     }
@@ -940,7 +940,7 @@ app.delete("/make-server-9eb1ae04/actions/:id", async (c) => {
     // Try user-created card
     const userCard = await kv.get(`user-action:${id}`);
     if (userCard) {
-      await kv.delete(`user-action:${id}`);
+      await kv.del(`user-action:${id}`);
       const currentIds = (await kv.get("user-action:ids") ?? []) as number[];
       await kv.set("user-action:ids", currentIds.filter((x) => x !== id));
       console.log(`Admin ${admin.record.name} deleted user card #${id}`);

@@ -12,7 +12,7 @@ export function HomeHero({ onJoinClick: _onJoinClick }: HomeHeroProps) {
         <p className="mt-4 font-['Poppins',sans-serif] text-gray-500 text-base leading-[1.6]">
           If you've been doomscrolling, rage-texting friends, or lying awake wondering how we got here —
           <br />
-          you're not alone. And if you're tired of being told the only answers are "vote" and "donate" —
+          you're not alone. And if you're tired of being told the only answers are "vote" and "donate" and infrequent protests —
           <span className="block italic">you're really not alone.</span>
         </p>
         <p className="mt-3 font-['Poppins',sans-serif] text-gray-500 text-base leading-[1.6]">
