@@ -16,9 +16,9 @@ export function HomeHero({ onJoinClick: _onJoinClick }: HomeHeroProps) {
           <span className="block italic">you're really not alone.</span>
         </p>
         <p className="mt-3 font-['Poppins',sans-serif] text-gray-500 text-base leading-[1.6]">
-          ResistAct is a daily menu of small, concrete actions you can actually take.
+          ResistAct is a daily menu of small, grassroots, concrete micro-actions you can actually take.
           <br />
-          Calls, postcards, showing up, speaking up — the micro-actions that add up.
+          And taking daily action is the only way out.
         </p>
         <p className="mt-3 font-['Poppins',sans-serif] text-gray-500 text-base leading-[1.6]">
           Browse anonymously. No signup, no tracking, no donation texts.
