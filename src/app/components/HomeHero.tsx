@@ -15,7 +15,9 @@ export function HomeHero({ onJoinClick }: HomeHeroProps) {
       />
       <div className="relative z-10 max-w-[880px] mx-auto px-5 pt-8 pb-6 text-center">
         <h1 className="font-serif text-gray-900 text-[28px] md:text-[36px] font-medium leading-[1.15]">
-          MAGA is nuts. But what can <em className="italic">I</em> do?
+          America is out of control. MAGA is nuts.
+          <br />
+          <em className="italic">But what can I do?</em>
         </h1>
         <p className="mt-4 font-['Poppins',sans-serif] text-gray-500 text-base leading-[1.6]">
           If you've been doomscrolling, rage-texting friends, or lying awake wondering how we got here —
@@ -36,7 +38,7 @@ export function HomeHero({ onJoinClick }: HomeHeroProps) {
           >
             #jointheresistance
           </a>
-          {" "}– on your terms.
+          {" "}— on your terms.
         </p>
         <p className="mt-5 font-['Poppins',sans-serif] text-gray-900 text-base">
           <b>Pick one. Do it. Share it.</b><br /><i>Come back tomorrow.</i>

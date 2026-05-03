@@ -175,10 +175,10 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               title="How does ResistAct work?"
               className="font-['Poppins',sans-serif] text-[#767574] text-[11px] leading-snug hidden lg:block max-w-[200px] italic cursor-pointer hover:text-[#23297e] transition-colors"
             >
-              "Never doubt that a small group of thoughtful, committed citizens can change the world.
+              "Never doubt that a small group
               <br />
-              Indeed, it's the only thing that ever has."{" "}
-              <span className="not-italic font-semibold">— Margaret Mead</span>
+              of thoughtful, committed citizens can change the world. Indeed, it's the only thing that ever has."
+              <span className="not-italic font-semibold block text-right">— Margaret Mead</span>
             </p>
           </div>
         </div>
