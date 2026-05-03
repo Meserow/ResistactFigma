@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { X, ChevronLeft, Loader2, CheckCircle2, Search, Megaphone } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
 import type { UserApproval } from "../lib/supabase";
@@ -65,6 +65,7 @@ export function AskFlowModal({
   const [createLoading,   setCreateLoading]   = useState(false);
   const [createSuccess,   setCreateSuccess]   = useState(false);
   const [formError,       setFormError]       = useState<string | null>(null);
+  const submittingRef = useRef(false);
 
   const isLoggedIn = !!approval;
   const isApproved = approval?.status === "approved";
@@ -77,10 +78,12 @@ export function AskFlowModal({
   }, [search]);
 
   async function handleCreateAsk() {
+    if (submittingRef.current) return;
     if (!isLoggedIn) { onLoginRequired(); return; }
     if (!formTitle.trim() || !formDesc.trim()) {
       setFormError("Title and description are required."); return;
     }
+    submittingRef.current = true;
     setFormError(null);
     setCreateLoading(true);
     try {
@@ -107,6 +110,7 @@ export function AskFlowModal({
       setTimeout(onClose, 2500);
     } finally {
       setCreateLoading(false);
+      submittingRef.current = false;
     }
   }
 
