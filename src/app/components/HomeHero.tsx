@@ -20,8 +20,8 @@ export function HomeHero({ onJoinClick: _onJoinClick }: HomeHeroProps) {
           <br />
           No signup. No email harvesting. No donation texts. Just micro-actions.
         </p>
-        <p className="mt-5 font-['Poppins',sans-serif] text-gray-900 text-base font-bold">
-          Pick one. Do it. Come back tomorrow.
+        <p className="mt-5 font-['Poppins',sans-serif] text-gray-900 text-base">
+          <b>Pick One. Do It. Share It. </b><i>Come back tomorrow. </i>
         </p>
       </div>
     </div>

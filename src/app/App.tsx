@@ -306,7 +306,6 @@ export default function App() {
       } else {
         setAccessToken(null);
         setApproval(null);
-        setIsDemoMode(false);
       }
     });
     return () => subscription.unsubscribe();
@@ -393,7 +392,10 @@ export default function App() {
           const batch = (data.cards as ServerCard[] | undefined) ?? [];
           if (batch.length === 0) break;
           const resolved = batch.map(resolveCard);
-          setCards((prev) => [...prev, ...resolved]);
+          setCards((prev) => {
+            const seen = new Set(prev.map((c) => c.id));
+            return [...prev, ...resolved.filter((c) => !seen.has(c.id))];
+          });
           offset += batch.length;
           setServerOffset(offset);
         }
@@ -446,7 +448,10 @@ export default function App() {
           offset += batch.length;
         }
         if (!cancelled && collected.length > 0) {
-          setCards((prev) => [...prev, ...collected]);
+          setCards((prev) => {
+            const seen = new Set(prev.map((c) => c.id));
+            return [...prev, ...collected.filter((c) => !seen.has(c.id))];
+          });
           setServerOffset(offset);
         }
       } finally {
@@ -465,7 +470,11 @@ export default function App() {
       if (!res.ok) { console.error("Load more failed:", await res.text()); return; }
       const data = await res.json();
       if (data.cards?.length > 0) {
-        setCards((prev) => [...prev, ...(data.cards as ServerCard[]).map(resolveCard)]);
+        const incoming = (data.cards as ServerCard[]).map(resolveCard);
+        setCards((prev) => {
+          const seen = new Set(prev.map((c) => c.id));
+          return [...prev, ...incoming.filter((c) => !seen.has(c.id))];
+        });
         setServerTotal(data.total ?? serverTotal);
         setServerOffset((prev) => prev + data.cards.length);
       }
@@ -529,7 +538,7 @@ export default function App() {
   // Handler when a new user-created card arrives from AskFlowModal
   function handleNewCard(raw: any) {
     const newCard: ActionCardData = { ...raw, topImage: undefined, authorAvatar: undefined };
-    setCards((prev) => [...prev, newCard]);
+    setCards((prev) => prev.some((c) => c.id === newCard.id) ? prev : [...prev, newCard]);
     setServerTotal((prev) => prev + 1);
     setServerOffset((prev) => prev + 1);
   }
