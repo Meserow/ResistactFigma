@@ -80,6 +80,33 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
     );
   }
 
+  // ── Boost button — sibling of CompletionPill in style. Used as the image
+  //    overlay (translucent white pill) and as the inline action when there
+  //    is no header image.
+  function BoostButton({ onImage = false }: { onImage?: boolean }) {
+    const boostedClasses = "bg-[#fd8e33]/80 text-white shadow-md";
+    const idleOnImageClasses =
+      "bg-white/85 backdrop-blur-sm text-[#fd8e33] shadow-sm hover:bg-white";
+    const idleOffImageClasses =
+      "bg-[#fd8e33]/10 text-[#fd8e33] hover:bg-[#fd8e33]/20";
+
+    return (
+      <button
+        onClick={(e) => { e.stopPropagation(); onBoost?.(card.id); }}
+        aria-label={isBoosted ? "Boosted" : "Boost"}
+        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] font-bold text-[12px] transition-all ${
+          isBoosted ? boostedClasses : (onImage ? idleOnImageClasses : idleOffImageClasses)
+        }`}
+      >
+        <span aria-hidden>🔥</span>
+        <span>{isBoosted ? "Boosted!" : "Boost"}</span>
+        {card.boosts > 0 && (
+          <span className="opacity-80">· {card.boosts.toLocaleString()}</span>
+        )}
+      </button>
+    );
+  }
+
   // ── Floating share button (top-right of content area, below image) ───────
   function FloatingShareButton() {
     return (
@@ -129,7 +156,7 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
               <TopControls light={true} />
             </div>
             <div className="absolute bottom-2 left-3 z-10">
-              <CompletionPill onImage />
+              <BoostButton onImage />
             </div>
           </div>
 
@@ -163,14 +190,7 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
                 </div>
               </div>
 
-              <button
-                onClick={() => onBoost?.(card.id)}
-                className={`flex items-center gap-1 px-3.5 py-2 rounded-xl font-['Poppins',sans-serif] font-bold text-[13px] transition-all shrink-0 ${
-                  isBoosted ? "bg-[#fd8e33]/80 text-white" : "bg-[#fd8e33] hover:bg-[#e07a28] text-white shadow-sm"
-                }`}
-              >
-                🔥 {isBoosted ? "Boosted!" : "Boost"} · {card.boosts.toLocaleString()}
-              </button>
+              <CompletionPill />
             </div>
 
             <FloatingShareButton />
@@ -237,7 +257,7 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
 
             {/* "I did this" — overlaid bottom-left so it reads across image styles */}
             <div className="absolute bottom-2 left-3 z-10">
-              <CompletionPill onImage />
+              <BoostButton onImage />
             </div>
           </div>
         ) : (
@@ -278,7 +298,7 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
 
           {/* Cards without a header image — show "I did this" inline since
               we have no image to overlay it on. */}
-          {!showTopImage && <CompletionPill />}
+          {!showTopImage && <BoostButton />}
 
           {/* Author + Boost button */}
           <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-100">
@@ -310,16 +330,7 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
               </div>
             </div>
 
-            <button
-              onClick={() => onBoost?.(card.id)}
-              className={`flex items-center gap-1 px-3.5 py-2 rounded-xl font-['Poppins',sans-serif] font-bold text-[13px] transition-all shrink-0 ${
-                isBoosted
-                  ? "bg-[#fd8e33]/80 text-white"
-                  : "bg-[#fd8e33] hover:bg-[#e07a28] text-white shadow-sm"
-              }`}
-            >
-              🔥 {isBoosted ? "Boosted!" : "Boost"} · {card.boosts.toLocaleString()}
-            </button>
+            <CompletionPill />
           </div>
         </div>
       </div>
