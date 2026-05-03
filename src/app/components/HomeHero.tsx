@@ -4,7 +4,7 @@ interface HomeHeroProps {
   onJoinClick: () => void;
 }
 
-export function HomeHero({ onJoinClick: _onJoinClick }: HomeHeroProps) {
+export function HomeHero({ onJoinClick }: HomeHeroProps) {
   return (
     <div className="bg-white relative overflow-hidden">
       <img
@@ -20,18 +20,23 @@ export function HomeHero({ onJoinClick: _onJoinClick }: HomeHeroProps) {
         <p className="mt-4 font-['Poppins',sans-serif] text-gray-500 text-base leading-[1.6]">
           If you've been doomscrolling, rage-texting friends, or lying awake wondering how we got here —
           <br />
-          you're not alone. And if you're tired of being told the only answers are "vote" and "donate" and infrequent protests —
-          <span className="block italic">you're really not alone.</span>
+          you're not alone. And if you're tired of being told you can only "vote", "donate", or participate in infrequent protests — <i>you're really not alone.</i>
         </p>
         <p className="mt-3 font-['Poppins',sans-serif] text-gray-500 text-base leading-[1.6]">
-          ResistAct is a daily menu of small, grassroots, concrete micro-actions you can actually take.
-          <br />
-          And taking daily action is the only way out.
+          ResistAct is a daily menu of small, grassroots, concrete micro-actions you can actually do.
         </p>
         <p className="mt-3 font-['Poppins',sans-serif] text-gray-500 text-base leading-[1.6]">
           Browse anonymously. No signup, no tracking, no donation texts.
           <br />
-          Want to add actions or share what you're doing? That's when you join the Resistance — on your terms.
+          Want to add actions or share what you're doing? That's when you{" "}
+          <a
+            href="#jointheresistance"
+            onClick={onJoinClick}
+            className="italic font-semibold text-gray-700 hover:text-[#23297e] underline decoration-dotted underline-offset-4 transition-colors"
+          >
+            #jointheresistance
+          </a>
+          {" "}– on your terms.
         </p>
         <p className="mt-5 font-['Poppins',sans-serif] text-gray-900 text-base">
           <b>Pick one. Do it. Share it.</b><br /><i>Come back tomorrow.</i>

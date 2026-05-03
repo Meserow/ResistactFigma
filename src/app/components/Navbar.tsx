@@ -2,7 +2,7 @@ import logoImg from "../../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
 import { useState, useRef, useEffect, useMemo } from "react";
 import type { ReactNode } from "react";
 import { FACT_CARDS } from "../data/factCards";
-import { Bell, ChevronDown, Clock, Info, LogIn, LogOut, Menu, Plus, Search, ShieldCheck, X, Zap } from "lucide-react";
+import { Bell, ChevronDown, Clock, Info, LogIn, LogOut, MapPin, Menu, Plus, Search, ShieldCheck, X, Zap } from "lucide-react";
 import type { UserApproval } from "../lib/supabase";
 
 function ResistActLogo() {
@@ -361,7 +361,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
         style={{ top: topBarHeight }}
         ref={filterBarRef}
       >
-        <span className="font-['Poppins',sans-serif] text-[#888] text-sm font-medium shrink-0 mr-2">Filter by:</span>
+        <span className="font-['Poppins',sans-serif] text-gray-400 text-[10px] uppercase tracking-widest font-semibold shrink-0 mr-2">Filter by</span>
 
         {/* Quick-actions toggle (Acts tab only) */}
         {activeTab === "acts" && onQuickActionsChange && (
@@ -378,7 +378,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               {quickActionsOnly && <X size={10} className="text-white rotate-45" strokeWidth={3} />}
             </span>
             <Zap size={13} className={quickActionsOnly ? "text-[#fd8e33]" : "text-gray-400"} fill={quickActionsOnly ? "#fd8e33" : "none"} />
-            Quick wins
+            Quick Actions
           </button>
         )}
 
@@ -461,6 +461,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                     : "border-transparent text-gray-600 hover:bg-white hover:shadow-sm hover:border-gray-200"
                 }`}
               >
+                <MapPin size={13} className={locSelected.length > 0 ? "text-[#23297e]" : "text-gray-400"} />
                 Location
                 {locSelected.length > 0 && (
                   <span className="w-4 h-4 rounded-full bg-[#fd8e33] text-white text-[9px] flex items-center justify-center font-bold shrink-0">
@@ -500,7 +501,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
             </div>
 
             {/* Category pills + "more" overflow — mirrors Facts UX */}
-            <span className="font-['Poppins',sans-serif] text-[#888] text-sm font-medium shrink-0">Category:</span>
+            <span className="font-['Poppins',sans-serif] text-gray-400 text-[10px] uppercase tracking-widest font-semibold shrink-0">Category</span>
             {actsInlinePills.map((option) => {
               const selected = actsCatsSelected.includes(option);
               return (
