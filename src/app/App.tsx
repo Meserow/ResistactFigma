@@ -31,6 +31,7 @@ interface ServerCard {
   location?: string;
   isOnline?: boolean;
   boosts?: number;
+  completions?: number;
   spotsUsed?: number;
   spotsTotal: number | "Unlimited";
   authorName: string;
@@ -53,6 +54,7 @@ function resolveCard(raw: ServerCard): ActionCardData {
   return {
     ...raw,
     boosts:       raw.boosts ?? raw.spotsUsed ?? 0,
+    completions:  raw.completions ?? 0,
     targetUrl:    raw.targetUrl ?? undefined,
     topImage:     raw.topImageKey ? IMAGE_MAP[raw.topImageKey] : (raw.topImageUrl ?? undefined),
     authorAvatar: raw.authorAvatarKey ? IMAGE_MAP[raw.authorAvatarKey] : (raw.authorAvatarUrl ?? undefined),
@@ -110,6 +112,12 @@ export default function App() {
   const [boostedCards, setActedCards] = useState<Set<number>>(() => {
     try {
       const stored = localStorage.getItem("resistact_boosted");
+      return stored ? new Set<number>(JSON.parse(stored)) : new Set<number>();
+    } catch { return new Set<number>(); }
+  });
+  const [completedCards, setCompletedCards] = useState<Set<number>>(() => {
+    try {
+      const stored = localStorage.getItem("resistact_completed");
       return stored ? new Set<number>(JSON.parse(stored)) : new Set<number>();
     } catch { return new Set<number>(); }
   });
@@ -486,6 +494,43 @@ export default function App() {
     }
   };
 
+  // ── Self-reported "I did this" toggle ──
+  const handleComplete = async (id: number) => {
+    const alreadyCompleted = completedCards.has(id);
+    const delta = alreadyCompleted ? -1 : 1;
+
+    setCompletedCards((prev) => {
+      const next = new Set(prev);
+      alreadyCompleted ? next.delete(id) : next.add(id);
+      try { localStorage.setItem("resistact_completed", JSON.stringify([...next])); } catch {}
+      return next;
+    });
+    setCards((prev) =>
+      prev.map((c) => c.id === id
+        ? { ...c, completions: Math.max(0, (c.completions ?? 0) + delta) }
+        : c)
+    );
+
+    try {
+      const res = await fetch(`${API}/actions/${id}/complete`, {
+        method: "POST",
+        headers: HEADERS,
+        body: JSON.stringify({ delta }),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        console.error(`Completion update failed for card ${id}: ${text}`);
+      } else {
+        const { card: updated } = await res.json();
+        setCards((prev) =>
+          prev.map((c) => (c.id === id ? resolveCard(updated) : c))
+        );
+      }
+    } catch (err) {
+      console.error("Network error updating completion:", err);
+    }
+  };
+
   // ── Act ──
   const handleBoost = async (id: number) => {
     const alreadyActed = boostedCards.has(id);
@@ -656,10 +701,12 @@ export default function App() {
                   key={card.id}
                   card={card.isFeatured ? { ...card, featuredIllustration: <FeaturedIllustration /> } : card}
                   onBoost={handleBoost}
+                  onComplete={handleComplete}
                   onShare={handleShare}
                   onBookmark={handleBookmark}
                   onEdit={(id) => setEditCardId(id)}
                   isBoosted={boostedCards.has(card.id)}
+                  isCompleted={completedCards.has(card.id)}
                   isBookmarked={bookmarkedCards.has(card.id)}
                   canEdit={canEditCard(card)}
                 />

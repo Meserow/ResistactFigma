@@ -1,10 +1,74 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X, Eye, EyeOff, Loader2, CheckCircle2, Clock, Mail } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { projectId } from "/utils/supabase/info";
 import type { UserApproval } from "../lib/supabase";
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
+
+// Cloudflare Turnstile site key (public). Set VITE_TURNSTILE_SITE_KEY in .env.local.
+const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined;
+
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (el: HTMLElement, opts: Record<string, unknown>) => string;
+      reset: (id?: string) => void;
+      remove: (id: string) => void;
+    };
+  }
+}
+
+// ─── Turnstile widget ─────────────────────────────────────────────────────────
+function Turnstile({ onToken }: { onToken: (t: string | null) => void }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const widgetIdRef = useRef<string | null>(null);
+  const onTokenRef = useRef(onToken);
+  onTokenRef.current = onToken;
+
+  useEffect(() => {
+    if (!TURNSTILE_SITE_KEY) {
+      console.error("[Turnstile] Missing VITE_TURNSTILE_SITE_KEY env var.");
+      return;
+    }
+    let cancelled = false;
+
+    const render = () => {
+      if (cancelled || !containerRef.current || !window.turnstile) return;
+      widgetIdRef.current = window.turnstile.render(containerRef.current, {
+        sitekey: TURNSTILE_SITE_KEY,
+        callback: (token: string) => onTokenRef.current(token),
+        "error-callback": () => onTokenRef.current(null),
+        "expired-callback": () => onTokenRef.current(null),
+      });
+    };
+
+    if (window.turnstile) {
+      render();
+    } else {
+      const SCRIPT_ID = "cf-turnstile-script";
+      let script = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null;
+      if (!script) {
+        script = document.createElement("script");
+        script.id = SCRIPT_ID;
+        script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+        script.async = true;
+        script.defer = true;
+        document.head.appendChild(script);
+      }
+      script.addEventListener("load", render, { once: true });
+    }
+
+    return () => {
+      cancelled = true;
+      if (widgetIdRef.current && window.turnstile) {
+        try { window.turnstile.remove(widgetIdRef.current); } catch { /* noop */ }
+      }
+    };
+  }, []);
+
+  return <div ref={containerRef} className="flex justify-center" />;
+}
 
 interface AuthModalProps {
   onClose: () => void;
@@ -34,8 +98,17 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
   const [oauthLoading, setOauthLoading] = useState<"google" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [postRegState, setPostRegState] = useState<"verify-email" | "pending" | "approved" | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaKey, setCaptchaKey] = useState(0);
 
   const clearError = () => setError(null);
+
+  // Force-remount the Turnstile widget so it issues a fresh token after a
+  // failed sign-in/up attempt (each token can only be redeemed once).
+  const resetCaptcha = () => {
+    setCaptchaToken(null);
+    setCaptchaKey((k) => k + 1);
+  };
 
   // ── Fetch approval status after any successful sign-in ──
   async function fetchApproval(accessToken: string): Promise<UserApproval | null> {
@@ -56,10 +129,15 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
     clearError();
+    if (TURNSTILE_SITE_KEY && !captchaToken) { setError("Please complete the CAPTCHA."); return; }
     setLoading(true);
     try {
-      const { data, error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
-      if (signInErr) { setError(signInErr.message); return; }
+      const { data, error: signInErr } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+        options: captchaToken ? { captchaToken } : undefined,
+      });
+      if (signInErr) { setError(signInErr.message); resetCaptcha(); return; }
       const approval = await fetchApproval(data.session!.access_token);
       if (approval) { onApproval(approval); onClose(); }
     } finally {
@@ -72,6 +150,7 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
     e.preventDefault();
     clearError();
     if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
+    if (TURNSTILE_SITE_KEY && !captchaToken) { setError("Please complete the CAPTCHA."); return; }
     setLoading(true);
     try {
       const { data, error: signUpErr } = await supabase.auth.signUp({
@@ -80,9 +159,10 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
         options: {
           data: { name, full_name: name },
           emailRedirectTo: window.location.origin,
+          ...(captchaToken ? { captchaToken } : {}),
         },
       });
-      if (signUpErr) { setError(signUpErr.message); return; }
+      if (signUpErr) { setError(signUpErr.message); resetCaptcha(); return; }
 
       // If Supabase returned a session, email confirmation is disabled in the
       // project — the user is already signed in. Let the app's auth listener
@@ -258,6 +338,12 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
           </div>
         </div>
 
+        {TURNSTILE_SITE_KEY && (
+          <div className="pt-1">
+            <Turnstile key={captchaKey} onToken={setCaptchaToken} />
+          </div>
+        )}
+
         {error && (
           <p className="font-['Poppins',sans-serif] text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
             {error}
@@ -266,7 +352,7 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || (!!TURNSTILE_SITE_KEY && !captchaToken)}
           className="w-full py-3 bg-[#fd8e33] hover:bg-[#e07a28] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-bold text-sm rounded-xl transition-colors flex items-center justify-center gap-2 mt-1"
         >
           {loading && <Loader2 size={16} className="animate-spin" />}

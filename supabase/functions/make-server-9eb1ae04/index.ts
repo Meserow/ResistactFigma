@@ -242,7 +242,7 @@ const SEED_CARDS = [
   { id: 1120, category: "PROFESSIONAL SKILLS", categoryColor: "#1f635c", actionType: "Online", title: "Volunteer your tech skills", description: "Civic-tech projects + local brigades.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Code for America", authorRole: "Movement Organization", targetUrl: "https://codeforamerica.org/", topImageKey: "org_code-for-america" },
   { id: 1121, category: "PROFESSIONAL SKILLS", categoryColor: "#1f635c", actionType: "Online", title: "Sign up as a tech volunteer", description: "Civic-tech volunteer matching.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "DemocracyLab", authorRole: "Movement Organization", targetUrl: "https://www.democracylab.org/", topImageKey: "org_democracylab" },
   { id: 1122, category: "PROFESSIONAL SKILLS", categoryColor: "#1f635c", actionType: "Online", title: "Volunteer your professional skills", description: "Skill-based volunteering for nonprofits.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Catchafire", authorRole: "Movement Organization", targetUrl: "https://www.catchafire.org/", topImageKey: "org_catchafire" },
-  { id: 1123, category: "PROFESSIONAL SKILLS", categoryColor: "#1f635c", actionType: "Online", title: "Volunteer as a translator", description: "Translation work for migrants + asylum seekers.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Respond Crisis Translation", authorRole: "Movement Organization", targetUrl: "https://respondcrisistranslation.org/", topImageKey: "org_respond-crisis-translation" },
+  { id: 1123, category: "PROFESSIONAL SKILLS", categoryColor: "#1f635c", actionType: "Online", title: "Volunteer as a translator", description: "Translation work for migrants + asylum seekers.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Respond Crisis Translation", authorRole: "Movement Organization", targetUrl: "https://respondcrisistranslation.org/", topImageKey: "org_respond-crisis-translation", imageContain: true },
   { id: 1124, category: "PROFESSIONAL SKILLS", categoryColor: "#1f635c", actionType: "Online", title: "Volunteer as a linguist", description: "Crisis-language equity volunteer.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "CLEAR Global", authorRole: "Movement Organization", targetUrl: "https://clearglobal.org/", topImageKey: "org_clear-global" },
   { id: 1125, category: "PROFESSIONAL SKILLS", categoryColor: "#1f635c", actionType: "Online", title: "Sign on to a Doctors for America healthcare campaign", description: "Healthcare-access advocacy.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Doctors for America", authorRole: "Movement Organization", targetUrl: "https://www.doctorsforamerica.org/", topImageKey: "org_doctors-for-america" },
   { id: 1126, category: "PROFESSIONAL SKILLS", categoryColor: "#1f635c", actionType: "Online", title: "Train as asylum-evaluation clinician", description: "Asylum Network: forensic + asylum clinician training.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Physicians for Human Rights", authorRole: "Movement Organization", targetUrl: "https://phr.org/", topImageKey: "org_physicians-for-human-rights" },
@@ -297,7 +297,7 @@ const SEED_CARDS = [
   { id: 1180, category: "ART PIECE", categoryColor: "#896312", actionType: "Online", title: "Refer an artist at risk", description: "Solidarity support for persecuted artists.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Artists at Risk Connection (PEN America)", authorRole: "Movement Organization", targetUrl: "https://artistsatriskconnection.org/", topImageKey: "org_artists-at-risk-connection-pen-america" },
   { id: 1181, category: "ACT OF KINDNESS", categoryColor: "#0d8c6e", actionType: "Online", title: "Find your local mutual aid network", description: "Locator map; pick a neighbor to support.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Mutual Aid Hub", authorRole: "Movement Organization", targetUrl: "https://www.mutualaidhub.org/", topImageKey: "org_mutual-aid-hub" },
   { id: 1185, category: "ACT OF KINDNESS", categoryColor: "#0d8c6e", actionType: "Online", title: "Volunteer as a Pickup Buddy (repro)", description: "Drive abortion-seekers home post-appointment.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Apiary for Practical Support", authorRole: "Movement Organization", targetUrl: "https://apiaryps.org/", topImageKey: "org_apiary-for-practical-support" },
-  { id: 1186, category: "ACT OF KINDNESS", categoryColor: "#0d8c6e", actionType: "Online", title: "Volunteer as a translator for asylum seekers", description: "Document translation.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Respond Crisis Translation", authorRole: "Movement Organization", targetUrl: "https://respondcrisistranslation.org/", topImageKey: "org_respond-crisis-translation" },
+  { id: 1186, category: "ACT OF KINDNESS", categoryColor: "#0d8c6e", actionType: "Online", title: "Volunteer as a translator for asylum seekers", description: "Document translation.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Respond Crisis Translation", authorRole: "Movement Organization", targetUrl: "https://respondcrisistranslation.org/", topImageKey: "org_respond-crisis-translation", imageContain: true },
   { id: 1192, category: "BOOST FACTS", categoryColor: "#5a009e", actionType: "Online", title: "Boost Sludge's dark-money & GOP-donor reporting", description: "Subscribe to Sludge and share their campaign-finance investigations on social. Counter dark-money disinfo with sourced reporting.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Sludge", authorRole: "Movement Organization", targetUrl: "https://readsludge.com/", topImageKey: "org_sludge" },
   { id: 1193, category: "BOOST FACTS", categoryColor: "#5a009e", actionType: "Online", title: "Boost Bolts Magazine's local-democracy reporting", description: "Subscribe to Bolts and share their local DA, sheriff, and election-admin coverage. Local democracy is where Trump-era threats land first.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Bolts Magazine", authorRole: "Movement Organization", targetUrl: "https://boltsmag.org/", topImageKey: "org_bolts-magazine" },
   { id: 1194, category: "BOOST FACTS", categoryColor: "#5a009e", actionType: "Online", title: "Boost Drop Site News on Trump's wars & civil liberties", description: "Subscribe to Drop Site (ex-Intercept staff) and share their war and civil-liberties coverage. Counter the war-machine narrative.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Drop Site News", authorRole: "Movement Organization", targetUrl: "https://www.dropsitenews.com/", topImageKey: "org_drop-site-news" },
@@ -324,6 +324,13 @@ const SEED_CARDS = [
   { id: 1231, category: "OTHER", categoryColor: "#3f3f3f", actionType: "Online", title: "Pick a banned book + read it", description: "Live, sortable list.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "PEN America banned-books list", authorRole: "Movement Organization", targetUrl: "https://pen.org/banned-books-list-2022/", topImageKey: "org_pen-america-banned-books-list" },
   { id: 1232, category: "OTHER", categoryColor: "#3f3f3f", actionType: "Online", title: "Set election reminders (every contest)", description: "Automatic alerts for every level.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Vote.org", authorRole: "Movement Organization", targetUrl: "https://www.vote.org/", topImageKey: "org_vote-org" },
   { id: 1233, category: "OTHER", categoryColor: "#3f3f3f", actionType: "Online", title: "Find DOJ-accredited rep training", description: "Free certification to represent immigrants in EOIR proceedings.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "CLINIC (Catholic Legal Immigration Network)", authorRole: "Movement Organization", targetUrl: "https://www.cliniclegal.org/", topImageKey: "org_clinic-catholic-legal-immigration-network" },
+
+  // MoveOn front-page petitions — https://front.moveon.org/petitions/
+  { id: 1234, category: "PETITION", categoryColor: "#05737f", actionType: "Online", title: "Mandate that ICE agents show their face and identification", description: "Demand Congress require immigration agents to display agency ID and name badges, like other law enforcement.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "MoveOn", authorRole: "Movement Organization", targetUrl: "https://sign.moveon.org/petitions/unmask-ice", topImageKey: "org_moveon" },
+  { id: 1235, category: "PETITION", categoryColor: "#05737f", actionType: "Online", title: "Keep the U.S. out of forever wars", description: "Oppose U.S. military action in Iran. Tell Congress to prevent another Middle Eastern war.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "MoveOn", authorRole: "Movement Organization", targetUrl: "https://sign.moveon.org/petitions/no-war-with-iran-18", topImageKey: "org_moveon" },
+  { id: 1236, category: "PETITION", categoryColor: "#05737f", actionType: "Online", title: "Do not cooperate with ICE", description: "Tell mayors and local officials to refuse cooperation with ICE and protect their residents.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "MoveOn", authorRole: "Movement Organization", targetUrl: "https://sign.moveon.org/petitions/do-not-cooperate-with-ice", topImageKey: "org_moveon" },
+  { id: 1237, category: "PETITION", categoryColor: "#05737f", actionType: "Online", title: "Pam Bondi must go", description: "Demand Attorney General Pam Bondi resign or be impeached over her DOJ agenda.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "MoveOn", authorRole: "Movement Organization", targetUrl: "https://sign.moveon.org/petitions/pam-bondi-must-go", topImageKey: "org_moveon" },
+  { id: 1238, category: "PETITION", categoryColor: "#05737f", actionType: "Online", title: "No warehouses for ICE detention centers", description: "Block ICE's $38B push to convert warehouses into immigration detention facilities.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "MoveOn", authorRole: "Movement Organization", targetUrl: "https://sign.moveon.org/petitions/no-warehouses-for-ice-detention-centers", topImageKey: "org_moveon" },
 ];
 
 // ─── Health check ─────────────────────────────────────────────────────────────
@@ -430,7 +437,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     // feed to pick up the new title/url/image. Existing user activity (`boosts`)
     // and admin curation flags (`quickAction`) are preserved across re-seeds —
     // only seed-managed metadata (title/desc/url/image) is overwritten.
-    const orgsSeeded = await kv.get("seed:org-actions:v6");
+    const orgsSeeded = await kv.get("seed:org-actions:v7");
     if (!orgsSeeded) {
       let count = 0;
       for (const card of SEED_CARDS) {
@@ -447,7 +454,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
         await kv.set(`action:${card.id}`, merged);
         count++;
       }
-      await kv.set("seed:org-actions:v6", true);
+      await kv.set("seed:org-actions:v7", true);
       console.log(`Re-seeded ${count} org-action cards (v6).`);
     }
 
@@ -663,6 +670,33 @@ app.post("/make-server-9eb1ae04/actions/create", async (c) => {
   } catch (err) {
     console.log("Create action error:", err);
     return c.json({ error: `Failed to create ASK: ${err}` }, 500);
+  }
+});
+
+// ─── POST /actions/:id/complete — increment completions counter ───────────
+// Self-reported "I did this" — anonymous, deduped client-side via localStorage.
+app.post("/make-server-9eb1ae04/actions/:id/complete", async (c) => {
+  try {
+    const id = Number(c.req.param("id"));
+    const { delta } = await c.req.json<{ delta: number }>();
+
+    let card = await kv.get(`action:${id}`) as any;
+
+    if (!card) {
+      const seedCard = SEED_CARDS.find((s) => s.id === id);
+      if (!seedCard) return c.json({ error: `Unknown card id ${id}` }, 404);
+      card = { ...seedCard };
+      await kv.set(`action:${id}`, card);
+    }
+
+    const current = typeof card.completions === "number" ? card.completions : 0;
+    card.completions = Math.max(0, current + (delta ?? 1));
+    await kv.set(`action:${id}`, card);
+
+    return c.json({ card });
+  } catch (err) {
+    console.log("Error updating completion count:", err);
+    return c.json({ error: `Failed to update completion: ${err}` }, 500);
   }
 });
 

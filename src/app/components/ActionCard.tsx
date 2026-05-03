@@ -16,6 +16,7 @@ export interface ActionCardData {
   actionType?: string;
   timeCommitment?: string;
   boosts: number;
+  completions?: number;
   spotsTotal: number | "Unlimited";
   authorName: string;
   authorRole: string;
@@ -34,21 +35,64 @@ export interface ActionCardData {
 interface ActionCardProps {
   card: ActionCardData;
   onBoost?: (id: number) => void;
+  onComplete?: (id: number) => void;
   onShare?: (id: number) => void;
   onBookmark?: (id: number) => void;
   onEdit?: (id: number) => void;
   isBoosted?: boolean;
+  isCompleted?: boolean;
   isBookmarked?: boolean;
   canEdit?: boolean;
 }
 
-export function ActionCard({ card, onBoost, onShare, onBookmark, onEdit, isBoosted, isBookmarked, canEdit }: ActionCardProps) {
+export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onEdit, isBoosted, isCompleted, isBookmarked, canEdit }: ActionCardProps) {
   const [shareOpen, setShareOpen] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
   useEffect(() => { setImageFailed(false); }, [card.topImage]);
   const showTopImage = !!card.topImage && !imageFailed;
 
-  const boostLabel = `${card.boosts.toLocaleString()} boost${card.boosts === 1 ? "" : "s"}`;
+  const completionsCount = card.completions ?? 0;
+
+  // ── "I did this" pill — overlaid on the header image so it reads on any
+  //    background. Uses a translucent white capsule with a green check.
+  function CompletionPill({ onImage = false }: { onImage?: boolean }) {
+    const completedClasses = "bg-[#0d8c6e] text-white shadow-md hover:bg-[#0a7159]";
+    const idleOnImageClasses =
+      "bg-white/85 backdrop-blur-sm text-[#0d8c6e] shadow-sm hover:bg-white";
+    const idleOffImageClasses =
+      "bg-[#0d8c6e]/10 text-[#0d8c6e] hover:bg-[#0d8c6e]/20";
+
+    return (
+      <button
+        onClick={(e) => { e.stopPropagation(); onComplete?.(card.id); }}
+        title={isCompleted ? 'Undo "I did this"' : 'Mark as done'}
+        aria-label={isCompleted ? "Undo I did this" : "I did this"}
+        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] font-bold text-[12px] transition-all ${
+          isCompleted ? completedClasses : (onImage ? idleOnImageClasses : idleOffImageClasses)
+        }`}
+      >
+        <span aria-hidden>✓</span>
+        <span>{isCompleted ? "Did it!" : "I did this"}</span>
+        {completionsCount > 0 && (
+          <span className="opacity-80">· {completionsCount.toLocaleString()}</span>
+        )}
+      </button>
+    );
+  }
+
+  // ── Floating share button (top-right of content area, below image) ───────
+  function FloatingShareButton() {
+    return (
+      <button
+        onClick={(e) => { e.stopPropagation(); setShareOpen(true); }}
+        title="Share"
+        aria-label={`Share ${card.title}`}
+        className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-full bg-white/90 backdrop-blur-sm text-gray-500 hover:text-[#fd8e33] hover:bg-white transition-colors z-10"
+      >
+        <Share2 size={13} />
+      </button>
+    );
+  }
 
   // ── Shared top-right controls (pencil + bookmark) ──────────────────────────
   function TopControls({ light = true }: { light?: boolean }) {
@@ -84,10 +128,13 @@ export function ActionCard({ card, onBoost, onShare, onBookmark, onEdit, isBoost
             <div className="absolute top-2.5 right-3">
               <TopControls light={true} />
             </div>
+            <div className="absolute bottom-2 left-3 z-10">
+              <CompletionPill onImage />
+            </div>
           </div>
 
           {/* Content */}
-          <div className="flex flex-col flex-1 px-4 pb-4 pt-3 gap-2">
+          <div className="relative flex flex-col flex-1 px-4 pb-4 pt-3 gap-2">
             <span className="font-['Poppins',sans-serif] font-bold text-[11px] uppercase tracking-wider" style={{ color: card.categoryColor }}>
               {card.category}
             </span>
@@ -104,10 +151,7 @@ export function ActionCard({ card, onBoost, onShare, onBookmark, onEdit, isBoost
               {card.description}
             </p>
 
-            {/* Boost count */}
-            <p className="font-['Poppins',sans-serif] font-semibold text-[13px] text-[#de7c2d] pt-1">🔥 {boostLabel}</p>
-
-            {/* Author + Buttons */}
+            {/* Author + Boost button */}
             <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-100">
               <div className="flex items-center gap-2.5 min-w-0">
                 {card.authorAvatar && (
@@ -119,23 +163,17 @@ export function ActionCard({ card, onBoost, onShare, onBookmark, onEdit, isBoost
                 </div>
               </div>
 
-              <div className="flex gap-1.5 shrink-0">
-                <button
-                  onClick={() => onBoost?.(card.id)}
-                  className={`flex items-center gap-1 px-3.5 py-2 rounded-xl font-['Poppins',sans-serif] font-bold text-[13px] transition-all ${
-                    isBoosted ? "bg-[#fd8e33]/80 text-white" : "bg-[#fd8e33] hover:bg-[#e07a28] text-white shadow-sm"
-                  }`}
-                >
-                  🔥 {isBoosted ? "Boosted!" : "Boost"} · {card.boosts.toLocaleString()}
-                </button>
-                <button
-                  onClick={() => setShareOpen(true)}
-                  className="flex items-center justify-center px-2.5 py-2 rounded-xl border border-[#fd8e33] text-[#fd8e33] hover:bg-[#fd8e33]/10 transition-colors"
-                >
-                  <Share2 size={14} />
-                </button>
-              </div>
+              <button
+                onClick={() => onBoost?.(card.id)}
+                className={`flex items-center gap-1 px-3.5 py-2 rounded-xl font-['Poppins',sans-serif] font-bold text-[13px] transition-all shrink-0 ${
+                  isBoosted ? "bg-[#fd8e33]/80 text-white" : "bg-[#fd8e33] hover:bg-[#e07a28] text-white shadow-sm"
+                }`}
+              >
+                🔥 {isBoosted ? "Boosted!" : "Boost"} · {card.boosts.toLocaleString()}
+              </button>
             </div>
+
+            <FloatingShareButton />
           </div>
         </div>
         {shareOpen && (
@@ -155,7 +193,7 @@ export function ActionCard({ card, onBoost, onShare, onBookmark, onEdit, isBoost
             <ImageWithFallback
               src={card.topImage}
               alt={card.title}
-              className={`w-full h-full ${card.imageContain ? "object-contain p-4" : "object-cover"}`}
+              className={`w-full h-full ${card.imageContain ? "object-contain p-2" : "object-cover"}`}
               onError={() => setImageFailed(true)}
             />
             {/* Gradient overlay for readability — skipped for logo-fit cards. */}
@@ -196,6 +234,11 @@ export function ActionCard({ card, onBoost, onShare, onBookmark, onEdit, isBoost
                 }
               </div>
             )}
+
+            {/* "I did this" — overlaid bottom-left so it reads across image styles */}
+            <div className="absolute bottom-2 left-3 z-10">
+              <CompletionPill onImage />
+            </div>
           </div>
         ) : (
           /* No image — show controls in top-right corner of card */
@@ -207,7 +250,10 @@ export function ActionCard({ card, onBoost, onShare, onBookmark, onEdit, isBoost
         )}
 
         {/* Content */}
-        <div className="flex flex-col flex-1 px-4 pb-4 pt-3 gap-2">
+        <div className="relative flex flex-col flex-1 px-4 pb-4 pt-3 gap-2">
+          {/* Floating share button — top-right of content area, below header. */}
+          <FloatingShareButton />
+
           {/* Category */}
           <span
             className="font-['Poppins',sans-serif] font-bold text-[11px] uppercase tracking-wider"
@@ -217,7 +263,7 @@ export function ActionCard({ card, onBoost, onShare, onBookmark, onEdit, isBoost
           </span>
 
           {/* Title */}
-          <h3 className="font-['Poppins',sans-serif] font-bold text-[15px] text-gray-900 leading-snug">
+          <h3 className="font-['Poppins',sans-serif] font-bold text-[15px] text-gray-900 leading-snug pr-8">
             {(card.targetUrl || card.authorLink) ? (
               <a href={card.targetUrl ?? card.authorLink} target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-[#23297e] transition-colors">
                 {card.title}
@@ -230,10 +276,11 @@ export function ActionCard({ card, onBoost, onShare, onBookmark, onEdit, isBoost
             {card.description}
           </p>
 
-          {/* Boost count */}
-          <p className="font-['Poppins',sans-serif] font-semibold text-[12px] text-[#de7c2d] pt-1">🔥 {boostLabel}</p>
+          {/* Cards without a header image — show "I did this" inline since
+              we have no image to overlay it on. */}
+          {!showTopImage && <CompletionPill />}
 
-          {/* Author + Buttons */}
+          {/* Author + Boost button */}
           <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-100">
             {/* Author */}
             <div className="flex items-center gap-2.5 min-w-0">
@@ -263,25 +310,16 @@ export function ActionCard({ card, onBoost, onShare, onBookmark, onEdit, isBoost
               </div>
             </div>
 
-            {/* Buttons */}
-            <div className="flex gap-1.5 shrink-0">
-              <button
-                onClick={() => onBoost?.(card.id)}
-                className={`flex items-center gap-1 px-3.5 py-2 rounded-xl font-['Poppins',sans-serif] font-bold text-[13px] transition-all ${
-                  isBoosted
-                    ? "bg-[#fd8e33]/80 text-white"
-                    : "bg-[#fd8e33] hover:bg-[#e07a28] text-white shadow-sm"
-                }`}
-              >
-                🔥 {isBoosted ? "Boosted!" : "Boost"} · {card.boosts.toLocaleString()}
-              </button>
-              <button
-                onClick={() => setShareOpen(true)}
-                className="flex items-center justify-center px-2.5 py-2 rounded-xl border border-[#fd8e33] text-[#fd8e33] hover:bg-[#fd8e33]/10 transition-colors"
-              >
-                <Share2 size={14} />
-              </button>
-            </div>
+            <button
+              onClick={() => onBoost?.(card.id)}
+              className={`flex items-center gap-1 px-3.5 py-2 rounded-xl font-['Poppins',sans-serif] font-bold text-[13px] transition-all shrink-0 ${
+                isBoosted
+                  ? "bg-[#fd8e33]/80 text-white"
+                  : "bg-[#fd8e33] hover:bg-[#e07a28] text-white shadow-sm"
+              }`}
+            >
+              🔥 {isBoosted ? "Boosted!" : "Boost"} · {card.boosts.toLocaleString()}
+            </button>
           </div>
         </div>
       </div>
