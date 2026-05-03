@@ -81,6 +81,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
   const [authorName,     setAuthorName]     = useState(card.authorName);
   const [authorRole,     setAuthorRole]     = useState(card.authorRole);
   const [authorLink,     setAuthorLink]     = useState(card.authorLink ?? "");
+  const [targetUrl,      setTargetUrl]      = useState<string>((card as any).targetUrl ?? "");
   // Header image URL — the resolved card.topImage may be a Vite-bundled asset
   // path (e.g. /assets/foo.svg) when topImageKey is set; only seed the field
   // from the raw URL the server stored, so we don't write a bundled path back.
@@ -194,6 +195,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
         authorName:     authorName.trim(),
         authorRole:     authorRole.trim(),
         authorLink:     authorLink.trim() || undefined,
+        targetUrl:      targetUrl.trim() || null,
         // null clears the URL so the seed-provided topImageKey can take over again.
         topImageUrl:    topImageUrl.trim() || null,
         imageContain,
@@ -445,6 +447,14 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
                     />
                   </Field>
                 </div>
+                <Field label="Action URL (where the Boost button goes)">
+                  <input
+                    type="url" value={targetUrl}
+                    onChange={(e) => setTargetUrl(e.target.value)}
+                    placeholder="https://…"
+                    className={INPUT_CLS}
+                  />
+                </Field>
                 <Field label="Author Link (optional)">
                   <input
                     type="url" value={authorLink}
