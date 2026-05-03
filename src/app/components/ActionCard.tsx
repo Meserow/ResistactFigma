@@ -27,6 +27,8 @@ export interface ActionCardData {
   createdBy?: string;
   /** True for actions that take ~5–10 minutes — drives the "Quick wins" filter. */
   quickAction?: boolean;
+  /** When true, fit the top image inside the header (object-contain) instead of cropping. Use for logo-style art. */
+  imageContain?: boolean;
 }
 
 interface ActionCardProps {
@@ -149,15 +151,17 @@ export function ActionCard({ card, onBoost, onShare, onBookmark, onEdit, isBoost
       <div className="bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full hover:shadow-lg transition-shadow">
         {/* Top image */}
         {showTopImage ? (
-          <div className="relative h-[220px] shrink-0">
+          <div className={`relative h-[220px] shrink-0 ${card.imageContain ? "bg-gray-50" : ""}`}>
             <ImageWithFallback
               src={card.topImage}
               alt={card.title}
-              className="w-full h-full object-cover"
+              className={`w-full h-full ${card.imageContain ? "object-contain p-4" : "object-cover"}`}
               onError={() => setImageFailed(true)}
             />
-            {/* Gradient overlay for readability */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+            {/* Gradient overlay for readability — skipped for logo-fit cards. */}
+            {!card.imageContain && (
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+            )}
 
             {/* Stretched link — image area opens the same URL as the title.
                 Placed before badges/buttons so they remain clickable. */}

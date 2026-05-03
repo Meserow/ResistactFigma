@@ -43,6 +43,7 @@ interface ServerCard {
   authorAvatarUrl?: string | null;
   createdBy?: string;
   quickAction?: boolean;
+  imageContain?: boolean;
 }
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
