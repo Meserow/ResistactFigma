@@ -1,11 +1,19 @@
+import logoImg from "../../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
+
 interface HomeHeroProps {
   onJoinClick: () => void;
 }
 
 export function HomeHero({ onJoinClick: _onJoinClick }: HomeHeroProps) {
   return (
-    <div className="bg-white">
-      <div className="max-w-[880px] mx-auto px-5 pt-8 pb-6 text-center">
+    <div className="bg-white relative overflow-hidden">
+      <img
+        src={logoImg}
+        alt=""
+        aria-hidden
+        className="hidden md:block absolute right-[-60px] top-1/2 -translate-y-1/2 w-[460px] h-[460px] object-contain opacity-10 pointer-events-none select-none"
+      />
+      <div className="relative z-10 max-w-[880px] mx-auto px-5 pt-8 pb-6 text-center">
         <h1 className="font-serif text-gray-900 text-[28px] md:text-[36px] font-medium leading-[1.15]">
           MAGA is nuts. But what can <em className="italic">I</em> do?
         </h1>

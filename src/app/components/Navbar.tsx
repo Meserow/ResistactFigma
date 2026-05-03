@@ -58,10 +58,8 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
   };
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [scoreOpen, setScoreOpen] = useState(false);
   const [openFilter, setOpenFilter] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const scoreRef = useRef<HTMLDivElement>(null);
   const filterBarRef = useRef<HTMLDivElement>(null);
 
   // Close user dropdown when clicking outside
@@ -80,17 +78,6 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
     function handleClick(e: MouseEvent) {
       if (filterBarRef.current && !filterBarRef.current.contains(e.target as Node)) {
         setOpenFilter(null);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
-
-  // Close score-dropdown when clicking outside
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (scoreRef.current && !scoreRef.current.contains(e.target as Node)) {
-        setScoreOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClick);
@@ -251,66 +238,31 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
             <>
               <Bell size={20} className="text-gray-500 cursor-pointer hover:text-[#23297e] transition-colors" />
 
-              {/* Personal completion scoreboard — orange circle near avatar */}
-              {myCompletions && (
-                <div className="relative" ref={scoreRef}>
-                  <button
-                    onClick={() => setScoreOpen((v) => !v)}
-                    title={`You've done ${myCompletions.total} action${myCompletions.total === 1 ? "" : "s"}`}
-                    aria-label="Your completion scoreboard"
-                    className="relative w-9 h-9 rounded-full bg-[#fd8e33] hover:bg-[#e07a28] text-white shadow-sm transition-colors flex items-center justify-center font-['Poppins',sans-serif] font-bold text-sm"
-                  >
-                    {myCompletions.total > 99 ? "99+" : myCompletions.total}
-                  </button>
-
-                  {scoreOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50">
-                      <div className="px-4 py-2.5 border-b border-gray-50">
-                        <p className="font-['Poppins',sans-serif] text-[11px] uppercase tracking-wider text-gray-400 font-semibold">
-                          Your scoreboard
-                        </p>
-                        <p className="font-['Poppins',sans-serif] font-bold text-gray-900 text-base mt-0.5">
-                          {myCompletions.total} action{myCompletions.total === 1 ? "" : "s"} done
-                        </p>
-                      </div>
-                      {completionEntries.length === 0 ? (
-                        <p className="px-4 py-3 font-['Poppins',sans-serif] text-[13px] text-gray-500">
-                          Click "✓ I did this" on any card to start your streak.
-                        </p>
-                      ) : (
-                        <div className="max-h-72 overflow-y-auto py-1">
-                          {completionEntries.map(([cat, n]) => (
-                            <div
-                              key={cat}
-                              className="flex items-center justify-between px-4 py-1.5 font-['Poppins',sans-serif] text-[13px]"
-                            >
-                              <span className="text-gray-700 font-medium">{cat}</span>
-                              <span className="text-[#fd8e33] font-bold tabular-nums">
-                                {n}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                   className="flex items-center gap-2.5 cursor-pointer hover:opacity-80 transition-opacity"
                 >
-                  {approval?.avatar ? (
-                    <img src={approval.avatar} alt={approval.name} className="w-9 h-9 rounded-full object-cover ring-2 ring-gray-100" />
-                  ) : (
-                    <div className="w-9 h-9 rounded-full bg-[#23297e]/10 ring-2 ring-gray-100 flex items-center justify-center">
-                      <span className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-sm">
-                        {approval?.name?.charAt(0)?.toUpperCase() ?? "?"}
+                  <span className="relative">
+                    {approval?.avatar ? (
+                      <img src={approval.avatar} alt={approval.name} className="w-9 h-9 rounded-full object-cover ring-2 ring-gray-100" />
+                    ) : (
+                      <div className="w-9 h-9 rounded-full bg-[#23297e]/10 ring-2 ring-gray-100 flex items-center justify-center">
+                        <span className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-sm">
+                          {approval?.name?.charAt(0)?.toUpperCase() ?? "?"}
+                        </span>
+                      </div>
+                    )}
+                    {myCompletions && (
+                      <span
+                        title={`You've done ${myCompletions.total} action${myCompletions.total === 1 ? "" : "s"}`}
+                        aria-label={`You've done ${myCompletions.total} action${myCompletions.total === 1 ? "" : "s"} — click to see scoreboard`}
+                        className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-[#fd8e33] text-white shadow ring-2 ring-white flex items-center justify-center font-['Poppins',sans-serif] font-bold text-[10px] transition-colors leading-none pointer-events-none"
+                      >
+                        {myCompletions.total > 99 ? "99+" : myCompletions.total}
                       </span>
-                    </div>
-                  )}
+                    )}
+                  </span>
                   <div className="hidden lg:block text-left">
                     <p className="font-['Poppins',sans-serif] font-semibold text-[#3b3b3b] text-sm leading-tight">{approval?.name}</p>
                     <div className="flex items-center gap-1">
@@ -327,11 +279,38 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                 </button>
 
                 {dropdownOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-52 bg-white border border-gray-100 rounded-2xl shadow-xl py-1.5 z-50">
+                  <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-gray-100 rounded-2xl shadow-xl py-1.5 z-50">
                     <div className="px-4 py-2.5 border-b border-gray-50">
                       <p className="font-['Poppins',sans-serif] font-semibold text-gray-800 text-sm truncate">{approval?.name}</p>
                       <p className="font-['Poppins',sans-serif] text-gray-400 text-xs truncate">{approval?.email}</p>
                     </div>
+                    {myCompletions && (
+                      <div className="px-4 py-2.5 border-b border-gray-50">
+                        <p className="font-['Poppins',sans-serif] text-[11px] uppercase tracking-wider text-gray-400 font-semibold">
+                          Your scoreboard
+                        </p>
+                        <p className="font-['Poppins',sans-serif] font-bold text-gray-900 text-sm mt-0.5">
+                          {myCompletions.total} action{myCompletions.total === 1 ? "" : "s"} done
+                        </p>
+                        {completionEntries.length === 0 ? (
+                          <p className="font-['Poppins',sans-serif] text-[12px] text-gray-500 mt-1">
+                            Click "✓ I did this" on any card to start your streak.
+                          </p>
+                        ) : (
+                          <div className="max-h-48 overflow-y-auto mt-1.5 -mx-1">
+                            {completionEntries.map(([cat, n]) => (
+                              <div
+                                key={cat}
+                                className="flex items-center justify-between px-1 py-0.5 font-['Poppins',sans-serif] text-[12px]"
+                              >
+                                <span className="text-gray-700 font-medium">{cat}</span>
+                                <span className="text-[#fd8e33] font-bold tabular-nums">{n}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                     {isAdmin && (
                       <button
                         onClick={() => { setDropdownOpen(false); onAdminClick(); }}
