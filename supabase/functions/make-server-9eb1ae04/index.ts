@@ -134,6 +134,7 @@ const SEED_CARDS = [
   { id: 1004, category: "BOYCOTT", categoryColor: "#7a1f7a", actionType: "Online", title: "Sign the Tesla Takedown commitment", description: "Sell stock / lease, get on the Saturday protest map.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Tesla Takedown", authorRole: "Movement Organization", targetUrl: "https://www.teslatakedown.com/", topImageKey: "org_tesla-takedown" },
   { id: 1005, category: "BOYCOTT", categoryColor: "#7a1f7a", actionType: "Online", title: "Join the Latino-led economic blackout", description: "Latino-led economic non-spending campaign.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Latino Freeze Movement", authorRole: "Movement Organization", targetUrl: "https://www.latinofreeze.com/", topImageKey: "org_latino-freeze-movement" },
   { id: 1006, category: "BOYCOTT", categoryColor: "#7a1f7a", actionType: "Online", title: "Switch your spending to a Black-women-owned biz", description: "Directory to redirect spending.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Buy From a Black Woman", authorRole: "Movement Organization", targetUrl: "https://www.buyfromablackwoman.org/", topImageKey: "org_buy-from-a-black-woman" },
+  { id: 1007, category: "BOYCOTT", categoryColor: "#7a1f7a", actionType: "Online", title: "Buy Anti-Trump Merch from Individual Makers", description: "Handmade anti-Trump shirts, signs, stickers, and pins from independent Etsy sellers — your dollars go to indie creators, not corporate retailers.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Etsy (Anti-Trump Market)", authorRole: "Indie Makers Marketplace", targetUrl: "https://www.etsy.com/market/anti_trump", topImageKey: "org_anti-trump-merch" },
   { id: 1008, category: "BOYCOTT", categoryColor: "#7a1f7a", actionType: "Online", title: "Buy from a Native-owned business instead", description: "Native-owned biz directory + marketplace.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Beyond Buckskin", authorRole: "Movement Organization", targetUrl: "https://www.beyondbuckskin.com/", topImageKey: "org_beyond-buckskin" },
   { id: 1009, category: "PROTEST", categoryColor: "#23297e", actionType: "In Person Group", title: "RSVP to the next Saturday Tesla Takedown", description: "Map of dealership protests + sign-up.", isOnline: false, boosts: 0, spotsTotal: "Unlimited", authorName: "Tesla Takedown", authorRole: "Movement Organization", targetUrl: "https://www.teslatakedown.com/", topImageKey: "org_tesla-takedown" },
   { id: 1010, category: "PROTEST", categoryColor: "#23297e", actionType: "In Person Group", title: "Subscribe to Free DC mobilization alerts", description: "DC anti-takeover mobilization list.", isOnline: false, boosts: 0, spotsTotal: "Unlimited", authorName: "Free DC", authorRole: "Movement Organization", targetUrl: "https://freedcproject.org/sign-up", topImageKey: "org_free-dc" },
@@ -429,7 +430,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     // feed to pick up the new title/url/image. Existing user activity (`boosts`)
     // and admin curation flags (`quickAction`) are preserved across re-seeds —
     // only seed-managed metadata (title/desc/url/image) is overwritten.
-    const orgsSeeded = await kv.get("seed:org-actions:v4");
+    const orgsSeeded = await kv.get("seed:org-actions:v5");
     if (!orgsSeeded) {
       let count = 0;
       for (const card of SEED_CARDS) {
@@ -446,8 +447,8 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
         await kv.set(`action:${card.id}`, merged);
         count++;
       }
-      await kv.set("seed:org-actions:v4", true);
-      console.log(`Re-seeded ${count} org-action cards (v4).`);
+      await kv.set("seed:org-actions:v5", true);
+      console.log(`Re-seeded ${count} org-action cards (v5).`);
     }
 
     // One-time migration: any pre-rename card still using `spotsUsed` gets a
