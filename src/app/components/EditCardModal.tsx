@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { X, Loader2, CheckCircle2, Pencil, Trash2, Upload } from "lucide-react";
+import { X, Loader2, Pencil, Trash2, Upload } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
 import type { ActionCardData } from "./ActionCard";
 import { LOCATION_OPTIONS } from "../lib/locations";
@@ -89,7 +89,6 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
   const [imageContain,   setImageContain]   = useState<boolean>(card.imageContain === true);
 
   const [loading,  setLoading]  = useState(false);
-  const [success,  setSuccess]  = useState(false);
   const [error,    setError]    = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting,       setDeleting]       = useState(false);
@@ -212,9 +211,8 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? "Failed to save changes."); return; }
 
-      setSuccess(true);
       onSaved(data.card as ActionCardData);
-      setTimeout(onClose, 1800);
+      onClose();
     } catch (err) {
       console.error("Edit card error:", err);
       setError("Network error — please try again.");
@@ -254,18 +252,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
         </div>
 
         {/* ── Body ── */}
-        {success ? (
-          <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8 text-center">
-            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
-              <CheckCircle2 size={32} className="text-green-500" />
-            </div>
-            <h3 className="font-['Poppins',sans-serif] font-bold text-gray-900 text-lg">Changes saved!</h3>
-            <p className="font-['Poppins',sans-serif] text-gray-500 text-sm">
-              Your updates are live on the board.
-            </p>
-          </div>
-        ) : (
-          <div className="flex-1 overflow-y-auto p-5 space-y-4">
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
 
             {/* Title */}
             <Field label="Title *">
@@ -472,11 +459,9 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
               </p>
             )}
           </div>
-        )}
 
         {/* ── Footer ── */}
-        {!success && (
-          <div className="shrink-0 px-5 py-4 border-t border-gray-100 flex items-center gap-3">
+        <div className="shrink-0 px-5 py-4 border-t border-gray-100 flex items-center gap-3">
             {isAdmin && (
               confirmDelete ? (
                 <button
@@ -513,7 +498,6 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
               Save Changes
             </button>
           </div>
-        )}
       </div>
     </div>
   );

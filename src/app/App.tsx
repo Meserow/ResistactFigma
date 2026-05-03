@@ -11,6 +11,7 @@ import { JoinACTersModal } from "./components/JoinACTersModal";
 import { InfoModal } from "./components/InfoModal";
 import { EditCardModal } from "./components/EditCardModal";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { locationToState } from "./lib/locations";
 import { HomeHero } from "./components/HomeHero";
 import svgPaths from "../imports/svg-77lgd1zdt6";
 import { projectId, publicAnonKey } from "/utils/supabase/info";
@@ -167,6 +168,12 @@ export default function App() {
   const [actOpen, setActOpen] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
   const [editCardId, setEditCardId] = useState<number | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  function showToast(msg: string) {
+    setToastMessage(msg);
+    window.setTimeout(() => setToastMessage((current) => (current === msg ? null : current)), 2200);
+  }
 
   // ── Live stats from server ──
   const [statsCitiesCount, setStatsCitiesCount] = useState<number | null>(null);
@@ -211,11 +218,13 @@ export default function App() {
       const cats = activeFilters["Category"] ?? [];
       if (cats.length > 0 && !cats.includes(card.category)) return false;
 
-      // Location
+      // Location — match by canonical state (or "Online"/"National"/etc).
+      // legacy "City, ST" values get normalized via locationToState.
       const locs = activeFilters["Location"] ?? [];
       if (locs.length > 0) {
         const matchesOnline = locs.includes("Online") && card.isOnline;
-        const matchesLoc = card.location && locs.includes(card.location);
+        const cardState = locationToState(card.location);
+        const matchesLoc = cardState !== null && locs.includes(cardState);
         if (!matchesOnline && !matchesLoc) return false;
       }
 
@@ -301,8 +310,8 @@ export default function App() {
   const dynamicLocations = useMemo(() => {
     const set = new Set<string>();
     for (const c of cards) {
-      const loc = (c.location ?? "").trim();
-      if (loc && loc !== "Online") set.add(loc);
+      const state = locationToState(c.location);
+      if (state && state !== "Online") set.add(state);
     }
     return ["Online", ...Array.from(set).sort()];
   }, [cards]);
@@ -643,6 +652,7 @@ export default function App() {
     setCards((prev) =>
       prev.map((c) => c.id === updated.id ? { ...c, ...updated } : c)
     );
+    showToast("Changes saved");
   }
 
   // ── Remove a deleted card from the local feed (admin only) ──
@@ -846,6 +856,13 @@ export default function App() {
           />
         ) : null;
       })()}
+
+      {/* Transient toast (e.g. after saving a card edit) */}
+      {toastMessage && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] bg-gray-900 text-white px-4 py-2.5 rounded-xl shadow-lg font-['Poppins',sans-serif] text-sm font-medium pointer-events-none">
+          {toastMessage}
+        </div>
+      )}
     </div>
   );
 }
