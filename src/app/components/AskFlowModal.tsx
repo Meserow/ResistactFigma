@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from "react";
-import { X, ChevronLeft, Loader2, CheckCircle2, Search, Megaphone } from "lucide-react";
+import { X, ChevronLeft, Loader2, CheckCircle2, Search, Megaphone, Upload } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
 import type { UserApproval } from "../lib/supabase";
 import { LOCATION_OPTIONS } from "../lib/locations";
@@ -62,10 +62,51 @@ export function AskFlowModal({
   const [formSpots,       setFormSpots]       = useState("10");
   const [formUnlimited,   setFormUnlimited]   = useState(false);
   const [formVettingInfo, setFormVettingInfo] = useState("");
+  const [formImageUrl,    setFormImageUrl]    = useState("");
+  const [formImageContain, setFormImageContain] = useState(false);
   const [createLoading,   setCreateLoading]   = useState(false);
   const [createSuccess,   setCreateSuccess]   = useState(false);
   const [formError,       setFormError]       = useState<string | null>(null);
+  const [uploading,       setUploading]       = useState(false);
+  const [uploadError,     setUploadError]     = useState<string | null>(null);
   const submittingRef = useRef(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setUploadError("Pick an image file (jpg/png/webp/gif).");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError("Image too large (max 5 MB).");
+      return;
+    }
+    setUploadError(null);
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`${API}/actions/upload-image`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setUploadError(data.error ?? `Upload failed (${res.status}).`);
+        return;
+      }
+      setFormImageUrl(data.url);
+    } catch (err) {
+      console.error("Image upload error:", err);
+      setUploadError("Network error during upload.");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
 
   const isLoggedIn = !!approval;
   const isApproved = approval?.status === "approved";
@@ -101,6 +142,8 @@ export function AskFlowModal({
           link: formLink.trim() || undefined,
           vettingInfo: formVettingInfo.trim() || undefined,
           spotsTotal: formUnlimited ? "Unlimited" : (Number(formSpots) || 10),
+          topImageUrl: formImageUrl.trim() || null,
+          imageContain: formImageContain,
         }),
       });
       const data = await res.json();
@@ -244,6 +287,60 @@ export function AskFlowModal({
                       placeholder="https://…"
                       className={inputCls}
                     />
+                  </Field>
+
+                  <Field label="Header image">
+                    <div className="flex items-center gap-2 mb-2">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                        className="flex items-center gap-1.5 px-3 py-2 bg-[#23297e] hover:bg-[#1a2060] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-semibold text-xs rounded-lg transition-colors"
+                      >
+                        {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+                        {uploading ? "Uploading…" : "Upload from computer"}
+                      </button>
+                      <span className="font-['Poppins',sans-serif] text-[11px] text-gray-400">or paste a URL ↓</span>
+                    </div>
+                    <input
+                      type="url" value={formImageUrl}
+                      onChange={(e) => setFormImageUrl(e.target.value)}
+                      placeholder="https://… (optional)"
+                      className={inputCls}
+                    />
+                    {formImageUrl.trim() && (
+                      <div className="mt-2 relative h-24 rounded-xl overflow-hidden bg-gray-50 border border-gray-200">
+                        <img
+                          src={formImageUrl.trim()}
+                          alt="Header preview"
+                          className="w-full h-full object-cover"
+                          onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = "none"; }}
+                        />
+                      </div>
+                    )}
+                    {uploadError && (
+                      <p className="mt-1.5 font-['Poppins',sans-serif] text-[11px] text-red-500">{uploadError}</p>
+                    )}
+                    <label className="flex items-center gap-2 mt-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox" checked={formImageContain}
+                        onChange={(e) => setFormImageContain(e.target.checked)}
+                        className="w-4 h-4 rounded accent-[#fd8e33]"
+                      />
+                      <span className="font-['Poppins',sans-serif] text-[12.5px] text-gray-600">
+                        Fit logo inside header (don't crop)
+                      </span>
+                    </label>
+                    <p className="mt-1 font-['Poppins',sans-serif] text-[11px] text-gray-400">
+                      Optional. Upload a file (max 5 MB) or paste a URL. Turn on "Fit logo" for org banners; leave off for photos.
+                    </p>
                   </Field>
                 </Section>
 
