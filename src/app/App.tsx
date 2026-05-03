@@ -197,7 +197,7 @@ export default function App() {
       // Location
       const locs = activeFilters["Location"] ?? [];
       if (locs.length > 0) {
-        const matchesOnline = locs.includes("Online Only") && card.isOnline;
+        const matchesOnline = locs.includes("Online") && card.isOnline;
         const matchesLoc = card.location && locs.includes(card.location);
         if (!matchesOnline && !matchesLoc) return false;
       }
@@ -277,15 +277,17 @@ export default function App() {
     return Array.from(set).sort();
   }, [cards]);
 
-  // Distinct locations from currently-loaded cards. "Online Only" stays at
-  // the top as a special option that maps to `card.isOnline` in applyFilters.
+  // Distinct locations from currently-loaded cards. "Online" stays at the
+  // top as a special option that maps to `card.isOnline` in applyFilters.
+  // Any literal "Online" location strings are deduped so the dropdown shows
+  // a single Online entry.
   const dynamicLocations = useMemo(() => {
     const set = new Set<string>();
     for (const c of cards) {
       const loc = (c.location ?? "").trim();
-      if (loc) set.add(loc);
+      if (loc && loc !== "Online") set.add(loc);
     }
-    return ["Online Only", ...Array.from(set).sort()];
+    return ["Online", ...Array.from(set).sort()];
   }, [cards]);
 
   // ── On mount: restore session + listen for OAuth redirects ──

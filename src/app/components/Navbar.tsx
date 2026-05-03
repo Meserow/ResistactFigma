@@ -298,20 +298,6 @@ export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoC
           {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
        </div>
-
-        {/* Helper text — sits below Add Action / Sign In on desktop */}
-        {!isLoggedIn && (
-          <p className="hidden md:block mt-2 text-right font-['Poppins',sans-serif] text-[12px] text-gray-500 italic">
-            Want to add actions to the site?{" "}
-            <button
-              type="button"
-              onClick={onLoginClick}
-              className="not-italic font-semibold text-[#23297e] hover:underline"
-            >
-              Join the Resistance
-            </button>.
-          </p>
-        )}
       </header>
 
       {/* ── Hero slot (optional) — sits between top bar and filter row ── */}
