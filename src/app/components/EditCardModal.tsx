@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { X, Loader2, CheckCircle2, Pencil, Trash2 } from "lucide-react";
+import { useRef, useState } from "react";
+import { X, Loader2, CheckCircle2, Pencil, Trash2, Upload } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
 import type { ActionCardData } from "./ActionCard";
 import { LOCATION_OPTIONS } from "../lib/locations";
@@ -85,12 +85,56 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
   // path (e.g. /assets/foo.svg) when topImageKey is set; only seed the field
   // from the raw URL the server stored, so we don't write a bundled path back.
   const [topImageUrl,    setTopImageUrl]    = useState<string>((card as any).topImageUrl ?? "");
+  const [imageContain,   setImageContain]   = useState<boolean>(card.imageContain === true);
 
   const [loading,  setLoading]  = useState(false);
   const [success,  setSuccess]  = useState(false);
   const [error,    setError]    = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting,       setDeleting]       = useState(false);
+  const [uploading,      setUploading]      = useState(false);
+  const [uploadError,    setUploadError]    = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Client-side guard rails — server enforces the same.
+    if (!file.type.startsWith("image/")) {
+      setUploadError("Pick an image file (jpg/png/webp/gif).");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError("Image too large (max 5 MB).");
+      return;
+    }
+
+    setUploadError(null);
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`${API}/actions/upload-image`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setUploadError(data.error ?? `Upload failed (${res.status}).`);
+        return;
+      }
+      setTopImageUrl(data.url);
+    } catch (err) {
+      console.error("Image upload error:", err);
+      setUploadError("Network error during upload.");
+    } finally {
+      setUploading(false);
+      // Reset so re-picking the same file re-fires onChange.
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
 
   // Sync category colour whenever category changes via the dropdown
   function handleCategoryChange(val: string) {
@@ -152,6 +196,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
         authorLink:     authorLink.trim() || undefined,
         // null clears the URL so the seed-provided topImageKey can take over again.
         topImageUrl:    topImageUrl.trim() || null,
+        imageContain,
       };
 
       const res = await fetch(`${API}/actions/${card.id}`, {
@@ -319,7 +364,26 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
             </Field>
 
             {/* Header image */}
-            <Field label="Header Image URL">
+            <Field label="Header Image">
+              <div className="flex items-center gap-2 mb-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-[#23297e] hover:bg-[#1a2060] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-semibold text-xs rounded-lg transition-colors"
+                >
+                  {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+                  {uploading ? "Uploading…" : "Upload from computer"}
+                </button>
+                <span className="font-['Poppins',sans-serif] text-[11px] text-gray-400">or paste a URL ↓</span>
+              </div>
               <input
                 type="url" value={topImageUrl}
                 onChange={(e) => setTopImageUrl(e.target.value)}
@@ -336,8 +400,24 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
                   />
                 </div>
               )}
+              {uploadError && (
+                <p className="mt-1.5 font-['Poppins',sans-serif] text-[11px] text-red-500">{uploadError}</p>
+              )}
               <p className="mt-1.5 font-['Poppins',sans-serif] text-[11px] text-gray-400">
-                Paste an image URL (e.g. an org logo or photo). Tip: right-click → Copy Image Address on any web image.
+                Upload from your computer (max 5 MB) or paste a URL. Tip: right-click → Copy Image Address on any web image.
+              </p>
+              <label className="flex items-center gap-2 mt-2 cursor-pointer select-none">
+                <input
+                  type="checkbox" checked={imageContain}
+                  onChange={(e) => setImageContain(e.target.checked)}
+                  className="w-4 h-4 rounded accent-[#23297e]"
+                />
+                <span className="font-['Poppins',sans-serif] text-sm text-gray-600">
+                  Fit logo inside header (don't crop)
+                </span>
+              </label>
+              <p className="mt-1 font-['Poppins',sans-serif] text-[11px] text-gray-400">
+                Turn on for org logos and banners; leave off for photos.
               </p>
             </Field>
 

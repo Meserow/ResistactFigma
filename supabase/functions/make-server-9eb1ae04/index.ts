@@ -790,6 +790,69 @@ app.put("/make-server-9eb1ae04/actions/:id", async (c) => {
   }
 });
 
+// ─── POST /actions/upload-image — upload to Supabase Storage, return URL ─────
+// Approved users only. Auto-creates the public bucket on first call.
+app.post("/make-server-9eb1ae04/actions/upload-image", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    if (!token) return c.json({ error: "Unauthorized" }, 401);
+
+    const user = await getUser(token);
+    if (!user) return c.json({ error: "Invalid or expired token" }, 401);
+
+    const approval = await kv.get(`user:approval:${user.id}`) as any;
+    if (!approval || approval.status !== "approved") {
+      return c.json({ error: "Your account must be approved to upload." }, 403);
+    }
+
+    const body = await c.req.parseBody();
+    const file = body.file;
+    if (!file || typeof file === "string") {
+      return c.json({ error: "No file provided." }, 400);
+    }
+
+    // Type + size checks
+    if (!file.type?.startsWith("image/")) {
+      return c.json({ error: "File must be an image." }, 400);
+    }
+    const MAX_BYTES = 5 * 1024 * 1024;
+    if (file.size > MAX_BYTES) {
+      return c.json({ error: "Image too large (max 5 MB)." }, 400);
+    }
+
+    const supabase = adminClient();
+    const BUCKET = "action-images";
+
+    // Idempotently ensure the bucket exists and is public.
+    const { data: buckets } = await supabase.storage.listBuckets();
+    if (!buckets?.some((b) => b.name === BUCKET)) {
+      const { error: createErr } = await supabase.storage.createBucket(BUCKET, { public: true });
+      if (createErr) {
+        console.log("Bucket creation error:", createErr);
+        return c.json({ error: `Storage setup failed: ${createErr.message}` }, 500);
+      }
+    }
+
+    const ext = (file.name?.split(".").pop() ?? "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+    const key = `${crypto.randomUUID()}.${ext}`;
+    const buf = await file.arrayBuffer();
+
+    const { error: upErr } = await supabase.storage
+      .from(BUCKET)
+      .upload(key, buf, { contentType: file.type, upsert: false });
+    if (upErr) {
+      console.log("Upload error:", upErr);
+      return c.json({ error: `Upload failed: ${upErr.message}` }, 500);
+    }
+
+    const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(key);
+    return c.json({ url: urlData.publicUrl });
+  } catch (err) {
+    console.log("upload-image error:", err);
+    return c.json({ error: `Upload error: ${err}` }, 500);
+  }
+});
+
 // ─── DELETE /actions/:id — admin-only card removal ────────────────────────────
 app.delete("/make-server-9eb1ae04/actions/:id", async (c) => {
   try {
