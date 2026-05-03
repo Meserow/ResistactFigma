@@ -9,7 +9,6 @@ const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`
 interface AuthModalProps {
   onClose: () => void;
   onApproval: (approval: UserApproval) => void;
-  onDemoLogin?: (approval: UserApproval, fakeToken: string) => void;
 }
 
 // ─── Social login icons ───────────────────────────────────────────────────────
@@ -25,7 +24,7 @@ function GoogleIcon() {
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
-export function AuthModal({ onClose, onApproval, onDemoLogin }: AuthModalProps) {
+export function AuthModal({ onClose, onApproval }: AuthModalProps) {
   const [tab, setTab] = useState<"signin" | "register">("signin");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -281,33 +280,6 @@ export function AuthModal({ onClose, onApproval, onDemoLogin }: AuthModalProps) 
         </p>
       )}
 
-      {/* ── Demo simulation ── */}
-      <div className="mt-5 pt-4 border-t border-dashed border-gray-200">
-        <p className="text-center font-['Poppins',sans-serif] text-[10px] uppercase tracking-widest text-gray-300 mb-2.5 font-semibold">
-          Demo / simulation
-        </p>
-        <button
-          type="button"
-          onClick={() => {
-            const ellenApproval: UserApproval = {
-              userId: "sim-ellen-escarcega",
-              email: "ellen@meserow.com",
-              name: "Ellen Escarcega",
-              avatar: null,
-              status: "approved",
-              isAdmin: true,
-              provider: "email",
-              createdAt: new Date().toISOString(),
-            };
-            onDemoLogin?.(ellenApproval, "demo-token-sim");
-            onClose();
-          }}
-          className="w-full py-2.5 border border-dashed border-[#23297e]/40 rounded-xl font-['Poppins',sans-serif] text-xs font-semibold text-[#23297e] hover:bg-[#23297e]/5 transition-colors flex items-center justify-center gap-2"
-        >
-          <span className="text-base">✊</span>
-          Simulate login as Ellen (Admin)
-        </button>
-      </div>
     </Backdrop>
   );
 }

@@ -149,7 +149,6 @@ export default function App() {
   const [actOpen, setActOpen] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
   const [editCardId, setEditCardId] = useState<number | null>(null);
-  const [isDemoMode, setIsDemoMode] = useState(false);
 
   // ── Live stats from server ──
   const [statsCitiesCount, setStatsCitiesCount] = useState<number | null>(null);
@@ -347,17 +346,10 @@ export default function App() {
     }
   }
 
-  function handleDemoLogin(ellenApproval: UserApproval, fakeToken: string) {
-    setApproval(ellenApproval);
-    setAccessToken(fakeToken);
-    setIsDemoMode(true);
-  }
-
   async function handleLogout() {
     await supabase.auth.signOut();
     setApproval(null);
     setAccessToken(null);
-    setIsDemoMode(false);
   }
 
   // ── Sync cards from Supabase ──
@@ -565,18 +557,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-['Poppins',sans-serif]">
-      {/* Demo mode banner */}
-      {isDemoMode && (
-        <div className="bg-amber-400 text-amber-900 text-center py-1.5 px-4 font-['Poppins',sans-serif] text-xs font-semibold flex items-center justify-center gap-2">
-          <span>⚠️ DEMO MODE — Simulated as Ellen Escarcega (Admin). API writes are disabled.</span>
-          <button
-            onClick={handleLogout}
-            className="underline hover:no-underline ml-2 font-bold"
-          >
-            Exit demo
-          </button>
-        </div>
-      )}
       <Navbar
         approval={approval}
         onLoginClick={() => setAuthModalOpen(true)}
@@ -716,7 +696,6 @@ export default function App() {
         <AuthModal
           onClose={() => setAuthModalOpen(false)}
           onApproval={(a) => setApproval(a)}
-          onDemoLogin={handleDemoLogin}
         />
       )}
 
