@@ -23,6 +23,7 @@ const FACTS_FILTER_OPTIONS: Record<string, string[]> = {
 
 interface NavbarProps {
   approval: UserApproval | null;
+  myCompletions?: { total: number; byCategory: Record<string, number>; completedIds: number[] } | null;
   onLoginClick: () => void;
   onLogout: () => void;
   onAdminClick: () => void;
@@ -48,7 +49,7 @@ interface NavbarProps {
   onQuickActionsChange?: (v: boolean) => void;
 }
 
-export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, onAskClick, statsActsCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange }: NavbarProps) {
+export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, onAskClick, statsActsCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange }: NavbarProps) {
   // Acts filters in render order: Location dropdown first, Category pills second.
   // Used for "Clear all" and the mobile filter row that shows just the names.
   const ACTS_FILTER_OPTIONS: Record<string, string[]> = {
@@ -57,8 +58,10 @@ export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoC
   };
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [scoreOpen, setScoreOpen] = useState(false);
   const [openFilter, setOpenFilter] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const scoreRef = useRef<HTMLDivElement>(null);
   const filterBarRef = useRef<HTMLDivElement>(null);
 
   // Close user dropdown when clicking outside
@@ -82,6 +85,23 @@ export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoC
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
+
+  // Close score-dropdown when clicking outside
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (scoreRef.current && !scoreRef.current.contains(e.target as Node)) {
+        setScoreOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  // Sorted category breakdown — biggest categories first.
+  const completionEntries = useMemo(() => {
+    if (!myCompletions) return [];
+    return Object.entries(myCompletions.byCategory).sort((a, b) => b[1] - a[1]);
+  }, [myCompletions]);
 
   const isLoggedIn = !!approval;
   const isPending = approval?.status === "pending";
@@ -224,6 +244,53 @@ export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoC
           {isLoggedIn ? (
             <>
               <Bell size={20} className="text-gray-500 cursor-pointer hover:text-[#23297e] transition-colors" />
+
+              {/* Personal completion scoreboard — orange circle near avatar */}
+              {myCompletions && (
+                <div className="relative" ref={scoreRef}>
+                  <button
+                    onClick={() => setScoreOpen((v) => !v)}
+                    title={`You've done ${myCompletions.total} action${myCompletions.total === 1 ? "" : "s"}`}
+                    aria-label="Your completion scoreboard"
+                    className="relative w-9 h-9 rounded-full bg-[#fd8e33] hover:bg-[#e07a28] text-white shadow-sm transition-colors flex items-center justify-center font-['Poppins',sans-serif] font-bold text-sm"
+                  >
+                    {myCompletions.total > 99 ? "99+" : myCompletions.total}
+                  </button>
+
+                  {scoreOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50">
+                      <div className="px-4 py-2.5 border-b border-gray-50">
+                        <p className="font-['Poppins',sans-serif] text-[11px] uppercase tracking-wider text-gray-400 font-semibold">
+                          Your scoreboard
+                        </p>
+                        <p className="font-['Poppins',sans-serif] font-bold text-gray-900 text-base mt-0.5">
+                          {myCompletions.total} action{myCompletions.total === 1 ? "" : "s"} done
+                        </p>
+                      </div>
+                      {completionEntries.length === 0 ? (
+                        <p className="px-4 py-3 font-['Poppins',sans-serif] text-[13px] text-gray-500">
+                          Click "✓ I did this" on any card to start your streak.
+                        </p>
+                      ) : (
+                        <div className="max-h-72 overflow-y-auto py-1">
+                          {completionEntries.map(([cat, n]) => (
+                            <div
+                              key={cat}
+                              className="flex items-center justify-between px-4 py-1.5 font-['Poppins',sans-serif] text-[13px]"
+                            >
+                              <span className="text-gray-700 font-medium">{cat}</span>
+                              <span className="text-[#fd8e33] font-bold tabular-nums">
+                                {n}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}

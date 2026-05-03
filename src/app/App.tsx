@@ -156,6 +156,11 @@ export default function App() {
   // ── Auth state ──
   const [approval, setApproval] = useState<UserApproval | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [myCompletions, setMyCompletions] = useState<{
+    total: number;
+    byCategory: Record<string, number>;
+    completedIds: number[];
+  } | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [adminPanelOpen, setAdminPanelOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
@@ -316,13 +321,39 @@ export default function App() {
       if (session?.access_token) {
         setAccessToken(session.access_token);
         fetchApprovalStatus(session.access_token, session.user);
+        fetchMyCompletions(session.access_token);
       } else {
         setAccessToken(null);
         setApproval(null);
+        setMyCompletions(null);
       }
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  // ── Fetch the signed-in user's completion scoreboard ──
+  async function fetchMyCompletions(token: string) {
+    try {
+      const res = await fetch(`${API}/me/completions`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setMyCompletions(data);
+      // Merge server-known completions into the optimistic local set so the
+      // pill shows "Did it!" on cards even right after sign-in across devices.
+      if (Array.isArray(data.completedIds)) {
+        setCompletedCards((prev) => {
+          const next = new Set(prev);
+          for (const id of data.completedIds) next.add(id);
+          try { localStorage.setItem("resistact_completed", JSON.stringify([...next])); } catch {}
+          return next;
+        });
+      }
+    } catch (err) {
+      console.error("Could not fetch completions:", err);
+    }
+  }
 
   async function fetchApprovalStatus(token: string, user?: any) {
     try {
@@ -516,9 +547,14 @@ export default function App() {
     );
 
     try {
+      // Use the user's access token when signed in so the server can record
+      // the completion against their account; falls back to the anon key.
+      const authHeader = accessToken
+        ? `Bearer ${accessToken}`
+        : `Bearer ${publicAnonKey}`;
       const res = await fetch(`${API}/actions/${id}/complete`, {
         method: "POST",
-        headers: HEADERS,
+        headers: { ...HEADERS, Authorization: authHeader },
         body: JSON.stringify({ delta }),
       });
       if (!res.ok) {
@@ -529,6 +565,7 @@ export default function App() {
         setCards((prev) =>
           prev.map((c) => (c.id === id ? resolveCard(updated) : c))
         );
+        if (accessToken) fetchMyCompletions(accessToken);
       }
     } catch (err) {
       console.error("Network error updating completion:", err);
@@ -618,6 +655,7 @@ export default function App() {
     <div className="min-h-screen bg-gray-50 font-['Poppins',sans-serif]">
       <Navbar
         approval={approval}
+        myCompletions={myCompletions}
         onLoginClick={() => setAuthModalOpen(true)}
         onLogout={handleLogout}
         onAdminClick={() => setAdminPanelOpen(true)}

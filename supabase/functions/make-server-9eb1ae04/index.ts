@@ -692,7 +692,8 @@ app.post("/make-server-9eb1ae04/actions/create", async (c) => {
 });
 
 // ─── POST /actions/:id/complete — increment completions counter ───────────
-// Self-reported "I did this" — anonymous, deduped client-side via localStorage.
+// Self-reported "I did this" — anonymous (deduped client-side via localStorage)
+// or authenticated (also writes a per-user record for the scoreboard).
 app.post("/make-server-9eb1ae04/actions/:id/complete", async (c) => {
   try {
     const id = Number(c.req.param("id"));
@@ -711,10 +712,57 @@ app.post("/make-server-9eb1ae04/actions/:id/complete", async (c) => {
     card.completions = Math.max(0, current + (delta ?? 1));
     await kv.set(`action:${id}`, card);
 
+    // If a real user is signed in (anon-key tokens won't resolve to a user),
+    // persist a per-user record so the scoreboard can aggregate by category.
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    if (token) {
+      const user = await getUser(token);
+      if (user) {
+        const userKey = `complete:${user.id}:${id}`;
+        if ((delta ?? 1) > 0) {
+          await kv.set(userKey, {
+            actionId: id,
+            category: card.category ?? "OTHER",
+            completedAt: new Date().toISOString(),
+          });
+        } else {
+          await kv.del(userKey);
+        }
+      }
+    }
+
     return c.json({ card });
   } catch (err) {
     console.log("Error updating completion count:", err);
     return c.json({ error: `Failed to update completion: ${err}` }, 500);
+  }
+});
+
+// ─── GET /me/completions — scoreboard for the signed-in user ──────────────
+app.get("/make-server-9eb1ae04/me/completions", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    if (!token) return c.json({ error: "Unauthorized" }, 401);
+    const user = await getUser(token);
+    if (!user) return c.json({ error: "Invalid or expired token" }, 401);
+
+    const records = (await kv.getByPrefix(`complete:${user.id}:`)) as any[];
+    const byCategory: Record<string, number> = {};
+    const completedIds: number[] = [];
+    for (const r of records ?? []) {
+      if (!r) continue;
+      const cat = (r.category ?? "OTHER").toString().toUpperCase();
+      byCategory[cat] = (byCategory[cat] ?? 0) + 1;
+      if (typeof r.actionId === "number") completedIds.push(r.actionId);
+    }
+    return c.json({
+      total: records?.length ?? 0,
+      byCategory,
+      completedIds,
+    });
+  } catch (err) {
+    console.log("Error fetching completions:", err);
+    return c.json({ error: `Failed: ${err}` }, 500);
   }
 });
 
