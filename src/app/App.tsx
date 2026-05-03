@@ -162,6 +162,19 @@ export default function App() {
     byCategory: Record<string, number>;
     completedIds: number[];
   } | null>(null);
+  // Anonymous fallback so non-logged-in users still see a personal scoreboard
+  // backed by their localStorage completedCards set.
+  const localCompletions = useMemo(() => {
+    const ids = [...completedCards];
+    if (ids.length === 0) return null;
+    const byCategory: Record<string, number> = {};
+    for (const id of ids) {
+      const card = cards.find((c) => c.id === id);
+      const cat = card?.category ?? "OTHER";
+      byCategory[cat] = (byCategory[cat] ?? 0) + 1;
+    }
+    return { total: ids.length, byCategory, completedIds: ids };
+  }, [completedCards, cards]);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [adminPanelOpen, setAdminPanelOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
@@ -665,7 +678,7 @@ export default function App() {
     <div className="min-h-screen bg-gray-50 font-['Poppins',sans-serif]">
       <Navbar
         approval={approval}
-        myCompletions={myCompletions}
+        myCompletions={myCompletions ?? localCompletions}
         onLoginClick={() => setAuthModalOpen(true)}
         onLogout={handleLogout}
         onAdminClick={() => setAdminPanelOpen(true)}

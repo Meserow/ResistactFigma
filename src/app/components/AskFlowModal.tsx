@@ -1,5 +1,11 @@
 import React, { useMemo, useRef, useState } from "react";
-import { X, ChevronLeft, Loader2, CheckCircle2, Search, Megaphone, Upload } from "lucide-react";
+import {
+  X, ChevronLeft, Loader2, CheckCircle2, Search, Megaphone, Upload,
+  Ban, DollarSign, Bike, Newspaper, Calendar, Share2, Hammer, PenLine, Users,
+  HandHeart, Home, HardHat, Sparkles, Briefcase, Heart, Mail, GraduationCap,
+  Smile, Volume2, Palette, Handshake, Send, Brain, Lightbulb, Mailbox,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
 import type { UserApproval } from "../lib/supabase";
 import { LOCATION_OPTIONS } from "../lib/locations";
@@ -7,33 +13,34 @@ import { LOCATION_OPTIONS } from "../lib/locations";
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
 
 // ─── Category data ─────────────────────────────────────────────────────────────
-const CATEGORIES: { name: string; emoji: string; color: string }[] = [
-  { name: "Boycott",                    emoji: "🚫",  color: "#23297e" },
-  { name: "Protest",                    emoji: "✊",  color: "#23297e" },
-  { name: "Funding",                    emoji: "💰",  color: "#127f05" },
-  { name: "Transportation",             emoji: "🚲",  color: "#126d89" },
-  { name: "News Story",                 emoji: "📰",  color: "#896312" },
-  { name: "Meeting",                    emoji: "📋",  color: "#23297e" },
-  { name: "Social Media",               emoji: "📣",  color: "#e44b4b" },
-  { name: "Crafting",                   emoji: "🔨",  color: "#c34e00" },
-  { name: "Petition",                   emoji: "✍️",  color: "#05737f" },
-  { name: "Flash Mob",                  emoji: "👥",  color: "#ff00d5" },
-  { name: "Join a Group",               emoji: "🫂",  color: "#0891b2" },
-  { name: "Housing",                    emoji: "🏠",  color: "#896312" },
-  { name: "Labor",                      emoji: "👷",  color: "#127f05" },
-  { name: "Prayer",                     emoji: "🙏",  color: "#8a00e6" },
-  { name: "Professional Skills",        emoji: "💼",  color: "#126d89" },
-  { name: "Personal Committment",       emoji: "❤️",  color: "#23297e" },
-  { name: "Email Campaign",             emoji: "📧",  color: "#e44b4b" },
-  { name: "Training/Education",         emoji: "🎓",  color: "#126d89" },
-  { name: "Spread Positivity",          emoji: "👍",  color: "#8a00e6" },
-  { name: "Boost/Repost/Make Noise",    emoji: "📢",  color: "#8a00e6" },
-  { name: "Art Piece/Performance Art",  emoji: "🎨",  color: "#896312" },
-  { name: "Act of Kindness",            emoji: "🤝",  color: "#127f05" },
-  { name: "Boost Underreported Facts",  emoji: "🔎",  color: "#05737f" },
-  { name: "Letter to the Editor",       emoji: "✉️",  color: "#c34e00" },
-  { name: "Fight Depression/Anxiety",   emoji: "💙",  color: "#ff00d5" },
-  { name: "Other…",                     emoji: "💡",  color: "#767574" },
+const CATEGORIES: { name: string; icon: LucideIcon; color: string }[] = [
+  { name: "Boycott",                    icon: Ban,            color: "#23297e" },
+  { name: "Protest",                    icon: Megaphone,      color: "#23297e" },
+  { name: "Funding",                    icon: DollarSign,     color: "#127f05" },
+  { name: "Transportation",             icon: Bike,           color: "#126d89" },
+  { name: "News Story",                 icon: Newspaper,      color: "#896312" },
+  { name: "Meeting",                    icon: Calendar,       color: "#23297e" },
+  { name: "Social Media",               icon: Share2,         color: "#e44b4b" },
+  { name: "Crafting",                   icon: Hammer,         color: "#c34e00" },
+  { name: "Petition",                   icon: PenLine,        color: "#05737f" },
+  { name: "Flash Mob",                  icon: Users,          color: "#ff00d5" },
+  { name: "Join a Group",               icon: HandHeart,      color: "#0891b2" },
+  { name: "Housing",                    icon: Home,           color: "#896312" },
+  { name: "Labor",                      icon: HardHat,        color: "#127f05" },
+  { name: "Prayer",                     icon: Sparkles,       color: "#8a00e6" },
+  { name: "Professional Skills",        icon: Briefcase,      color: "#126d89" },
+  { name: "Personal Commitment",        icon: Heart,          color: "#23297e" },
+  { name: "Email Campaign",             icon: Mail,           color: "#e44b4b" },
+  { name: "Letter Writing",             icon: Mailbox,        color: "#2d7a6b" },
+  { name: "Letter to Editor",           icon: Send,           color: "#c34e00" },
+  { name: "Training",                   icon: GraduationCap,  color: "#126d89" },
+  { name: "Spread Positivity",          icon: Smile,          color: "#8a00e6" },
+  { name: "Boost",                      icon: Volume2,        color: "#8a00e6" },
+  { name: "Boost Facts",                icon: Search,         color: "#05737f" },
+  { name: "Art Piece",                  icon: Palette,        color: "#896312" },
+  { name: "Act of Kindness",            icon: Handshake,      color: "#127f05" },
+  { name: "Mental Health",              icon: Brain,          color: "#ff00d5" },
+  { name: "Other",                      icon: Lightbulb,      color: "#767574" },
 ];
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -177,7 +184,7 @@ export function AskFlowModal({
               </h2>
               {selectedCat && (
                 <div className="flex items-center gap-1.5 mt-1">
-                  <span className="text-[14px] leading-none">{selectedCat.emoji}</span>
+                  <selectedCat.icon size={14} className="text-gray-400" />
                   <span
                     className="font-['Poppins',sans-serif] font-semibold text-[12px] uppercase tracking-wider"
                     style={{ color: selectedCat.color }}
@@ -398,7 +405,7 @@ export function AskFlowModal({
               Make an ASK
             </p>
             <h2 className="font-['Poppins',sans-serif] font-bold text-gray-900 text-2xl leading-tight mt-0.5">
-              Add an Act to the Resistance
+              Add an Action
             </h2>
             <p className="font-['Poppins',sans-serif] text-gray-500 text-sm mt-1.5">
               Pick the category that fits best.
@@ -434,7 +441,7 @@ export function AskFlowModal({
             </p>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {filteredCats.map(({ name, emoji, color }) => {
+              {filteredCats.map(({ name, icon: Icon, color }) => {
                 const selected = selectedCategory === name;
                 return (
                   <button
@@ -451,7 +458,11 @@ export function AskFlowModal({
                         : undefined
                     }
                   >
-                    <span className="text-[18px] leading-none shrink-0">{emoji}</span>
+                    <Icon
+                      size={16}
+                      className="shrink-0"
+                      style={{ color: selected ? color : "#9ca3af" }}
+                    />
                     <span
                       className="font-['Poppins',sans-serif] font-semibold text-[12.5px] leading-tight"
                       style={{ color: selected ? color : "#374151" }}

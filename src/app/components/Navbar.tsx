@@ -332,13 +332,25 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               </div>
             </>
           ) : (
-            <button
-              onClick={onLoginClick}
-              className="flex items-center gap-2 px-5 py-3 rounded-xl border border-[#23297e] text-[#23297e] font-['Poppins',sans-serif] font-bold text-base hover:bg-[#23297e]/5 transition-colors"
-            >
-              <LogIn size={16} />
-              Sign In
-            </button>
+            <>
+              {myCompletions && myCompletions.total > 0 && (
+                <button
+                  onClick={onLoginClick}
+                  title={`You've done ${myCompletions.total} action${myCompletions.total === 1 ? "" : "s"}. Sign in so we don't lose your streak.`}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#fd8e33]/10 text-[#fd8e33] hover:bg-[#fd8e33]/20 transition-colors font-['Poppins',sans-serif] font-bold text-sm"
+                >
+                  <span aria-hidden>🔥</span>
+                  {myCompletions.total > 99 ? "99+" : myCompletions.total} done
+                </button>
+              )}
+              <button
+                onClick={onLoginClick}
+                className="flex items-center gap-2 px-5 py-3 rounded-xl border border-[#23297e] text-[#23297e] font-['Poppins',sans-serif] font-bold text-base hover:bg-[#23297e]/5 transition-colors"
+              >
+                <LogIn size={16} />
+                Sign In
+              </button>
+            </>
           )}
         </div>
 
