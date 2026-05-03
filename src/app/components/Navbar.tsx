@@ -164,7 +164,7 @@ export function Navbar({ approval, onLoginClick, onLogout, onAdminClick, onInfoC
               ResistAct
             </p>
             <p className="font-['Poppins',sans-serif] text-[#767574] text-[11px] leading-snug hidden lg:block max-w-[200px] italic">
-              "Never doubt that a small group of thoughtful, committed citizens can change the world."
+              "Never doubt that a small group of thoughtful, committed citizens can change the world; indeed, it's the only thing that ever has."
               <span className="not-italic font-semibold block">— Margaret Mead</span>
             </p>
           </div>
