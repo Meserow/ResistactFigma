@@ -124,8 +124,8 @@ export function AskFlowModal({
   async function handleCreateAsk() {
     if (submittingRef.current) return;
     if (!isLoggedIn) { onLoginRequired(); return; }
-    if (!formTitle.trim() || !formDesc.trim() || !formLink.trim()) {
-      setFormError("Title, description, and link are required."); return;
+    if (!formTitle.trim() || !formDesc.trim() || !formLink.trim() || !formImageUrl.trim()) {
+      setFormError("Title, description, link, and header image are required."); return;
     }
     submittingRef.current = true;
     setFormError(null);
@@ -279,7 +279,7 @@ export function AskFlowModal({
                     />
                   </Field>
 
-                  <Field label="Header image">
+                  <Field label="Header image" required>
                     <div className="flex items-center gap-2 mb-2">
                       <input
                         ref={fileInputRef}
@@ -363,6 +363,7 @@ export function AskFlowModal({
                   if (!formTitle.trim()) missing.push("Title");
                   if (!formDesc.trim()) missing.push("Description");
                   if (!formLink.trim()) missing.push("Link");
+                  if (!formImageUrl.trim()) missing.push("Header image");
                   return missing.length > 0 ? (
                     <p className="text-[12px] text-amber-600 font-['Poppins',sans-serif] mb-2 text-center">
                       Fill {missing.join(", ")} to enable Post.
@@ -371,7 +372,7 @@ export function AskFlowModal({
                 })()}
                 <button
                   onClick={handleCreateAsk}
-                  disabled={createLoading || !formTitle.trim() || !formDesc.trim() || !formLink.trim()}
+                  disabled={createLoading || !formTitle.trim() || !formDesc.trim() || !formLink.trim() || !formImageUrl.trim()}
                   className="w-full py-3.5 bg-[#fd8e33] hover:bg-[#e07a28] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-['Poppins',sans-serif] font-bold text-sm rounded-2xl transition-colors flex items-center justify-center gap-2 shadow-sm"
                 >
                   {createLoading ? (
