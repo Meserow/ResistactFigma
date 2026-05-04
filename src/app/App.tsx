@@ -114,6 +114,11 @@ export default function App() {
   const [serverTotal, setServerTotal] = useState(0);
   const [serverOffset, setServerOffset] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
+  // How many cards to actually render in the DOM. Kept small to avoid
+  // Safari/mobile memory crashes when hundreds of image-bearing cards are
+  // painted at once. Cards are still loaded into `cards` state for filtering.
+  const DISPLAY_PAGE = 20;
+  const [displayLimit, setDisplayLimit] = useState(DISPLAY_PAGE);
   const [boostedCards, setActedCards] = useState<Set<number>>(() => {
     try {
       const stored = localStorage.getItem("resistact_boosted");
@@ -558,6 +563,12 @@ export default function App() {
     return () => { cancelled = true; };
   }, [hasActiveFilters, synced, serverTotal]);
 
+  // Reset display limit whenever filters/search change so the view refreshes
+  // from the top rather than showing a truncated filtered list.
+  useEffect(() => {
+    setDisplayLimit(DISPLAY_PAGE);
+  }, [hasActiveFilters, searchQuery, activeFilters, quickActionsOnly]);
+
   // ── Load more ──
   const handleLoadMore = async () => {
     setLoadingMore(true);
@@ -792,7 +803,7 @@ export default function App() {
               </div>
             ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {displayedCards.map((card) => (
+              {(hasActiveFilters ? displayedCards : displayedCards.slice(0, displayLimit)).map((card) => (
                 <ActionCard
                   key={card.id}
                   card={card.isFeatured ? { ...card, featuredIllustration: <FeaturedIllustration /> } : card}
@@ -810,12 +821,20 @@ export default function App() {
             </div>
             )}
 
-            {/* Load more — only shown when the server has more cards than we've fetched
-                AND no filter is active (filters auto-load all remaining). */}
-            {synced && !hasActiveFilters && serverOffset < serverTotal && (
+            {/* Load more — shows more already-loaded cards first; only fetches
+                from the server once all local cards have been revealed. */}
+            {synced && !hasActiveFilters && (displayLimit < displayedCards.length || serverOffset < serverTotal) && (
               <div className="mt-12 flex flex-col items-center gap-2">
                 <button
-                  onClick={handleLoadMore}
+                  onClick={() => {
+                    if (displayLimit < displayedCards.length) {
+                      // Reveal more already-loaded cards without a network call
+                      setDisplayLimit((prev) => prev + DISPLAY_PAGE);
+                    } else {
+                      // All local cards shown — fetch next page from server
+                      handleLoadMore();
+                    }
+                  }}
                   disabled={loadingMore}
                   className="px-10 py-3.5 bg-[#23297e] hover:bg-[#1a2060] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-semibold text-base rounded-xl transition-colors shadow-sm flex items-center gap-2"
                 >
@@ -828,7 +847,7 @@ export default function App() {
                   {loadingMore ? "Loading…" : "Load More Campaigns"}
                 </button>
                 <p className="font-['Poppins',sans-serif] text-xs text-gray-400">
-                  Showing {cards.length} of {serverTotal} campaigns
+                  Showing {hasActiveFilters ? displayedCards.length : Math.min(displayLimit, displayedCards.length)} of {serverTotal} campaigns
                 </p>
               </div>
             )}
