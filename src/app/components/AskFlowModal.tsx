@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from "react";
 import {
-  X, ChevronLeft, Loader2, CheckCircle2, Search, Megaphone, Upload,
+  X, ChevronLeft, Loader2, Search, Megaphone, Upload,
   Ban, DollarSign, Bike, Newspaper, Calendar, Share2, Hammer, PenLine, Users,
   HandHeart, Home, HardHat, Sparkles, Briefcase, Heart, Mail, GraduationCap,
   Smile, Volume2, Palette, Handshake, Send, Brain, Lightbulb, Mailbox,
@@ -14,32 +14,31 @@ const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`
 
 // ─── Category data ─────────────────────────────────────────────────────────────
 const CATEGORIES: { name: string; icon: LucideIcon; color: string }[] = [
+  { name: "Act of Kindness",            icon: Handshake,      color: "#127f05" },
+  { name: "Art/Performance Art",        icon: Palette,        color: "#896312" },
+  { name: "Boost",                      icon: Volume2,        color: "#8a00e6" },
   { name: "Boycott",                    icon: Ban,            color: "#23297e" },
-  { name: "Protest",                    icon: Megaphone,      color: "#23297e" },
-  { name: "Funding",                    icon: DollarSign,     color: "#127f05" },
-  { name: "Transportation",             icon: Bike,           color: "#126d89" },
-  { name: "News Story",                 icon: Newspaper,      color: "#896312" },
-  { name: "Meeting",                    icon: Calendar,       color: "#23297e" },
-  { name: "Social Media",               icon: Share2,         color: "#e44b4b" },
   { name: "Crafting",                   icon: Hammer,         color: "#c34e00" },
-  { name: "Petition",                   icon: PenLine,        color: "#05737f" },
+  { name: "Email Campaign",             icon: Mail,           color: "#e44b4b" },
   { name: "Flash Mob",                  icon: Users,          color: "#ff00d5" },
-  { name: "Join a Group",               icon: HandHeart,      color: "#0891b2" },
+  { name: "Funding",                    icon: DollarSign,     color: "#127f05" },
   { name: "Housing",                    icon: Home,           color: "#896312" },
+  { name: "Join a Group",               icon: HandHeart,      color: "#0891b2" },
   { name: "Labor",                      icon: HardHat,        color: "#127f05" },
+  { name: "Letter to Editor",           icon: Send,           color: "#c34e00" },
+  { name: "Letter Writing",             icon: Mailbox,        color: "#2d7a6b" },
+  { name: "Meeting",                    icon: Calendar,       color: "#23297e" },
+  { name: "Mental Health",              icon: Brain,          color: "#ff00d5" },
+  { name: "News Story",                 icon: Newspaper,      color: "#896312" },
+  { name: "Personal Commitment",        icon: Heart,          color: "#23297e" },
+  { name: "Petition",                   icon: PenLine,        color: "#05737f" },
   { name: "Prayer",                     icon: Sparkles,       color: "#8a00e6" },
   { name: "Professional Skills",        icon: Briefcase,      color: "#126d89" },
-  { name: "Personal Commitment",        icon: Heart,          color: "#23297e" },
-  { name: "Email Campaign",             icon: Mail,           color: "#e44b4b" },
-  { name: "Letter Writing",             icon: Mailbox,        color: "#2d7a6b" },
-  { name: "Letter to Editor",           icon: Send,           color: "#c34e00" },
-  { name: "Training",                   icon: GraduationCap,  color: "#126d89" },
+  { name: "Protest",                    icon: Megaphone,      color: "#23297e" },
+  { name: "Social Media",               icon: Share2,         color: "#e44b4b" },
   { name: "Spread Positivity",          icon: Smile,          color: "#8a00e6" },
-  { name: "Boost",                      icon: Volume2,        color: "#8a00e6" },
-  { name: "Boost Facts",                icon: Search,         color: "#05737f" },
-  { name: "Art Piece",                  icon: Palette,        color: "#896312" },
-  { name: "Act of Kindness",            icon: Handshake,      color: "#127f05" },
-  { name: "Mental Health",              icon: Brain,          color: "#ff00d5" },
+  { name: "Training",                   icon: GraduationCap,  color: "#126d89" },
+  { name: "Transportation",             icon: Bike,           color: "#126d89" },
   { name: "Other",                      icon: Lightbulb,      color: "#767574" },
 ];
 
@@ -66,13 +65,10 @@ export function AskFlowModal({
   const [formSponsor,     setFormSponsor]     = useState("");
   const [formLink,        setFormLink]        = useState("");
   const [formLocation,    setFormLocation]    = useState("");
-  const [formSpots,       setFormSpots]       = useState("10");
-  const [formUnlimited,   setFormUnlimited]   = useState(false);
   const [formVettingInfo, setFormVettingInfo] = useState("");
   const [formImageUrl,    setFormImageUrl]    = useState("");
   const [formImageContain, setFormImageContain] = useState(false);
   const [createLoading,   setCreateLoading]   = useState(false);
-  const [createSuccess,   setCreateSuccess]   = useState(false);
   const [formError,       setFormError]       = useState<string | null>(null);
   const [uploading,       setUploading]       = useState(false);
   const [uploadError,     setUploadError]     = useState<string | null>(null);
@@ -128,8 +124,8 @@ export function AskFlowModal({
   async function handleCreateAsk() {
     if (submittingRef.current) return;
     if (!isLoggedIn) { onLoginRequired(); return; }
-    if (!formTitle.trim() || !formDesc.trim()) {
-      setFormError("Title and description are required."); return;
+    if (!formTitle.trim() || !formDesc.trim() || !formLink.trim()) {
+      setFormError("Title, description, and link are required."); return;
     }
     submittingRef.current = true;
     setFormError(null);
@@ -148,16 +144,15 @@ export function AskFlowModal({
           sponsor: formSponsor.trim() || undefined,
           link: formLink.trim() || undefined,
           vettingInfo: formVettingInfo.trim() || undefined,
-          spotsTotal: formUnlimited ? "Unlimited" : (Number(formSpots) || 10),
+          spotsTotal: "Unlimited",
           topImageUrl: formImageUrl.trim() || null,
           imageContain: formImageContain,
         }),
       });
       const data = await res.json();
       if (!res.ok) { setFormError(data.error ?? "Failed to post ASK."); return; }
-      setCreateSuccess(true);
       if (onNewCard) onNewCard(data.card);
-      setTimeout(onClose, 2500);
+      onClose();
     } finally {
       setCreateLoading(false);
       submittingRef.current = false;
@@ -203,18 +198,7 @@ export function AskFlowModal({
             </button>
           </div>
 
-          {createSuccess ? (
-            <div className="p-10 flex flex-col items-center gap-4 text-center">
-              <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center">
-                <CheckCircle2 size={36} className="text-green-500" />
-              </div>
-              <h3 className="font-['Poppins',sans-serif] font-bold text-gray-900 text-xl">Your ASK is live!</h3>
-              <p className="font-['Poppins',sans-serif] text-gray-500 text-sm max-w-[320px]">
-                Your action has been posted and is now visible to the resistance community.
-              </p>
-            </div>
-          ) : (
-            <>
+          <>
               {/* Body — scrollable */}
               <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
 
@@ -258,22 +242,15 @@ export function AskFlowModal({
                     </select>
                   </Field>
 
-                  <Field label="People needed">
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="number" value={formSpots} min={1}
-                        onChange={(e) => setFormSpots(e.target.value)}
-                        disabled={formUnlimited}
-                        className={`${inputCls} w-32 disabled:opacity-40 disabled:cursor-not-allowed`}
-                      />
-                      <Toggle
-                        checked={formUnlimited}
-                        onChange={setFormUnlimited}
-                        label="Unlimited"
-                        compact
-                      />
-                    </div>
+                  <Field label="Link" required>
+                    <input
+                      type="url" value={formLink}
+                      onChange={(e) => setFormLink(e.target.value)}
+                      placeholder="https://…"
+                      className={inputCls}
+                    />
                   </Field>
+
                 </Section>
 
                 {/* Section: Optional details */}
@@ -283,15 +260,6 @@ export function AskFlowModal({
                       type="text" value={formSponsor}
                       onChange={(e) => setFormSponsor(e.target.value)}
                       placeholder="Organization or person sponsoring this action"
-                      className={inputCls}
-                    />
-                  </Field>
-
-                  <Field label="Link">
-                    <input
-                      type="url" value={formLink}
-                      onChange={(e) => setFormLink(e.target.value)}
-                      placeholder="https://…"
                       className={inputCls}
                     />
                   </Field>
@@ -377,7 +345,7 @@ export function AskFlowModal({
               <div className="border-t border-gray-100 px-6 py-4 bg-white">
                 <button
                   onClick={handleCreateAsk}
-                  disabled={createLoading || !formTitle.trim() || !formDesc.trim()}
+                  disabled={createLoading || !formTitle.trim() || !formDesc.trim() || !formLink.trim()}
                   className="w-full py-3.5 bg-[#fd8e33] hover:bg-[#e07a28] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-['Poppins',sans-serif] font-bold text-sm rounded-2xl transition-colors flex items-center justify-center gap-2 shadow-sm"
                 >
                   {createLoading ? (
@@ -388,7 +356,6 @@ export function AskFlowModal({
                 </button>
               </div>
             </>
-          )}
         </div>
       </Overlay>
     );

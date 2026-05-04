@@ -284,17 +284,47 @@ export default function App() {
     return out;
   }
 
+  // Sort order:
+  //   1. Engagement score = (completions * boosts) DESC — high-engagement
+  //      cards bubble to the top regardless of location.
+  //   2. Within a score tier: location bucket — Online → National →
+  //      Multi-state → specific states → no-location.
+  //   3. Within a (score, location) bucket: round-robin by category so
+  //      same-category cards never cluster (existing helper).
+  function locationBucket(c: ActionCardData): number {
+    if (c.isOnline) return 0;
+    const loc = (c.location ?? "").trim();
+    if (loc === "National") return 1;
+    if (loc === "Multi-state") return 2;
+    if (loc) return 3;
+    return 4;
+  }
+  function engagementScore(c: ActionCardData): number {
+    return (c.boosts ?? 0) * (c.completions ?? 0);
+  }
   const displayedCards = (() => {
     const filtered = applyFilters(cards);
-    const byBoost = new Map<number, ActionCardData[]>();
+    const byScore = new Map<number, ActionCardData[]>();
     for (const c of filtered) {
-      const b = c.boosts ?? 0;
-      if (!byBoost.has(b)) byBoost.set(b, []);
-      byBoost.get(b)!.push(c);
+      const s = engagementScore(c);
+      if (!byScore.has(s)) byScore.set(s, []);
+      byScore.get(s)!.push(c);
     }
-    const boostLevels = Array.from(byBoost.keys()).sort((a, b) => b - a);
+    const scores = Array.from(byScore.keys()).sort((a, b) => b - a);
     const out: ActionCardData[] = [];
-    for (const b of boostLevels) out.push(...interleaveByCategory(byBoost.get(b)!));
+    for (const s of scores) {
+      const tier = byScore.get(s)!;
+      const byLoc = new Map<number, ActionCardData[]>();
+      for (const c of tier) {
+        const lb = locationBucket(c);
+        if (!byLoc.has(lb)) byLoc.set(lb, []);
+        byLoc.get(lb)!.push(c);
+      }
+      for (const lb of [0, 1, 2, 3, 4]) {
+        const grp = byLoc.get(lb);
+        if (grp && grp.length > 0) out.push(...interleaveByCategory(grp));
+      }
+    }
     return out;
   })();
 
@@ -646,10 +676,11 @@ export default function App() {
 
   // Handler when a new user-created card arrives from AskFlowModal
   function handleNewCard(raw: any) {
-    const newCard: ActionCardData = { ...raw, topImage: undefined, authorAvatar: undefined };
+    const newCard = resolveCard(raw);
     setCards((prev) => prev.some((c) => c.id === newCard.id) ? prev : [...prev, newCard]);
     setServerTotal((prev) => prev + 1);
     setServerOffset((prev) => prev + 1);
+    showToast("Action posted");
   }
 
   // ── Determine if logged-in user can edit a given card ──
