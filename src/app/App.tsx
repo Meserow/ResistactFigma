@@ -117,8 +117,11 @@ export default function App() {
   // How many cards to actually render in the DOM. Kept small to avoid
   // Safari/mobile memory crashes when hundreds of image-bearing cards are
   // painted at once. Cards are still loaded into `cards` state for filtering.
-  const DISPLAY_PAGE = 20;
-  const [displayLimit, setDisplayLimit] = useState(DISPLAY_PAGE);
+  // Mobile (<640px) gets 20; desktop gets 60 to fill a wide screen on first load.
+  function getDisplayPage() {
+    return typeof window !== "undefined" && window.innerWidth >= 640 ? 60 : 20;
+  }
+  const [displayLimit, setDisplayLimit] = useState(getDisplayPage);
   const [boostedCards, setActedCards] = useState<Set<number>>(() => {
     try {
       const stored = localStorage.getItem("resistact_boosted");
@@ -566,7 +569,7 @@ export default function App() {
   // Reset display limit whenever filters/search change so the view refreshes
   // from the top rather than showing a truncated filtered list.
   useEffect(() => {
-    setDisplayLimit(DISPLAY_PAGE);
+    setDisplayLimit(getDisplayPage());
   }, [hasActiveFilters, searchQuery, activeFilters, quickActionsOnly]);
 
   // ── Load more ──
@@ -829,7 +832,7 @@ export default function App() {
                   onClick={() => {
                     if (displayLimit < displayedCards.length) {
                       // Reveal more already-loaded cards without a network call
-                      setDisplayLimit((prev) => prev + DISPLAY_PAGE);
+                      setDisplayLimit((prev) => prev + getDisplayPage());
                     } else {
                       // All local cards shown — fetch next page from server
                       handleLoadMore();
