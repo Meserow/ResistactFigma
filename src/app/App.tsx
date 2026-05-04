@@ -285,7 +285,7 @@ export default function App() {
   }
 
   // Sort order:
-  //   1. Engagement score = (completions * boosts) DESC — high-engagement
+  //   1. Engagement score = boosts + completions DESC — high-engagement
   //      cards bubble to the top regardless of location.
   //   2. Within a score tier: location bucket — Online → National →
   //      Multi-state → specific states → no-location.
@@ -300,7 +300,7 @@ export default function App() {
     return 4;
   }
   function engagementScore(c: ActionCardData): number {
-    return (c.boosts ?? 0) * (c.completions ?? 0);
+    return (c.boosts ?? 0) + (c.completions ?? 0);
   }
   const displayedCards = (() => {
     const filtered = applyFilters(cards);

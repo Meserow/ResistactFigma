@@ -33,14 +33,39 @@ async function getUser(token: string) {
   return user;
 }
 
-// On first login (any provider), create an approval record.
-// First user ever → auto-approved admin. Everyone else → pending.
-async function ensureApprovalRecord(user: any) {
-  const existing = await kv.get(`user:approval:${user.id}`);
-  if (existing) return existing as any;
+// Hardcoded admin allowlist. Admin status is granted ONLY to these emails.
+// The previous "first user ever wins" pattern was unsafe — any KV reset
+// would let the next signup self-promote to admin.
+const ADMIN_EMAILS: ReadonlySet<string> = new Set([
+  "ellen@meserow.com",
+  "mikep@meserow.com",
+  "patrick@meserow.com",
+  "hank@meserow.com",
+]);
 
-  const adminSetup = await kv.get("admin:setup");
-  const isFirst = !adminSetup;
+function isAdminEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  return ADMIN_EMAILS.has(email.toLowerCase().trim());
+}
+
+// On every login, ensure the approval record reflects the current allowlist.
+// Allowlisted emails → approved + admin. Everyone else → pending (or whatever
+// status they already have, but never admin). Re-validating existing records
+// auto-demotes any account that was promoted under the old buggy logic.
+async function ensureApprovalRecord(user: any) {
+  const allowedAdmin = isAdminEmail(user.email);
+  const existing = await kv.get(`user:approval:${user.id}`) as any;
+
+  if (existing) {
+    const correctedAdmin = allowedAdmin;
+    const correctedStatus = allowedAdmin ? "approved" : existing.status;
+    if (existing.isAdmin !== correctedAdmin || existing.status !== correctedStatus) {
+      const updated = { ...existing, isAdmin: correctedAdmin, status: correctedStatus };
+      await kv.set(`user:approval:${user.id}`, updated);
+      return updated;
+    }
+    return existing;
+  }
 
   const record = {
     userId: user.id,
@@ -51,15 +76,13 @@ async function ensureApprovalRecord(user: any) {
       user.email?.split("@")[0] ??
       "Resistor",
     avatar: user.user_metadata?.avatar_url ?? null,
-    status: isFirst ? "approved" : "pending",
-    isAdmin: isFirst,
+    status: allowedAdmin ? "approved" : "pending",
+    isAdmin: allowedAdmin,
     provider: user.app_metadata?.provider ?? "email",
     createdAt: new Date().toISOString(),
   };
 
   await kv.set(`user:approval:${user.id}`, record);
-  if (isFirst) await kv.set("admin:setup", true);
-
   return record;
 }
 
@@ -67,9 +90,55 @@ async function requireAdmin(token: string | undefined) {
   if (!token) return null;
   const user = await getUser(token);
   if (!user) return null;
+  // Defense in depth: require the email to be on the allowlist regardless
+  // of what's in the KV record. Even if a record's isAdmin flag is corrupted
+  // or stale, only allowlisted emails can perform admin actions.
+  if (!isAdminEmail(user.email)) return null;
   const record = await kv.get(`user:approval:${user.id}`) as any;
   if (!record?.isAdmin) return null;
   return { user, record };
+}
+
+// Sweep every approval record and reconcile isAdmin/status with the
+// allowlist. Demotes anyone who shouldn't be admin (cleaning up records
+// promoted by the old "first user wins" bug) and promotes any allowlisted
+// account that hasn't been marked admin yet.
+async function sweepAdminAllowlist(): Promise<{ demoted: string[]; promoted: string[]; total: number }> {
+  const records = await kv.getByPrefix("user:approval:") as any[];
+  const demoted: string[] = [];
+  const promoted: string[] = [];
+  for (const r of records) {
+    if (!r || typeof r !== "object" || !r.userId) continue;
+    const allowed = isAdminEmail(r.email);
+    const correctedAdmin = allowed;
+    const correctedStatus = allowed ? "approved" : r.status;
+    if (r.isAdmin === correctedAdmin && r.status === correctedStatus) continue;
+    const updated = { ...r, isAdmin: correctedAdmin, status: correctedStatus };
+    await kv.set(`user:approval:${r.userId}`, updated);
+    if (r.isAdmin && !correctedAdmin) demoted.push(r.email);
+    else if (!r.isAdmin && correctedAdmin) promoted.push(r.email);
+  }
+  return { demoted, promoted, total: records.length };
+}
+
+// Run the sweep once after deploy. Gated by a KV flag so it doesn't run on
+// every request. Bumping the version suffix forces a re-run.
+const ADMIN_SWEEP_VERSION = "v1";
+async function sweepAdminAllowlistOnce() {
+  const flagKey = `admin:sweep:allowlist:${ADMIN_SWEEP_VERSION}`;
+  const alreadyDone = await kv.get(flagKey);
+  if (alreadyDone) return;
+  try {
+    const result = await sweepAdminAllowlist();
+    console.log(
+      `Admin allowlist sweep (${ADMIN_SWEEP_VERSION}): scanned ${result.total} records — ` +
+      `demoted ${result.demoted.length} [${result.demoted.join(", ")}], ` +
+      `promoted ${result.promoted.length} [${result.promoted.join(", ")}]`
+    );
+    await kv.set(flagKey, true);
+  } catch (err) {
+    console.log("Admin allowlist sweep failed:", err);
+  }
 }
 
 // ─── Seed Ellen user ──────────────────────────────────────────────────────────
@@ -350,11 +419,33 @@ app.get("/make-server-9eb1ae04/auth/status", async (c) => {
     const user = await getUser(token);
     if (!user) return c.json({ error: "Invalid or expired token" }, 401);
 
+    // First /auth/status call after deploy reconciles all existing records
+    // against the admin allowlist. Cheap on subsequent calls (just a flag read).
+    await sweepAdminAllowlistOnce();
+
     const approval = await ensureApprovalRecord(user);
     return c.json({ approval });
   } catch (err) {
     console.log("Auth status error:", err);
     return c.json({ error: `Status check failed: ${err}` }, 500);
+  }
+});
+
+// ─── ADMIN: Manually re-run the allowlist sweep ───────────────────────────────
+app.post("/make-server-9eb1ae04/admin/sweep", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const result = await sweepAdminAllowlist();
+    console.log(
+      `Admin ${admin.record.name} ran allowlist sweep: ` +
+      `${result.demoted.length} demoted, ${result.promoted.length} promoted`
+    );
+    return c.json(result);
+  } catch (err) {
+    return c.json({ error: `Sweep failed: ${err}` }, 500);
   }
 });
 
