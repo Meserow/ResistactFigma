@@ -132,25 +132,40 @@ export function AskFlowModal({
     setCreateLoading(true);
     try {
       const isOnline = formLocation === "Online";
-      const res = await fetch(`${API}/actions/create`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
-        body: JSON.stringify({
-          title: formTitle.trim(), description: formDesc.trim(),
-          category: selectedCategory!, categoryColor: selectedCat?.color ?? "#23297e",
-          location: isOnline ? undefined : formLocation || undefined,
-          isOnline,
-          actionType: isOnline ? "Online" : "In Person Group",
-          sponsor: formSponsor.trim() || undefined,
-          link: formLink.trim() || undefined,
-          vettingInfo: formVettingInfo.trim() || undefined,
-          spotsTotal: "Unlimited",
-          topImageUrl: formImageUrl.trim() || null,
-          imageContain: formImageContain,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setFormError(data.error ?? "Failed to post ASK."); return; }
+      let res: Response;
+      try {
+        res = await fetch(`${API}/actions/create`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+          body: JSON.stringify({
+            title: formTitle.trim(), description: formDesc.trim(),
+            category: selectedCategory!, categoryColor: selectedCat?.color ?? "#23297e",
+            location: isOnline ? undefined : formLocation || undefined,
+            isOnline,
+            actionType: isOnline ? "Online" : "In Person Group",
+            sponsor: formSponsor.trim() || undefined,
+            link: formLink.trim() || undefined,
+            vettingInfo: formVettingInfo.trim() || undefined,
+            spotsTotal: "Unlimited",
+            topImageUrl: formImageUrl.trim() || null,
+            imageContain: formImageContain,
+          }),
+        });
+      } catch (networkErr) {
+        console.error("AskFlow: network error", networkErr);
+        setFormError("Network error — please check your connection and try again.");
+        return;
+      }
+      let data: any = {};
+      try { data = await res.json(); } catch { /* empty body */ }
+      if (!res.ok) {
+        setFormError(data.error ?? `Failed to post (HTTP ${res.status}). Try refreshing and signing in again.`);
+        return;
+      }
+      if (!data.card) {
+        setFormError("Server returned a success but no card data. Please try again.");
+        return;
+      }
       if (onNewCard) onNewCard(data.card);
       onClose();
     } finally {
@@ -343,6 +358,17 @@ export function AskFlowModal({
 
               {/* Sticky footer */}
               <div className="border-t border-gray-100 px-6 py-4 bg-white">
+                {(() => {
+                  const missing: string[] = [];
+                  if (!formTitle.trim()) missing.push("Title");
+                  if (!formDesc.trim()) missing.push("Description");
+                  if (!formLink.trim()) missing.push("Link");
+                  return missing.length > 0 ? (
+                    <p className="text-[12px] text-amber-600 font-['Poppins',sans-serif] mb-2 text-center">
+                      Fill {missing.join(", ")} to enable Post.
+                    </p>
+                  ) : null;
+                })()}
                 <button
                   onClick={handleCreateAsk}
                   disabled={createLoading || !formTitle.trim() || !formDesc.trim() || !formLink.trim()}
