@@ -117,9 +117,9 @@ export default function App() {
   // How many cards to actually render in the DOM. Kept small to avoid
   // Safari/mobile memory crashes when hundreds of image-bearing cards are
   // painted at once. Cards are still loaded into `cards` state for filtering.
-  // Mobile (<640px) gets 20; desktop gets 60 to fill a wide screen on first load.
+  // Mobile (<640px) gets 20; desktop gets 100 to fill a wide screen on first load.
   function getDisplayPage() {
-    return typeof window !== "undefined" && window.innerWidth >= 640 ? 60 : 20;
+    return typeof window !== "undefined" && window.innerWidth >= 640 ? 100 : 20;
   }
   const [displayLimit, setDisplayLimit] = useState(getDisplayPage);
   const [boostedCards, setActedCards] = useState<Set<number>>(() => {
@@ -572,6 +572,33 @@ export default function App() {
     setDisplayLimit(getDisplayPage());
   }, [hasActiveFilters, searchQuery, activeFilters, quickActionsOnly]);
 
+  // ── Infinite scroll (desktop only) ──
+  // A sentinel <div> at the bottom of the card grid; when it enters the
+  // viewport on a non-mobile screen we load the next batch automatically.
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const isDesktop = () => window.innerWidth >= 640;
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0].isIntersecting) return;
+        if (!isDesktop()) return;                      // mobile keeps the button
+        if (hasActiveFilters) return;                  // filters show all, nothing to load
+        if (loadingMore) return;
+        if (displayLimit < displayedCards.length) {
+          setDisplayLimit((prev) => prev + getDisplayPage());
+        } else if (serverOffset < serverTotal) {
+          handleLoadMore();
+        }
+      },
+      { rootMargin: "200px" }                         // trigger 200px before the sentinel
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [displayLimit, displayedCards.length, hasActiveFilters, loadingMore, serverOffset, serverTotal]);
+
   // ── Load more ──
   const handleLoadMore = async () => {
     setLoadingMore(true);
@@ -824,17 +851,18 @@ export default function App() {
             </div>
             )}
 
-            {/* Load more — shows more already-loaded cards first; only fetches
-                from the server once all local cards have been revealed. */}
+            {/* Sentinel for desktop infinite scroll — sits just below the grid.
+                IntersectionObserver fires ~200px before it enters the viewport. */}
+            <div ref={sentinelRef} className="h-1" aria-hidden />
+
+            {/* Load more button — mobile only. Desktop uses the sentinel above. */}
             {synced && !hasActiveFilters && (displayLimit < displayedCards.length || serverOffset < serverTotal) && (
-              <div className="mt-12 flex flex-col items-center gap-2">
+              <div className="mt-12 flex flex-col items-center gap-2 sm:hidden">
                 <button
                   onClick={() => {
                     if (displayLimit < displayedCards.length) {
-                      // Reveal more already-loaded cards without a network call
                       setDisplayLimit((prev) => prev + getDisplayPage());
                     } else {
-                      // All local cards shown — fetch next page from server
                       handleLoadMore();
                     }
                   }}
@@ -850,7 +878,7 @@ export default function App() {
                   {loadingMore ? "Loading…" : "Load More Campaigns"}
                 </button>
                 <p className="font-['Poppins',sans-serif] text-xs text-gray-400">
-                  Showing {hasActiveFilters ? displayedCards.length : Math.min(displayLimit, displayedCards.length)} of {serverTotal} campaigns
+                  Showing {Math.min(displayLimit, displayedCards.length)} of {serverTotal} campaigns
                 </p>
               </div>
             )}
