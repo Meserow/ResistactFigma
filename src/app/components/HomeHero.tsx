@@ -68,7 +68,7 @@ export function HomeHero({ onJoinClick }: HomeHeroProps) {
             aria-expanded={openModal === "privacy"}
             className="inline-flex items-center gap-1.5 rounded-full border border-gray-400 px-4 py-2 font-['Poppins',sans-serif] text-[13px] font-medium text-gray-600 transition-colors hover:border-[#fd8e33] hover:bg-[#fd8e33]/5 hover:text-[#fd8e33]"
           >
-            Anonymous by design <span className="text-[11px] opacity-60">→</span>
+            Take a Resistance Action <span className="text-[11px] opacity-60">→</span>
           </button>
           <button
             ref={(el) => { triggerRefs.current.join = el; }}
@@ -104,7 +104,7 @@ export function HomeHero({ onJoinClick }: HomeHeroProps) {
       )}
 
       {openModal === "privacy" && (
-        <HeroModal onClose={closeAndRestore} title="Anonymous by design" titleId="hero-modal-privacy">
+        <HeroModal onClose={closeAndRestore} title="Take a Resistance Action" titleId="hero-modal-privacy">
           <p>
             <strong>Act without signing up.</strong> No account, no email, no tracking pixels, no donation texts at 9pm. We understand in this day and age, resistance can be scary.
           </p>
