@@ -121,8 +121,8 @@ export function HomeHero({ onJoinClick }: HomeHeroProps) {
         <HeroModal onClose={closeAndRestore} title="#jointheresistance" titleId="hero-modal-join">
           <p>You don't need an account to use ResistAct. But if you want to:</p>
           <ul className="list-none space-y-1 pl-0">
-            <li>· Mark actions as done and build a streak</li>
-            <li>· Submit your own actions to the daily menu</li>
+            <li className="pl-4">· Mark actions as done and build a streak</li>
+            <li className="pl-4">· Submit your own actions to the daily menu</li>
 
           </ul>
           <p>
