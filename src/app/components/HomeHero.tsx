@@ -123,8 +123,7 @@ export function HomeHero({ onJoinClick }: HomeHeroProps) {
           <ul className="list-none space-y-1 pl-0">
             <li>· Mark actions as done and build a streak</li>
             <li>· Submit your own actions to the daily menu</li>
-            <li>· Share what you're doing with friends</li>
-            <li>· Get a weekly recap (optional)</li>
+
           </ul>
           <p>
             …then create an account. Email or anonymous handle — your call. <em>On your terms.</em>
