@@ -179,3 +179,25 @@
     line-height: 1.5;
   }
 }
+
+@keyframes hero-modal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes hero-modal-slide-up {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.hero-modal-overlay {
+  animation: hero-modal-fade-in 200ms ease;
+}
+
+.hero-modal-card {
+  animation: hero-modal-slide-up 250ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-modal-overlay, .hero-modal-card { animation: none; }
+}

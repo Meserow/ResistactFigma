@@ -13,6 +13,7 @@ import { EditCardModal } from "./components/EditCardModal";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { locationToState } from "./lib/locations";
 import { HomeHero } from "./components/HomeHero";
+import { LoggedInHero } from "./components/LoggedInHero";
 import svgPaths from "../imports/svg-77lgd1zdt6";
 import { projectId, publicAnonKey } from "/utils/supabase/info";
 import { supabase } from "./lib/supabase";
@@ -772,9 +773,24 @@ export default function App() {
         quickActionsOnly={quickActionsOnly}
         onQuickActionsChange={setQuickActionsOnly}
         heroSlot={
-          activeTab === "acts" && !approval ? (
-            <HomeHero onJoinClick={() => setAuthModalOpen(true)} />
-          ) : null
+          activeTab === "acts"
+            ? approval
+              ? (() => {
+                  const todayStr = new Date().toISOString().slice(0, 10);
+                  const newToday = cards.filter((c: any) => {
+                    const created = (c.createdAt as string | undefined) ?? "";
+                    return created.slice(0, 10) === todayStr;
+                  }).length;
+                  return (
+                    <LoggedInHero
+                      userId={approval.userId}
+                      name={approval.name || "Resistor"}
+                      newActionsToday={newToday}
+                    />
+                  );
+                })()
+              : <HomeHero onJoinClick={() => setAuthModalOpen(true)} />
+            : null
         }
       />
 
