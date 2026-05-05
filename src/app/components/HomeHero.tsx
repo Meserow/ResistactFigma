@@ -95,7 +95,10 @@ export function HomeHero({ onJoinClick }: HomeHeroProps) {
           </p>
           <p>
             ResistAct is a daily menu of small, grassroots, concrete micro-actions you can actually do.
-            Show up at a meeting. Make one phone call. Talk to one neighbor. Pick what fits your day.
+            Show up at a meeting. Make one phone call. Talk to one neighbor.
+          </p>
+          <p>
+            <strong>Pick what fits your day.</strong>
           </p>
         </HeroModal>
       )}
