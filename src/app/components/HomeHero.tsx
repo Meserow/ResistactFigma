@@ -126,7 +126,7 @@ export function HomeHero({ onJoinClick }: HomeHeroProps) {
 
           </ul>
           <p>
-            …then create an account. Email or anonymous handle — your call.
+            …then create an account.
           </p>
           <p><strong>On your terms.</strong>
           </p>
