@@ -97,9 +97,6 @@ export function HomeHero({ onJoinClick }: HomeHeroProps) {
             ResistAct is a daily menu of small, grassroots, concrete micro-actions you can actually do.
             Show up at a meeting. Make one phone call. Talk to one neighbor. Pick what fits your day.
           </p>
-          <p>
-            <strong>Pick one. Do it. Share it. Come back tomorrow.</strong>
-          </p>
         </HeroModal>
       )}
 
@@ -113,7 +110,7 @@ export function HomeHero({ onJoinClick }: HomeHeroProps) {
             The only time we ask anything is if <em>you</em> want to add an action or mark one as done — and even then,
             an anonymous handle is fine.
           </p>
-          <p>This isn't a fundraising funnel. It's a tool.</p>
+          <p><strong>This isn't a fundraising funnel. It's a tool.</strong></p>
         </HeroModal>
       )}
 
