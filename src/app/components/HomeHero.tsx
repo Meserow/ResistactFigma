@@ -104,7 +104,7 @@ export function HomeHero({ onJoinClick }: HomeHeroProps) {
       )}
 
       {openModal === "privacy" && (
-        <HeroModal onClose={closeAndRestore} title="Take a Resistance Action" titleId="hero-modal-privacy" accentColor="#fd8e33" icon={<Shield size={48} strokeWidth={1.5} />}>
+        <HeroModal onClose={closeAndRestore} title="Take a Resistance Action" titleId="hero-modal-privacy" accentColor="#23297e" icon={<Shield size={48} strokeWidth={1.5} />}>
           <p>
             Perform an Action without even signing in. The whole site is usable without identifying yourself. The only time we ask anything is if you want to ADD an action (so we can vet it), or allow us to count your actions so you can feel more accomplished!
           </p>
@@ -116,7 +116,7 @@ export function HomeHero({ onJoinClick }: HomeHeroProps) {
       )}
 
       {openModal === "join" && (
-        <HeroModal onClose={closeAndRestore} title="#jointheresistance" titleId="hero-modal-join" accentColor="#8a00e6" icon={<Flame size={48} strokeWidth={1.5} />}>
+        <HeroModal onClose={closeAndRestore} title="#jointheresistance" titleId="hero-modal-join" accentColor="#fd8e33" icon={<Flame size={48} strokeWidth={1.5} />}>
           <p>You don't need an account to use ResistAct. But if you want to:</p>
           <ul className="list-none space-y-1 pl-0">
             <li className="pl-4">· Mark actions as done and build a streak</li>
