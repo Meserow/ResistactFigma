@@ -106,12 +106,10 @@ export function HomeHero({ onJoinClick }: HomeHeroProps) {
       {openModal === "privacy" && (
         <HeroModal onClose={closeAndRestore} title="Take a Resistance Action" titleId="hero-modal-privacy">
           <p>
-            <strong>Act without signing up.</strong> No account, no email, no tracking pixels, no donation texts at 9pm. We understand in this day and age, resistance can be scary.
+            Perform an Action without even signing in. The whole site is usable without identifying yourself. The only time we ask anything is if you want to ADD an action (so we can vet it), or allow us to count your actions so you can feel more accomplished!
           </p>
           <p>
-            The whole site is readable without identifying yourself. We don't sell data because we don't collect it.
-            The only time we ask anything is if <em>you</em> want to add an action or mark one as done — and even then,
-            an anonymous handle is fine.
+            But our goal is to make this easy and not scary: no required account info, no email, no tracking pixels, no donation texts at 9pm.
           </p>
           <p><strong>This isn't a fundraising funnel. It's a tool.</strong></p>
         </HeroModal>
