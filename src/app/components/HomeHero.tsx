@@ -38,12 +38,7 @@ export function HomeHero({ onJoinClick }: HomeHeroProps) {
 
   return (
     <div className="bg-white relative overflow-hidden border-b border-[#f0e8de]">
-      <img
-        src={logoImg}
-        alt=""
-        aria-hidden
-        className="hidden md:block absolute right-[-60px] top-1/2 -translate-y-1/2 w-[360px] h-[360px] object-contain opacity-10 pointer-events-none select-none"
-      />
+
       <div className="relative z-10 max-w-[880px] mx-auto px-5 pt-9 pb-7 text-center">
         <h1 className="font-['Poppins',sans-serif] text-gray-900 text-[18px] md:text-[24px] font-bold leading-[1.2]">
           America is out of control. MAGA is nuts.
