@@ -133,7 +133,7 @@ export function HomeHero({ onJoinClick }: HomeHeroProps) {
               closeAndRestore();
               onJoinClick();
             }}
-            className="mt-2 inline-flex items-center rounded-md bg-[#fd8e33] px-5 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#d96612]"
+            className="mt-2 ml-auto flex items-center rounded-md bg-[#fd8e33] px-5 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#d96612]"
           >
             Create my account
           </button>
