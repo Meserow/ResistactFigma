@@ -88,7 +88,7 @@ export function HomeHero({ onJoinClick }: HomeHeroProps) {
       </div>
 
       {openModal === "how" && (
-        <HeroModal onClose={closeAndRestore} title="How ResistAct works" titleId="hero-modal-how" accentColor="#23297e" icon={<Zap size={48} strokeWidth={1.5} />}>
+        <HeroModal onClose={closeAndRestore} title="How ResistAct works" titleId="hero-modal-how" accentColor="#23297e" icon={<Zap size={20} strokeWidth={2} />}>
           <p>
             If you've been doomscrolling, rage-texting friends, or lying awake wondering how we got here —{" "}
             <em>you're not alone.</em> And if you're tired of being told you can only "vote," "donate," or wait for the next protest — you're <em>really</em> not alone.
@@ -104,7 +104,7 @@ export function HomeHero({ onJoinClick }: HomeHeroProps) {
       )}
 
       {openModal === "privacy" && (
-        <HeroModal onClose={closeAndRestore} title="Take a Resistance Action" titleId="hero-modal-privacy" accentColor="#23297e" icon={<Shield size={48} strokeWidth={1.5} />}>
+        <HeroModal onClose={closeAndRestore} title="Take a Resistance Action" titleId="hero-modal-privacy" accentColor="#23297e" icon={<Shield size={20} strokeWidth={2} />}>
           <p>
             Perform an Action without even signing in. The whole site is usable without identifying yourself. The only time we ask anything is if you want to ADD an action (so we can vet it), or allow us to count your actions so you can feel more accomplished!
           </p>
@@ -116,7 +116,7 @@ export function HomeHero({ onJoinClick }: HomeHeroProps) {
       )}
 
       {openModal === "join" && (
-        <HeroModal onClose={closeAndRestore} title="#jointheresistance" titleId="hero-modal-join" accentColor="#fd8e33" icon={<Flame size={48} strokeWidth={1.5} />}>
+        <HeroModal onClose={closeAndRestore} title="#jointheresistance" titleId="hero-modal-join" accentColor="#fd8e33" icon={<Flame size={20} strokeWidth={2} />}>
           <p>You don't need an account to use ResistAct. But if you want to:</p>
           <ul className="list-none space-y-1 pl-0">
             <li className="pl-4">· Mark actions as done and build a streak</li>
@@ -175,18 +175,6 @@ function HeroModal({ onClose, title, titleId, children, accentColor, icon }: Her
         onClick={(e) => e.stopPropagation()}
         className="hero-modal-card relative w-full max-w-[560px] overflow-hidden rounded-[10px] bg-white shadow-2xl"
       >
-        {/* Accent banner */}
-        {accentColor && (
-          <div
-            className="flex flex-col items-center justify-center gap-2 py-8"
-            style={{ background: accentColor }}
-          >
-            {icon && (
-              <div className="text-white opacity-90">{icon}</div>
-            )}
-          </div>
-        )}
-
         <div className="relative p-9 md:p-10">
           <button
             onClick={onClose}
@@ -195,12 +183,22 @@ function HeroModal({ onClose, title, titleId, children, accentColor, icon }: Her
           >
             <X size={20} />
           </button>
-          <h3
-            id={titleId}
-            className="mb-4 font-['Poppins',sans-serif] text-[24px] font-bold leading-[1.2] text-[#23297e]"
-          >
-            {title}
-          </h3>
+          <div className="mb-4 flex items-center gap-3">
+            {icon && accentColor && (
+              <div
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white"
+                style={{ background: accentColor }}
+              >
+                {icon}
+              </div>
+            )}
+            <h3
+              id={titleId}
+              className="font-['Poppins',sans-serif] text-[24px] font-bold leading-[1.2] text-[#23297e]"
+            >
+              {title}
+            </h3>
+          </div>
           <div className="space-y-3 font-['Poppins',sans-serif] text-[15px] leading-[1.65] text-gray-700 [&_em]:italic [&_em]:text-[#23297e] [&_strong]:text-[#23297e]">
             {children}
           </div>
