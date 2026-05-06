@@ -184,7 +184,7 @@ function HeroModal({ onClose, title, titleId, children }: HeroModalProps) {
         </button>
         <h3
           id={titleId}
-          className="mb-4 font-serif text-[28px] font-bold leading-[1.15] text-[#23297e]"
+          className="mb-4 font-['Poppins',sans-serif] text-[24px] font-bold leading-[1.2] text-[#23297e]"
         >
           {title}
         </h3>

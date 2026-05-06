@@ -42,6 +42,7 @@ function writeStreak(userId: string, s: StreakState) {
 
 export function LoggedInHero({ userId, name, newActionsToday }: LoggedInHeroProps) {
   const [streak, setStreak] = useState(1);
+  const [isFirstVisit, setIsFirstVisit] = useState(false);
 
   useEffect(() => {
     const today = todayKey();
@@ -49,6 +50,7 @@ export function LoggedInHero({ userId, name, newActionsToday }: LoggedInHeroProp
     let next: StreakState;
     if (!prev) {
       next = { count: 1, lastVisit: today };
+      setIsFirstVisit(true);
     } else if (prev.lastVisit === today) {
       next = prev;
     } else {
@@ -60,6 +62,7 @@ export function LoggedInHero({ userId, name, newActionsToday }: LoggedInHeroProp
   }, [userId]);
 
   const firstName = name.split(/\s+/)[0] || name;
+  const greeting = isFirstVisit ? "Welcome" : "Welcome back";
   const subline =
     newActionsToday > 0
       ? `${newActionsToday} new action${newActionsToday === 1 ? "" : "s"} today.`
@@ -68,9 +71,9 @@ export function LoggedInHero({ userId, name, newActionsToday }: LoggedInHeroProp
   return (
     <div className="bg-gradient-to-b from-white to-[#faf6f0] border-b border-[#f0e8de]">
       <div className="max-w-[880px] mx-auto px-5 py-6 text-center">
-        <p className="font-serif text-[#23297e] text-[24px] md:text-[28px] font-semibold leading-[1.2] m-0">
-          Welcome back, {firstName}.{" "}
-          <em className="italic text-[#fd8e33]">Day {streak}.</em>
+        <p className="font-['Poppins',sans-serif] text-[#23297e] text-[20px] md:text-[24px] font-bold leading-[1.2] m-0">
+          {greeting}, {firstName}.{" "}
+          <em className="italic font-semibold text-[#fd8e33]">Day {streak}.</em>
         </p>
         <p className="mt-1 font-['Poppins',sans-serif] text-sm text-gray-600 m-0">
           {subline}{" "}
