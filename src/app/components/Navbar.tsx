@@ -1,5 +1,5 @@
 import logoImg from "../../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import type { ReactNode } from "react";
 import { FACT_CARDS } from "../data/factCards";
 import { Bell, ChevronDown, Clock, Info, LogIn, LogOut, MapPin, Menu, Plus, Search, ShieldCheck, X, Zap } from "lucide-react";
@@ -61,6 +61,40 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
   const [openFilter, setOpenFilter] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const filterBarRef = useRef<HTMLDivElement>(null);
+  const factsPillsRef = useRef<HTMLDivElement>(null);
+  const actsPillsRef = useRef<HTMLDivElement>(null);
+
+  // Dynamic pill limits — computed from the available container width.
+  const [factsLimit, setFactsLimit] = useState(5);
+  const [actsLimit, setActsLimit] = useState(5);
+
+  // Use canvas text measurement (Poppins 500 12px = text-xs font-medium) to
+  // estimate how many pills fit in the container, reserving ~80 px for the
+  // "+ N more" button.
+  const computeLimit = useCallback((
+    containerEl: HTMLElement | null,
+    categories: string[],
+    setLimit: (n: number) => void,
+  ) => {
+    if (!containerEl || categories.length === 0) return;
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.font = '500 12px Poppins, ui-sans-serif, sans-serif';
+    const containerWidth = containerEl.offsetWidth;
+    const MORE_BTN_W = 84;  // "+ N more" button (rough width)
+    const PILL_H_PAD = 22;  // px-2.5 × 2 sides = 20px + 2px border
+    const GAP = 4;           // gap-1
+    let used = MORE_BTN_W;
+    let count = 0;
+    for (const cat of categories) {
+      const w = Math.ceil(ctx.measureText(cat).width) + PILL_H_PAD + GAP;
+      if (used + w > containerWidth) break;
+      used += w;
+      count++;
+    }
+    setLimit(Math.max(1, count));
+  }, []);
 
   // Close user dropdown when clicking outside
   useEffect(() => {
@@ -102,15 +136,14 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
   // ── Facts: distinct categories sorted alphabetically.
   //   First 5 show as inline pills; the rest go into a "More" dropdown.
   //   Anything currently selected stays visible as a pill regardless. ───────
-  const FACTS_INLINE_PILL_LIMIT = 5;
   const factsCategoriesRanked = useMemo(() => {
     const set = new Set<string>();
     for (const f of FACT_CARDS) set.add(f.category);
     return Array.from(set).sort();
   }, []);
   const factsSelected = activeFilters["Category"] ?? [];
-  const factsTopVisible = factsCategoriesRanked.slice(0, FACTS_INLINE_PILL_LIMIT);
-  const factsOverflow = factsCategoriesRanked.slice(FACTS_INLINE_PILL_LIMIT);
+  const factsTopVisible = factsCategoriesRanked.slice(0, factsLimit);
+  const factsOverflow = factsCategoriesRanked.slice(factsLimit);
   // If a selected category is in overflow, surface it inline alongside the top pills.
   const factsExtraVisible = factsOverflow.filter((c) => factsSelected.includes(c));
   const factsInlinePills = [...factsTopVisible, ...factsExtraVisible];
@@ -120,11 +153,10 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
   // ── Acts: same pattern as Facts, but the source list is `actsCategories`
   //   which App.tsx already ranks by card count (popular categories first).
   //   "More" dropdown holds the long tail. ───────────────────────────────────
-  const ACTS_INLINE_PILL_LIMIT = 5;
   const actsCats = actsCategories ?? [];
   const actsCatsSelected = activeFilters["Category"] ?? [];
-  const actsTopVisible = actsCats.slice(0, ACTS_INLINE_PILL_LIMIT);
-  const actsOverflow = actsCats.slice(ACTS_INLINE_PILL_LIMIT);
+  const actsTopVisible = actsCats.slice(0, actsLimit);
+  const actsOverflow = actsCats.slice(actsLimit);
   const actsExtraVisible = actsOverflow.filter((c) => actsCatsSelected.includes(c));
   const actsInlinePills = [...actsTopVisible, ...actsExtraVisible];
   const actsMoreOpen = openFilter === "acts-more";
@@ -146,6 +178,26 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
       : [...current, option];
     onFilterChange(filterName, next);
   }
+
+  // Wire up ResizeObservers so the pill limit recalculates whenever the
+  // container resizes (window resize, sidebar open/close, etc.).
+  useEffect(() => {
+    const el = factsPillsRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => computeLimit(el, factsCategoriesRanked, setFactsLimit));
+    ro.observe(el);
+    computeLimit(el, factsCategoriesRanked, setFactsLimit);
+    return () => ro.disconnect();
+  }, [factsCategoriesRanked, computeLimit]);
+
+  useEffect(() => {
+    const el = actsPillsRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => computeLimit(el, actsCats, setActsLimit));
+    ro.observe(el);
+    computeLimit(el, actsCats, setActsLimit);
+    return () => ro.disconnect();
+  }, [actsCats, computeLimit]);
 
   // Measure the top bar so the filter bar can sticky-pin directly below it,
   // even though the hero (in normal flow) sits between them in the DOM.
@@ -396,7 +448,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
 
         {activeTab === "facts" ? (
           /* ── Facts: top-N category pills + "More" dropdown ───────────── */
-          <>
+          <div ref={factsPillsRef} className="flex-1 min-w-0 flex items-center gap-1">
             {factsInlinePills.map((option) => {
               const selected = factsSelected.includes(option);
               return (
@@ -459,7 +511,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                 )}
               </div>
             )}
-          </>
+          </div>
         ) : (
           /* ── Acts: Location dropdown + Category pills (mirrors Facts UX) ── */
           <>
@@ -514,6 +566,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
 
             {/* Category pills + "more" overflow — mirrors Facts UX */}
             <span className="font-['Poppins',sans-serif] text-gray-400 text-[10px] uppercase tracking-widest font-semibold shrink-0">Category</span>
+            <div ref={actsPillsRef} className="flex-1 min-w-0 flex items-center gap-1">
             {actsInlinePills.map((option) => {
               const selected = actsCatsSelected.includes(option);
               return (
@@ -578,6 +631,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                 )}
               </div>
             )}
+            </div>
           </>
         )}
 
