@@ -547,13 +547,16 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       for (const card of SEED_CARDS) {
         if (card.id < 1000) continue;
         const existing = (await kv.get(`action:${card.id}`)) as any;
-        const merged: any = { ...card };
+        // Seed cards are curated by admins → default to approved.
+        const merged: any = { ...card, adminApproved: true };
         if (existing && typeof existing === "object") {
           // Preserve live engagement counters that users have moved.
           if (typeof existing.boosts === "number")        merged.boosts = existing.boosts;
           else if (typeof existing.spotsUsed === "number") merged.boosts = existing.spotsUsed;
           // Preserve admin-curation flags that aren't owned by the seed.
           if (existing.quickAction === true) merged.quickAction = true;
+          // Preserve eventDate if admin has set one manually.
+          if (existing.eventDate) merged.eventDate = existing.eventDate;
         }
         await kv.set(`action:${card.id}`, merged);
         count++;
@@ -604,6 +607,66 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       }
       await kv.set("migration:reset-boosts:v1", true);
       console.log(`Reset boosts to 0 on ${zeroed} org seed cards.`);
+    }
+
+    // One-time migration: set adminApproved on all action cards.
+    // Cards with images (topImageKey or topImageUrl) get adminApproved: true,
+    // EXCEPT for the batch added in action:1251–1271 which need admin review.
+    // All user-created cards without adminApproved also get flagged as false.
+    const adminApprovedMigrated = await kv.get("migration:admin-approved:v1");
+    if (!adminApprovedMigrated) {
+      let approved = 0, flagged = 0;
+      for (const card of (await kv.getByPrefix("action:")) as any[]) {
+        if (!card || typeof card !== "object" || typeof card.id !== "number") continue;
+        const id = card.id as number;
+        if (id >= 1251 && id <= 1271) {
+          card.adminApproved = false;
+          await kv.set(`action:${id}`, card);
+          flagged++;
+        } else if (card.topImageKey || (card.topImageUrl && card.topImageUrl.length > 0)) {
+          card.adminApproved = true;
+          await kv.set(`action:${id}`, card);
+          approved++;
+        }
+      }
+      // Also flag existing user-created cards as pending if not yet approved
+      const userCardIds2 = (await kv.get("user-action:ids") ?? []) as number[];
+      for (const uid of userCardIds2) {
+        const ucard = await kv.get(`user-action:${uid}`) as any;
+        if (ucard && typeof ucard === "object" && ucard.adminApproved === undefined) {
+          ucard.adminApproved = false;
+          await kv.set(`user-action:${uid}`, ucard);
+          flagged++;
+        }
+      }
+      await kv.set("migration:admin-approved:v1", true);
+      console.log(`Admin-approved migration: ${approved} approved, ${flagged} flagged pending.`);
+    }
+
+    // One-time migration: set eventDate on the pol-rev event cards.
+    const eventDatesMigrated = await kv.get("migration:event-dates:v1");
+    if (!eventDatesMigrated) {
+      const dates: Record<number, string> = {
+        1252: "2026-07-04",
+        1253: "2026-06-13",
+        1254: "2026-06-10",
+        1255: "2026-05-25",
+        1256: "2026-05-20",
+        1257: "2026-05-17",
+        1258: "2026-05-17",
+        1259: "2026-05-13",
+        1260: "2026-05-12",
+        1261: "2026-05-09",
+      };
+      for (const [idStr, date] of Object.entries(dates)) {
+        const evCard = await kv.get(`action:${idStr}`) as any;
+        if (evCard && typeof evCard === "object") {
+          evCard.eventDate = date;
+          await kv.set(`action:${idStr}`, evCard);
+        }
+      }
+      await kv.set("migration:event-dates:v1", true);
+      console.log("Event-dates migration complete.");
     }
 
     // One-time migrations for user-created cards (from origin/develop)
@@ -766,6 +829,7 @@ app.post("/make-server-9eb1ae04/actions/create", async (c) => {
       topImageKey: null,
       topImageUrl: topImageUrl || null,
       imageContain: imageContain === true ? true : undefined,
+      adminApproved: false,
       createdAt: new Date().toISOString(),
       createdBy: user.id,
     };
@@ -943,6 +1007,69 @@ app.put("/make-server-9eb1ae04/actions/:id", async (c) => {
   } catch (err) {
     console.log("Edit card error:", err);
     return c.json({ error: `Failed to edit card: ${err}` }, 500);
+  }
+});
+
+// ─── GET /admin/actions/pending — cards awaiting approval ────────────────────
+app.get("/make-server-9eb1ae04/admin/actions/pending", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const pending: any[] = [];
+
+    // Check all action: cards
+    for (const card of (await kv.getByPrefix("action:")) as any[]) {
+      if (card && typeof card === "object" && card.adminApproved !== true) {
+        pending.push({ ...card, _store: "action" });
+      }
+    }
+
+    // Check all user-created cards
+    const userCardIds = (await kv.get("user-action:ids") ?? []) as number[];
+    for (const id of userCardIds) {
+      const card = await kv.get(`user-action:${id}`) as any;
+      if (card && typeof card === "object" && card.adminApproved !== true) {
+        pending.push({ ...card, _store: "user-action" });
+      }
+    }
+
+    pending.sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+    console.log(`Admin ${admin.record.name} fetched ${pending.length} pending cards.`);
+    return c.json({ cards: pending });
+  } catch (err) {
+    console.log("Pending actions error:", err);
+    return c.json({ error: `Failed to fetch pending cards: ${err}` }, 500);
+  }
+});
+
+// ─── POST /admin/approve-action/:id — approve a card ─────────────────────────
+app.post("/make-server-9eb1ae04/admin/approve-action/:id", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const id = Number(c.req.param("id"));
+
+    // Try seed card first, then user-created card
+    let cardKey = `action:${id}`;
+    let card = await kv.get(cardKey) as any;
+    if (!card) {
+      cardKey = `user-action:${id}`;
+      card = await kv.get(cardKey) as any;
+    }
+    if (!card) return c.json({ error: `Card ${id} not found` }, 404);
+
+    card.adminApproved = true;
+    card.approvedBy = admin.user.id;
+    card.approvedAt = new Date().toISOString();
+    await kv.set(cardKey, card);
+    console.log(`Admin ${admin.record.name} approved card #${id}: "${card.title}"`);
+    return c.json({ card });
+  } catch (err) {
+    return c.json({ error: `Approval failed: ${err}` }, 500);
   }
 });
 

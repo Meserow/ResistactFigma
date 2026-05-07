@@ -47,6 +47,8 @@ interface ServerCard {
   createdBy?: string;
   quickAction?: boolean;
   imageContain?: boolean;
+  adminApproved?: boolean;
+  eventDate?: string;
 }
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
@@ -311,10 +313,39 @@ export default function App() {
   function engagementScore(c: ActionCardData): number {
     return (c.boosts ?? 0) + (c.completions ?? 0);
   }
+  // Today's date as ISO string (YYYY-MM-DD) for expiry + sort comparisons.
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const isAdminUser = approval?.isAdmin === true;
+
   const displayedCards = (() => {
-    const filtered = applyFilters(cards);
-    const byScore = new Map<number, ActionCardData[]>();
+    // ── Global gate: expiry + approval ──────────────────────────────────────
+    const gated = cards.filter((card) => {
+      // Hide expired events from everyone
+      if (card.eventDate && card.eventDate < todayISO) return false;
+      // Hide non-approved cards from non-admins
+      if (!isAdminUser && card.adminApproved === false) return false;
+      return true;
+    });
+
+    const filtered = applyFilters(gated);
+
+    // ── Separate upcoming dated events from the main pool ───────────────────
+    // Cards with an eventDate on or after today float to the top, sorted by
+    // soonest-first so users see events that are about to expire prominently.
+    const upcoming: ActionCardData[] = [];
+    const rest: ActionCardData[] = [];
     for (const c of filtered) {
+      if (c.eventDate && c.eventDate >= todayISO) {
+        upcoming.push(c);
+      } else {
+        rest.push(c);
+      }
+    }
+    upcoming.sort((a, b) => (a.eventDate ?? "").localeCompare(b.eventDate ?? ""));
+
+    // ── Sort the main pool by engagement + location + category ───────────────
+    const byScore = new Map<number, ActionCardData[]>();
+    for (const c of rest) {
       const s = engagementScore(c);
       if (!byScore.has(s)) byScore.set(s, []);
       byScore.get(s)!.push(c);
@@ -334,7 +365,7 @@ export default function App() {
         if (grp && grp.length > 0) out.push(...interleaveByCategory(grp));
       }
     }
-    return out;
+    return [...upcoming, ...out];
   })();
 
   // True when any filter chip is selected OR a search is active — bypasses
