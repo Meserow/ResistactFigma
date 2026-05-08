@@ -208,6 +208,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<"facts" | "acts">("acts");
   const [searchQuery, setSearchQuery] = useState("");
   const [quickActionsOnly, setQuickActionsOnly] = useState(false);
+  const [sortBy, setSortBy] = useState<"popular" | "newest" | "az">("popular");
 
   function handleFilterChange(filterName: string, selected: string[]) {
     setActiveFilters((prev) => ({ ...prev, [filterName]: selected }));
@@ -329,7 +330,15 @@ export default function App() {
 
     const filtered = applyFilters(gated);
 
-    // ── Separate upcoming dated events from the main pool ───────────────────
+    // ── A–Z and Newest skip the upcoming-event pinning; Popular keeps it ───────
+    if (sortBy === "az") {
+      return [...filtered].sort((a, b) => a.title.localeCompare(b.title));
+    }
+    if (sortBy === "newest") {
+      return [...filtered].sort((a, b) => (b.id ?? 0) - (a.id ?? 0));
+    }
+
+    // ── Popular (default): upcoming events pinned, then engagement sort ────────
     // Cards with an eventDate on or after today float to the top, sorted by
     // soonest-first so users see events that are about to expire prominently.
     const upcoming: ActionCardData[] = [];
@@ -803,6 +812,8 @@ export default function App() {
         onTabChange={handleTabChange}
         quickActionsOnly={quickActionsOnly}
         onQuickActionsChange={setQuickActionsOnly}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
         heroSlot={
           activeTab === "acts"
             ? approval

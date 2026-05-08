@@ -47,9 +47,11 @@ interface NavbarProps {
   /** Quick-actions toggle: when true, only show 5–10 min "quick win" cards. */
   quickActionsOnly?: boolean;
   onQuickActionsChange?: (v: boolean) => void;
+  sortBy?: "popular" | "newest" | "az";
+  onSortChange?: (sort: "popular" | "newest" | "az") => void;
 }
 
-export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, onAskClick, statsActsCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange }: NavbarProps) {
+export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, onAskClick, statsActsCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, sortBy = "popular", onSortChange }: NavbarProps) {
   // Acts filters in render order: Location dropdown first, Category pills second.
   // Used for "Clear all" and the mobile filter row that shows just the names.
   const ACTS_FILTER_OPTIONS: Record<string, string[]> = {
@@ -425,7 +427,45 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
         style={{ top: topBarHeight }}
         ref={filterBarRef}
       >
-        <span className="font-['Poppins',sans-serif] text-gray-400 text-[10px] uppercase tracking-widest font-semibold shrink-0 mr-2">Filter by</span>
+        <span className="font-['Poppins',sans-serif] text-gray-400 text-[10px] uppercase tracking-widest font-semibold shrink-0 mr-1">Filter by</span>
+
+        {/* Sort by dropdown */}
+        {onSortChange && (
+          <div className="relative shrink-0 mr-2">
+            <button
+              onClick={() => setOpenFilter(openFilter === "sort" ? null : "sort")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
+                sortBy !== "popular"
+                  ? "border-[#23297e] text-[#23297e] bg-[#23297e]/5"
+                  : "border-transparent text-gray-600 hover:bg-white hover:shadow-sm hover:border-gray-200"
+              }`}
+            >
+              <span className="text-gray-400 text-[10px] uppercase tracking-widest font-semibold">Sort</span>
+              <span className="font-medium">
+                {sortBy === "popular" ? "Popular" : sortBy === "newest" ? "Newest" : "A–Z"}
+              </span>
+              <ChevronDown size={13} className={`text-[#5a5a5a] transition-transform duration-150 ${openFilter === "sort" ? "rotate-180" : ""}`} />
+            </button>
+            {openFilter === "sort" && (
+              <div className="absolute top-full left-0 mt-1.5 w-40 bg-white border border-gray-100 rounded-2xl shadow-xl py-1.5 z-50">
+                {(["popular", "newest", "az"] as const).map((opt) => (
+                  <button
+                    key={opt}
+                    onClick={() => { onSortChange(opt); setOpenFilter(null); }}
+                    className={`w-full text-left px-4 py-2 font-['Poppins',sans-serif] text-sm transition-colors flex items-center justify-between ${
+                      sortBy === opt
+                        ? "text-[#23297e] font-semibold bg-[#23297e]/5"
+                        : "text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    {opt === "popular" ? "Popular" : opt === "newest" ? "Newest" : "A–Z"}
+                    {sortBy === opt && <span className="w-1.5 h-1.5 rounded-full bg-[#23297e]" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Quick-actions toggle (Acts tab only) */}
         {activeTab === "acts" && onQuickActionsChange && (
