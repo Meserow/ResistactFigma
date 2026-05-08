@@ -82,7 +82,9 @@ export function HomeHero({ onJoinClick }: HomeHeroProps) {
         </div>
 
         <p className="font-['Poppins',sans-serif] text-base">
-          <strong className="font-bold text-[#23297e]">Pick one. Do it. Share it.</strong>{" "}
+          <strong className="font-bold text-[#23297e]">Pick one. Do it. Share it.</strong>
+        </p>
+        <p className="mt-1 font-['Poppins',sans-serif] text-base">
           <em className="italic text-gray-600">Come back tomorrow.</em>
         </p>
       </div>
