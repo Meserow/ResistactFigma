@@ -75,6 +75,7 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
           isCompleted ? completedClasses : (onImage ? idleOnImageClasses : idleOffImageClasses)
         }`}
       >
+        {isCompleted && <span aria-hidden>✓</span>}
         <span>{isCompleted ? "Did it!" : "I did this"}</span>
         {(() => {
           const n = Math.max(completionsCount, isCompleted ? 1 : 0);
