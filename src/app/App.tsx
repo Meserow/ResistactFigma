@@ -260,21 +260,8 @@ export default function App() {
     });
   }
 
-  // Stable random key per card id — used for shuffling within boost groups.
-  // Keys persist across re-renders so card order doesn't reshuffle when a
-  // user boosts something; new cards from pagination get a fresh key on
-  // first sight.
-  const tieBreakKeysRef = useRef(new Map<number, number>());
-  for (const c of cards) {
-    if (!tieBreakKeysRef.current.has(c.id)) {
-      tieBreakKeysRef.current.set(c.id, Math.random());
-    }
-  }
-  const keyOf = (c: ActionCardData) => tieBreakKeysRef.current.get(c.id) ?? 0;
-
-  // Sort: boost desc → within each boost level, round-robin by category so
-  // same-category cards never cluster. Order inside each (boost, category)
-  // bucket is the stable random key.
+  // Sort: round-robin by category so same-category cards never cluster.
+  // Within each category bucket, order by id descending (newer/higher-curated first).
   function interleaveByCategory(group: ActionCardData[]): ActionCardData[] {
     const buckets = new Map<string, ActionCardData[]>();
     for (const c of group) {
@@ -282,10 +269,16 @@ export default function App() {
       if (!buckets.has(cat)) buckets.set(cat, []);
       buckets.get(cat)!.push(c);
     }
-    for (const arr of buckets.values()) arr.sort((a, b) => keyOf(a) - keyOf(b));
-    // Stable random category visit order (uses the first card in each bucket
-    // as a proxy seed — same input always produces the same order).
-    const cats = Array.from(buckets.keys()).sort((a, b) => keyOf(buckets.get(a)![0]) - keyOf(buckets.get(b)![0]));
+    // Within each category bucket, sort by id descending so higher IDs (more
+    // recently curated) appear first when engagement scores are equal.
+    for (const arr of buckets.values()) arr.sort((a, b) => (b.id ?? 0) - (a.id ?? 0));
+    // Category visit order: sort categories by highest id in each bucket so
+    // categories with newer cards cycle first.
+    const cats = Array.from(buckets.keys()).sort((a, b) => {
+      const aTop = buckets.get(a)![0].id ?? 0;
+      const bTop = buckets.get(b)![0].id ?? 0;
+      return bTop - aTop;
+    });
     const out: ActionCardData[] = [];
     while (out.length < group.length) {
       for (const cat of cats) {

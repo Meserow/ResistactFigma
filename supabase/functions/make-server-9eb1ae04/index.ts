@@ -553,6 +553,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           // Preserve live engagement counters that users have moved.
           if (typeof existing.boosts === "number")        merged.boosts = existing.boosts;
           else if (typeof existing.spotsUsed === "number") merged.boosts = existing.spotsUsed;
+          if (typeof existing.completions === "number")   merged.completions = existing.completions;
           // Preserve admin-curation flags that aren't owned by the seed.
           if (existing.quickAction === true) merged.quickAction = true;
           // Preserve eventDate if admin has set one manually.
