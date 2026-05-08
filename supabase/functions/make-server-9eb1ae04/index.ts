@@ -805,9 +805,10 @@ app.post("/make-server-9eb1ae04/actions/create", async (c) => {
       return c.json({ error: "title, description and category are required" }, 400);
     }
 
-    // Auto-increment ID starting at 100 to avoid collisions with seed data
+    // Auto-increment ID, always staying above the max seed card ID (1271)
+    // to avoid collisions between user-submitted cards and seed cards
     const currentIds = (await kv.get("user-action:ids") ?? []) as number[];
-    const nextId = currentIds.length > 0 ? Math.max(...currentIds) + 1 : 100;
+    const nextId = Math.max(...currentIds, 1271) + 1;
 
     const card = {
       id: nextId,
