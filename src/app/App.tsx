@@ -323,7 +323,6 @@ export default function App() {
 
     const filtered = applyFilters(gated);
 
-    // ── A–Z and Newest skip the upcoming-event pinning; Popular keeps it ───────
     if (sortBy === "az") {
       return [...filtered].sort((a, b) => a.title.localeCompare(b.title));
     }
@@ -331,23 +330,11 @@ export default function App() {
       return [...filtered].sort((a, b) => (b.id ?? 0) - (a.id ?? 0));
     }
 
-    // ── Popular (default): upcoming events pinned, then engagement sort ────────
-    // Cards with an eventDate on or after today float to the top, sorted by
-    // soonest-first so users see events that are about to expire prominently.
-    const upcoming: ActionCardData[] = [];
-    const rest: ActionCardData[] = [];
-    for (const c of filtered) {
-      if (c.eventDate && c.eventDate >= todayISO) {
-        upcoming.push(c);
-      } else {
-        rest.push(c);
-      }
-    }
-    upcoming.sort((a, b) => (a.eventDate ?? "").localeCompare(b.eventDate ?? ""));
-
-    // ── Sort the main pool by engagement + location + category ───────────────
+    // ── Popular: pure engagement sort — boosts + completions DESC ──────────────
+    // Event cards with a future date are NOT pinned; they compete on engagement
+    // just like everything else. A zero-engagement event shouldn't jump the queue.
     const byScore = new Map<number, ActionCardData[]>();
-    for (const c of rest) {
+    for (const c of filtered) {
       const s = engagementScore(c);
       if (!byScore.has(s)) byScore.set(s, []);
       byScore.get(s)!.push(c);
@@ -367,7 +354,7 @@ export default function App() {
         if (grp && grp.length > 0) out.push(...interleaveByCategory(grp));
       }
     }
-    return [...upcoming, ...out];
+    return out;
   })();
 
   // True when any filter chip is selected OR a search is active — bypasses
