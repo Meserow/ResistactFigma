@@ -87,6 +87,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
   // from the raw URL the server stored, so we don't write a bundled path back.
   const [topImageUrl,    setTopImageUrl]    = useState<string>((card as any).topImageUrl ?? "");
   const [imageContain,   setImageContain]   = useState<boolean>(card.imageContain === true);
+  const [eventDate,      setEventDate]      = useState<string>((card as any).eventDate ?? "");
 
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState<string | null>(null);
@@ -198,6 +199,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
         // null clears the URL so the seed-provided topImageKey can take over again.
         topImageUrl:    topImageUrl.trim() || null,
         imageContain,
+        eventDate:      eventDate.trim() || undefined,
       };
 
       const res = await fetch(`${API}/actions/${card.id}`, {
@@ -330,6 +332,19 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
                   Previous value: <span className="font-semibold">{card.location}</span> — pick a canonical location to update.
                 </p>
               )}
+            </Field>
+
+            {/* Event Date */}
+            <Field label="Event Date (optional)">
+              <input
+                type="date"
+                value={eventDate}
+                onChange={(e) => setEventDate(e.target.value)}
+                className={INPUT_CLS}
+              />
+              <p className="mt-1 font-['Poppins',sans-serif] text-[11px] text-gray-400">
+                Set for time-limited events. Cards expire and are hidden after this date. Leave blank for evergreen actions.
+              </p>
             </Field>
 
             {/* Spots */}

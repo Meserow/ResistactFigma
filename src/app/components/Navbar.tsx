@@ -1,5 +1,5 @@
 import logoImg from "../../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import type { ReactNode } from "react";
 import { FACT_CARDS } from "../data/factCards";
 import { Bell, ChevronDown, Clock, Info, LogIn, LogOut, MapPin, Menu, Plus, Search, ShieldCheck, X, Zap } from "lucide-react";
@@ -47,9 +47,11 @@ interface NavbarProps {
   /** Quick-actions toggle: when true, only show 5–10 min "quick win" cards. */
   quickActionsOnly?: boolean;
   onQuickActionsChange?: (v: boolean) => void;
+  sortBy?: "popular" | "newest" | "az";
+  onSortChange?: (sort: "popular" | "newest" | "az") => void;
 }
 
-export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, onAskClick, statsActsCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange }: NavbarProps) {
+export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, onAskClick, statsActsCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, sortBy = "popular", onSortChange }: NavbarProps) {
   // Acts filters in render order: Location dropdown first, Category pills second.
   // Used for "Clear all" and the mobile filter row that shows just the names.
   const ACTS_FILTER_OPTIONS: Record<string, string[]> = {
@@ -61,6 +63,40 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
   const [openFilter, setOpenFilter] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const filterBarRef = useRef<HTMLDivElement>(null);
+  const factsPillsRef = useRef<HTMLDivElement>(null);
+  const actsPillsRef = useRef<HTMLDivElement>(null);
+
+  // Dynamic pill limits — computed from the available container width.
+  const [factsLimit, setFactsLimit] = useState(5);
+  const [actsLimit, setActsLimit] = useState(5);
+
+  // Use canvas text measurement (Poppins 500 12px = text-xs font-medium) to
+  // estimate how many pills fit in the container, reserving ~80 px for the
+  // "+ N more" button.
+  const computeLimit = useCallback((
+    containerEl: HTMLElement | null,
+    categories: string[],
+    setLimit: (n: number) => void,
+  ) => {
+    if (!containerEl || categories.length === 0) return;
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.font = '500 12px Poppins, ui-sans-serif, sans-serif';
+    const containerWidth = containerEl.offsetWidth;
+    const MORE_BTN_W = 84;  // "+ N more" button (rough width)
+    const PILL_H_PAD = 22;  // px-2.5 × 2 sides = 20px + 2px border
+    const GAP = 4;           // gap-1
+    let used = MORE_BTN_W;
+    let count = 0;
+    for (const cat of categories) {
+      const w = Math.ceil(ctx.measureText(cat).width) + PILL_H_PAD + GAP;
+      if (used + w > containerWidth) break;
+      used += w;
+      count++;
+    }
+    setLimit(Math.max(1, count));
+  }, []);
 
   // Close user dropdown when clicking outside
   useEffect(() => {
@@ -102,15 +138,14 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
   // ── Facts: distinct categories sorted alphabetically.
   //   First 5 show as inline pills; the rest go into a "More" dropdown.
   //   Anything currently selected stays visible as a pill regardless. ───────
-  const FACTS_INLINE_PILL_LIMIT = 5;
   const factsCategoriesRanked = useMemo(() => {
     const set = new Set<string>();
     for (const f of FACT_CARDS) set.add(f.category);
     return Array.from(set).sort();
   }, []);
   const factsSelected = activeFilters["Category"] ?? [];
-  const factsTopVisible = factsCategoriesRanked.slice(0, FACTS_INLINE_PILL_LIMIT);
-  const factsOverflow = factsCategoriesRanked.slice(FACTS_INLINE_PILL_LIMIT);
+  const factsTopVisible = factsCategoriesRanked.slice(0, factsLimit);
+  const factsOverflow = factsCategoriesRanked.slice(factsLimit);
   // If a selected category is in overflow, surface it inline alongside the top pills.
   const factsExtraVisible = factsOverflow.filter((c) => factsSelected.includes(c));
   const factsInlinePills = [...factsTopVisible, ...factsExtraVisible];
@@ -120,11 +155,10 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
   // ── Acts: same pattern as Facts, but the source list is `actsCategories`
   //   which App.tsx already ranks by card count (popular categories first).
   //   "More" dropdown holds the long tail. ───────────────────────────────────
-  const ACTS_INLINE_PILL_LIMIT = 5;
   const actsCats = actsCategories ?? [];
   const actsCatsSelected = activeFilters["Category"] ?? [];
-  const actsTopVisible = actsCats.slice(0, ACTS_INLINE_PILL_LIMIT);
-  const actsOverflow = actsCats.slice(ACTS_INLINE_PILL_LIMIT);
+  const actsTopVisible = actsCats.slice(0, actsLimit);
+  const actsOverflow = actsCats.slice(actsLimit);
   const actsExtraVisible = actsOverflow.filter((c) => actsCatsSelected.includes(c));
   const actsInlinePills = [...actsTopVisible, ...actsExtraVisible];
   const actsMoreOpen = openFilter === "acts-more";
@@ -146,6 +180,26 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
       : [...current, option];
     onFilterChange(filterName, next);
   }
+
+  // Wire up ResizeObservers so the pill limit recalculates whenever the
+  // container resizes (window resize, sidebar open/close, etc.).
+  useEffect(() => {
+    const el = factsPillsRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => computeLimit(el, factsCategoriesRanked, setFactsLimit));
+    ro.observe(el);
+    computeLimit(el, factsCategoriesRanked, setFactsLimit);
+    return () => ro.disconnect();
+  }, [factsCategoriesRanked, computeLimit]);
+
+  useEffect(() => {
+    const el = actsPillsRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => computeLimit(el, actsCats, setActsLimit));
+    ro.observe(el);
+    computeLimit(el, actsCats, setActsLimit);
+    return () => ro.disconnect();
+  }, [actsCats, computeLimit]);
 
   // Measure the top bar so the filter bar can sticky-pin directly below it,
   // even though the hero (in normal flow) sits between them in the DOM.
@@ -373,7 +427,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
         style={{ top: topBarHeight }}
         ref={filterBarRef}
       >
-        <span className="font-['Poppins',sans-serif] text-gray-400 text-[10px] uppercase tracking-widest font-semibold shrink-0 mr-2">Filter by</span>
+        <span className="font-['Poppins',sans-serif] text-gray-400 text-[10px] uppercase tracking-widest font-semibold shrink-0 mr-1">Filter by</span>
 
         {/* Quick-actions toggle (Acts tab only) */}
         {activeTab === "acts" && onQuickActionsChange && (
@@ -396,7 +450,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
 
         {activeTab === "facts" ? (
           /* ── Facts: top-N category pills + "More" dropdown ───────────── */
-          <>
+          <div ref={factsPillsRef} className="flex-1 min-w-0 flex items-center gap-1">
             {factsInlinePills.map((option) => {
               const selected = factsSelected.includes(option);
               return (
@@ -459,7 +513,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                 )}
               </div>
             )}
-          </>
+          </div>
         ) : (
           /* ── Acts: Location dropdown + Category pills (mirrors Facts UX) ── */
           <>
@@ -514,6 +568,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
 
             {/* Category pills + "more" overflow — mirrors Facts UX */}
             <span className="font-['Poppins',sans-serif] text-gray-400 text-[10px] uppercase tracking-widest font-semibold shrink-0">Category</span>
+            <div ref={actsPillsRef} className="flex-1 min-w-0 flex items-center gap-1">
             {actsInlinePills.map((option) => {
               const selected = actsCatsSelected.includes(option);
               return (
@@ -578,6 +633,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                 )}
               </div>
             )}
+            </div>
           </>
         )}
 
@@ -596,8 +652,46 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
           </button>
         )}
 
+        {/* Sort by dropdown — right-aligned before stats */}
+        {onSortChange && (
+          <div className="relative shrink-0 ml-auto">
+            <button
+              onClick={() => setOpenFilter(openFilter === "sort" ? null : "sort")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
+                sortBy !== "popular"
+                  ? "border-[#23297e] text-[#23297e] bg-[#23297e]/5"
+                  : "border-transparent text-gray-600 hover:bg-white hover:shadow-sm hover:border-gray-200"
+              }`}
+            >
+              <span className="text-gray-400 text-[10px] uppercase tracking-widest font-semibold">Sort</span>
+              <span className="font-medium">
+                {sortBy === "popular" ? "Popular" : sortBy === "newest" ? "Newest" : "A–Z"}
+              </span>
+              <ChevronDown size={13} className={`text-[#5a5a5a] transition-transform duration-150 ${openFilter === "sort" ? "rotate-180" : ""}`} />
+            </button>
+            {openFilter === "sort" && (
+              <div className="absolute top-full right-0 mt-1.5 w-40 bg-white border border-gray-100 rounded-2xl shadow-xl py-1.5 z-50">
+                {(["popular", "newest", "az"] as const).map((opt) => (
+                  <button
+                    key={opt}
+                    onClick={() => { onSortChange(opt); setOpenFilter(null); }}
+                    className={`w-full text-left px-4 py-2 font-['Poppins',sans-serif] text-sm transition-colors flex items-center justify-between ${
+                      sortBy === opt
+                        ? "text-[#23297e] font-semibold bg-[#23297e]/5"
+                        : "text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    {opt === "popular" ? "Popular" : opt === "newest" ? "Newest" : "A–Z"}
+                    {sortBy === opt && <span className="w-1.5 h-1.5 rounded-full bg-[#23297e]" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Stats — right-aligned */}
-        <div className="ml-auto flex items-center gap-5 shrink-0 pl-4 border-l border-gray-200">
+        <div className="flex items-center gap-5 shrink-0 pl-4 border-l border-gray-200">
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-[#fd8e33]" />
             <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">

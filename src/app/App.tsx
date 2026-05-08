@@ -47,6 +47,8 @@ interface ServerCard {
   createdBy?: string;
   quickAction?: boolean;
   imageContain?: boolean;
+  adminApproved?: boolean;
+  eventDate?: string;
 }
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
@@ -206,6 +208,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<"facts" | "acts">("acts");
   const [searchQuery, setSearchQuery] = useState("");
   const [quickActionsOnly, setQuickActionsOnly] = useState(false);
+  const [sortBy, setSortBy] = useState<"popular" | "newest" | "az">("popular");
 
   function handleFilterChange(filterName: string, selected: string[]) {
     setActiveFilters((prev) => ({ ...prev, [filterName]: selected }));
@@ -257,21 +260,8 @@ export default function App() {
     });
   }
 
-  // Stable random key per card id — used for shuffling within boost groups.
-  // Keys persist across re-renders so card order doesn't reshuffle when a
-  // user boosts something; new cards from pagination get a fresh key on
-  // first sight.
-  const tieBreakKeysRef = useRef(new Map<number, number>());
-  for (const c of cards) {
-    if (!tieBreakKeysRef.current.has(c.id)) {
-      tieBreakKeysRef.current.set(c.id, Math.random());
-    }
-  }
-  const keyOf = (c: ActionCardData) => tieBreakKeysRef.current.get(c.id) ?? 0;
-
-  // Sort: boost desc → within each boost level, round-robin by category so
-  // same-category cards never cluster. Order inside each (boost, category)
-  // bucket is the stable random key.
+  // Sort: round-robin by category so same-category cards never cluster.
+  // Within each category bucket, order by id descending (newer/higher-curated first).
   function interleaveByCategory(group: ActionCardData[]): ActionCardData[] {
     const buckets = new Map<string, ActionCardData[]>();
     for (const c of group) {
@@ -279,10 +269,16 @@ export default function App() {
       if (!buckets.has(cat)) buckets.set(cat, []);
       buckets.get(cat)!.push(c);
     }
-    for (const arr of buckets.values()) arr.sort((a, b) => keyOf(a) - keyOf(b));
-    // Stable random category visit order (uses the first card in each bucket
-    // as a proxy seed — same input always produces the same order).
-    const cats = Array.from(buckets.keys()).sort((a, b) => keyOf(buckets.get(a)![0]) - keyOf(buckets.get(b)![0]));
+    // Within each category bucket, sort by id descending so higher IDs (more
+    // recently curated) appear first when engagement scores are equal.
+    for (const arr of buckets.values()) arr.sort((a, b) => (b.id ?? 0) - (a.id ?? 0));
+    // Category visit order: sort categories by highest id in each bucket so
+    // categories with newer cards cycle first.
+    const cats = Array.from(buckets.keys()).sort((a, b) => {
+      const aTop = buckets.get(a)![0].id ?? 0;
+      const bTop = buckets.get(b)![0].id ?? 0;
+      return bTop - aTop;
+    });
     const out: ActionCardData[] = [];
     while (out.length < group.length) {
       for (const cat of cats) {
@@ -311,10 +307,47 @@ export default function App() {
   function engagementScore(c: ActionCardData): number {
     return (c.boosts ?? 0) + (c.completions ?? 0);
   }
+  // Today's date as ISO string (YYYY-MM-DD) for expiry + sort comparisons.
+  const todayISO = new Date().toISOString().slice(0, 10);
+  const isAdminUser = approval?.isAdmin === true;
+
   const displayedCards = (() => {
-    const filtered = applyFilters(cards);
-    const byScore = new Map<number, ActionCardData[]>();
+    // ── Global gate: expiry + approval ──────────────────────────────────────
+    const gated = cards.filter((card) => {
+      // Hide expired events from everyone
+      if (card.eventDate && card.eventDate < todayISO) return false;
+      // Hide non-approved cards from non-admins
+      if (!isAdminUser && card.adminApproved === false) return false;
+      return true;
+    });
+
+    const filtered = applyFilters(gated);
+
+    // ── A–Z and Newest skip the upcoming-event pinning; Popular keeps it ───────
+    if (sortBy === "az") {
+      return [...filtered].sort((a, b) => a.title.localeCompare(b.title));
+    }
+    if (sortBy === "newest") {
+      return [...filtered].sort((a, b) => (b.id ?? 0) - (a.id ?? 0));
+    }
+
+    // ── Popular (default): upcoming events pinned, then engagement sort ────────
+    // Cards with an eventDate on or after today float to the top, sorted by
+    // soonest-first so users see events that are about to expire prominently.
+    const upcoming: ActionCardData[] = [];
+    const rest: ActionCardData[] = [];
     for (const c of filtered) {
+      if (c.eventDate && c.eventDate >= todayISO) {
+        upcoming.push(c);
+      } else {
+        rest.push(c);
+      }
+    }
+    upcoming.sort((a, b) => (a.eventDate ?? "").localeCompare(b.eventDate ?? ""));
+
+    // ── Sort the main pool by engagement + location + category ───────────────
+    const byScore = new Map<number, ActionCardData[]>();
+    for (const c of rest) {
       const s = engagementScore(c);
       if (!byScore.has(s)) byScore.set(s, []);
       byScore.get(s)!.push(c);
@@ -334,7 +367,7 @@ export default function App() {
         if (grp && grp.length > 0) out.push(...interleaveByCategory(grp));
       }
     }
-    return out;
+    return [...upcoming, ...out];
   })();
 
   // True when any filter chip is selected OR a search is active — bypasses
@@ -772,6 +805,8 @@ export default function App() {
         onTabChange={handleTabChange}
         quickActionsOnly={quickActionsOnly}
         onQuickActionsChange={setQuickActionsOnly}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
         heroSlot={
           activeTab === "acts"
             ? approval
@@ -815,7 +850,7 @@ export default function App() {
             });
             return (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5">
                   {filteredFacts.map((fc) => (
                     <FactCard
                       key={fc.id}
@@ -844,11 +879,11 @@ export default function App() {
           /* ── Acts view ── */
           <>
             {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
                 {Array.from({ length: 10 }).map((_, i) => <CardSkeleton key={i} />)}
               </div>
             ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
               {(hasActiveFilters ? displayedCards : displayedCards.slice(0, displayLimit)).map((card) => (
                 <ActionCard
                   key={card.id}

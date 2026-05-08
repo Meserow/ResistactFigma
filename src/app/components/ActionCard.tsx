@@ -30,6 +30,10 @@ export interface ActionCardData {
   quickAction?: boolean;
   /** When true, fit the top image inside the header (object-contain) instead of cropping. Use for logo-style art. */
   imageContain?: boolean;
+  /** False = awaiting admin review; true / undefined = visible to all users. */
+  adminApproved?: boolean;
+  /** ISO date string (YYYY-MM-DD). Cards with a past date are hidden; upcoming ones sort to the top. */
+  eventDate?: string;
 }
 
 interface ActionCardProps {
@@ -71,7 +75,7 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
           isCompleted ? completedClasses : (onImage ? idleOnImageClasses : idleOffImageClasses)
         }`}
       >
-        <span aria-hidden>✓</span>
+        {isCompleted && <span aria-hidden>✓</span>}
         <span>{isCompleted ? "Did it!" : "I did this"}</span>
         {(() => {
           const n = Math.max(completionsCount, isCompleted ? 1 : 0);
