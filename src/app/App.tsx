@@ -14,6 +14,8 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { locationToState } from "./lib/locations";
 import { HomeHero } from "./components/HomeHero";
 import { LoggedInHero } from "./components/LoggedInHero";
+import { MatchMeModal } from "./components/MatchMeModal";
+import { rankCards, loadPreferences, clearPreferences, type Preferences } from "./lib/matcher";
 import svgPaths from "../imports/svg-77lgd1zdt6";
 import { projectId, publicAnonKey } from "/utils/supabase/info";
 import { supabase } from "./lib/supabase";
@@ -191,6 +193,9 @@ export default function App() {
   const [infoOpen, setInfoOpen] = useState(false);
   const [actOpen, setActOpen] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
+  const [matchOpen, setMatchOpen] = useState(false);
+  /** Active match prefs — when set, the feed re-ranks by `rankCards`. */
+  const [matchPrefs, setMatchPrefs] = useState<Preferences | null>(null);
   const [editCardId, setEditCardId] = useState<number | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -323,6 +328,14 @@ export default function App() {
 
     const filtered = applyFilters(gated);
 
+    // ── Match-me mode: rank by user-supplied tone/time/setting/risk prefs ─────
+    // Drops engagement-based, location-bucket, and category-interleave ordering;
+    // the matcher's score already incorporates engagement and the user's intent
+    // is more specific.
+    if (matchPrefs) {
+      return rankCards(filtered, matchPrefs);
+    }
+
     if (sortBy === "az") {
       return [...filtered].sort((a, b) => a.title.localeCompare(b.title));
     }
@@ -362,6 +375,7 @@ export default function App() {
   const hasActiveFilters =
     searchQuery.trim().length > 0 ||
     quickActionsOnly ||
+    matchPrefs !== null ||
     Object.values(activeFilters).some((arr) => (arr ?? []).length > 0);
 
   // Distinct categories from currently-loaded cards, sorted alphabetically.
@@ -778,6 +792,9 @@ export default function App() {
         onInfoClick={() => setInfoOpen(true)}
         onActClick={() => setActOpen(true)}
         onAskClick={() => setAskOpen(true)}
+        onMatchClick={() => setMatchOpen(true)}
+        matchActive={matchPrefs !== null}
+        onMatchClear={() => { setMatchPrefs(null); clearPreferences(); }}
         statsActsCount={hasActiveFilters ? displayedCards.length : (synced && serverTotal > 0 ? serverTotal : cards.length)}
         statsResistorsCount={statsUsersCount}
         statsCitiesCount={statsCitiesCount}
@@ -865,6 +882,30 @@ export default function App() {
         ) : (
           /* ── Acts view ── */
           <>
+            {/* Match-mode banner — visible when match prefs are filtering the feed */}
+            {matchPrefs && (
+              <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-[#fd8e33] bg-[#fd8e33]/5 px-4 py-2.5">
+                <p className="font-['Poppins',sans-serif] text-sm text-gray-700">
+                  ✨ <strong className="text-[#23297e]">Matched for you.</strong>{" "}
+                  Showing actions sorted by your match preferences.
+                </p>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => setMatchOpen(true)}
+                    className="font-['Poppins',sans-serif] text-xs font-semibold text-[#23297e] hover:underline"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => { setMatchPrefs(null); clearPreferences(); }}
+                    className="font-['Poppins',sans-serif] text-xs font-semibold text-gray-600 hover:text-[#fd8e33]"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+            )}
+
             {loading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
                 {Array.from({ length: 10 }).map((_, i) => <CardSkeleton key={i} />)}
@@ -930,6 +971,10 @@ export default function App() {
         <p className="font-['Poppins',sans-serif] text-sm text-gray-400">
           © 2026 ResistAct · Building grassroots resistance, one act at a time.
         </p>
+        <p className="mt-3 max-w-3xl mx-auto font-['Poppins',sans-serif] text-[11px] leading-[1.6] text-gray-400">
+          <strong className="font-semibold text-gray-500">Disclaimer:</strong>{" "}
+          Action cards on ResistAct are submitted by members of the general public. Their inclusion does not constitute endorsement, sponsorship, verification, or recommendation by ResistAct, its operators, contributors, or affiliates. ResistAct makes no representations or warranties as to the accuracy, legality, safety, or efficacy of any submitted action and expressly disclaims all liability arising from any reliance on, or participation in, content posted by users. Participants act at their own risk and are solely responsible for evaluating the legality and safety of any action in their jurisdiction.
+        </p>
       </footer>
 
       {/* Auth Modal */}
@@ -951,6 +996,16 @@ export default function App() {
       {/* Info / About modal */}
       {infoOpen && (
         <InfoModal onClose={() => setInfoOpen(false)} />
+      )}
+
+      {/* Match Me wizard */}
+      {matchOpen && (
+        <MatchMeModal
+          cards={cards}
+          isLoggedIn={!!approval}
+          onClose={() => setMatchOpen(false)}
+          onApply={(prefs) => { setMatchPrefs(prefs); setMatchOpen(false); }}
+        />
       )}
 
       {/* Join ACTers modal (orange — Act button) */}

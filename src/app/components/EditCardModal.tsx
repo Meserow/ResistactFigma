@@ -88,6 +88,13 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
   const [topImageUrl,    setTopImageUrl]    = useState<string>((card as any).topImageUrl ?? "");
   const [imageContain,   setImageContain]   = useState<boolean>(card.imageContain === true);
   const [eventDate,      setEventDate]      = useState<string>((card as any).eventDate ?? "");
+  // Tone override — admins can manually fix cards whose category default doesn't
+  // fit the matcher. null in any slot = no override (use category default).
+  const [toneAnger,      setToneAnger]      = useState<number | null>((card.toneOverride?.anger      ?? null) as number | null);
+  const [toneComedy,     setToneComedy]     = useState<number | null>((card.toneOverride?.comedy     ?? null) as number | null);
+  const [toneSubversion, setToneSubversion] = useState<number | null>((card.toneOverride?.subversion ?? null) as number | null);
+  const [toneCare,       setToneCare]       = useState<number | null>((card.toneOverride?.care       ?? null) as number | null);
+  const [toneHope,       setToneHope]       = useState<number | null>((card.toneOverride?.hope       ?? null) as number | null);
 
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState<string | null>(null);
@@ -182,6 +189,21 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
     setError(null);
     setLoading(true);
     try {
+      // Build toneOverride only when at least one slider has been set. Null
+      // means "use the category default" so we omit the field entirely.
+      const toneOverride =
+        toneAnger != null || toneComedy != null || toneSubversion != null || toneCare != null || toneHope != null
+          ? Object.fromEntries(
+              Object.entries({
+                anger: toneAnger,
+                comedy: toneComedy,
+                subversion: toneSubversion,
+                care: toneCare,
+                hope: toneHope,
+              }).filter(([, v]) => v != null)
+            )
+          : null;
+
       const payload = {
         title:          title.trim(),
         description:    description.trim(),
@@ -200,6 +222,9 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
         topImageUrl:    topImageUrl.trim() || null,
         imageContain,
         eventDate:      eventDate.trim() || undefined,
+        // Send null to explicitly clear an existing override; omit the field
+        // when there's nothing to send.
+        toneOverride,
       };
 
       const res = await fetch(`${API}/actions/${card.id}`, {
@@ -467,6 +492,54 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
                 </Field>
               </div>
             </div>
+
+            {/* ── Matcher tone override (admin only) ── */}
+            {isAdmin && (
+              <div className="border-t border-gray-100 pt-4">
+                <h3 className="font-['Poppins',sans-serif] font-bold text-[13px] uppercase tracking-wider text-gray-700 mb-1">
+                  Matcher tone override
+                </h3>
+                <p className="font-['Poppins',sans-serif] text-xs text-gray-500 mb-3">
+                  Each slider is 0–3. Leave at "auto" to use the category default. Set a value when this card's tone differs from its category — for example, a serious investigative-journalism card sitting in BOOST.
+                </p>
+                <div className="space-y-2">
+                  {([
+                    { key: "anger",      label: "Anger",      val: toneAnger,      set: setToneAnger,      emoji: "😠" },
+                    { key: "comedy",     label: "Comedy",     val: toneComedy,     set: setToneComedy,     emoji: "😂" },
+                    { key: "subversion", label: "Subversion", val: toneSubversion, set: setToneSubversion, emoji: "🥷" },
+                    { key: "care",       label: "Care",       val: toneCare,       set: setToneCare,       emoji: "🤝" },
+                    { key: "hope",       label: "Hope",       val: toneHope,       set: setToneHope,       emoji: "🕊" },
+                  ] as const).map(({ key, label, val, set, emoji }) => (
+                    <div key={key} className="flex items-center gap-3">
+                      <span className="font-['Poppins',sans-serif] text-sm text-gray-700 w-28 shrink-0">
+                        <span className="mr-1">{emoji}</span>
+                        {label}
+                      </span>
+                      <input
+                        type="range"
+                        min={0}
+                        max={3}
+                        step={1}
+                        value={val ?? 0}
+                        disabled={val == null}
+                        onChange={(e) => set(Number(e.target.value))}
+                        className="flex-1 accent-[#fd8e33] disabled:opacity-30"
+                      />
+                      <span className="font-['Poppins',sans-serif] text-xs font-bold text-[#fd8e33] w-6 text-center">
+                        {val == null ? "—" : val}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => set(val == null ? 1 : null)}
+                        className="font-['Poppins',sans-serif] text-[11px] text-gray-500 hover:text-[#23297e] underline w-12 text-right"
+                      >
+                        {val == null ? "set" : "auto"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {error && (
               <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2 font-['Poppins',sans-serif]">
