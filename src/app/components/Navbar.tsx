@@ -2,7 +2,7 @@ import logoImg from "../../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import type { ReactNode } from "react";
 import { FACT_CARDS } from "../data/factCards";
-import { Bell, ChevronDown, Clock, Info, LogIn, LogOut, MapPin, Menu, Plus, Search, ShieldCheck, Sparkles, X, Zap } from "lucide-react";
+import { Bell, ChevronDown, Clock, Info, LogIn, LogOut, MapPin, Menu, Search, ShieldCheck, X, Zap } from "lucide-react";
 import type { UserApproval } from "../lib/supabase";
 
 function ResistActLogo() {
@@ -29,9 +29,6 @@ interface NavbarProps {
   onAdminClick: () => void;
   onInfoClick: () => void;
   onActClick: () => void;
-  onAskClick: () => void;
-  /** Open the "Match me to an action" wizard. */
-  onMatchClick?: () => void;
   /** True when match preferences are currently filtering the feed. */
   matchActive?: boolean;
   /** Clear active match filter. */
@@ -57,7 +54,7 @@ interface NavbarProps {
   onSortChange?: (sort: "popular" | "newest" | "az") => void;
 }
 
-export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, onAskClick, onMatchClick, matchActive, onMatchClear, statsActsCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, sortBy = "popular", onSortChange }: NavbarProps) {
+export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, sortBy = "popular", onSortChange }: NavbarProps) {
   // Acts filters in render order: Location dropdown first, Category pills second.
   // Used for "Clear all" and the mobile filter row that shows just the names.
   const ACTS_FILTER_OPTIONS: Record<string, string[]> = {
@@ -280,27 +277,6 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               className="w-full pl-11 pr-4 py-2.5 bg-white border border-gray-300 rounded-xl font-['Poppins',sans-serif] text-base text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#23297e] focus:border-transparent"
             />
           </div>
-
-          {/* Match Me Button */}
-          {onMatchClick && (
-            <button
-              onClick={onMatchClick}
-              className="shrink-0 bg-white border-2 border-[#fd8e33] hover:bg-[#fd8e33]/5 transition-colors text-[#fd8e33] font-['Poppins',sans-serif] font-bold text-base px-4 py-[10px] rounded-xl flex items-center gap-1.5 whitespace-nowrap"
-              title="Match me to an action"
-            >
-              <Sparkles size={16} strokeWidth={2.5} />
-              Match me
-            </button>
-          )}
-
-          {/* Add Action Button */}
-          <button
-            onClick={onAskClick}
-            className="shrink-0 bg-[#23297e] hover:bg-[#1a2060] transition-colors text-white font-['Poppins',sans-serif] font-bold text-base px-5 py-3 rounded-xl flex items-center gap-2 whitespace-nowrap shadow-sm"
-          >
-            <Plus size={16} strokeWidth={2.5} />
-            Add Action
-          </button>
 
         </div>
 

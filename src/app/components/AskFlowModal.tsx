@@ -1,6 +1,6 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import {
-  X, ChevronLeft, Loader2, Search, Megaphone, Upload,
+  X, Loader2, Megaphone, Upload,
   Ban, DollarSign, Bike, Newspaper, Calendar, Share2, Hammer, PenLine, Users,
   HandHeart, Home, HardHat, Sparkles, Briefcase, Heart, Mail, GraduationCap,
   Smile, Volume2, Palette, Handshake, Send, Brain, Lightbulb, Mailbox,
@@ -55,9 +55,7 @@ interface AskFlowModalProps {
 export function AskFlowModal({
   accessToken, approval, onClose, onLoginRequired, onNewCard,
 }: AskFlowModalProps) {
-  const [view, setView] = useState<"category" | "form">("category");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
 
   // Form state
   const [formTitle,       setFormTitle]       = useState("");
@@ -115,15 +113,12 @@ export function AskFlowModal({
   const isApproved = approval?.status === "approved";
   const selectedCat = CATEGORIES.find((c) => c.name === selectedCategory);
 
-  const filteredCats = useMemo(() => {
-    if (!search.trim()) return CATEGORIES;
-    const q = search.trim().toLowerCase();
-    return CATEGORIES.filter((c) => c.name.toLowerCase().includes(q));
-  }, [search]);
-
   async function handleCreateAsk() {
     if (submittingRef.current) return;
     if (!isLoggedIn) { onLoginRequired(); return; }
+    if (!selectedCategory) {
+      setFormError("Pick a category."); return;
+    }
     if (!formTitle.trim() || !formDesc.trim() || !formLink.trim() || !formImageUrl.trim()) {
       setFormError("Title, description, link, and header image are required."); return;
     }
@@ -174,46 +169,30 @@ export function AskFlowModal({
     }
   }
 
-  // ── Form step ───────────────────────────────────────────────────────────────
-  if (view === "form") {
-    return (
-      <Overlay onClose={onClose}>
-        <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[92vh]">
-          {/* Header */}
-          <div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-gray-100">
-            <button
-              onClick={() => setView("category")}
-              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors shrink-0"
-              aria-label="Back to categories"
-            >
-              <ChevronLeft size={20} />
-            </button>
-            <div className="flex-1 min-w-0">
-              <h2 className="font-['Poppins',sans-serif] font-bold text-gray-900 text-lg leading-tight">
-                Make an ASK
-              </h2>
-              {selectedCat && (
-                <div className="flex items-center gap-1.5 mt-1">
-                  <selectedCat.icon size={14} className="text-gray-400" />
-                  <span
-                    className="font-['Poppins',sans-serif] font-semibold text-[12px] uppercase tracking-wider"
-                    style={{ color: selectedCat.color }}
-                  >
-                    {selectedCat.name}
-                  </span>
-                </div>
-              )}
-            </div>
-            <button
-              onClick={onClose}
-              className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 shrink-0"
-              aria-label="Close"
-            >
-              <X size={18} />
-            </button>
+  // ── Form ────────────────────────────────────────────────────────────────────
+  return (
+    <Overlay onClose={onClose}>
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[92vh]">
+        {/* Header */}
+        <div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-gray-100">
+          <div className="flex-1 min-w-0">
+            <p className="font-['Poppins',sans-serif] font-semibold text-[11px] uppercase tracking-[0.14em] text-[#fd8e33]">
+              Make an ASK
+            </p>
+            <h2 className="font-['Poppins',sans-serif] font-bold text-gray-900 text-lg leading-tight mt-0.5">
+              Add an Action
+            </h2>
           </div>
+          <button
+            onClick={onClose}
+            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 shrink-0"
+            aria-label="Close"
+          >
+            <X size={18} />
+          </button>
+        </div>
 
-          <>
+        <>
               {/* Body — scrollable */}
               <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
 
@@ -222,6 +201,20 @@ export function AskFlowModal({
                   title="What's your ask?"
                   hint="Make it clear and compelling — this is the headline people will see."
                 >
+                  <Field label="Category" required>
+                    <select
+                      value={selectedCategory ?? ""}
+                      onChange={(e) => setSelectedCategory(e.target.value || null)}
+                      className={inputCls}
+                      style={selectedCat ? { color: selectedCat.color, fontWeight: 600 } : undefined}
+                    >
+                      <option value="">— select a category —</option>
+                      {CATEGORIES.map(({ name }) => (
+                        <option key={name} value={name}>{name}</option>
+                      ))}
+                    </select>
+                  </Field>
+
                   <Field label="Title" required>
                     <input
                       type="text" value={formTitle} maxLength={80}
@@ -358,8 +351,9 @@ export function AskFlowModal({
 
               {/* Sticky footer */}
               <div className="border-t border-gray-100 px-6 py-4 bg-white">
-                {(() => {
+                {isLoggedIn && isApproved && (() => {
                   const missing: string[] = [];
+                  if (!selectedCategory) missing.push("Category");
                   if (!formTitle.trim()) missing.push("Title");
                   if (!formDesc.trim()) missing.push("Description");
                   if (!formLink.trim()) missing.push("Link");
@@ -371,127 +365,29 @@ export function AskFlowModal({
                   ) : null;
                 })()}
                 <button
-                  onClick={handleCreateAsk}
-                  disabled={createLoading || !formTitle.trim() || !formDesc.trim() || !formLink.trim() || !formImageUrl.trim()}
+                  onClick={() => {
+                    if (!isLoggedIn) { onLoginRequired(); return; }
+                    if (!isApproved) return;
+                    handleCreateAsk();
+                  }}
+                  disabled={
+                    createLoading ||
+                    (isLoggedIn && (!isApproved || !selectedCategory || !formTitle.trim() || !formDesc.trim() || !formLink.trim() || !formImageUrl.trim()))
+                  }
                   className="w-full py-3.5 bg-[#fd8e33] hover:bg-[#e07a28] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-['Poppins',sans-serif] font-bold text-sm rounded-2xl transition-colors flex items-center justify-center gap-2 shadow-sm"
                 >
                   {createLoading ? (
                     <><Loader2 size={16} className="animate-spin" /> Posting…</>
+                  ) : !isLoggedIn ? (
+                    <><Megaphone size={16} /> Sign in to make an ASK</>
+                  ) : !isApproved ? (
+                    <><Megaphone size={16} /> Pending approval</>
                   ) : (
                     <><Megaphone size={16} /> Post my ASK</>
                   )}
                 </button>
               </div>
             </>
-        </div>
-      </Overlay>
-    );
-  }
-
-  // ── Category step ───────────────────────────────────────────────────────────
-  return (
-    <Overlay onClose={onClose}>
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[92vh]">
-        {/* Header */}
-        <div className="px-6 pt-6 pb-4 flex items-start gap-3">
-          <div className="flex-1 min-w-0">
-            <p className="font-['Poppins',sans-serif] font-semibold text-[11px] uppercase tracking-[0.14em] text-[#fd8e33]">
-              Make an ASK
-            </p>
-            <h2 className="font-['Poppins',sans-serif] font-bold text-gray-900 text-2xl leading-tight mt-0.5">
-              Add an Action
-            </h2>
-            <p className="font-['Poppins',sans-serif] text-gray-500 text-sm mt-1.5">
-              Pick the category that fits best.
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 shrink-0"
-            aria-label="Close"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Search */}
-        <div className="px-6 pb-3">
-          <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-            <input
-              type="text" value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search categories…"
-              className="w-full pl-10 pr-3.5 py-2.5 bg-gray-50 border border-gray-100 rounded-xl font-['Poppins',sans-serif] text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#fd8e33]/30 focus:border-[#fd8e33] focus:bg-white transition-colors"
-            />
-          </div>
-        </div>
-
-        {/* Category chips — scrollable */}
-        <div className="px-6 pb-5 overflow-y-auto">
-          {filteredCats.length === 0 ? (
-            <p className="text-sm text-gray-400 italic py-6 text-center font-['Poppins',sans-serif]">
-              No categories match "{search}".
-            </p>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {filteredCats.map(({ name, icon: Icon, color }) => {
-                const selected = selectedCategory === name;
-                return (
-                  <button
-                    key={name}
-                    onClick={() => setSelectedCategory(name)}
-                    className={`group flex items-center gap-2 px-3.5 py-2.5 rounded-xl border-2 text-left transition-all ${
-                      selected
-                        ? "border-transparent shadow-sm"
-                        : "border-gray-100 hover:border-gray-200 bg-white"
-                    }`}
-                    style={
-                      selected
-                        ? { backgroundColor: `${color}12`, borderColor: color }
-                        : undefined
-                    }
-                  >
-                    <Icon
-                      size={16}
-                      className="shrink-0"
-                      style={{ color: selected ? color : "#9ca3af" }}
-                    />
-                    <span
-                      className="font-['Poppins',sans-serif] font-semibold text-[12.5px] leading-tight"
-                      style={{ color: selected ? color : "#374151" }}
-                    >
-                      {name}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="border-t border-gray-100 px-6 py-4 bg-white flex items-center justify-between gap-3">
-          <p className="text-[12px] text-gray-400 font-['Poppins',sans-serif] hidden sm:block">
-            {selectedCategory ? "Ready when you are →" : "Pick a category to continue"}
-          </p>
-          <button
-            onClick={() => {
-              if (!isLoggedIn) { onLoginRequired(); return; }
-              if (!isApproved || !selectedCategory) return;
-              setView("form");
-            }}
-            disabled={isLoggedIn && (!isApproved || !selectedCategory)}
-            className="ml-auto flex items-center gap-2 bg-[#fd8e33] hover:bg-[#e07a28] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white rounded-2xl px-5 py-2.5 font-['Poppins',sans-serif] font-bold text-sm shadow-sm transition-colors"
-          >
-            <Megaphone size={16} />
-            {!isLoggedIn
-              ? "Sign in to make an ASK"
-              : !isApproved
-              ? "Pending approval"
-              : "Continue"}
-          </button>
-        </div>
       </div>
     </Overlay>
   );

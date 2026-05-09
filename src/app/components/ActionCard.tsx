@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
 import { Bookmark, BookmarkCheck, Globe, MapPin, Pencil, Share2 } from "lucide-react";
 import { ShareModal } from "./ShareModal";
+import { CardDetailsModal } from "./CardDetailsModal";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
+
+// Approximate threshold for when the description gets clamped in the grid view.
+// We use a character count rather than measuring DOM because measuring on every
+// card render is overkill and ResizeObserver is overkill-er. ~250 chars roughly
+// matches what fits in a 5-line clamp at 13px / 4-col grid.
+const READ_MORE_THRESHOLD = 250;
 
 export interface ActionCardData {
   id: number;
@@ -34,6 +41,10 @@ export interface ActionCardData {
   adminApproved?: boolean;
   /** ISO date string (YYYY-MM-DD). Cards with a past date are hidden; upcoming ones sort to the top. */
   eventDate?: string;
+  /** True for actions you can do without leaving your house (knit, write
+   * letters, call reps, sew flags). Overlaps with `isOnline` — anything online
+   * is also at-home — but `atHome` covers offline-but-still-at-home tasks. */
+  atHome?: boolean;
   /** Per-card override for the matcher's tone vector. Partial — fields you
    * don't set fall back to the category's default. Each value 0–3.
    * Use to fix cards whose category default doesn't fit them. */
@@ -61,9 +72,12 @@ interface ActionCardProps {
 
 export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onEdit, isBoosted, isCompleted, isBookmarked, canEdit }: ActionCardProps) {
   const [shareOpen, setShareOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
   useEffect(() => { setImageFailed(false); }, [card.topImage]);
   const showTopImage = !!card.topImage && !imageFailed;
+
+  const isDescriptionLong = (card.description?.length ?? 0) > READ_MORE_THRESHOLD;
 
   const completionsCount = card.completions ?? 0;
 
@@ -166,7 +180,7 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
       <>
         <div className="bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full hover:shadow-lg transition-shadow">
           {/* Illustration */}
-          <div className="relative h-[220px] shrink-0 bg-[#23297e] flex items-center justify-center">
+          <div className="relative h-[160px] shrink-0 bg-[#23297e] flex items-center justify-center">
             {card.featuredIllustration}
             <div className="absolute top-2.5 right-3">
               <TopControls light={true} />
@@ -190,9 +204,18 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
               ) : card.title}
             </h3>
 
-            <p className="font-['Poppins',sans-serif] text-[13px] text-gray-600 leading-relaxed line-clamp-3 flex-1">
+            <p className="font-['Poppins',sans-serif] text-[13px] text-gray-600 leading-relaxed line-clamp-5 flex-1">
               {card.description}
             </p>
+
+            {isDescriptionLong && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setDetailsOpen(true); }}
+                className="self-start font-['Poppins',sans-serif] text-[12px] font-semibold text-[#23297e] hover:underline"
+              >
+                Read more →
+              </button>
+            )}
 
             {/* Author + Boost button */}
             <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-100">
@@ -215,6 +238,9 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
         {shareOpen && (
           <ShareModal title={card.title} description={card.description} onClose={() => setShareOpen(false)} />
         )}
+        {detailsOpen && (
+          <CardDetailsModal card={card} onClose={() => setDetailsOpen(false)} />
+        )}
       </>
     );
   }
@@ -225,7 +251,7 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
       <div className="bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full hover:shadow-lg transition-shadow">
         {/* Top image */}
         {showTopImage ? (
-          <div className={`relative h-[220px] shrink-0 ${card.imageContain ? "bg-gray-50" : ""}`}>
+          <div className={`relative h-[160px] shrink-0 ${card.imageContain ? "bg-gray-50" : ""}`}>
             <ImageWithFallback
               src={card.topImage}
               alt={card.title}
@@ -308,9 +334,18 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
           </h3>
 
           {/* Description */}
-          <p className="font-['Poppins',sans-serif] text-[13px] text-gray-600 leading-relaxed line-clamp-3 flex-1">
+          <p className="font-['Poppins',sans-serif] text-[13px] text-gray-600 leading-relaxed line-clamp-5 flex-1">
             {card.description}
           </p>
+
+          {isDescriptionLong && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setDetailsOpen(true); }}
+              className="self-start font-['Poppins',sans-serif] text-[12px] font-semibold text-[#23297e] hover:underline"
+            >
+              Read more →
+            </button>
+          )}
 
           {/* Cards without a header image — show "I did this" inline since
               we have no image to overlay it on. */}
@@ -352,6 +387,9 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
       </div>
       {shareOpen && (
         <ShareModal title={card.title} description={card.description} onClose={() => setShareOpen(false)} />
+      )}
+      {detailsOpen && (
+        <CardDetailsModal card={card} onClose={() => setDetailsOpen(false)} />
       )}
     </>
   );
