@@ -87,14 +87,15 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
   // from the raw URL the server stored, so we don't write a bundled path back.
   const [topImageUrl,    setTopImageUrl]    = useState<string>((card as any).topImageUrl ?? "");
   const [imageContain,   setImageContain]   = useState<boolean>(card.imageContain === true);
+  const [atHome,         setAtHome]         = useState<boolean>(card.atHome === true);
   const [eventDate,      setEventDate]      = useState<string>((card as any).eventDate ?? "");
   // Tone override — admins can manually fix cards whose category default doesn't
   // fit the matcher. null in any slot = no override (use category default).
   const [toneAnger,      setToneAnger]      = useState<number | null>((card.toneOverride?.anger      ?? null) as number | null);
   const [toneComedy,     setToneComedy]     = useState<number | null>((card.toneOverride?.comedy     ?? null) as number | null);
   const [toneSubversion, setToneSubversion] = useState<number | null>((card.toneOverride?.subversion ?? null) as number | null);
-  const [toneCare,       setToneCare]       = useState<number | null>((card.toneOverride?.care       ?? null) as number | null);
   const [toneHope,       setToneHope]       = useState<number | null>((card.toneOverride?.hope       ?? null) as number | null);
+  const [toneEnergy,     setToneEnergy]     = useState<number | null>((card.toneOverride?.energy     ?? null) as number | null);
 
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState<string | null>(null);
@@ -192,14 +193,14 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
       // Build toneOverride only when at least one slider has been set. Null
       // means "use the category default" so we omit the field entirely.
       const toneOverride =
-        toneAnger != null || toneComedy != null || toneSubversion != null || toneCare != null || toneHope != null
+        toneAnger != null || toneComedy != null || toneSubversion != null || toneHope != null || toneEnergy != null
           ? Object.fromEntries(
               Object.entries({
                 anger: toneAnger,
                 comedy: toneComedy,
                 subversion: toneSubversion,
-                care: toneCare,
                 hope: toneHope,
+                energy: toneEnergy,
               }).filter(([, v]) => v != null)
             )
           : null;
@@ -221,6 +222,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
         // null clears the URL so the seed-provided topImageKey can take over again.
         topImageUrl:    topImageUrl.trim() || null,
         imageContain,
+        atHome,
         eventDate:      eventDate.trim() || undefined,
         // Send null to explicitly clear an existing override; omit the field
         // when there's nothing to send.
@@ -357,6 +359,20 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
                   Previous value: <span className="font-semibold">{card.location}</span> — pick a canonical location to update.
                 </p>
               )}
+              <label className="flex items-center gap-2 mt-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={atHome}
+                  onChange={(e) => setAtHome(e.target.checked)}
+                  className="w-4 h-4 rounded accent-[#23297e]"
+                />
+                <span className="font-['Poppins',sans-serif] text-sm text-gray-700">
+                  Can be done at home
+                </span>
+              </label>
+              <p className="mt-1 font-['Poppins',sans-serif] text-[11px] text-gray-400">
+                Check for actions doable from home that aren't computer-based — knitting, letter-writing, sign-making, calling reps, prayer. Online actions are at-home automatically.
+              </p>
             </Field>
 
             {/* Event Date */}
@@ -504,11 +520,11 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
                 </p>
                 <div className="space-y-2">
                   {([
-                    { key: "anger",      label: "Anger",      val: toneAnger,      set: setToneAnger,      emoji: "😠" },
-                    { key: "comedy",     label: "Comedy",     val: toneComedy,     set: setToneComedy,     emoji: "😂" },
-                    { key: "subversion", label: "Subversion", val: toneSubversion, set: setToneSubversion, emoji: "🥷" },
-                    { key: "care",       label: "Care",       val: toneCare,       set: setToneCare,       emoji: "🤝" },
+                    { key: "anger",      label: "Angry",      val: toneAnger,      set: setToneAnger,      emoji: "😠" },
+                    { key: "comedy",     label: "Funny",      val: toneComedy,     set: setToneComedy,     emoji: "😂" },
+                    { key: "subversion", label: "Subversive", val: toneSubversion, set: setToneSubversion, emoji: "🥷" },
                     { key: "hope",       label: "Hope",       val: toneHope,       set: setToneHope,       emoji: "🕊" },
+                    { key: "energy",     label: "Energy",     val: toneEnergy,     set: setToneEnergy,     emoji: "⚡" },
                   ] as const).map(({ key, label, val, set, emoji }) => (
                     <div key={key} className="flex items-center gap-3">
                       <span className="font-['Poppins',sans-serif] text-sm text-gray-700 w-28 shrink-0">

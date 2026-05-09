@@ -11,6 +11,7 @@ import {
   type TimeBucket,
   type VulnerableGroup,
 } from "../lib/matcher";
+import { LOCATION_OPTIONS } from "../lib/locations";
 import type { ActionCardData } from "./ActionCard";
 
 // Bad-match feedback log. Persisted to localStorage so we can later mine it
@@ -49,20 +50,19 @@ interface MatchMeModalProps {
   isLoggedIn?: boolean;
 }
 
-const TIME_OPTIONS: { value: TimeBucket; label: string }[] = [
-  { value: "5min",     label: "5 min" },
-  { value: "30min",    label: "30 min" },
-  { value: "1hr",      label: "An hour" },
-  { value: "fewHours", label: "A few hours" },
-  { value: "fullDay",  label: "A whole day" },
-  { value: "ongoing",  label: "Ongoing" },
-];
-
 const SETTING_OPTIONS: { value: Setting; label: string }[] = [
   { value: "online",   label: "Online only" },
+  { value: "atHome",   label: "At home" },
   { value: "inPerson", label: "In-person" },
-  { value: "either",   label: "Either" },
+  { value: "either",   label: "Any" },
 ];
+
+// State picker options — actual US states only. "Online", "National", and
+// "Multi-state" aren't picked here because they're not where a *user* lives;
+// the state filter passes those locations through automatically.
+const STATE_OPTIONS = LOCATION_OPTIONS.filter(
+  (o) => o !== "Online" && o !== "National" && o !== "Multi-state"
+);
 
 const GROUP_OPTIONS: { value: VulnerableGroup; label: string }[] = [
   { value: "immigrant",  label: "Immigrant (documented, undocumented, mixed status family)" },
@@ -78,9 +78,28 @@ const TONE_LABELS = {
   anger:      { emoji: "😠", label: "Angry",      desc: "Confrontational, in the streets" },
   comedy:     { emoji: "😂", label: "Funny",      desc: "Mockery, irreverence, prank" },
   subversion: { emoji: "🥷", label: "Subversive", desc: "Disruptive, off the beaten path" },
+  hope:       { emoji: "🕊", label: "Hope",       desc: "Uplifting, optimistic, building" },
+  energy:     { emoji: "⚡", label: "Energy",     desc: "How fired-up are you today?" },
 } as const;
 
+// Time as a 6-stop slider (0..5) so it sits naturally alongside the 0..3 tone
+// sliders. The matcher still operates on TimeBucket, so we round-trip.
+const TIME_BUCKETS_BY_INDEX: TimeBucket[] = ["5min", "30min", "1hr", "fewHours", "fullDay", "ongoing"];
+const TIME_LABELS_SHORT: Record<TimeBucket, string> = {
+  "5min":     "5 min",
+  "30min":    "30 min",
+  "1hr":      "1 hr",
+  "fewHours": "few hrs",
+  "fullDay":  "all day",
+  "ongoing":  "ongoing",
+};
+function timeIndex(b: TimeBucket | null): number {
+  if (!b) return 1; // default: 30 min
+  return Math.max(0, TIME_BUCKETS_BY_INDEX.indexOf(b));
+}
+
 type Step = 0 | 1 | 2 | 3 | 4;
+const TOTAL_STEPS = 5;
 
 export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false }: MatchMeModalProps) {
   const [step, setStep] = useState<Step>(0);
@@ -132,7 +151,7 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false }: Ma
 
         {/* Progress dots */}
         <div className="mb-5 flex justify-center gap-1.5">
-          {[0, 1, 2, 3, 4].map((i) => (
+          {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
             <div
               key={i}
               className={`h-1.5 rounded-full transition-all ${i === step ? "w-8 bg-[#fd8e33]" : i < step ? "w-1.5 bg-[#fd8e33]" : "w-1.5 bg-gray-300"}`}
@@ -145,9 +164,9 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false }: Ma
         )}
 
         {step === 1 && (
-          <StepTime
-            value={prefs.time}
-            onChange={(time) => setPrefs((p) => ({ ...p, time }))}
+          <StepLocation
+            value={prefs.state}
+            onChange={(state) => setPrefs((p) => ({ ...p, state }))}
           />
         )}
 
@@ -168,11 +187,10 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false }: Ma
 
         {step === 4 && (
           <StepResultsAndTone
-            tone={prefs.tone}
-            onToneChange={(tone) => setPrefs((p) => ({ ...p, tone }))}
+            prefs={prefs}
+            onPrefsChange={(updater) => setPrefs(updater)}
             matches={matches}
             onApply={() => onApply(prefs)}
-            prefs={prefs}
           />
         )}
 
@@ -209,7 +227,7 @@ function StepIntro({ onStart }: { onStart: () => void }) {
         What's your fit today?
       </h2>
       <p className="font-['Poppins',sans-serif] text-[15px] text-gray-700 leading-[1.65] mb-6">
-        Four quick questions and we'll surface the actions that fit your time, your situation, and your mood right now.
+        A few quick questions and we'll surface the actions that fit your location, your situation, and your mood right now.
       </p>
       <button
         onClick={onStart}
@@ -221,36 +239,57 @@ function StepIntro({ onStart }: { onStart: () => void }) {
   );
 }
 
-// ─── Step 1: time ─────────────────────────────────────────────────────────────
+// ─── Step 1: location ─────────────────────────────────────────────────────────
 
-function StepTime({ value, onChange }: { value: TimeBucket | null; onChange: (v: TimeBucket | null) => void }) {
+function StepLocation({ value, onChange }: { value: string | null; onChange: (v: string | null) => void }) {
   return (
     <div>
       <h2 className="font-['Poppins',sans-serif] text-[20px] font-bold text-[#23297e] mb-2">
-        How much time have you got?
+        Where are you?
       </h2>
-      <p className="font-['Poppins',sans-serif] text-sm text-gray-600 mb-5">
-        Pick the bucket that's closest. We'll match accordingly.
+      <p className="font-['Poppins',sans-serif] text-sm text-gray-600 mb-4">
+        We'll skip in-person actions in other states. Online and at-home actions stay in either way.
       </p>
-      <PillRow
-        options={TIME_OPTIONS}
-        value={value}
-        onChange={onChange}
-      />
+
+      <div className="space-y-2.5">
+        {/* Anywhere pill — pinned at top */}
+        <button
+          onClick={() => onChange(null)}
+          className={`w-full text-left rounded-lg border px-4 py-3 font-['Poppins',sans-serif] text-sm transition-colors ${
+            value === null
+              ? "border-[#fd8e33] bg-[#fd8e33]/10 text-[#23297e] font-semibold"
+              : "border-gray-300 text-gray-700 hover:border-gray-400"
+          }`}
+        >
+          🌍 Anywhere — show me everything
+        </button>
+
+        {/* State dropdown */}
+        <select
+          value={value ?? ""}
+          onChange={(e) => onChange(e.target.value || null)}
+          className="w-full rounded-lg border border-gray-300 px-4 py-3 font-['Poppins',sans-serif] text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#23297e]/30 focus:border-[#23297e]"
+        >
+          <option value="">— pick your state —</option>
+          {STATE_OPTIONS.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+      </div>
     </div>
   );
 }
 
-// ─── Step 2: setting ──────────────────────────────────────────────────────────
+// ─── Step 2: setting (action type) ────────────────────────────────────────────
 
 function StepSetting({ value, onChange }: { value: Setting | null; onChange: (v: Setting | null) => void }) {
   return (
     <div>
       <h2 className="font-['Poppins',sans-serif] text-[20px] font-bold text-[#23297e] mb-2">
-        Where do you want to act?
+        How do you want to act?
       </h2>
       <p className="font-['Poppins',sans-serif] text-sm text-gray-600 mb-5">
-        On your couch, in the world, or open to either.
+        On a screen, around the house, or out in the world.
       </p>
       <PillRow
         options={SETTING_OPTIONS}
@@ -330,21 +369,25 @@ function StepGroups({
   );
 }
 
-// ─── Step 4: tone sliders + results preview ───────────────────────────────────
+// ─── Step 3 (final): time + energy + tone sliders + results preview ──────────
 
 function StepResultsAndTone({
-  tone,
-  onToneChange,
+  prefs,
+  onPrefsChange,
   matches,
   onApply,
-  prefs,
 }: {
-  tone: Preferences["tone"];
-  onToneChange: (t: Preferences["tone"]) => void;
+  prefs: Preferences;
+  onPrefsChange: (updater: (prev: Preferences) => Preferences) => void;
   matches: ActionCardData[];
   onApply: () => void;
-  prefs: Preferences;
 }) {
+  const tone = prefs.tone;
+  const timeIdx = timeIndex(prefs.time);
+  const setTone = (next: Preferences["tone"]) =>
+    onPrefsChange((p) => ({ ...p, tone: next }));
+  const setTimeFromIndex = (idx: number) =>
+    onPrefsChange((p) => ({ ...p, time: TIME_BUCKETS_BY_INDEX[idx] }));
   // Track which result rows the user has flagged as a bad match this session.
   // We don't unflag on click; one click logs and shows visual confirmation.
   const [flagged, setFlagged] = useState<Set<number>>(new Set());
@@ -364,14 +407,47 @@ function StepResultsAndTone({
   return (
     <div>
       <h2 className="font-['Poppins',sans-serif] text-[20px] font-bold text-[#23297e] mb-2">
-        What's your energy?
+        What fits you right now?
       </h2>
       <p className="font-['Poppins',sans-serif] text-sm text-gray-600 mb-4">
-        Slide each one. Move them as you see your matches change below.
+        Slide each one. Watch the matches below shift as you tune.
       </p>
 
       <div className="space-y-3 mb-5">
-        {(["anger", "comedy", "subversion"] as const).map((k) => (
+        {/* Time slider — 6 stops, mapped to TimeBucket */}
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <span className="font-['Poppins',sans-serif] text-sm text-gray-700">
+              <span className="mr-1.5">⏱</span>
+              <strong className="font-semibold text-[#23297e]">Time</strong>
+              <span className="ml-2 text-xs text-gray-500">How long have you got?</span>
+            </span>
+            <span className="font-['Poppins',sans-serif] text-xs font-bold text-[#fd8e33]">
+              {TIME_LABELS_SHORT[TIME_BUCKETS_BY_INDEX[timeIdx]]}
+            </span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={5}
+            step={1}
+            value={timeIdx}
+            onChange={(e) => setTimeFromIndex(Number(e.target.value))}
+            className="w-full accent-[#fd8e33]"
+            aria-label="Time available"
+          />
+          <div className="flex justify-between mt-1 px-0.5 font-['Poppins',sans-serif] text-[10px] text-gray-400">
+            <span>5 min</span>
+            <span>30 min</span>
+            <span>1 hr</span>
+            <span>few hrs</span>
+            <span>all day</span>
+            <span>ongoing</span>
+          </div>
+        </div>
+
+        {/* Tone + energy sliders — 0-3 each */}
+        {(["anger", "comedy", "subversion", "hope", "energy"] as const).map((k) => (
           <div key={k}>
             <div className="flex items-center justify-between mb-1">
               <span className="font-['Poppins',sans-serif] text-sm text-gray-700">
@@ -389,7 +465,7 @@ function StepResultsAndTone({
               max={3}
               step={1}
               value={tone[k]}
-              onChange={(e) => onToneChange({ ...tone, [k]: Number(e.target.value) })}
+              onChange={(e) => setTone({ ...tone, [k]: Number(e.target.value) })}
               className="w-full accent-[#fd8e33]"
             />
           </div>

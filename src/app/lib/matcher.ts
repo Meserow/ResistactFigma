@@ -13,7 +13,15 @@ import type { ActionCardData } from "../components/ActionCard";
 
 export type TimeBucket = "5min" | "30min" | "1hr" | "fewHours" | "fullDay" | "ongoing";
 
-export type Setting = "online" | "inPerson" | "either";
+/**
+ * What kind of action context the user is willing to engage in.
+ *  - "online":    needs an internet connection; mostly screen time
+ *  - "atHome":    can be done in the user's home (online OR offline tasks like
+ *                 knitting, letter-writing, phone-calling reps)
+ *  - "inPerson":  requires showing up somewhere
+ *  - "either":    no preference
+ */
+export type Setting = "online" | "atHome" | "inPerson" | "either";
 
 export type VulnerableGroup =
   | "woman"
@@ -35,20 +43,32 @@ export interface Tone {
   care: number;
   /** Above-board institutional channels (calls, letters, votes). */
   hope: number;
+  /** Physical/emotional intensity required — high for protests and flash mobs,
+   * low for prayer and quiet boycotts. Lets users dial in by capacity. */
+  energy: number;
 }
 
 export interface Preferences {
   time: TimeBucket | null;
   setting: Setting | null;
+  /** State name (e.g. "California", "New York", "Washington DC") or null for
+   * "Anywhere". When set, hard-filters out cards tied to other states.
+   * Cards marked "Online", "National", "Multi-state", or `atHome=true` always
+   * pass — they're location-independent. */
+  state: string | null;
   vulnerableGroups: VulnerableGroup[];
-  tone: Pick<Tone, "anger" | "comedy" | "subversion">;
+  tone: Pick<Tone, "anger" | "comedy" | "subversion" | "hope" | "energy">;
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
-  time: null,
+  // 30 min is the default because that's where most casual users land.
+  // The wizard shows time as a slider, so it must be a real value (not null) —
+  // null was a holdover from the old pill-picker step.
+  time: "30min",
   setting: null,
+  state: null,
   vulnerableGroups: [],
-  tone: { anger: 1, comedy: 1, subversion: 1 },
+  tone: { anger: 1, comedy: 1, subversion: 1, hope: 1, energy: 1 },
 };
 
 // ─── Category → tone defaults ─────────────────────────────────────────────────
@@ -56,35 +76,35 @@ export const DEFAULT_PREFERENCES: Preferences = {
 // PROTEST is high anger, ACT OF KINDNESS is high care, etc.
 
 const CATEGORY_TONE: Record<string, Tone> = {
-  "IRREVERENCE":          { anger: 1, comedy: 3, subversion: 3, care: 0, hope: 1 },
-  "PROTEST":              { anger: 3, comedy: 0, subversion: 1, care: 1, hope: 2 },
-  "FLASH MOB":            { anger: 2, comedy: 2, subversion: 3, care: 0, hope: 1 },
-  "BOYCOTT":              { anger: 2, comedy: 0, subversion: 2, care: 0, hope: 2 },
-  "ART PIECE":            { anger: 1, comedy: 2, subversion: 2, care: 1, hope: 2 },
-  "PETITION":             { anger: 2, comedy: 0, subversion: 0, care: 1, hope: 3 },
-  "EMAIL CAMPAIGN":       { anger: 2, comedy: 0, subversion: 0, care: 1, hope: 3 },
-  "LETTER TO EDITOR":     { anger: 2, comedy: 0, subversion: 0, care: 1, hope: 3 },
-  "SOCIAL MEDIA":         { anger: 2, comedy: 2, subversion: 1, care: 1, hope: 1 },
-  "BOOST":                { anger: 1, comedy: 0, subversion: 0, care: 2, hope: 2 },
-  "ACT OF KINDNESS":      { anger: 0, comedy: 0, subversion: 0, care: 3, hope: 2 },
-  "SPREAD POSITIVITY":    { anger: 0, comedy: 1, subversion: 0, care: 3, hope: 3 },
-  "PRAYER":               { anger: 0, comedy: 0, subversion: 0, care: 3, hope: 3 },
-  "MENTAL HEALTH":        { anger: 0, comedy: 0, subversion: 0, care: 3, hope: 2 },
-  "MEETING":              { anger: 1, comedy: 0, subversion: 0, care: 2, hope: 3 },
-  "TRAINING":             { anger: 1, comedy: 0, subversion: 1, care: 2, hope: 2 },
-  "JOIN A GROUP":         { anger: 1, comedy: 0, subversion: 1, care: 2, hope: 2 },
-  "PERSONAL COMMITMENT":  { anger: 1, comedy: 0, subversion: 0, care: 2, hope: 3 },
-  "PROFESSIONAL SKILLS":  { anger: 1, comedy: 0, subversion: 0, care: 2, hope: 2 },
-  "TRANSPORTATION":       { anger: 0, comedy: 0, subversion: 0, care: 3, hope: 2 },
-  "HOUSING":              { anger: 0, comedy: 0, subversion: 0, care: 3, hope: 2 },
-  "LABOR":                { anger: 2, comedy: 0, subversion: 1, care: 2, hope: 2 },
-  "CRAFTING":             { anger: 0, comedy: 1, subversion: 0, care: 2, hope: 2 },
-  "NEWS STORY":           { anger: 1, comedy: 0, subversion: 0, care: 1, hope: 2 },
-  "FUNDING":              { anger: 1, comedy: 0, subversion: 0, care: 2, hope: 2 },
-  "OTHER":                { anger: 1, comedy: 1, subversion: 1, care: 1, hope: 1 },
+  "IRREVERENCE":          { anger: 1, comedy: 3, subversion: 3, care: 0, hope: 1, energy: 3 },
+  "PROTEST":              { anger: 3, comedy: 0, subversion: 1, care: 1, hope: 2, energy: 3 },
+  "FLASH MOB":            { anger: 2, comedy: 2, subversion: 3, care: 0, hope: 1, energy: 3 },
+  "BOYCOTT":              { anger: 2, comedy: 0, subversion: 2, care: 0, hope: 2, energy: 1 },
+  "ART PIECE":            { anger: 1, comedy: 2, subversion: 2, care: 1, hope: 2, energy: 2 },
+  "PETITION":             { anger: 2, comedy: 0, subversion: 0, care: 1, hope: 3, energy: 1 },
+  "EMAIL CAMPAIGN":       { anger: 2, comedy: 0, subversion: 0, care: 1, hope: 3, energy: 1 },
+  "LETTER TO EDITOR":     { anger: 2, comedy: 0, subversion: 0, care: 1, hope: 3, energy: 1 },
+  "SOCIAL MEDIA":         { anger: 2, comedy: 2, subversion: 1, care: 1, hope: 1, energy: 2 },
+  "BOOST":                { anger: 1, comedy: 0, subversion: 0, care: 2, hope: 2, energy: 1 },
+  "ACT OF KINDNESS":      { anger: 0, comedy: 0, subversion: 0, care: 3, hope: 2, energy: 1 },
+  "SPREAD POSITIVITY":    { anger: 0, comedy: 1, subversion: 0, care: 3, hope: 3, energy: 2 },
+  "PRAYER":               { anger: 0, comedy: 0, subversion: 0, care: 3, hope: 3, energy: 0 },
+  "MENTAL HEALTH":        { anger: 0, comedy: 0, subversion: 0, care: 3, hope: 2, energy: 0 },
+  "MEETING":              { anger: 1, comedy: 0, subversion: 0, care: 2, hope: 3, energy: 2 },
+  "TRAINING":             { anger: 1, comedy: 0, subversion: 1, care: 2, hope: 2, energy: 2 },
+  "JOIN A GROUP":         { anger: 1, comedy: 0, subversion: 1, care: 2, hope: 2, energy: 2 },
+  "PERSONAL COMMITMENT":  { anger: 1, comedy: 0, subversion: 0, care: 2, hope: 3, energy: 1 },
+  "PROFESSIONAL SKILLS":  { anger: 1, comedy: 0, subversion: 0, care: 2, hope: 2, energy: 2 },
+  "TRANSPORTATION":       { anger: 0, comedy: 0, subversion: 0, care: 3, hope: 2, energy: 2 },
+  "HOUSING":              { anger: 0, comedy: 0, subversion: 0, care: 3, hope: 2, energy: 2 },
+  "LABOR":                { anger: 2, comedy: 0, subversion: 1, care: 2, hope: 2, energy: 2 },
+  "CRAFTING":             { anger: 0, comedy: 1, subversion: 0, care: 2, hope: 2, energy: 1 },
+  "NEWS STORY":           { anger: 1, comedy: 0, subversion: 0, care: 1, hope: 2, energy: 1 },
+  "FUNDING":              { anger: 1, comedy: 0, subversion: 0, care: 2, hope: 2, energy: 1 },
+  "OTHER":                { anger: 1, comedy: 1, subversion: 1, care: 1, hope: 1, energy: 1 },
 };
 
-const NEUTRAL_TONE: Tone = { anger: 1, comedy: 1, subversion: 1, care: 1, hope: 1 };
+const NEUTRAL_TONE: Tone = { anger: 1, comedy: 1, subversion: 1, care: 1, hope: 1, energy: 1 };
 
 export function toneFor(card: ActionCardData): Tone {
   const base = CATEGORY_TONE[card.category?.toUpperCase()] ?? NEUTRAL_TONE;
@@ -100,6 +120,7 @@ export function toneFor(card: ActionCardData): Tone {
     subversion: clip(o.subversion, base.subversion),
     care:       clip(o.care,       base.care),
     hope:       clip(o.hope,       base.hope),
+    energy:     clip((o as any).energy, base.energy),
   };
 }
 
@@ -183,14 +204,59 @@ export function assessRisk(card: ActionCardData, groups: VulnerableGroup[]): Ris
   };
 }
 
-// ─── Setting / online filter ──────────────────────────────────────────────────
+// ─── Setting / online / at-home filter ────────────────────────────────────────
 
 export function settingMatches(card: ActionCardData, setting: Setting | null): boolean {
   if (!setting || setting === "either") return true;
   const isOnline = !!card.isOnline;
-  if (setting === "online") return isOnline;
+  const isAtHome = !!card.atHome || isOnline; // online implies at-home
+  if (setting === "online")   return isOnline;
+  if (setting === "atHome")   return isAtHome;
   if (setting === "inPerson") return !isOnline;
   return true;
+}
+
+// ─── Location / state filter ──────────────────────────────────────────────────
+// Cards stored with state-scoped locations only show when the user is in that
+// state. Online / National / Multi-state / at-home cards always pass.
+
+export function stateMatches(card: ActionCardData, userState: string | null): boolean {
+  if (!userState) return true;                         // "Anywhere"
+  if (card.isOnline) return true;                      // Online cards travel
+  if (card.atHome) return true;                        // At-home cards travel
+  const cardLoc = (card.location ?? "").trim();
+  if (!cardLoc) return true;                           // No location specified
+  if (cardLoc === "National" || cardLoc === "Multi-state") return true;
+  // Normalize "City, ST" → "Full State Name" using the same helper the navbar uses.
+  // (Inlined import to keep matcher.ts dependency-free at the type level.)
+  const lower = cardLoc.toLowerCase();
+  const userLower = userState.toLowerCase();
+  if (lower === userLower) return true;
+  // Match "Beaver County, PA" when userState === "Pennsylvania"
+  const m = cardLoc.match(/,\s*([^,]+)\s*$/);
+  if (m) {
+    const tail = m[1].trim();
+    if (tail.toLowerCase() === userLower) return true;
+    // 2-letter code → full state lookup
+    const code = tail.toUpperCase();
+    const codeToState: Record<string, string> = {
+      AL: "Alabama", AK: "Alaska", AZ: "Arizona", AR: "Arkansas",
+      CA: "California", CO: "Colorado", CT: "Connecticut", DE: "Delaware",
+      DC: "Washington DC", FL: "Florida", GA: "Georgia", HI: "Hawaii",
+      ID: "Idaho", IL: "Illinois", IN: "Indiana", IA: "Iowa", KS: "Kansas",
+      KY: "Kentucky", LA: "Louisiana", ME: "Maine", MD: "Maryland",
+      MA: "Massachusetts", MI: "Michigan", MN: "Minnesota", MS: "Mississippi",
+      MO: "Missouri", MT: "Montana", NE: "Nebraska", NV: "Nevada",
+      NH: "New Hampshire", NJ: "New Jersey", NM: "New Mexico", NY: "New York",
+      NC: "North Carolina", ND: "North Dakota", OH: "Ohio", OK: "Oklahoma",
+      OR: "Oregon", PA: "Pennsylvania", RI: "Rhode Island", SC: "South Carolina",
+      SD: "South Dakota", TN: "Tennessee", TX: "Texas", UT: "Utah",
+      VT: "Vermont", VA: "Virginia", WA: "Washington", WV: "West Virginia",
+      WI: "Wisconsin", WY: "Wyoming",
+    };
+    if (codeToState[code]?.toLowerCase() === userLower) return true;
+  }
+  return false;
 }
 
 // ─── Scoring ──────────────────────────────────────────────────────────────────
@@ -199,8 +265,10 @@ export function settingMatches(card: ActionCardData, setting: Setting | null): b
 export function score(card: ActionCardData, prefs: Preferences): number {
   // Hard filter: setting mismatch
   if (!settingMatches(card, prefs.setting)) return 0;
+  // Hard filter: state mismatch — keeps Illinois events out of California's feed.
+  if (!stateMatches(card, prefs.state)) return 0;
 
-  // Hard filter: high-risk for selected groups (still rankable but penalized)
+  // Risk assessment for selected groups (penalty/bonus, not a hard filter)
   const risk = assessRisk(card, prefs.vulnerableGroups);
 
   // Tone match: cosine-like dot product between user's wishes and card's tone.
@@ -209,7 +277,9 @@ export function score(card: ActionCardData, prefs: Preferences): number {
   const toneScore =
     (prefs.tone.anger * t.anger) +
     (prefs.tone.comedy * t.comedy) +
-    (prefs.tone.subversion * t.subversion);
+    (prefs.tone.subversion * t.subversion) +
+    (prefs.tone.hope * t.hope) +
+    (prefs.tone.energy * t.energy);
 
   // Time match: distance between card's bucket minutes and user's pick.
   // Smaller distance = bigger bonus. Capped.
@@ -267,6 +337,9 @@ export function explainMatch(card: ActionCardData, prefs: Preferences): string[]
   if (prefs.tone.anger >= 2 && t.anger >= 2) reasons.push("matches your anger");
   if (prefs.tone.comedy >= 2 && t.comedy >= 2) reasons.push("matches your humor");
   if (prefs.tone.subversion >= 2 && t.subversion >= 2) reasons.push("matches your subversion");
+  if (prefs.tone.hope >= 2 && t.hope >= 2) reasons.push("matches your hope");
+  if (prefs.tone.energy >= 2 && t.energy >= 2) reasons.push("matches your energy");
+  if (prefs.tone.energy <= 1 && t.energy <= 1) reasons.push("low-effort fit");
 
   // Time match — exact bucket only.
   if (prefs.time && timeBucketFor(card) === prefs.time) {
@@ -275,7 +348,16 @@ export function explainMatch(card: ActionCardData, prefs: Preferences): string[]
 
   // Setting match — only call out if the user picked a non-"either" preference.
   if (prefs.setting === "online" && card.isOnline) reasons.push("online");
+  if (prefs.setting === "atHome" && (card.atHome || card.isOnline)) reasons.push("at home");
   if (prefs.setting === "inPerson" && !card.isOnline) reasons.push("in-person");
+
+  // State match — call out a local card when the user picked a state.
+  if (prefs.state) {
+    const cardLoc = (card.location ?? "").trim();
+    if (cardLoc && cardLoc !== "National" && cardLoc !== "Multi-state" && !card.isOnline) {
+      reasons.push(`local to ${prefs.state}`);
+    }
+  }
 
   // Voice amplification + risk
   if (prefs.vulnerableGroups.length > 0) {
@@ -304,11 +386,14 @@ export function loadPreferences(): Preferences | null {
     return {
       time: parsed.time ?? null,
       setting: parsed.setting ?? null,
+      state: typeof parsed.state === "string" ? parsed.state : null,
       vulnerableGroups: Array.isArray(parsed.vulnerableGroups) ? parsed.vulnerableGroups : [],
       tone: {
         anger: typeof parsed.tone?.anger === "number" ? parsed.tone.anger : 1,
         comedy: typeof parsed.tone?.comedy === "number" ? parsed.tone.comedy : 1,
         subversion: typeof parsed.tone?.subversion === "number" ? parsed.tone.subversion : 1,
+        hope: typeof parsed.tone?.hope === "number" ? parsed.tone.hope : 1,
+        energy: typeof parsed.tone?.energy === "number" ? parsed.tone.energy : 1,
       },
     };
   } catch {

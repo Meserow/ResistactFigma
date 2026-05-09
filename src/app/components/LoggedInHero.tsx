@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
+import { HeroPills } from "./HeroPills";
 
 interface LoggedInHeroProps {
   userId: string;
   name: string;
   newActionsToday: number;
+  onMatchClick?: () => void;
+  onAskClick?: () => void;
 }
 
 interface StreakState {
@@ -40,7 +43,7 @@ function writeStreak(userId: string, s: StreakState) {
   } catch {}
 }
 
-export function LoggedInHero({ userId, name, newActionsToday }: LoggedInHeroProps) {
+export function LoggedInHero({ userId, name, newActionsToday, onMatchClick, onAskClick }: LoggedInHeroProps) {
   const [streak, setStreak] = useState(1);
   const [isFirstVisit, setIsFirstVisit] = useState(false);
 
@@ -79,6 +82,10 @@ export function LoggedInHero({ userId, name, newActionsToday }: LoggedInHeroProp
           {subline}{" "}
           <strong className="font-bold text-[#23297e]">Pick one. Do it. Share it.</strong>
         </p>
+
+        <div className="mt-4">
+          <HeroPills onJoinClick={() => {}} onMatchClick={onMatchClick} onAskClick={onAskClick} isLoggedIn />
+        </div>
       </div>
     </div>
   );

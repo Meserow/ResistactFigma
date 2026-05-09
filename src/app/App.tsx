@@ -791,8 +791,6 @@ export default function App() {
         onAdminClick={() => setAdminPanelOpen(true)}
         onInfoClick={() => setInfoOpen(true)}
         onActClick={() => setActOpen(true)}
-        onAskClick={() => setAskOpen(true)}
-        onMatchClick={() => setMatchOpen(true)}
         matchActive={matchPrefs !== null}
         onMatchClear={() => { setMatchPrefs(null); clearPreferences(); }}
         statsActsCount={hasActiveFilters ? displayedCards.length : (synced && serverTotal > 0 ? serverTotal : cards.length)}
@@ -825,10 +823,16 @@ export default function App() {
                       userId={approval.userId}
                       name={approval.name || "Resistor"}
                       newActionsToday={newToday}
+                      onMatchClick={() => setMatchOpen(true)}
+                      onAskClick={() => setAskOpen(true)}
                     />
                   );
                 })()
-              : <HomeHero onJoinClick={() => setAuthModalOpen(true)} />
+              : <HomeHero
+                  onJoinClick={() => setAuthModalOpen(true)}
+                  onMatchClick={() => setMatchOpen(true)}
+                  onAskClick={() => setAskOpen(true)}
+                />
             : null
         }
       />
