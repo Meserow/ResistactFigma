@@ -34,6 +34,16 @@ export interface ActionCardData {
   adminApproved?: boolean;
   /** ISO date string (YYYY-MM-DD). Cards with a past date are hidden; upcoming ones sort to the top. */
   eventDate?: string;
+  /** Per-card override for the matcher's tone vector. Partial — fields you
+   * don't set fall back to the category's default. Each value 0–3.
+   * Use to fix cards whose category default doesn't fit them. */
+  toneOverride?: {
+    anger?: number;
+    comedy?: number;
+    subversion?: number;
+    care?: number;
+    hope?: number;
+  };
 }
 
 interface ActionCardProps {
