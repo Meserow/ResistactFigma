@@ -441,10 +441,12 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
 
       {/* ── Filter bar — sticks directly below the top bar ── */}
       <div
-        className="sticky z-30 px-5 md:px-8 py-2 bg-[#f7f7f7] border-t border-b border-gray-100 hidden md:flex items-center gap-1 flex-wrap"
+        className="sticky z-30 px-5 md:px-8 py-2 bg-[#f7f7f7] border-t border-b border-gray-100 hidden md:flex items-center gap-2"
         style={{ top: topBarHeight }}
         ref={filterBarRef}
       >
+        {/* LEFT GROUP — takes all available space; pills inside adapt via ResizeObserver */}
+        <div className="flex-1 min-w-0 flex items-center gap-1">
         <span className="font-['Poppins',sans-serif] text-gray-400 text-[10px] uppercase tracking-widest font-semibold shrink-0 mr-1">Filter by</span>
 
         {/* Quick-actions toggle (Acts tab only) */}
@@ -669,60 +671,64 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
             Clear all ({totalActiveAll})
           </button>
         )}
+        </div>{/* END LEFT GROUP */}
 
-        {/* Sort by dropdown — right-aligned before stats */}
-        {onSortChange && (
-          <div className="relative shrink-0 ml-auto">
-            <button
-              onClick={() => setOpenFilter(openFilter === "sort" ? null : "sort")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
-                sortBy !== "popular"
-                  ? "border-[#23297e] text-[#23297e] bg-[#23297e]/5"
-                  : "border-transparent text-gray-600 hover:bg-white hover:shadow-sm hover:border-gray-200"
-              }`}
-            >
-              <span className="text-gray-400 text-[10px] uppercase tracking-widest font-semibold">Sort</span>
-              <span className="font-medium">
-                {sortBy === "popular" ? "Popular" : sortBy === "newest" ? "Newest" : "A–Z"}
+        {/* RIGHT GROUP — fixed width, always visible on the right */}
+        <div className="shrink-0 flex items-center gap-3 pl-3 border-l border-gray-200">
+          {/* Sort by dropdown */}
+          {onSortChange && (
+            <div className="relative">
+              <button
+                onClick={() => setOpenFilter(openFilter === "sort" ? null : "sort")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
+                  sortBy !== "popular"
+                    ? "border-[#23297e] text-[#23297e] bg-[#23297e]/5"
+                    : "border-transparent text-gray-600 hover:bg-white hover:shadow-sm hover:border-gray-200"
+                }`}
+              >
+                <span className="text-gray-400 text-[10px] uppercase tracking-widest font-semibold">Sort</span>
+                <span className="font-medium">
+                  {sortBy === "popular" ? "Popular" : sortBy === "newest" ? "Newest" : "A–Z"}
+                </span>
+                <ChevronDown size={13} className={`text-[#5a5a5a] transition-transform duration-150 ${openFilter === "sort" ? "rotate-180" : ""}`} />
+              </button>
+              {openFilter === "sort" && (
+                <div className="absolute top-full right-0 mt-1.5 w-40 bg-white border border-gray-100 rounded-2xl shadow-xl py-1.5 z-50">
+                  {(["popular", "newest", "az"] as const).map((opt) => (
+                    <button
+                      key={opt}
+                      onClick={() => { onSortChange(opt); setOpenFilter(null); }}
+                      className={`w-full text-left px-4 py-2 font-['Poppins',sans-serif] text-sm transition-colors flex items-center justify-between ${
+                        sortBy === opt
+                          ? "text-[#23297e] font-semibold bg-[#23297e]/5"
+                          : "text-gray-700 hover:bg-gray-50"
+                      }`}
+                    >
+                      {opt === "popular" ? "Popular" : opt === "newest" ? "Newest" : "A–Z"}
+                      {sortBy === opt && <span className="w-1.5 h-1.5 rounded-full bg-[#23297e]" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Stats */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-[#fd8e33]" />
+              <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
+                <strong className="text-[#23297e] font-bold">{statsSynced ? statsActsCount : "—"}</strong>{" "}resistance acts
               </span>
-              <ChevronDown size={13} className={`text-[#5a5a5a] transition-transform duration-150 ${openFilter === "sort" ? "rotate-180" : ""}`} />
-            </button>
-            {openFilter === "sort" && (
-              <div className="absolute top-full right-0 mt-1.5 w-40 bg-white border border-gray-100 rounded-2xl shadow-xl py-1.5 z-50">
-                {(["popular", "newest", "az"] as const).map((opt) => (
-                  <button
-                    key={opt}
-                    onClick={() => { onSortChange(opt); setOpenFilter(null); }}
-                    className={`w-full text-left px-4 py-2 font-['Poppins',sans-serif] text-sm transition-colors flex items-center justify-between ${
-                      sortBy === opt
-                        ? "text-[#23297e] font-semibold bg-[#23297e]/5"
-                        : "text-gray-700 hover:bg-gray-50"
-                    }`}
-                  >
-                    {opt === "popular" ? "Popular" : opt === "newest" ? "Newest" : "A–Z"}
-                    {sortBy === opt && <span className="w-1.5 h-1.5 rounded-full bg-[#23297e]" />}
-                  </button>
-                ))}
-              </div>
-            )}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-[#127f05]" />
+              <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
+                <strong className="text-[#127f05] font-bold">{FACT_CARDS.length}</strong>{" "}resistance facts
+              </span>
+            </div>
           </div>
-        )}
-
-        {/* Stats — right-aligned */}
-        <div className="flex items-center gap-5 shrink-0 pl-4 border-l border-gray-200">
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-[#fd8e33]" />
-            <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
-              <strong className="text-[#23297e] font-bold">{statsSynced ? statsActsCount : "—"}</strong>{" "}resistance acts
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-[#127f05]" />
-            <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
-              <strong className="text-[#127f05] font-bold">{FACT_CARDS.length}</strong>{" "}resistance facts
-            </span>
-          </div>
-        </div>
+        </div>{/* END RIGHT GROUP */}
       </div>
 
       {/* ── Mobile persistent tab + filter bar — sticks below top bar ── */}

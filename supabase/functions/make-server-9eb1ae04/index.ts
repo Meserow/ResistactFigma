@@ -1075,6 +1075,63 @@ app.post("/make-server-9eb1ae04/admin/approve-action/:id", async (c) => {
   }
 });
 
+// ─── POST /admin/flag-off-topic/:id — mark a card as not-on-topic ────────────
+app.post("/make-server-9eb1ae04/admin/flag-off-topic/:id", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const id = Number(c.req.param("id"));
+
+    let cardKey = `action:${id}`;
+    let card = await kv.get(cardKey) as any;
+    if (!card) {
+      cardKey = `user-action:${id}`;
+      card = await kv.get(cardKey) as any;
+    }
+    if (!card) return c.json({ error: `Card ${id} not found` }, 404);
+
+    card.adminApproved = false;
+    card.notOnTopic = true;
+    card.flaggedBy = admin.user.id;
+    card.flaggedAt = new Date().toISOString();
+    await kv.set(cardKey, card);
+    console.log(`Admin ${admin.record.name} flagged card #${id} as off-topic: "${card.title}"`);
+    return c.json({ card });
+  } catch (err) {
+    return c.json({ error: `Flag failed: ${err}` }, 500);
+  }
+});
+
+// ─── POST /admin/unflag-off-topic/:id — clear a not-on-topic flag ────────────
+app.post("/make-server-9eb1ae04/admin/unflag-off-topic/:id", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const id = Number(c.req.param("id"));
+
+    let cardKey = `action:${id}`;
+    let card = await kv.get(cardKey) as any;
+    if (!card) {
+      cardKey = `user-action:${id}`;
+      card = await kv.get(cardKey) as any;
+    }
+    if (!card) return c.json({ error: `Card ${id} not found` }, 404);
+
+    delete card.notOnTopic;
+    delete card.flaggedBy;
+    delete card.flaggedAt;
+    await kv.set(cardKey, card);
+    console.log(`Admin ${admin.record.name} cleared off-topic flag on card #${id}: "${card.title}"`);
+    return c.json({ card });
+  } catch (err) {
+    return c.json({ error: `Unflag failed: ${err}` }, 500);
+  }
+});
+
 // ─── POST /actions/upload-image — upload to Supabase Storage, return URL ─────
 // Approved users only. Auto-creates the public bucket on first call.
 app.post("/make-server-9eb1ae04/actions/upload-image", async (c) => {
