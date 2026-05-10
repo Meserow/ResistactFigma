@@ -11,6 +11,7 @@ import {
   topN,
   type Preferences,
   type Setting,
+  type UserContext,
   type VulnerableGroup,
 } from "../lib/matcher";
 import { LOCATION_OPTIONS } from "../lib/locations";
@@ -51,6 +52,10 @@ interface MatchMeModalProps {
    * notice — anonymous users get an extra-loud "we are not recording you"
    * message; signed-in users get the same guarantee in less-shouting form. */
   isLoggedIn?: boolean;
+  /** Cards the user has already completed — excluded from match results. */
+  completedIds?: number[];
+  /** Cards the user has boosted — ranked higher in match results. */
+  boostedIds?: number[];
 }
 
 const SETTING_OPTIONS: { value: Setting; label: string }[] = [
@@ -77,7 +82,7 @@ const TONE_LABELS: Record<"anger" | "comedy" | "subversion" | "hope" | "energy",
 type Step = 0 | 1 | 2;
 const TOTAL_STEPS = 3;
 
-export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false }: MatchMeModalProps) {
+export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, completedIds, boostedIds }: MatchMeModalProps) {
   const [step, setStep] = useState<Step>(0);
   const [prefs, setPrefs] = useState<Preferences>(() => loadPreferences() ?? DEFAULT_PREFERENCES);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -99,7 +104,12 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false }: Ma
     };
   }, [onClose]);
 
-  const matches = useMemo(() => topN(cards, prefs, 3), [cards, prefs]);
+  const userCtx = useMemo<UserContext>(() => ({
+    completedIds: completedIds ?? [],
+    boostedIds: boostedIds ?? [],
+  }), [completedIds, boostedIds]);
+
+  const matches = useMemo(() => topN(cards, prefs, 3, userCtx), [cards, prefs, userCtx]);
 
   function next() { setStep((s) => Math.min(2, (s + 1) as Step)); }
   function prev() { setStep((s) => Math.max(0, (s - 1) as Step)); }
@@ -292,7 +302,7 @@ function StepToneAndPreview({
         ) : (
           <ol className="space-y-1.5 mb-4">
             {matches.map((m, i) => {
-              const reasons = explainMatch(m, prefs);
+              const reasons = explainMatch(m, prefs, userCtx);
               const isFlagged = flagged.has(m.id);
               return (
                 <li
