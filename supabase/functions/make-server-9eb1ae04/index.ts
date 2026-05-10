@@ -646,6 +646,92 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       console.log(`Reset boosts to 0 on ${resetIds.length} demo cards.`);
     }
 
+    // One-time: clear stray `notOnTopic` flags on cards 265/266/267 (Apple/
+    // Google subscription cancellations). These were flagged by a stray
+    // human click in a past admin session — the rest of the cancel-subs
+    // cluster (Amazon/Microsoft/Xbox/etc.) was approved cleanly. Going
+    // forward the off-topic badge is AI-set only.
+    const strayFlagsCleared = await kv.get("cleanup:clear-stray-offtopic:v1");
+    if (!strayFlagsCleared) {
+      const ids = [265, 266, 267];
+      for (const id of ids) {
+        for (const prefix of ["user-action:", "action:"]) {
+          const existing = (await kv.get(`${prefix}${id}`)) as any;
+          if (existing && typeof existing === "object" && existing.notOnTopic === true) {
+            const cleared = { ...existing };
+            delete cleared.notOnTopic;
+            await kv.set(`${prefix}${id}`, cleared);
+          }
+        }
+      }
+      await kv.set("cleanup:clear-stray-offtopic:v1", true);
+      console.log(`Cleared stray notOnTopic flags on ${ids.length} cards.`);
+    }
+
+    // One-time: backfill `topImageUrl` on the 37 CSV-imported cards (IDs
+    // 1245–1281) using og:image URLs scraped from each card's targetUrl host.
+    // Tesla cards are skipped — they already use the local `org_tesla-takedown`
+    // asset. TikTok / Twitch / Pol-Rev pages don't expose og:image, so they
+    // borrow the 50501 / brand-equivalent image as a sensible fallback.
+    const imagesBackfillDone = await kv.get("cleanup:backfill-images-1245:v1");
+    if (!imagesBackfillDone) {
+      const FIFTY = "https://linktr.ee/og/image/fiftyfiftyonemovement.jpg";
+      const INDIV = "https://indivisible.org/wp-content/uploads/2026/01/indivisible_logo_dark_fill.png";
+      const MEIDAS = "https://yt3.googleusercontent.com/7N7yfRN_fPIuDvW2MxnaD3kHDZqxun0_owwvdr06EsFC-6sV3XIA36ChpolKIFzCbkmh97KJuLM=s900-c-k-c0x00ffffff-no-rj";
+      const TLP = "https://lincolnproject.us/wp-content/uploads/2021/09/TLP-Social-Share-1.png";
+      const AAF1 = "https://www.aafront.org/wp-content/uploads/2019/07/AAF.jpg";
+      const AAF2 = "https://www.aafront.org/wp-content/uploads/2023/05/OpSave-fun-Group-1-e1684764862613.jpg";
+      const BLAIRE = "https://substackcdn.com/image/fetch/$s_!mBb4!,f_auto,q_auto:best,fl_progressive:steep/https%3A%2F%2Fblaireerskine.substack.com%2Ftwitter%2Fsubscribe-card.jpg";
+      const imageMap: Record<number, string> = {
+        1245: FIFTY, 1246: FIFTY, 1247: FIFTY, 1248: FIFTY, 1249: FIFTY, 1250: FIFTY,
+        // 1251–1256: Tesla cards already use org_tesla-takedown — skip.
+        1257: INDIV, 1258: INDIV, 1259: INDIV, 1260: INDIV,
+        1261: INDIV, 1262: INDIV, 1263: INDIV, 1264: INDIV,
+        1265: FIFTY, 1266: FIFTY, 1267: FIFTY,
+        // 1268: Tesla IG — already on org_tesla-takedown — skip.
+        1269: FIFTY,
+        1270: FIFTY, 1271: FIFTY, 1272: FIFTY,
+        1273: MEIDAS, 1274: MEIDAS,
+        1275: AAF1, 1276: AAF2,
+        1277: BLAIRE, 1278: BLAIRE,
+        1279: TLP,
+        1280: FIFTY, 1281: FIFTY,
+      };
+      let imageBackfillCount = 0;
+      for (const [idStr, url] of Object.entries(imageMap)) {
+        const id = Number(idStr);
+        for (const prefix of ["action:", "user-action:"]) {
+          const existing = (await kv.get(`${prefix}${id}`)) as any;
+          if (existing && typeof existing === "object") {
+            await kv.set(`${prefix}${id}`, { ...existing, topImageUrl: url });
+            imageBackfillCount++;
+          }
+        }
+      }
+      await kv.set("cleanup:backfill-images-1245:v1", true);
+      console.log(`Backfilled topImageUrl on ${imageBackfillCount} new cards.`);
+    }
+
+    // One-time: zero out placeholder `boosts: 5` on the second batch — admin-
+    // added cards (IDs 2000+) that shipped with a default-5 value. These live
+    // under `user-action:` (not `action:`) since they came through the user-
+    // submission flow. v3 since v2 wrote to the wrong prefix.
+    const boostsResetV3Done = await kv.get("cleanup:reset-boosts-5:v3");
+    if (!boostsResetV3Done) {
+      const resetIds = [2002, 2003, 2004, 2005, 2006];
+      for (const id of resetIds) {
+        // Try both prefixes so this works regardless of where the card lives.
+        for (const prefix of ["user-action:", "action:"]) {
+          const existing = (await kv.get(`${prefix}${id}`)) as any;
+          if (existing && typeof existing === "object") {
+            await kv.set(`${prefix}${id}`, { ...existing, boosts: 0 });
+          }
+        }
+      }
+      await kv.set("cleanup:reset-boosts-5:v3", true);
+      console.log(`Reset boosts to 0 on ${resetIds.length} admin-added cards.`);
+    }
+
     // Seed/refresh the org-action library (IDs 1000+) into KV. Bump the version
     // key (e.g. v4 → v5) whenever you've edited SEED_CARDS and want the live
     // feed to pick up the new title/url/image. Existing user activity (`boosts`)
@@ -1190,6 +1276,9 @@ app.post("/make-server-9eb1ae04/admin/approve-action/:id", async (c) => {
     card.adminApproved = true;
     card.approvedBy = admin.user.id;
     card.approvedAt = new Date().toISOString();
+    // Approval implies the admin disagrees with any off-topic signal — clear
+    // it so the card doesn't carry a stale "NOT ON TOPIC" badge into live.
+    if (card.notOnTopic) delete card.notOnTopic;
     await kv.set(cardKey, card);
     console.log(`Admin ${admin.record.name} approved card #${id}: "${card.title}"`);
     return c.json({ card });
