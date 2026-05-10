@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { X, MessageCircle, Send, Check, Loader2, AlertCircle } from "lucide-react";
-import { projectId } from "/utils/supabase/info";
+import { projectId, publicAnonKey } from "/utils/supabase/info";
 
 const FEEDBACK_API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04/feedback`;
 
@@ -44,7 +44,10 @@ export function FeedbackModal({ onClose, userEmail, userName }: FeedbackModalPro
     try {
       const res = await fetch(FEEDBACK_API, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${publicAnonKey}`,
+        },
         body: JSON.stringify({ type, message: message.trim(), email: email.trim() || null, name: userName ?? null }),
       });
       if (!res.ok) throw new Error(await res.text());
