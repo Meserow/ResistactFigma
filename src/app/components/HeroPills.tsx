@@ -41,33 +41,42 @@ export function HeroPills({ onJoinClick, onMatchClick, onAskClick, isLoggedIn = 
 
   return (
     <>
-      <div className="flex flex-wrap justify-center gap-2">
+      <div className="flex flex-wrap lg:flex-nowrap justify-center gap-2">
         <button
           ref={(el) => { triggerRefs.current.how = el; }}
           onClick={() => setOpenModal("how")}
           aria-haspopup="dialog"
           aria-expanded={openModal === "how"}
-          className="inline-flex items-center gap-1.5 rounded-full border border-gray-400 px-4 py-2 font-['Poppins',sans-serif] text-[13px] font-medium text-gray-600 transition-colors hover:border-[#fd8e33] hover:bg-[#fd8e33]/5 hover:text-[#fd8e33]"
+          className="shrink-0 inline-flex items-center gap-2 rounded-full border border-gray-400 px-4 py-2 font-['Poppins',sans-serif] transition-colors hover:border-[#fd8e33] hover:bg-[#fd8e33]/5 hover:text-[#fd8e33] group"
         >
-          <Zap size={13} strokeWidth={2.5} />
-          How ResistAct Works
+          <Zap size={14} strokeWidth={2.5} className="text-gray-600 group-hover:text-[#fd8e33]" />
+          <span className="flex flex-col items-start text-left leading-tight whitespace-nowrap">
+            <span className="text-[13px] font-bold text-gray-600 group-hover:text-[#fd8e33]">How ResistAct Works</span>
+            <span className="text-[10.5px] font-normal text-gray-400 italic group-hover:text-[#fd8e33]/70">What is this site about?</span>
+          </span>
         </button>
         {onMatchClick && (
           <button
             onClick={onMatchClick}
-            className="inline-flex items-center gap-1.5 rounded-full border border-[#fd8e33] bg-white px-4 py-2 font-['Poppins',sans-serif] text-[13px] font-bold text-[#fd8e33] transition-colors hover:bg-[#fd8e33]/5"
+            className="shrink-0 inline-flex items-center gap-2 rounded-full border border-[#fd8e33] bg-white px-4 py-2 font-['Poppins',sans-serif] transition-colors hover:bg-[#fd8e33]/5"
           >
-            <Sparkles size={13} strokeWidth={2.5} />
-            Match me with Acts
+            <Sparkles size={14} strokeWidth={2.5} className="text-[#fd8e33]" />
+            <span className="flex flex-col items-start text-left leading-tight whitespace-nowrap">
+              <span className="text-[13px] font-bold text-[#fd8e33]">Match me with Acts</span>
+              <span className="text-[10.5px] font-normal text-[#fd8e33]/70 italic">Pressed for time? Show me what fits.</span>
+            </span>
           </button>
         )}
         {onAskClick && (
           <button
             onClick={onAskClick}
-            className="inline-flex items-center gap-1.5 rounded-full border border-[#23297e] bg-white px-4 py-2 font-['Poppins',sans-serif] text-[13px] font-bold text-[#23297e] transition-colors hover:bg-[#23297e]/5"
+            className="shrink-0 inline-flex items-center gap-2 rounded-full border border-[#23297e] bg-white px-4 py-2 font-['Poppins',sans-serif] transition-colors hover:bg-[#23297e]/5"
           >
-            <Megaphone size={13} strokeWidth={2.5} />
-            Add an Act!
+            <Megaphone size={14} strokeWidth={2.5} className="text-[#23297e]" />
+            <span className="flex flex-col items-start text-left leading-tight whitespace-nowrap">
+              <span className="text-[13px] font-bold text-[#23297e]">Add an Act!</span>
+              <span className="text-[10.5px] font-normal text-[#23297e]/70 italic">Need people to join me in a great idea!</span>
+            </span>
           </button>
         )}
         {!isLoggedIn && (
@@ -76,10 +85,13 @@ export function HeroPills({ onJoinClick, onMatchClick, onAskClick, isLoggedIn = 
             onClick={() => setOpenModal("join")}
             aria-haspopup="dialog"
             aria-expanded={openModal === "join"}
-            className="inline-flex items-center gap-1.5 rounded-full border border-[#fd8e33] bg-[#fd8e33] px-4 py-2 font-['Poppins',sans-serif] text-[13px] font-bold text-white transition-colors hover:border-[#d96612] hover:bg-[#d96612]"
+            className="shrink-0 inline-flex items-center gap-2 rounded-full border border-[#fd8e33] bg-[#fd8e33] px-4 py-2 font-['Poppins',sans-serif] transition-colors hover:border-[#d96612] hover:bg-[#d96612]"
           >
-            <Flame size={13} strokeWidth={2.5} />
-            Join The Resistance
+            <Flame size={14} strokeWidth={2.5} className="text-white" />
+            <span className="flex flex-col items-start text-left leading-tight whitespace-nowrap">
+              <span className="text-[13px] font-bold text-white">Join The Resistance</span>
+              <span className="text-[10.5px] font-normal text-white/80 italic">Create an account to build a streak.</span>
+            </span>
           </button>
         )}
       </div>
@@ -92,13 +104,13 @@ export function HeroPills({ onJoinClick, onMatchClick, onAskClick, isLoggedIn = 
           </p>
           <p>
             ResistAct is a daily menu of small, grassroots, concrete micro-actions you can actually do.
-            Show up at a meeting. Make one phone call. Talk to one neighbor.
+            Sign up to have a bot text your congresspeople, knit a hat, join a flashmob, put a sign on my house, a candle in my window, easy.
           </p>
           <p>
             <strong>Pick what fits your day.</strong>
           </p>
           <p>
-            Perform an Action without even signing in. The whole site is usable without identifying yourself. The only time we ask anything is if you want to ADD an action (so we can vet it), or allow us to count your actions so you can feel more accomplished!
+            Perform an action without even signing in so there is no risk of MAGA retaliation. The whole site is usable without identifying yourself. The only time we ask anything is if you want to ADD an action (so we can vet it), or allow us to count your actions so you can feel more accomplished!
           </p>
           <p>
             But our goal is to make this easy and not scary: no required account info, no email, no tracking pixels, no donation texts at 9pm.

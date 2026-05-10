@@ -59,8 +59,10 @@ export interface ActionCardData {
   /** Groups this card especially serves — their voice carries extra weight
    * when they pick this card. Unioned with the category-level amplification
    * rule in `assessRisk`. Useful for cards whose category alone doesn't
-   * capture who it's for (e.g. a Crafting card making letters for trans kids). */
-  amplifiesGroups?: ("woman" | "immigrant" | "lgbtq" | "repro" | "disabled" | "fedWorker" | "journalist")[];
+   * capture who it's for (e.g. a Crafting card making letters for trans kids).
+   * Stored as plain strings (rather than `VulnerableGroup[]`) so old cards
+   * persisted before new groups were added still typecheck. */
+  amplifiesGroups?: string[];
 }
 
 interface ActionCardProps {

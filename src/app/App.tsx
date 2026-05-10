@@ -230,7 +230,12 @@ export default function App() {
   function applyFilters(allCards: ActionCardData[]): ActionCardData[] {
     const q = searchQuery.toLowerCase().trim();
     return allCards.filter((card) => {
-      // Search — matches across title, description, category, author, location, type
+      // Search — matches across the broadest reasonable surface so a user can
+      // find a card by partial title, a phrase in the description, an author,
+      // a sponsor name, a category/type tag, a location, the time bucket, or
+      // even a substring of the linked URL ("events.pol-rev.com"). Sponsor
+      // isn't on the card type today (server stores it on user-submissions),
+      // hence the cast.
       if (q) {
         const haystack = [
           card.title,
@@ -238,8 +243,12 @@ export default function App() {
           card.category,
           card.authorName,
           card.authorRole,
+          card.authorLink ?? "",
+          card.targetUrl ?? "",
           card.location ?? "",
           card.actionType ?? "",
+          card.timeCommitment ?? "",
+          (card as { sponsor?: string }).sponsor ?? "",
         ].join(" ").toLowerCase();
         if (!haystack.includes(q)) return false;
       }
