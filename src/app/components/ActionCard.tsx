@@ -54,7 +54,13 @@ export interface ActionCardData {
     subversion?: number;
     care?: number;
     hope?: number;
+    energy?: number;
   };
+  /** Groups this card especially serves — their voice carries extra weight
+   * when they pick this card. Unioned with the category-level amplification
+   * rule in `assessRisk`. Useful for cards whose category alone doesn't
+   * capture who it's for (e.g. a Crafting card making letters for trans kids). */
+  amplifiesGroups?: ("woman" | "immigrant" | "lgbtq" | "repro" | "disabled" | "fedWorker" | "journalist")[];
 }
 
 interface ActionCardProps {
@@ -95,7 +101,7 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
         onClick={(e) => { e.stopPropagation(); onComplete?.(card.id); }}
         title={isCompleted ? 'Undo "I did this"' : 'Mark as done'}
         aria-label={isCompleted ? "Undo I did this" : "I did this"}
-        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] font-bold text-[12px] transition-all ${
+        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] font-bold text-[12px] whitespace-nowrap shrink-0 transition-all ${
           isCompleted ? completedClasses : (onImage ? idleOnImageClasses : idleOffImageClasses)
         }`}
       >
@@ -123,7 +129,7 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
       <button
         onClick={(e) => { e.stopPropagation(); onBoost?.(card.id); }}
         aria-label={isBoosted ? "Boosted" : "Boost"}
-        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] font-bold text-[12px] transition-all ${
+        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] font-bold text-[12px] whitespace-nowrap shrink-0 transition-all ${
           isBoosted ? boostedClasses : (onImage ? idleOnImageClasses : idleOffImageClasses)
         }`}
       >
@@ -152,23 +158,30 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
   }
 
   // ── Shared top-right controls (pencil + bookmark) ──────────────────────────
+  // On image (`light`), the icons sit inside a translucent dark pill so they
+  // stay legible regardless of the photo behind them — bright/light images
+  // were swallowing the white icon previously.
   function TopControls({ light = true }: { light?: boolean }) {
+    const btnCls = light
+      ? "w-7 h-7 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-sm text-white hover:bg-black/55 transition-colors"
+      : "text-gray-500 hover:text-[#23297e] transition-colors";
     return (
       <div className="flex items-center gap-1">
         {canEdit && (
           <button
             onClick={(e) => { e.stopPropagation(); onEdit?.(card.id); }}
             title="Edit this act"
-            className={`${light ? "text-white" : "text-gray-500"} drop-shadow hover:scale-110 transition-transform`}
+            className={btnCls}
           >
-            <Pencil size={15} />
+            <Pencil size={14} />
           </button>
         )}
         <button
           onClick={() => onBookmark?.(card.id)}
-          className={`${light ? "text-white" : "text-gray-500"} drop-shadow hover:scale-110 transition-transform`}
+          aria-label={isBookmarked ? "Remove bookmark" : "Bookmark"}
+          className={btnCls}
         >
-          {isBookmarked ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
+          {isBookmarked ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
         </button>
       </div>
     );
@@ -211,7 +224,7 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
             {isDescriptionLong && (
               <button
                 onClick={(e) => { e.stopPropagation(); setDetailsOpen(true); }}
-                className="self-start font-['Poppins',sans-serif] text-[12px] font-semibold text-[#23297e] hover:underline"
+                className="self-start font-['Poppins',sans-serif] italic text-[11px] font-medium text-[#fd8e33] underline underline-offset-2 decoration-[#fd8e33]/40 hover:decoration-[#fd8e33]"
               >
                 Read more →
               </button>

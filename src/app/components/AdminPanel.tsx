@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { X, CheckCircle2, XCircle, Clock, Users, ShieldCheck, Loader2, RefreshCw, FileText, Trash2, Calendar, ExternalLink, ImageIcon, Upload, ZoomIn, AlertTriangle } from "lucide-react";
+import { X, CheckCircle2, XCircle, Clock, Users, ShieldCheck, Loader2, RefreshCw, FileText, Trash2, Calendar, ExternalLink, ImageIcon, Upload, ZoomIn, AlertTriangle, Sliders, RotateCcw, Save, Flame, Laugh, VenetianMask, Heart, Sunrise, Zap } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
 import type { UserApproval } from "../lib/supabase";
+import { DEFAULT_CATEGORY_TONE, applyMatcherConfig, type Tone } from "../lib/matcher";
+import { ToneRangeSlider } from "./ToneSlider";
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
 
@@ -11,7 +14,16 @@ interface AdminPanelProps {
 }
 
 type TabFilter = "pending" | "approved" | "rejected" | "all";
-type PanelMode = "cards" | "users";
+type PanelMode = "cards" | "users" | "matcher";
+
+const TONE_DIMS: { key: keyof Tone; label: string; Icon: LucideIcon }[] = [
+  { key: "anger",      label: "Angry",      Icon: Flame },
+  { key: "comedy",     label: "Funny",      Icon: Laugh },
+  { key: "subversion", label: "Subversive", Icon: VenetianMask },
+  { key: "care",       label: "Care",       Icon: Heart },
+  { key: "hope",       label: "Hope",       Icon: Sunrise },
+  { key: "energy",     label: "Energy",     Icon: Zap },
+];
 
 const PROVIDER_LABELS: Record<string, string> = {
   google: "Google",
@@ -340,6 +352,7 @@ export function AdminPanel({ accessToken, onClose }: AdminPanelProps) {
             {([
               { key: "cards" as PanelMode, icon: <FileText size={13} />, label: `Cards${pendingCardsCount > 0 ? ` (${pendingCardsCount})` : ""}` },
               { key: "users" as PanelMode, icon: <Users size={13} />, label: "Users" },
+              { key: "matcher" as PanelMode, icon: <Sliders size={13} />, label: "Matcher" },
             ]).map(({ key, icon, label }) => (
               <button
                 key={key}
@@ -658,6 +671,11 @@ export function AdminPanel({ accessToken, onClose }: AdminPanelProps) {
               </div>
             </>
           )}
+
+          {/* ── MATCHER mode ───────────────────────────────────────────────────────── */}
+          {mode === "matcher" && (
+            <MatcherTuning accessToken={accessToken} />
+          )}
         </div>
       </div>
 
@@ -673,6 +691,228 @@ export function AdminPanel({ accessToken, onClose }: AdminPanelProps) {
           }}
         />
       )}
+    </>
+  );
+}
+
+// ─── Matcher tuning panel ─────────────────────────────────────────────────────
+// Lets admins edit the per-category default tone vector that the matcher uses
+// when a card has no per-card override. Loads the current saved config (or the
+// built-in defaults) on mount; saving PUTs to /admin/matcher-config, and the
+// next page-load (or applyMatcherConfig call) picks it up. The "Reset" button
+// clears the override on the server so future loads get the built-ins again.
+function MatcherTuning({ accessToken }: { accessToken: string }) {
+  const [tones, setTones] = useState<Record<string, Tone>>({ ...DEFAULT_CATEGORY_TONE });
+  const [originalTones, setOriginalTones] = useState<Record<string, Tone>>({ ...DEFAULT_CATEGORY_TONE });
+  const [selectedCategory, setSelectedCategory] = useState<string>("PROTEST");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [updatedBy, setUpdatedBy] = useState<string | null>(null);
+
+  const dirty = JSON.stringify(tones) !== JSON.stringify(originalTones);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        // Reuse the admin's bearer token — works for any authed user, and
+        // an admin will always have one open (they're in the admin panel).
+        const res = await fetch(`${API}/matcher-config`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        const data = await res.json();
+        if (cancelled) return;
+        if (data?.config?.categoryTone && typeof data.config.categoryTone === "object") {
+          // Merge saved overrides into the defaults (defaults fill any gaps).
+          const merged: Record<string, Tone> = { ...DEFAULT_CATEGORY_TONE };
+          for (const [cat, partial] of Object.entries(data.config.categoryTone as Record<string, Partial<Tone>>)) {
+            const base = DEFAULT_CATEGORY_TONE[cat.toUpperCase()] ?? merged[cat.toUpperCase()];
+            if (!base) continue;
+            merged[cat.toUpperCase()] = { ...base, ...partial };
+          }
+          setTones(merged);
+          setOriginalTones(merged);
+          setSavedAt(data.config.updatedAt ?? null);
+          setUpdatedBy(data.config.updatedBy ?? null);
+        }
+      } catch (err) {
+        if (!cancelled) setError(`Couldn't load matcher config: ${err}`);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  async function save() {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API}/admin/matcher-config`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ categoryTone: tones }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Save failed");
+        return;
+      }
+      setOriginalTones({ ...tones });
+      setSavedAt(data.config?.updatedAt ?? new Date().toISOString());
+      setUpdatedBy(data.config?.updatedBy ?? null);
+      // Apply locally so live matches use the new values immediately.
+      applyMatcherConfig({ categoryTone: tones });
+    } catch (err) {
+      setError(`Network error: ${err}`);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function resetToDefaults() {
+    if (!window.confirm("Reset all category tones to the built-in defaults? This clears the saved override on the server.")) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API}/admin/matcher-config`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error ?? "Reset failed");
+        return;
+      }
+      setTones({ ...DEFAULT_CATEGORY_TONE });
+      setOriginalTones({ ...DEFAULT_CATEGORY_TONE });
+      setSavedAt(null);
+      setUpdatedBy(null);
+      applyMatcherConfig(null);
+    } catch (err) {
+      setError(`Network error: ${err}`);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function resetCategory(cat: string) {
+    const def = DEFAULT_CATEGORY_TONE[cat];
+    if (!def) return;
+    setTones({ ...tones, [cat]: { ...def } });
+  }
+
+  const current = tones[selectedCategory] ?? DEFAULT_CATEGORY_TONE.OTHER;
+  const def = DEFAULT_CATEGORY_TONE[selectedCategory];
+  const categoryDirty = def && JSON.stringify(current) !== JSON.stringify(def);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-40">
+        <Loader2 size={24} className="animate-spin text-[#23297e]" />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {/* Header / status */}
+      <div className="px-5 py-3 border-b border-gray-100 shrink-0 space-y-1">
+        <p className="font-['Poppins',sans-serif] text-xs text-gray-500">
+          Per-category default tone the matcher uses when a card has no per-card override.
+          Changes apply to live matching once saved.
+        </p>
+        {savedAt && (
+          <p className="font-['Poppins',sans-serif] text-[11px] text-gray-400">
+            Last saved {new Date(savedAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}
+            {updatedBy ? ` by ${updatedBy}` : ""}
+          </p>
+        )}
+      </div>
+
+      {/* Category picker */}
+      <div className="px-5 py-3 border-b border-gray-100 shrink-0">
+        <label className="block font-['Poppins',sans-serif] text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">
+          Category
+        </label>
+        <select
+          value={selectedCategory}
+          onChange={(e) => setSelectedCategory(e.target.value)}
+          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-['Poppins',sans-serif] text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#23297e]/30 focus:border-[#23297e]"
+        >
+          {Object.keys(DEFAULT_CATEGORY_TONE).sort().map((cat) => (
+            <option key={cat} value={cat}>{cat}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Sliders */}
+      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3.5">
+        {TONE_DIMS.map(({ key, label, Icon }) => {
+          const v = current[key];
+          const defV = def ? def[key] : 1;
+          const isModified = v !== defV;
+          return (
+            <div key={key}>
+              <div className="flex items-center mb-1.5">
+                <Icon size={14} strokeWidth={2} className="text-[#23297e] mr-1.5 shrink-0" />
+                <strong className="font-['Poppins',sans-serif] font-semibold text-sm text-[#23297e]">
+                  {label}
+                </strong>
+                {isModified && (
+                  <span className="ml-auto font-['Poppins',sans-serif] text-[10px] text-gray-400">
+                    default {defV}
+                  </span>
+                )}
+              </div>
+              <ToneRangeSlider
+                value={v}
+                onChange={(nv) => setTones({ ...tones, [selectedCategory]: { ...current, [key]: nv } })}
+              />
+            </div>
+          );
+        })}
+        {categoryDirty && (
+          <button
+            onClick={() => resetCategory(selectedCategory)}
+            className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-gray-500 hover:text-[#23297e] underline font-['Poppins',sans-serif]"
+          >
+            <RotateCcw size={11} />
+            Reset {selectedCategory} to default
+          </button>
+        )}
+        {error && (
+          <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2 font-['Poppins',sans-serif]">
+            {error}
+          </p>
+        )}
+      </div>
+
+      {/* Footer actions */}
+      <div className="border-t border-gray-100 px-5 py-3 shrink-0 flex items-center gap-2">
+        <button
+          onClick={resetToDefaults}
+          disabled={saving}
+          className="flex items-center gap-1.5 px-3 py-2 text-xs font-['Poppins',sans-serif] font-semibold text-gray-600 hover:text-red-600 hover:bg-red-50 border border-gray-200 rounded-lg transition-colors disabled:opacity-50"
+          title="Clear saved overrides — all categories return to built-in defaults"
+        >
+          <RotateCcw size={13} />
+          Reset all
+        </button>
+        <button
+          onClick={save}
+          disabled={!dirty || saving}
+          className="ml-auto flex items-center gap-1.5 px-4 py-2 text-xs font-['Poppins',sans-serif] font-bold text-white bg-[#fd8e33] hover:bg-[#e07a28] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed rounded-lg transition-colors"
+        >
+          {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+          {saving ? "Saving…" : dirty ? "Save changes" : "Saved"}
+        </button>
+      </div>
     </>
   );
 }

@@ -75,7 +75,9 @@ export const DEFAULT_PREFERENCES: Preferences = {
 // 0 = none, 3 = strong. These are coarse — IRREVERENCE is high comedy/subversion,
 // PROTEST is high anger, ACT OF KINDNESS is high care, etc.
 
-const CATEGORY_TONE: Record<string, Tone> = {
+/** Built-in category tone defaults. Used as the fallback when no runtime
+ * override has been loaded from the admin "Matcher Tuning" panel. */
+export const DEFAULT_CATEGORY_TONE: Record<string, Tone> = {
   "IRREVERENCE":          { anger: 1, comedy: 3, subversion: 3, care: 0, hope: 1, energy: 3 },
   "PROTEST":              { anger: 3, comedy: 0, subversion: 1, care: 1, hope: 2, energy: 3 },
   "FLASH MOB":            { anger: 2, comedy: 2, subversion: 3, care: 0, hope: 1, energy: 3 },
@@ -104,7 +106,47 @@ const CATEGORY_TONE: Record<string, Tone> = {
   "OTHER":                { anger: 1, comedy: 1, subversion: 1, care: 1, hope: 1, energy: 1 },
 };
 
+/** Live category tone map. Starts as a copy of DEFAULT_CATEGORY_TONE; admins
+ * can replace per-category values via applyMatcherConfig() — those mutations
+ * affect every subsequent score()/toneFor() call without a redeploy. */
+let CATEGORY_TONE: Record<string, Tone> = { ...DEFAULT_CATEGORY_TONE };
+
+/** Replace the live CATEGORY_TONE map with admin-supplied values. Unknown
+ * categories are merged in; missing categories fall back to the default.
+ * Pass `null` to reset to the built-in defaults. */
+export function applyMatcherConfig(config: { categoryTone?: Record<string, Partial<Tone>> } | null): void {
+  if (!config || !config.categoryTone) {
+    CATEGORY_TONE = { ...DEFAULT_CATEGORY_TONE };
+    return;
+  }
+  const merged: Record<string, Tone> = { ...DEFAULT_CATEGORY_TONE };
+  for (const [cat, partial] of Object.entries(config.categoryTone)) {
+    const base = DEFAULT_CATEGORY_TONE[cat.toUpperCase()] ?? NEUTRAL_TONE;
+    merged[cat.toUpperCase()] = {
+      anger:      typeof partial.anger      === "number" ? partial.anger      : base.anger,
+      comedy:     typeof partial.comedy     === "number" ? partial.comedy     : base.comedy,
+      subversion: typeof partial.subversion === "number" ? partial.subversion : base.subversion,
+      care:       typeof partial.care       === "number" ? partial.care       : base.care,
+      hope:       typeof partial.hope       === "number" ? partial.hope       : base.hope,
+      energy:     typeof partial.energy     === "number" ? partial.energy     : base.energy,
+    };
+  }
+  CATEGORY_TONE = merged;
+}
+
+/** Read the live category tone map (for the admin UI to render current values). */
+export function getCategoryToneMap(): Record<string, Tone> {
+  return { ...CATEGORY_TONE };
+}
+
 const NEUTRAL_TONE: Tone = { anger: 1, comedy: 1, subversion: 1, care: 1, hope: 1, energy: 1 };
+
+/** Category default tone for the AskFlowModal so sliders pre-populate correctly
+ * when a submitter picks a category. Falls back to NEUTRAL_TONE for unknown
+ * categories. Case-insensitive. */
+export function categoryToneDefault(category: string): Tone {
+  return CATEGORY_TONE[category?.toUpperCase()] ?? NEUTRAL_TONE;
+}
 
 export function toneFor(card: ActionCardData): Tone {
   const base = CATEGORY_TONE[card.category?.toUpperCase()] ?? NEUTRAL_TONE;
@@ -191,11 +233,12 @@ export interface RiskAssessment {
 export function assessRisk(card: ActionCardData, groups: VulnerableGroup[]): RiskAssessment {
   if (groups.length === 0) return { risky: false, amplifies: false, warning: null };
   const cat = card.category?.toUpperCase() ?? "";
+  const cardAmps = new Set(card.amplifiesGroups ?? []);
   let risky = false;
   let amplifies = false;
   for (const g of groups) {
     if (HIGH_RISK_FOR_GROUP[g]?.has(cat)) risky = true;
-    if (SURFACES_VOICE_FOR[g]?.has(cat)) amplifies = true;
+    if (SURFACES_VOICE_FOR[g]?.has(cat) || cardAmps.has(g)) amplifies = true;
   }
   return {
     risky,
@@ -206,12 +249,17 @@ export function assessRisk(card: ActionCardData, groups: VulnerableGroup[]): Ris
 
 // ─── Setting / online / at-home filter ────────────────────────────────────────
 
+/** True for cards that can be done from a couch — online, the legacy `atHome`
+ * boolean, or the canonical `location === "From Home"` string. */
+function cardIsAtHome(card: ActionCardData): boolean {
+  return !!card.isOnline || !!card.atHome || card.location === "From Home";
+}
+
 export function settingMatches(card: ActionCardData, setting: Setting | null): boolean {
   if (!setting || setting === "either") return true;
   const isOnline = !!card.isOnline;
-  const isAtHome = !!card.atHome || isOnline; // online implies at-home
   if (setting === "online")   return isOnline;
-  if (setting === "atHome")   return isAtHome;
+  if (setting === "atHome")   return cardIsAtHome(card);
   if (setting === "inPerson") return !isOnline;
   return true;
 }
@@ -222,8 +270,7 @@ export function settingMatches(card: ActionCardData, setting: Setting | null): b
 
 export function stateMatches(card: ActionCardData, userState: string | null): boolean {
   if (!userState) return true;                         // "Anywhere"
-  if (card.isOnline) return true;                      // Online cards travel
-  if (card.atHome) return true;                        // At-home cards travel
+  if (cardIsAtHome(card)) return true;                  // Online / From Home / atHome flag travels
   const cardLoc = (card.location ?? "").trim();
   if (!cardLoc) return true;                           // No location specified
   if (cardLoc === "National" || cardLoc === "Multi-state") return true;

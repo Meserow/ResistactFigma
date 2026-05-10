@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { X, ChevronLeft, ChevronRight, CircleAlert, ThumbsDown } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, CircleAlert, ThumbsDown, Flame, Laugh, VenetianMask, Sunrise, Zap } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { ToneRangeSlider } from "./ToneSlider";
+import { InvolvementPicker } from "./InvolvementPicker";
 import {
   DEFAULT_PREFERENCES,
   explainMatch,
@@ -74,29 +77,13 @@ const GROUP_OPTIONS: { value: VulnerableGroup; label: string }[] = [
   { value: "woman",      label: "Woman" },
 ];
 
-const TONE_LABELS = {
-  anger:      { emoji: "😠", label: "Angry",      desc: "Confrontational, in the streets" },
-  comedy:     { emoji: "😂", label: "Funny",      desc: "Mockery, irreverence, prank" },
-  subversion: { emoji: "🥷", label: "Subversive", desc: "Disruptive, off the beaten path" },
-  hope:       { emoji: "🕊", label: "Hope",       desc: "Uplifting, optimistic, building" },
-  energy:     { emoji: "⚡", label: "Energy",     desc: "How fired-up are you today?" },
-} as const;
-
-// Time as a 6-stop slider (0..5) so it sits naturally alongside the 0..3 tone
-// sliders. The matcher still operates on TimeBucket, so we round-trip.
-const TIME_BUCKETS_BY_INDEX: TimeBucket[] = ["5min", "30min", "1hr", "fewHours", "fullDay", "ongoing"];
-const TIME_LABELS_SHORT: Record<TimeBucket, string> = {
-  "5min":     "5 min",
-  "30min":    "30 min",
-  "1hr":      "1 hr",
-  "fewHours": "few hrs",
-  "fullDay":  "all day",
-  "ongoing":  "ongoing",
+const TONE_LABELS: Record<"anger" | "comedy" | "subversion" | "hope" | "energy", { Icon: LucideIcon; label: string; desc: string }> = {
+  anger:      { Icon: Flame,        label: "Angry",      desc: "Confrontational, serious efforts" },
+  comedy:     { Icon: Laugh,        label: "Funny",      desc: "Mockery, irreverence, prank" },
+  subversion: { Icon: VenetianMask, label: "Subversive", desc: "Disruptive, off the beaten path" },
+  hope:       { Icon: Sunrise,      label: "Hope",       desc: "Uplifting, optimistic, building" },
+  energy:     { Icon: Zap,          label: "Energy",     desc: "How fired-up are you today?" },
 };
-function timeIndex(b: TimeBucket | null): number {
-  if (!b) return 1; // default: 30 min
-  return Math.max(0, TIME_BUCKETS_BY_INDEX.indexOf(b));
-}
 
 type Step = 0 | 1 | 2 | 3 | 4;
 const TOTAL_STEPS = 5;
@@ -383,11 +370,8 @@ function StepResultsAndTone({
   onApply: () => void;
 }) {
   const tone = prefs.tone;
-  const timeIdx = timeIndex(prefs.time);
   const setTone = (next: Preferences["tone"]) =>
     onPrefsChange((p) => ({ ...p, tone: next }));
-  const setTimeFromIndex = (idx: number) =>
-    onPrefsChange((p) => ({ ...p, time: TIME_BUCKETS_BY_INDEX[idx] }));
   // Track which result rows the user has flagged as a bad match this session.
   // We don't unflag on click; one click logs and shows visual confirmation.
   const [flagged, setFlagged] = useState<Set<number>>(new Set());
@@ -413,63 +397,36 @@ function StepResultsAndTone({
         Slide each one. Watch the matches below shift as you tune.
       </p>
 
-      <div className="space-y-3 mb-5">
-        {/* Time slider — 6 stops, mapped to TimeBucket */}
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <span className="font-['Poppins',sans-serif] text-sm text-gray-700">
-              <span className="mr-1.5">⏱</span>
-              <strong className="font-semibold text-[#23297e]">Time</strong>
-              <span className="ml-2 text-xs text-gray-500">How long have you got?</span>
-            </span>
-            <span className="font-['Poppins',sans-serif] text-xs font-bold text-[#fd8e33]">
-              {TIME_LABELS_SHORT[TIME_BUCKETS_BY_INDEX[timeIdx]]}
-            </span>
-          </div>
-          <input
-            type="range"
-            min={0}
-            max={5}
-            step={1}
-            value={timeIdx}
-            onChange={(e) => setTimeFromIndex(Number(e.target.value))}
-            className="w-full accent-[#fd8e33]"
-            aria-label="Time available"
-          />
-          <div className="flex justify-between mt-1 px-0.5 font-['Poppins',sans-serif] text-[10px] text-gray-400">
-            <span>5 min</span>
-            <span>30 min</span>
-            <span>1 hr</span>
-            <span>few hrs</span>
-            <span>all day</span>
-            <span>ongoing</span>
-          </div>
-        </div>
+      <div className="space-y-4 mb-5">
+        {/* Involvement picker — 4 cards, mapped to TimeBucket */}
+        <InvolvementPicker
+          value={prefs.time}
+          onChange={(t) => onPrefsChange((p) => ({ ...p, time: t }))}
+          question="How involved do you want to be?"
+          hint="You can change this anytime."
+        />
 
         {/* Tone + energy sliders — 0-3 each */}
-        {(["anger", "comedy", "subversion", "hope", "energy"] as const).map((k) => (
-          <div key={k}>
-            <div className="flex items-center justify-between mb-1">
-              <span className="font-['Poppins',sans-serif] text-sm text-gray-700">
-                <span className="mr-1.5">{TONE_LABELS[k].emoji}</span>
-                <strong className="font-semibold text-[#23297e]">{TONE_LABELS[k].label}</strong>
-                <span className="ml-2 text-xs text-gray-500">{TONE_LABELS[k].desc}</span>
-              </span>
-              <span className="font-['Poppins',sans-serif] text-xs font-bold text-[#fd8e33]">
-                {tone[k]}
-              </span>
+        {(["anger", "comedy", "subversion", "hope", "energy"] as const).map((k) => {
+          const { Icon, label, desc } = TONE_LABELS[k];
+          return (
+            <div key={k} className="space-y-1.5">
+              <div className="flex items-center">
+                <Icon size={15} strokeWidth={2} className="text-[#23297e] mr-1.5 shrink-0" />
+                <strong className="font-['Poppins',sans-serif] font-semibold text-sm text-[#23297e]">
+                  {label}
+                </strong>
+                <span className="ml-2 font-['Poppins',sans-serif] text-xs text-gray-500">
+                  {desc}
+                </span>
+              </div>
+              <ToneRangeSlider
+                value={tone[k]}
+                onChange={(v) => setTone({ ...tone, [k]: v })}
+              />
             </div>
-            <input
-              type="range"
-              min={0}
-              max={3}
-              step={1}
-              value={tone[k]}
-              onChange={(e) => setTone({ ...tone, [k]: Number(e.target.value) })}
-              className="w-full accent-[#fd8e33]"
-            />
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="border-t border-gray-200 pt-4">

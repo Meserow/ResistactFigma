@@ -5,9 +5,9 @@
 
 export const LOCATION_OPTIONS = [
   "Online",
+  "From Home",
   "National",
   "Multi-state",
-  "Washington DC",
   "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado",
   "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho",
   "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine",
@@ -16,7 +16,7 @@ export const LOCATION_OPTIONS = [
   "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio",
   "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina",
   "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia",
-  "Washington", "West Virginia", "Wisconsin", "Wyoming",
+  "Washington", "Washington DC", "West Virginia", "Wisconsin", "Wyoming",
 ] as const;
 
 // USPS 2-letter codes → full state name. Used to normalize legacy
