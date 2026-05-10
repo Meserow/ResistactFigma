@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { X, CheckCircle2, XCircle, Clock, Users, ShieldCheck, Loader2, RefreshCw, FileText, Trash2, Calendar, ExternalLink, ImageIcon, Upload, ZoomIn, AlertTriangle, Sliders, RotateCcw, Save, Flame, Laugh, VenetianMask, Heart, Sunrise, Zap } from "lucide-react";
+import { X, CheckCircle2, XCircle, Clock, Users, ShieldCheck, Loader2, RefreshCw, FileText, Trash2, Calendar, ExternalLink, ImageIcon, Upload, ZoomIn, AlertTriangle, Sliders, RotateCcw, Save, Eye, Flame, Laugh, VenetianMask, Heart, Sunrise, Zap } from "lucide-react";
+import { CardDetailsModal } from "./CardDetailsModal";
+import type { ActionCardData } from "./ActionCard";
 import type { LucideIcon } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
 import type { UserApproval } from "../lib/supabase";
@@ -188,6 +190,8 @@ export function AdminPanel({ accessToken, onClose }: AdminPanelProps) {
   const [cardsError, setCardsError] = useState<string | null>(null);
   const [cardActionLoading, setCardActionLoading] = useState<number | null>(null);
   const [imageModalCard, setImageModalCard] = useState<PendingCard | null>(null);
+  /** Pending card whose full preview (CardDetailsModal) is open. */
+  const [previewCard, setPreviewCard] = useState<PendingCard | null>(null);
 
   const authHeaders = {
     "Content-Type": "application/json",
@@ -275,29 +279,9 @@ export function AdminPanel({ accessToken, onClose }: AdminPanelProps) {
     }
   }
 
-  async function handleFlagOffTopic(id: number) {
-    setCardActionLoading(id);
-    try {
-      const res = await fetch(`${API}/admin/flag-off-topic/${id}`, { method: "POST", headers: authHeaders });
-      const data = await res.json();
-      if (!res.ok) { alert(data.error); return; }
-      setPendingCards((prev) => prev.map((c) => c.id === id ? { ...c, notOnTopic: true, adminApproved: false } : c));
-    } finally {
-      setCardActionLoading(null);
-    }
-  }
-
-  async function handleUnflagOffTopic(id: number) {
-    setCardActionLoading(id);
-    try {
-      const res = await fetch(`${API}/admin/unflag-off-topic/${id}`, { method: "POST", headers: authHeaders });
-      const data = await res.json();
-      if (!res.ok) { alert(data.error); return; }
-      setPendingCards((prev) => prev.map((c) => c.id === id ? { ...c, notOnTopic: false } : c));
-    } finally {
-      setCardActionLoading(null);
-    }
-  }
+  // The off-topic flag/unflag UI was removed from this panel — the badge is
+  // an AI-side signal (set via /admin/flag-off-topic), and admins act on it
+  // by Approve or Delete instead. Endpoints stay live for that automation.
 
   const filtered = users.filter((u) => tab === "all" || u.status === tab);
   const pendingCount = users.filter((u) => u.status === "pending").length;
@@ -477,6 +461,18 @@ export function AdminPanel({ accessToken, onClose }: AdminPanelProps) {
 
                           {/* Action buttons */}
                           <div className="flex gap-2 mt-3 flex-wrap">
+                            {/* View — opens full CardDetailsModal so the admin
+                                can see the card the way users will see it. */}
+                            <button
+                              onClick={() => setPreviewCard(card)}
+                              disabled={isActing}
+                              className="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-[#23297e]/5 hover:bg-[#23297e]/10 border border-[#23297e]/20 rounded-lg font-['Poppins',sans-serif] font-semibold text-xs text-[#23297e] transition-colors disabled:opacity-50"
+                              title="Preview the full card"
+                            >
+                              <Eye size={13} />
+                              View
+                            </button>
+
                             {/* Approve */}
                             <button
                               onClick={() => handleApproveCard(card.id)}
@@ -486,29 +482,6 @@ export function AdminPanel({ accessToken, onClose }: AdminPanelProps) {
                               {isActing ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={13} />}
                               Approve
                             </button>
-
-                            {/* Flag / Unflag off-topic */}
-                            {card.notOnTopic ? (
-                              <button
-                                onClick={() => handleUnflagOffTopic(card.id)}
-                                disabled={isActing}
-                                className="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg font-['Poppins',sans-serif] font-semibold text-xs text-gray-600 transition-colors disabled:opacity-50"
-                                title="Clear off-topic flag"
-                              >
-                                {isActing ? <Loader2 size={12} className="animate-spin" /> : <AlertTriangle size={12} />}
-                                Clear flag
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleFlagOffTopic(card.id)}
-                                disabled={isActing}
-                                className="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg font-['Poppins',sans-serif] font-semibold text-xs text-amber-700 transition-colors disabled:opacity-50"
-                                title="Flag as not on topic"
-                              >
-                                {isActing ? <Loader2 size={12} className="animate-spin" /> : <AlertTriangle size={12} />}
-                                Off-topic
-                              </button>
-                            )}
 
                             {/* Delete */}
                             <button
@@ -689,6 +662,19 @@ export function AdminPanel({ accessToken, onClose }: AdminPanelProps) {
             setPendingCards((prev) => prev.map((c) => c.id === id ? { ...c, topImageUrl: url } : c));
             setImageModalCard(null);
           }}
+        />
+      )}
+
+      {/* Full-card preview — same component users see via "Read more →" */}
+      {previewCard && (
+        <CardDetailsModal
+          card={{
+            ...(previewCard as unknown as ActionCardData),
+            // PendingCard stores the raw URL in `topImageUrl`; CardDetailsModal
+            // renders from `topImage`, so map it explicitly.
+            topImage: previewCard.topImageUrl ?? undefined,
+          }}
+          onClose={() => setPreviewCard(null)}
         />
       )}
     </>
