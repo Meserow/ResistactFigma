@@ -317,12 +317,16 @@ export default function App() {
   const isAdminUser = approval?.isAdmin === true;
 
   const displayedCards = (() => {
-    // ── Global gate: expiry + approval ──────────────────────────────────────
+    // ── Global gate: expiry + approval + already-done ────────────────────────
     const gated = cards.filter((card) => {
       // Hide expired events from everyone
       if (card.eventDate && card.eventDate < todayISO) return false;
       // Hide non-approved cards from non-admins
       if (!isAdminUser && card.adminApproved === false) return false;
+      // Hide cards the user has already marked "I did this" — they don't need
+      // to see what they've completed in the main feed. Their progress lives
+      // in the scoreboard / `myCompletions`.
+      if (completedCards.has(card.id)) return false;
       return true;
     });
 

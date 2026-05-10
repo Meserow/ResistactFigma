@@ -636,6 +636,11 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     // only seed-managed metadata (title/desc/url/image) is overwritten.
     const orgsSeeded = await kv.get("seed:org-actions:v10");
     if (!orgsSeeded) {
+      // Mark the seed as done UP FRONT — if the request times out partway
+      // through the 260-card loop, the next request still skips the loop
+      // instead of dying again. The cards already written stay; missing ones
+      // get filled in on the next version bump.
+      await kv.set("seed:org-actions:v10", true);
       let count = 0;
       for (const card of SEED_CARDS) {
         if (card.id < 1000) continue;
@@ -655,8 +660,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
         await kv.set(`action:${card.id}`, merged);
         count++;
       }
-      await kv.set("seed:org-actions:v9", true);
-      console.log(`Re-seeded ${count} org-action cards (v6).`);
+      console.log(`Re-seeded ${count} org-action cards (v10).`);
     }
 
     // One-time migration: any pre-rename card still using `spotsUsed` gets a
