@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Bookmark, BookmarkCheck, Globe, MapPin, Pencil, Share2 } from "lucide-react";
+import { Bookmark, BookmarkCheck, Flame, Globe, MapPin, Pencil, Share2 } from "lucide-react";
 import { ShareModal } from "./ShareModal";
+import { SpreadTheWordModal } from "./SpreadTheWordModal";
 import { CardDetailsModal } from "./CardDetailsModal";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 
@@ -35,6 +36,10 @@ export interface ActionCardData {
   createdBy?: string;
   /** True for actions that take ~5–10 minutes — drives the "Quick wins" filter. */
   quickAction?: boolean;
+  /** When true, this card always renders first in every sort/filter view —
+   * even ahead of the matcher's score. Reserved for the canonical
+   * "Spread the Word about ResistAct" pinned card. */
+  pinToTop?: boolean;
   /** When true, fit the top image inside the header (object-contain) instead of cropping. Use for logo-style art. */
   imageContain?: boolean;
   /** False = awaiting admin review; true / undefined = visible to all users. */
@@ -150,11 +155,15 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
     return (
       <button
         onClick={(e) => { e.stopPropagation(); setShareOpen(true); }}
-        title="Share"
+        title={card.pinToTop ? "Spread the word!" : "Share"}
         aria-label={`Share ${card.title}`}
-        className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-full bg-white/90 backdrop-blur-sm text-gray-500 hover:text-[#fd8e33] hover:bg-white transition-colors z-10"
+        className={`absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-full backdrop-blur-sm transition-colors z-10 ${
+          card.pinToTop
+            ? "bg-[#fd8e33] text-white hover:bg-[#d96612]"
+            : "bg-white/90 text-gray-500 hover:text-[#fd8e33] hover:bg-white"
+        }`}
       >
-        <Share2 size={13} />
+        {card.pinToTop ? <Flame size={13} /> : <Share2 size={13} />}
       </button>
     );
   }
@@ -179,7 +188,7 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
           </button>
         )}
         <button
-          onClick={() => onBookmark?.(card.id)}
+          onClick={(e) => { e.stopPropagation(); onBookmark?.(card.id); }}
           aria-label={isBookmarked ? "Remove bookmark" : "Bookmark"}
           className={btnCls}
         >
@@ -193,7 +202,10 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
   if (card.isFeatured) {
     return (
       <>
-        <div className="bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full hover:shadow-lg transition-shadow">
+        <div
+          className={`bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full hover:shadow-lg transition-shadow ${card.pinToTop ? "cursor-pointer" : ""}`}
+          onClick={card.pinToTop ? () => setShareOpen(true) : undefined}
+        >
           {/* Illustration */}
           <div className="relative h-[160px] shrink-0 bg-[#23297e] flex items-center justify-center">
             {card.featuredIllustration}
@@ -251,7 +263,9 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
           </div>
         </div>
         {shareOpen && (
-          <ShareModal title={card.title} description={card.description} onClose={() => setShareOpen(false)} />
+          card.pinToTop
+            ? <SpreadTheWordModal onClose={() => setShareOpen(false)} />
+            : <ShareModal title={card.title} description={card.description} onClose={() => setShareOpen(false)} />
         )}
         {detailsOpen && (
           <CardDetailsModal card={card} onClose={() => setDetailsOpen(false)} />

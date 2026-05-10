@@ -15,7 +15,7 @@ import { locationToState, LOCATION_OPTIONS } from "./lib/locations";
 import { HomeHero } from "./components/HomeHero";
 import { LoggedInHero } from "./components/LoggedInHero";
 import { MatchMeModal } from "./components/MatchMeModal";
-import { rankCards, loadPreferences, clearPreferences, applyMatcherConfig, type Preferences } from "./lib/matcher";
+import { rankCards, loadPreferences, clearPreferences, applyMatcherConfig, fetchUserPreferences, pushUserPreferences, savePreferences, type Preferences } from "./lib/matcher";
 import svgPaths from "../imports/svg-77lgd1zdt6";
 import { projectId, publicAnonKey } from "/utils/supabase/info";
 import { supabase } from "./lib/supabase";
@@ -27,6 +27,7 @@ import type { UserApproval } from "./lib/supabase";
 interface ServerCard {
   id: number;
   isFeatured?: boolean;
+  pinToTop?: boolean;
   category: string;
   categoryColor: string;
   title: string;
@@ -341,19 +342,29 @@ export default function App() {
 
     const filtered = applyFilters(gated);
 
+    // Hoist any `pinToTop` cards to the top of the resulting feed regardless
+    // of which sort or match mode produced the rest. Reserved for the
+    // canonical "Spread the Word about ResistAct" card so it's always the
+    // user's first impression.
+    const pinFirst = (arr: ActionCardData[]): ActionCardData[] => {
+      const pinned = arr.filter((c) => c.pinToTop);
+      if (pinned.length === 0) return arr;
+      return [...pinned, ...arr.filter((c) => !c.pinToTop)];
+    };
+
     // ── Match-me mode: rank by user-supplied tone/time/setting/risk prefs ─────
     // Drops engagement-based, location-bucket, and category-interleave ordering;
     // the matcher's score already incorporates engagement and the user's intent
     // is more specific.
     if (matchPrefs) {
-      return rankCards(filtered, matchPrefs);
+      return pinFirst(rankCards(filtered, matchPrefs));
     }
 
     if (sortBy === "az") {
-      return [...filtered].sort((a, b) => a.title.localeCompare(b.title));
+      return pinFirst([...filtered].sort((a, b) => a.title.localeCompare(b.title)));
     }
     if (sortBy === "newest") {
-      return [...filtered].sort((a, b) => (b.id ?? 0) - (a.id ?? 0));
+      return pinFirst([...filtered].sort((a, b) => (b.id ?? 0) - (a.id ?? 0)));
     }
 
     // ── Popular: pure engagement sort — boosts + completions DESC ──────────────
@@ -380,7 +391,7 @@ export default function App() {
         if (grp && grp.length > 0) out.push(...interleaveByCategory(grp));
       }
     }
-    return out;
+    return pinFirst(out);
   })();
 
   // True when any filter chip is selected OR a search is active — bypasses
@@ -430,6 +441,7 @@ export default function App() {
         setAccessToken(session.access_token);
         fetchApprovalStatus(session.access_token, session.user);
         fetchMyCompletions(session.access_token);
+        syncMatchPreferencesOnLogin(session.access_token);
       } else {
         setAccessToken(null);
         setApproval(null);
@@ -438,6 +450,24 @@ export default function App() {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  // ── Sync match-me prefs on sign-in ──
+  // Server wins if it has prefs (so prefs follow the account across devices).
+  // Otherwise, push the anonymous-session local prefs up so they get stored on
+  // the new account. Best-effort — failures don't block anything.
+  async function syncMatchPreferencesOnLogin(token: string) {
+    try {
+      const remote = await fetchUserPreferences(token);
+      if (remote) {
+        savePreferences(remote);
+      } else {
+        const local = loadPreferences();
+        if (local) await pushUserPreferences(token, local);
+      }
+    } catch (err) {
+      console.warn("Match prefs sync failed:", err);
+    }
+  }
 
   // ── Fetch the signed-in user's completion scoreboard ──
   async function fetchMyCompletions(token: string) {
@@ -860,7 +890,6 @@ export default function App() {
                   );
                 })()
               : <HomeHero
-                  onJoinClick={() => setAuthModalOpen(true)}
                   onMatchClick={() => setMatchOpen(true)}
                   onAskClick={() => setAskOpen(true)}
                 />
@@ -1039,7 +1068,15 @@ export default function App() {
           cards={cards}
           isLoggedIn={!!approval}
           onClose={() => setMatchOpen(false)}
-          onApply={(prefs) => { setMatchPrefs(prefs); setMatchOpen(false); }}
+          onApply={(prefs) => {
+            setMatchPrefs(prefs);
+            setMatchOpen(false);
+            // Sync to the user's profile so prefs follow them across devices.
+            // Anonymous users skip the push — their prefs stay in localStorage
+            // until they sign up, at which point syncMatchPreferencesOnLogin
+            // hands them up on first auth.
+            if (accessToken) pushUserPreferences(accessToken, prefs);
+          }}
         />
       )}
 

@@ -491,33 +491,7 @@ export function loadPreferences(): Preferences | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (typeof parsed !== "object" || !parsed) return null;
-    // setting was previously a single string ("online"|"atHome"|"inPerson"|
-    // "either"|null). Migrate to array form: a single value becomes a one-elem
-    // array; "either"/null/missing/array-of-strings → empty array means "any".
-    let setting: Setting[] = [];
-    if (Array.isArray(parsed.setting)) {
-      setting = parsed.setting.filter((s: unknown): s is Setting =>
-        s === "online" || s === "atHome" || s === "inPerson"
-      );
-    } else if (typeof parsed.setting === "string" && parsed.setting !== "either") {
-      if (parsed.setting === "online" || parsed.setting === "atHome" || parsed.setting === "inPerson") {
-        setting = [parsed.setting];
-      }
-    }
-    return {
-      time: parsed.time ?? null,
-      setting,
-      state: typeof parsed.state === "string" ? parsed.state : null,
-      includeAnywhere: parsed.includeAnywhere === true,
-      vulnerableGroups: Array.isArray(parsed.vulnerableGroups) ? parsed.vulnerableGroups : [],
-      tone: {
-        anger: typeof parsed.tone?.anger === "number" ? parsed.tone.anger : 1,
-        comedy: typeof parsed.tone?.comedy === "number" ? parsed.tone.comedy : 1,
-        subversion: typeof parsed.tone?.subversion === "number" ? parsed.tone.subversion : 1,
-        hope: typeof parsed.tone?.hope === "number" ? parsed.tone.hope : 1,
-        energy: typeof parsed.tone?.energy === "number" ? parsed.tone.energy : 1,
-      },
-    };
+    return normalizePreferences(parsed);
   } catch {
     return null;
   }
@@ -531,4 +505,79 @@ export function savePreferences(prefs: Preferences) {
 
 export function clearPreferences() {
   try { localStorage.removeItem(STORAGE_KEY); } catch {}
+}
+
+// ─── Server-side sync (for signed-in users) ──────────────────────────────────
+// Match prefs live in localStorage by default. When a user signs in we mirror
+// them to a `user:preferences:{userId}` row on the server so they follow the
+// account across devices. Failures are logged but never thrown — sync is a
+// best-effort enhancement, not a blocker.
+
+import { projectId } from "/utils/supabase/info";
+const PREFS_API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04/me/preferences`;
+
+/** Fetch the signed-in user's stored match prefs. Returns null on miss or
+ * any error so callers can fall back to localStorage cleanly. */
+export async function fetchUserPreferences(token: string): Promise<Preferences | null> {
+  try {
+    const res = await fetch(PREFS_API, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data?.preferences || typeof data.preferences !== "object") return null;
+    // Reuse the same loose normalization that loadPreferences applies to the
+    // localStorage payload — the server stores whatever shape the client sent,
+    // so old records may be missing newer fields.
+    return normalizePreferences(data.preferences);
+  } catch (err) {
+    console.warn("fetchUserPreferences failed:", err);
+    return null;
+  }
+}
+
+/** Push prefs to the server. Best-effort; the local copy stays the source of
+ * truth until the next login on a fresh device. */
+export async function pushUserPreferences(token: string, prefs: Preferences): Promise<void> {
+  try {
+    await fetch(PREFS_API, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(prefs),
+    });
+  } catch (err) {
+    console.warn("pushUserPreferences failed:", err);
+  }
+}
+
+/** Shared validation/migration so both `loadPreferences` (localStorage) and
+ * `fetchUserPreferences` (server) hand back a fully-shaped Preferences. */
+function normalizePreferences(parsed: any): Preferences {
+  let setting: Setting[] = [];
+  if (Array.isArray(parsed.setting)) {
+    setting = parsed.setting.filter((s: unknown): s is Setting =>
+      s === "online" || s === "atHome" || s === "inPerson"
+    );
+  } else if (typeof parsed.setting === "string" && parsed.setting !== "either") {
+    if (parsed.setting === "online" || parsed.setting === "atHome" || parsed.setting === "inPerson") {
+      setting = [parsed.setting];
+    }
+  }
+  return {
+    time: parsed.time ?? null,
+    setting,
+    state: typeof parsed.state === "string" ? parsed.state : null,
+    includeAnywhere: parsed.includeAnywhere === true,
+    vulnerableGroups: Array.isArray(parsed.vulnerableGroups) ? parsed.vulnerableGroups : [],
+    tone: {
+      anger: typeof parsed.tone?.anger === "number" ? parsed.tone.anger : 1,
+      comedy: typeof parsed.tone?.comedy === "number" ? parsed.tone.comedy : 1,
+      subversion: typeof parsed.tone?.subversion === "number" ? parsed.tone.subversion : 1,
+      hope: typeof parsed.tone?.hope === "number" ? parsed.tone.hope : 1,
+      energy: typeof parsed.tone?.energy === "number" ? parsed.tone.energy : 1,
+    },
+  };
 }

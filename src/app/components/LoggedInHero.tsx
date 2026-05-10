@@ -84,7 +84,7 @@ export function LoggedInHero({ userId, name, newActionsToday, onMatchClick, onAs
         </p>
 
         <div className="mt-4">
-          <HeroPills onJoinClick={() => {}} onMatchClick={onMatchClick} onAskClick={onAskClick} isLoggedIn />
+          <HeroPills onMatchClick={onMatchClick} onAskClick={onAskClick} />
         </div>
       </div>
     </div>
