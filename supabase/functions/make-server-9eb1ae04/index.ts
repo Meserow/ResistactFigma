@@ -629,6 +629,23 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       console.log(`Purged ${droppedIds.length} dropped seed cards.`);
     }
 
+    // One-time: zero out boosts on the early seed cards that started with
+    // `boosts: 5` placeholder values. These were carry-over from the original
+    // Figma demo data. Live data writes get preserved on re-seed via the
+    // merge logic below, so the seed file alone can't clear them.
+    const boostsResetDone = await kv.get("cleanup:reset-boosts-5:v1");
+    if (!boostsResetDone) {
+      const resetIds = [8, 9, 10, 13];
+      for (const id of resetIds) {
+        const existing = (await kv.get(`action:${id}`)) as any;
+        if (existing && typeof existing === "object") {
+          await kv.set(`action:${id}`, { ...existing, boosts: 0 });
+        }
+      }
+      await kv.set("cleanup:reset-boosts-5:v1", true);
+      console.log(`Reset boosts to 0 on ${resetIds.length} demo cards.`);
+    }
+
     // Seed/refresh the org-action library (IDs 1000+) into KV. Bump the version
     // key (e.g. v4 → v5) whenever you've edited SEED_CARDS and want the live
     // feed to pick up the new title/url/image. Existing user activity (`boosts`)
