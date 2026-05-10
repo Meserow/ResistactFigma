@@ -160,6 +160,7 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, comp
             onPrefsChange={setPrefs}
             matches={matches}
             onNext={next}
+            userCtx={userCtx}
           />
         )}
 
@@ -230,11 +231,13 @@ function StepToneAndPreview({
   onPrefsChange,
   matches,
   onNext,
+  userCtx,
 }: {
   prefs: Preferences;
   onPrefsChange: React.Dispatch<React.SetStateAction<Preferences>>;
   matches: ActionCardData[];
   onNext: () => void;
+  userCtx: UserContext;
 }) {
   const tone = prefs.tone;
   const setTone = (next: Preferences["tone"]) =>
