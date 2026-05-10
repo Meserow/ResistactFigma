@@ -6,7 +6,7 @@ import { projectId } from "/utils/supabase/info";
 const SHARE_API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04/share-invite`;
 
 const DEFAULT_NOTE =
-  `Hey! I've been using ResistAct to find small, doable actions every day to push back on what's happening in America. Check it out — you can pick what fits your schedule and mood. New actions every day!\n\n${window.location.origin}`;
+  `Hey! — I've been using this site. ResistAct gives you a few small, doable things to do each day instead of just doomscrolling. You pick how much time and energy you've got. No account required, no spam, no donation asks. Take a look.\n\n${window.location.origin}`;
 
 function isValidEmail(e: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
@@ -56,6 +56,14 @@ function TikTokIcon() {
   );
 }
 
+function BlueSkyIcon() {
+  return (
+    <svg viewBox="0 0 600 530" className="w-5 h-5" fill="currentColor">
+      <path d="m135.72 44.03c66.496 49.921 138.02 151.14 164.28 205.46 26.262-54.316 97.782-155.54 164.28-205.46 47.98-36.021 125.72-63.892 125.72 24.795 0 17.712-10.155 148.79-16.111 170.07-20.703 73.984-96.144 92.854-163.25 81.433 117.3 19.964 147.14 86.092 82.697 152.22-122.39 125.59-175.91-31.511-189.63-71.766-2.514-7.3797-3.6904-10.832-3.7077-7.8964-0.0173-2.9357-1.1937 0.51669-3.7077 7.8964-13.714 40.255-67.233 197.36-189.63 71.766-64.444-66.128-34.605-132.26 82.697-152.22-67.108 11.421-142.55-7.4491-163.25-81.433-5.9562-21.282-16.111-152.36-16.111-170.07 0-88.687 77.742-60.816 125.72-24.795z"/>
+    </svg>
+  );
+}
+
 function buildPlatforms(siteUrl: string) {
   const shareText = `I've been using ResistAct to find small, doable actions to push back. Come join the resistance! ${siteUrl}`;
   const enc = (s: string) => encodeURIComponent(s);
@@ -63,6 +71,7 @@ function buildPlatforms(siteUrl: string) {
     { id: "facebook", label: "Facebook", bg: "#1877F2", fg: "#fff", icon: <FacebookIcon />, action: () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${enc(siteUrl)}&quote=${enc(shareText)}`, "_blank") },
     { id: "x", label: "X / Twitter", bg: "#000", fg: "#fff", icon: <XIcon />, action: () => window.open(`https://twitter.com/intent/tweet?text=${enc(shareText)}`, "_blank") },
     { id: "threads", label: "Threads", bg: "#000", fg: "#fff", icon: <ThreadsIcon />, action: () => window.open(`https://www.threads.net/intent/post?text=${enc(shareText)}`, "_blank") },
+    { id: "bluesky", label: "Bluesky", bg: "#0085FF", fg: "#fff", icon: <BlueSkyIcon />, action: () => window.open(`https://bsky.app/intent/compose?text=${enc(shareText)}`, "_blank") },
     { id: "whatsapp", label: "WhatsApp", bg: "#25D366", fg: "#fff", icon: <WhatsAppIcon />, action: () => window.open(`https://wa.me/?text=${enc(shareText)}`, "_blank") },
     { id: "instagram", label: "Instagram", bg: "linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)", fg: "#fff", icon: <InstagramIcon />, copyText: shareText, copyNote: "Text copied — paste it into Instagram!" },
     { id: "tiktok", label: "TikTok", bg: "#010101", fg: "#fff", icon: <TikTokIcon />, copyText: shareText, copyNote: "Text copied — paste it into TikTok!" },
@@ -167,7 +176,7 @@ export function SpreadTheWordModal({ onClose }: { onClose: () => void }) {
       <div
         ref={cardRef}
         onClick={e => e.stopPropagation()}
-        className="relative w-full max-w-[480px] my-auto rounded-2xl bg-white shadow-2xl overflow-hidden"
+        className="relative w-full max-w-[640px] my-auto rounded-2xl bg-white shadow-2xl overflow-hidden"
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
@@ -187,8 +196,22 @@ export function SpreadTheWordModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
+        {/* Intro copy */}
+        <div className="px-5 pt-4 pb-2">
+          <p className="font-['Poppins',sans-serif] text-[13px] text-gray-700 leading-relaxed">
+            <strong className="text-gray-900">Resistance grows one share at a time</strong> — but only if you actually share. Pick a friend who's been doomscrolling and send this their way. If everyone here invites two friends, ResistAct doubles by Tuesday. That's how movements actually scale — not virally, but two-by-two, through people who trust each other.
+          </p>
+        </div>
+
+        {/* Social section header */}
+        <div className="mx-5 flex items-center gap-3 pt-3 pb-1">
+          <div className="flex-1 h-px bg-gray-300" />
+          <span className="font-['Poppins',sans-serif] text-[11px] font-semibold text-gray-600 whitespace-nowrap">Share through social</span>
+          <div className="flex-1 h-px bg-gray-300" />
+        </div>
+
         {/* Social sharing grid */}
-        <div className="px-5 pt-4 pb-3 grid grid-cols-3 gap-3">
+        <div className="px-5 pt-2 pb-3 grid grid-cols-5 gap-3">
           {platforms.map(p => (
             <button
               key={p.id}
@@ -216,7 +239,7 @@ export function SpreadTheWordModal({ onClose }: { onClose: () => void }) {
         {/* Divider */}
         <div className="mx-5 flex items-center gap-3 my-1">
           <div className="flex-1 h-px bg-gray-200" />
-          <span className="font-['Poppins',sans-serif] text-[11px] text-gray-400 whitespace-nowrap">Or email friends directly</span>
+          <span className="font-['Poppins',sans-serif] text-[11px] font-semibold text-gray-600 whitespace-nowrap">Or email friends directly</span>
           <div className="flex-1 h-px bg-gray-200" />
         </div>
 
@@ -270,7 +293,7 @@ export function SpreadTheWordModal({ onClose }: { onClose: () => void }) {
             <textarea
               value={note}
               onChange={e => setNote(e.target.value)}
-              rows={4}
+              rows={7}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 font-['Poppins',sans-serif] text-[13px] text-gray-700 leading-relaxed resize-none focus:border-[#fd8e33] focus:ring-1 focus:ring-[#fd8e33]/30 focus:outline-none transition-colors"
             />
           </div>
@@ -287,7 +310,11 @@ export function SpreadTheWordModal({ onClose }: { onClose: () => void }) {
                 <Check size={12} /> Invites sent!
               </p>
             )}
-            {(sendState === "idle" || sendState === "sending") && <div />}
+            {(sendState === "idle" || sendState === "sending") && (
+              <p className="font-['Poppins',sans-serif] text-[10px] text-gray-400 italic leading-snug">
+                Sharing helps more than you think.<br />Thanks for doing this.
+              </p>
+            )}
 
             <button
               onClick={sendInvites}

@@ -177,7 +177,7 @@ async function seedEllenUser() {
 
 // ─── Seed data ────────────────────────────────────────────────────────────────
 const SEED_CARDS = [
-  { id: 1, isFeatured: true, pinToTop: true, category: "BOOST", categoryColor: "#8a00e6", actionType: "Online", timeCommitment: "Ongoing", title: "Spread the Word about ResistAct", description: "The immigrant and refugee community has received direct threats about deportations and immigration raids. Our community needs your help spreading awareness about ResistAct so we can build a stronger resistance network together.", boosts: 3020, spotsTotal: "Unlimited", authorName: "Ellen Meserow", authorRole: "ResistAct Founder", authorAvatarKey: "imgImage34" },
+  { id: 1, isFeatured: true, pinToTop: true, category: "BOOST", categoryColor: "#8a00e6", actionType: "Online", timeCommitment: "Ongoing", title: "Spread the Word about ResistAct", description: "The immigrant and refugee community has received direct threats about deportations and immigration raids. Our community needs your help spreading awareness about ResistAct so we can build a stronger resistance network together.", boosts: 950, spotsTotal: "Unlimited", authorName: "Ellen Meserow", authorRole: "ResistAct Founder", authorAvatarKey: "imgImage34" },
   { id: 19, category: "IRREVERENCE", categoryColor: "#9333ea", actionType: "Online", timeCommitment: "< 1 hour", title: "SH*T Bag: Two Bags, One Movement", description: "Dog poop bags featuring Trump — made from plant-based materials (PBAT + PLA + Corn Starch), leak-proof, strong, traps odors, and 'resistant to hate.' Fair-trade and BSCI-compliant. Buy a pack and put it to good use.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Smolotov LLC", authorRole: "Resistance Merch", targetUrl: "https://www.smolotov.com/products/smolotov-unscented-leakproof-dog-poop-bags", topImageUrl: "https://www.smolotov.com/cdn/shop/files/4-Rolls_Box_Bag_2400px.jpg?v=1771553420&width=800", toneOverride: { energy: 1 } },
   { id: 1000, category: "BOYCOTT", categoryColor: "#7a1f7a", actionType: "Online", title: "Search any brand's political donations before you buy", description: "Search 7,000+ companies' political donations before you buy. Stop accidentally funding the people deporting your neighbors.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Goods Unite Us", authorRole: "Movement Organization", targetUrl: "https://www.goodsuniteus.com/", topImageKey: "org_goods-unite-us" },
   { id: 1001, category: "BOYCOTT", categoryColor: "#7a1f7a", actionType: "Online", title: "Get the browser extension that flags MAGA-aligned brands", description: "Browser extension auto-flags MAGA-aligned brands as you shop. Make every checkout a small political choice.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Progressive Shopper", authorRole: "Movement Organization", targetUrl: "https://progressiveshopper.com/", topImageKey: "org_progressive-shopper" },
@@ -474,6 +474,97 @@ app.post("/make-server-9eb1ae04/admin/sweep", async (c) => {
   }
 });
 
+// ─── ADMIN: Scan all KV cards for truncated descriptions ─────────────────────
+app.get("/make-server-9eb1ae04/admin/scan-truncated", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const truncated: { id: number; store: string; title: string; description: string; targetUrl?: string }[] = [];
+
+    // Scan action: (seed) cards
+    const actionEntries = await kv.getByPrefix("action:");
+    for (const card of actionEntries as any[]) {
+      if (card && typeof card.description === "string" && card.description.trimEnd().endsWith("...")) {
+        truncated.push({ id: card.id, store: "action", title: card.title, description: card.description, targetUrl: card.targetUrl });
+      }
+    }
+
+    // Scan user-action: (submitted) cards
+    const userActionEntries = await kv.getByPrefix("user-action:");
+    for (const card of userActionEntries as any[]) {
+      if (card && typeof card.description === "string" && card.description.trimEnd().endsWith("...")) {
+        truncated.push({ id: card.id, store: "user-action", title: card.title, description: card.description, targetUrl: card.targetUrl });
+      }
+    }
+
+    truncated.sort((a, b) => a.id - b.id);
+    return c.json({ count: truncated.length, cards: truncated });
+  } catch (err) {
+    return c.json({ error: `Scan failed: ${err}` }, 500);
+  }
+});
+
+// ─── ADMIN: Patch a card's description in KV (for fixing truncated descriptions) ──
+app.post("/make-server-9eb1ae04/admin/fix-description", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const body = await c.req.json().catch(() => null);
+    if (!body || !body.id || !body.description) {
+      return c.json({ error: "Required: id (number) and description (string)" }, 400);
+    }
+
+    const id = Number(body.id);
+    let key = `action:${id}`;
+    let existing: any = await kv.get(key);
+    if (!existing) {
+      key = `user-action:${id}`;
+      existing = await kv.get(key);
+    }
+    if (!existing) return c.json({ error: `Card ${id} not found in KV` }, 404);
+
+    await kv.set(key, { ...existing, description: String(body.description) });
+    console.log(`Admin ${admin.record.name} fixed description for card ${id}`);
+    return c.json({ ok: true, id, key });
+  } catch (err) {
+    return c.json({ error: `Fix failed: ${err}` }, 500);
+  }
+});
+
+// ─── ADMIN: Approved cards missing a targetUrl ───────────────────────────────
+app.get("/make-server-9eb1ae04/admin/actions/no-url", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const noUrl: any[] = [];
+
+    for (const card of (await kv.getByPrefix("action:")) as any[]) {
+      if (card && typeof card === "object" && card.adminApproved === true && !card.targetUrl) {
+        noUrl.push({ ...card, _store: "action" });
+      }
+    }
+
+    const userCardIds = (await kv.get("user-action:ids") ?? []) as number[];
+    for (const id of userCardIds) {
+      const card = await kv.get(`user-action:${id}`) as any;
+      if (card && typeof card === "object" && card.adminApproved === true && !card.targetUrl) {
+        noUrl.push({ ...card, _store: "user-action" });
+      }
+    }
+
+    noUrl.sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+    return c.json({ cards: noUrl });
+  } catch (err) {
+    return c.json({ error: `Failed to fetch no-url cards: ${err}` }, 500);
+  }
+});
+
 // ─── ADMIN: List all users ─────────────────────────────────────────────────────
 app.get("/make-server-9eb1ae04/admin/users", async (c) => {
   try {
@@ -750,13 +841,24 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     // feed to pick up the new title/url/image. Existing user activity (`boosts`)
     // and admin curation flags (`quickAction`) are preserved across re-seeds —
     // only seed-managed metadata (title/desc/url/image) is overwritten.
-    const orgsSeeded = await kv.get("seed:org-actions:v12");
+    // One-time: set boosts = 950 on the pinned Spread the Word card.
+    const boostsFixed1 = await kv.get("cleanup:set-boosts-1-950:v1");
+    if (!boostsFixed1) {
+      const card1 = await kv.get("action:1") as any;
+      if (card1 && typeof card1 === "object") {
+        await kv.set("action:1", { ...card1, boosts: 950 });
+      }
+      await kv.set("cleanup:set-boosts-1-950:v1", true);
+      console.log("Set boosts = 950 on action:1 (Spread the Word).");
+    }
+
+    const orgsSeeded = await kv.get("seed:org-actions:v13");
     if (!orgsSeeded) {
       // Mark the seed as done UP FRONT — if the request times out partway
       // through the 260-card loop, the next request still skips the loop
       // instead of dying again. The cards already written stay; missing ones
       // get filled in on the next version bump.
-      await kv.set("seed:org-actions:v12", true);
+      await kv.set("seed:org-actions:v13", true);
       let count = 0;
       for (const card of SEED_CARDS) {
         // Seed every card in SEED_CARDS (no longer skipping ids <1000).
@@ -777,11 +879,13 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           if (existing.quickAction === true) merged.quickAction = true;
           // Preserve eventDate if admin has set one manually.
           if (existing.eventDate) merged.eventDate = existing.eventDate;
+          // Preserve custom topImageUrl so admin-uploaded images survive re-seeds.
+          if (existing.topImageUrl && !card.topImageUrl) merged.topImageUrl = existing.topImageUrl;
         }
         await kv.set(`action:${card.id}`, merged);
         count++;
       }
-      console.log(`Re-seeded ${count} org-action cards (v10).`);
+      console.log(`Re-seeded ${count} org-action cards (v13).`);
     }
 
     // One-time migration: any pre-rename card still using `spotsUsed` gets a
@@ -1016,6 +1120,36 @@ app.put("/make-server-9eb1ae04/me/preferences", async (c) => {
   } catch (err) {
     console.log("Save preferences error:", err);
     return c.json({ error: `Failed to save preferences: ${err}` }, 500);
+  }
+});
+
+// ─── GET /me/bookmarks ────────────────────────────────────────────────────────
+app.get("/make-server-9eb1ae04/me/bookmarks", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    if (!token) return c.json({ error: "Unauthorized" }, 401);
+    const user = await getUser(token);
+    if (!user) return c.json({ error: "Invalid token" }, 401);
+    const bookmarks = (await kv.get(`user-bookmarks:${user.id}`)) ?? [];
+    return c.json({ bookmarks });
+  } catch (err) {
+    return c.json({ error: `Failed to load bookmarks: ${err}` }, 500);
+  }
+});
+
+// ─── PUT /me/bookmarks — bulk replace ────────────────────────────────────────
+app.put("/make-server-9eb1ae04/me/bookmarks", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    if (!token) return c.json({ error: "Unauthorized" }, 401);
+    const user = await getUser(token);
+    if (!user) return c.json({ error: "Invalid token" }, 401);
+    const body = await c.req.json().catch(() => null);
+    const ids = Array.isArray(body?.ids) ? body.ids.filter((id: any) => typeof id === "number") : [];
+    await kv.set(`user-bookmarks:${user.id}`, ids);
+    return c.json({ ok: true, count: ids.length });
+  } catch (err) {
+    return c.json({ error: `Failed to save bookmarks: ${err}` }, 500);
   }
 });
 

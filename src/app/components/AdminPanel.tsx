@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { X, CheckCircle2, XCircle, Clock, Users, ShieldCheck, Loader2, RefreshCw, FileText, Trash2, Calendar, ExternalLink, ImageIcon, Upload, ZoomIn, AlertTriangle, Sliders, RotateCcw, Save, Eye, Flame, Laugh, VenetianMask, Heart, Sunrise, Zap } from "lucide-react";
+import { X, CheckCircle2, XCircle, Clock, Users, ShieldCheck, Loader2, RefreshCw, FileText, Trash2, Calendar, ExternalLink, ImageIcon, Upload, ZoomIn, AlertTriangle, Sliders, RotateCcw, Save, Eye, Flame, Laugh, VenetianMask, Heart, Sunrise, Zap, Link2 } from "lucide-react";
 import { CardDetailsModal } from "./CardDetailsModal";
 import type { ActionCardData } from "./ActionCard";
 import type { LucideIcon } from "lucide-react";
@@ -16,7 +16,7 @@ interface AdminPanelProps {
 }
 
 type TabFilter = "pending" | "approved" | "rejected" | "all";
-type PanelMode = "cards" | "users" | "matcher";
+type PanelMode = "cards" | "users" | "nourl" | "matcher";
 
 const TONE_DIMS: { key: keyof Tone; label: string; Icon: LucideIcon }[] = [
   { key: "anger",      label: "Angry",      Icon: Flame },
@@ -193,6 +193,13 @@ export function AdminPanel({ accessToken, onClose }: AdminPanelProps) {
   /** Pending card whose full preview (CardDetailsModal) is open. */
   const [previewCard, setPreviewCard] = useState<PendingCard | null>(null);
 
+  // ── No-URL cards state ───────────────────────────────────────────────────────
+  const [noUrlCards, setNoUrlCards] = useState<PendingCard[]>([]);
+  const [noUrlLoading, setNoUrlLoading] = useState(false);
+  const [noUrlError, setNoUrlError] = useState<string | null>(null);
+  const [urlEdits, setUrlEdits] = useState<Record<number, string>>({});
+  const [urlSaving, setUrlSaving] = useState<number | null>(null);
+
   const authHeaders = {
     "Content-Type": "application/json",
     Authorization: `Bearer ${accessToken}`,
@@ -228,8 +235,45 @@ export function AdminPanel({ accessToken, onClose }: AdminPanelProps) {
     }
   }
 
+  async function fetchNoUrlCards() {
+    setNoUrlLoading(true);
+    setNoUrlError(null);
+    try {
+      const res = await fetch(`${API}/admin/actions/no-url`, { headers: authHeaders });
+      const data = await res.json();
+      if (!res.ok) { setNoUrlError(data.error ?? "Failed to load cards."); return; }
+      setNoUrlCards(data.cards ?? []);
+      setUrlEdits({});
+    } catch {
+      setNoUrlError("Network error loading cards.");
+    } finally {
+      setNoUrlLoading(false);
+    }
+  }
+
+  async function handleSaveUrl(id: number) {
+    const url = (urlEdits[id] ?? "").trim();
+    if (!url) return;
+    setUrlSaving(id);
+    try {
+      const res = await fetch(`${API}/actions/${id}`, {
+        method: "PUT",
+        headers: authHeaders,
+        body: JSON.stringify({ targetUrl: url }),
+      });
+      if (!res.ok) { const d = await res.json(); alert(d.error ?? "Save failed"); return; }
+      setNoUrlCards((prev) => prev.filter((c) => c.id !== id));
+      setUrlEdits((prev) => { const n = { ...prev }; delete n[id]; return n; });
+    } catch {
+      alert("Network error saving URL.");
+    } finally {
+      setUrlSaving(null);
+    }
+  }
+
   useEffect(() => { fetchPendingCards(); }, []);
   useEffect(() => { if (mode === "users" && users.length === 0) fetchUsers(); }, [mode]);
+  useEffect(() => { if (mode === "nourl" && noUrlCards.length === 0 && !noUrlLoading) fetchNoUrlCards(); }, [mode]);
 
   async function handleApprove(userId: string) {
     setActionLoading(userId + ":approve");
@@ -310,17 +354,17 @@ export function AdminPanel({ accessToken, onClose }: AdminPanelProps) {
               <div>
                 <p className="font-['Poppins',sans-serif] font-bold text-gray-900 text-base leading-tight">Admin Panel</p>
                 <p className="font-['Poppins',sans-serif] text-gray-400 text-xs">
-                  {mode === "users" ? "Manage user approvals" : "Review submitted actions"}
+                  {mode === "users" ? "Manage user approvals" : mode === "nourl" ? "Cards missing an action link" : "Review submitted actions"}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={mode === "users" ? fetchUsers : fetchPendingCards}
-                disabled={mode === "users" ? loading : cardsLoading}
+                onClick={mode === "users" ? fetchUsers : mode === "nourl" ? fetchNoUrlCards : fetchPendingCards}
+                disabled={mode === "users" ? loading : mode === "nourl" ? noUrlLoading : cardsLoading}
                 className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40"
               >
-                <RefreshCw size={15} className={(mode === "users" ? loading : cardsLoading) ? "animate-spin" : ""} />
+                <RefreshCw size={15} className={(mode === "users" ? loading : mode === "nourl" ? noUrlLoading : cardsLoading) ? "animate-spin" : ""} />
               </button>
               <button
                 onClick={onClose}
@@ -335,6 +379,7 @@ export function AdminPanel({ accessToken, onClose }: AdminPanelProps) {
           <div className="px-5 flex gap-1 border-b border-gray-100 shrink-0">
             {([
               { key: "cards" as PanelMode, icon: <FileText size={13} />, label: `Cards${pendingCardsCount > 0 ? ` (${pendingCardsCount})` : ""}` },
+              { key: "nourl" as PanelMode, icon: <Link2 size={13} />, label: `No URL${noUrlCards.length > 0 ? ` (${noUrlCards.length})` : ""}` },
               { key: "users" as PanelMode, icon: <Users size={13} />, label: "Users" },
               { key: "matcher" as PanelMode, icon: <Sliders size={13} />, label: "Matcher" },
             ]).map(({ key, icon, label }) => (
@@ -491,6 +536,80 @@ export function AdminPanel({ accessToken, onClose }: AdminPanelProps) {
                             >
                               {isActing ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={13} />}
                               Delete
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* ── NO-URL mode ────────────────────────────────────────────────────────── */}
+          {mode === "nourl" && (
+            <>
+              <div className="px-5 py-3 border-b border-gray-100 shrink-0">
+                <p className="font-['Poppins',sans-serif] text-xs text-gray-500">
+                  {noUrlCards.length === 0 && !noUrlLoading
+                    ? "All approved cards have an action URL."
+                    : `${noUrlCards.length} approved card${noUrlCards.length !== 1 ? "s" : ""} with no link`}
+                </p>
+              </div>
+
+              <div className="flex-1 overflow-y-auto">
+                {noUrlLoading ? (
+                  <div className="flex items-center justify-center h-40">
+                    <Loader2 size={24} className="animate-spin text-[#23297e]" />
+                  </div>
+                ) : noUrlError ? (
+                  <div className="p-5 text-center">
+                    <p className="font-['Poppins',sans-serif] text-sm text-red-500">{noUrlError}</p>
+                    <button onClick={fetchNoUrlCards} className="mt-3 text-xs text-[#23297e] underline font-['Poppins',sans-serif]">Retry</button>
+                  </div>
+                ) : noUrlCards.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-40 gap-2">
+                    <CheckCircle2 size={28} className="text-green-200" />
+                    <p className="font-['Poppins',sans-serif] text-sm text-gray-400">All cards have links!</p>
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-gray-50">
+                    {noUrlCards.map((card) => {
+                      const isSaving = urlSaving === card.id;
+                      const draft = urlEdits[card.id] ?? "";
+                      return (
+                        <li key={card.id} className="px-5 py-4 hover:bg-gray-50/60 transition-colors">
+                          <div className="flex items-start gap-2 mb-2">
+                            <span
+                              className="text-[10px] font-bold font-['Poppins',sans-serif] uppercase tracking-wider px-1.5 py-0.5 rounded-md text-white shrink-0 mt-0.5"
+                              style={{ background: card.categoryColor }}
+                            >
+                              {card.category}
+                            </span>
+                            <p className="font-['Poppins',sans-serif] font-semibold text-gray-900 text-sm leading-snug">
+                              {card.title}
+                            </p>
+                          </div>
+                          <p className="font-['Poppins',sans-serif] text-[11px] text-gray-400 mb-2 line-clamp-2">
+                            {card.description}
+                          </p>
+                          {/* URL input + save */}
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="url"
+                              value={draft}
+                              onChange={(e) => setUrlEdits((prev) => ({ ...prev, [card.id]: e.target.value }))}
+                              placeholder="https://..."
+                              className="flex-1 min-w-0 px-3 py-1.5 text-xs font-['Poppins',sans-serif] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#23297e] focus:border-transparent placeholder-gray-300"
+                            />
+                            <button
+                              onClick={() => handleSaveUrl(card.id)}
+                              disabled={!draft.trim() || isSaving}
+                              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-[#23297e] hover:bg-[#1a2060] text-white rounded-lg font-['Poppins',sans-serif] font-semibold text-xs transition-colors disabled:opacity-40"
+                            >
+                              {isSaving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                              Save
                             </button>
                           </div>
                         </li>

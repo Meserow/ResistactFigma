@@ -206,9 +206,12 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
           className={`bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full hover:shadow-lg transition-shadow ${card.pinToTop ? "cursor-pointer" : ""}`}
           onClick={card.pinToTop ? () => setShareOpen(true) : undefined}
         >
-          {/* Illustration */}
-          <div className="relative h-[160px] shrink-0 bg-[#23297e] flex items-center justify-center">
-            {card.featuredIllustration}
+          {/* Illustration — use uploaded image if available, else navy illustration */}
+          <div className="relative h-[160px] shrink-0 bg-[#23297e] flex items-center justify-center overflow-hidden">
+            {card.topImage
+              ? <img src={card.topImage} alt={card.title} className="absolute inset-0 w-full h-full object-cover" />
+              : card.featuredIllustration
+            }
             <div className="absolute top-2.5 right-3">
               <TopControls light={true} />
             </div>

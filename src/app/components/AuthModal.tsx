@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Eye, EyeOff, Loader2, CheckCircle2, Clock, Mail, Zap, ArrowRight } from "lucide-react";
+import { X, Eye, EyeOff, Loader2, CheckCircle2, Clock, Flame, Mail, Zap, ArrowRight } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { projectId } from "/utils/supabase/info";
 import type { UserApproval } from "../lib/supabase";
@@ -248,13 +248,13 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
         {/* Header */}
         <div className="mb-5">
           <div className="flex items-center gap-2 mb-1">
-            <Zap size={20} className="text-[#fd8e33]" strokeWidth={2.5} />
+            <Flame size={20} className="text-[#fd8e33]" strokeWidth={2.5} />
             <h2 className="font-['Poppins',sans-serif] font-bold text-gray-900 text-[22px] leading-tight">
               Join the Resistance
             </h2>
           </div>
           <p className="font-['Poppins',sans-serif] text-gray-400 text-[13px] leading-snug">
-            No tracking, no donation asks, no list you can't get off.
+            No tracking, no donation asks, no list you can't get away from.
           </p>
         </div>
 
@@ -279,7 +279,7 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
         <form onSubmit={handleContinue} className="space-y-3">
           <div>
             <label className="block font-['Poppins',sans-serif] text-sm font-semibold text-gray-700 mb-1.5">
-              Email or username
+              Email
             </label>
             <input
               type="email"
@@ -303,8 +303,8 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
         </form>
 
         <p className="mt-4 text-center font-['Poppins',sans-serif] text-[13px] text-gray-400">
-          Already with us?{" "}
-          <span className="font-bold text-gray-600">We'll recognize you.</span>
+          Already with us? Click Google or enter your email and{" "}
+          <span className="font-bold text-gray-600">we'll recognize you.</span>
         </p>
       </Backdrop>
     );

@@ -45,7 +45,7 @@ export function HeroPills({ onMatchClick, onAskClick }: HeroPillsProps) {
         >
           <Zap size={14} strokeWidth={2.5} className="text-gray-600 group-hover:text-[#fd8e33]" />
           <span className="flex flex-col items-start text-left leading-tight whitespace-nowrap">
-            <span className="text-[13px] font-bold text-gray-600 group-hover:text-[#fd8e33]">How ResistAct Works</span>
+            <span className="text-[13px] font-bold text-gray-600 group-hover:text-[#fd8e33]">How This Works</span>
             <span className="text-[10.5px] font-normal text-gray-400 italic group-hover:text-[#fd8e33]/70">What is this site about?</span>
           </span>
         </button>
@@ -56,7 +56,7 @@ export function HeroPills({ onMatchClick, onAskClick }: HeroPillsProps) {
           >
             <Sparkles size={14} strokeWidth={2.5} className="text-[#fd8e33]" />
             <span className="flex flex-col items-start text-left leading-tight whitespace-nowrap">
-              <span className="text-[13px] font-bold text-[#fd8e33]">Match me with Acts</span>
+              <span className="text-[13px] font-bold text-[#fd8e33]">Match Me with Acts</span>
               <span className="text-[10.5px] font-normal text-[#d97318] italic">Pressed for time? Show me what fits.</span>
             </span>
           </button>
@@ -68,15 +68,15 @@ export function HeroPills({ onMatchClick, onAskClick }: HeroPillsProps) {
           >
             <Megaphone size={14} strokeWidth={2.5} className="text-[#23297e]" />
             <span className="flex flex-col items-start text-left leading-tight whitespace-nowrap">
-              <span className="text-[13px] font-bold text-[#23297e]">Add an Act!</span>
-              <span className="text-[10.5px] font-normal text-[#23297e]/70 italic">Need people to join me in a great idea!</span>
+              <span className="text-[13px] font-bold text-[#23297e]">Add an Action!</span>
+              <span className="text-[10.5px] font-normal text-[#23297e]/70 italic">Find people to do a great idea!</span>
             </span>
           </button>
         )}
       </div>
 
       {openModal === "how" && (
-        <HeroModal onClose={closeAndRestore} title="How ResistAct Works" titleId="hero-modal-how" accentColor="#23297e" icon={<Zap size={20} strokeWidth={2} />}>
+        <HeroModal onClose={closeAndRestore} title="How This Works" titleId="hero-modal-how" accentColor="#23297e" icon={<Zap size={20} strokeWidth={2} />}>
           <p>
             If you've been doomscrolling, rage-texting friends, or lying awake wondering how we got here —{" "}
             <em>you're not alone.</em> Tired of being told you can only vote, donate, or wait for the next No Kings protest? <em>You're really not alone.</em>

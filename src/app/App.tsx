@@ -10,6 +10,7 @@ import { AskFlowModal } from "./components/AskFlowModal";
 import { JoinACTersModal } from "./components/JoinACTersModal";
 import { InfoModal } from "./components/InfoModal";
 import { EditCardModal } from "./components/EditCardModal";
+import { BookmarksPanel } from "./components/BookmarksPanel";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { locationToState, LOCATION_OPTIONS } from "./lib/locations";
 import { HomeHero } from "./components/HomeHero";
@@ -140,7 +141,13 @@ export default function App() {
       return stored ? new Set<number>(JSON.parse(stored)) : new Set<number>();
     } catch { return new Set<number>(); }
   });
-  const [bookmarkedCards, setBookmarkedCards] = useState<Set<number>>(new Set());
+  const [bookmarkedCards, setBookmarkedCards] = useState<Set<number>>(() => {
+    try {
+      const stored = localStorage.getItem("resistact_bookmarks");
+      return stored ? new Set<number>(JSON.parse(stored)) : new Set<number>();
+    } catch { return new Set<number>(); }
+  });
+  const [bookmarksOpen, setBookmarksOpen] = useState(false);
   const [boostedFacts, setBoostedFacts] = useState<Set<number>>(new Set());
   const [factBoostCounts, setFactBoostCounts] = useState<Record<number, number>>({});
 
@@ -441,6 +448,7 @@ export default function App() {
         setAccessToken(session.access_token);
         fetchApprovalStatus(session.access_token, session.user);
         fetchMyCompletions(session.access_token);
+        fetchMyBookmarks(session.access_token);
         syncMatchPreferencesOnLogin(session.access_token);
       } else {
         setAccessToken(null);
@@ -807,9 +815,41 @@ export default function App() {
     setBookmarkedCards((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
+      try { localStorage.setItem("resistact_bookmarks", JSON.stringify([...next])); } catch {}
+      if (accessToken) {
+        fetch(`${API}/me/bookmarks`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+          body: JSON.stringify({ ids: [...next] }),
+        }).catch(() => {});
+      }
       return next;
     });
   };
+
+  async function fetchMyBookmarks(token: string) {
+    try {
+      const res = await fetch(`${API}/me/bookmarks`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!Array.isArray(data.bookmarks)) return;
+      setBookmarkedCards((prev) => {
+        const merged = new Set([...prev, ...data.bookmarks]);
+        try { localStorage.setItem("resistact_bookmarks", JSON.stringify([...merged])); } catch {}
+        // Push merged set back only if it grew (anon bookmarks that server didn't have)
+        if (merged.size !== data.bookmarks.length) {
+          fetch(`${API}/me/bookmarks`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ ids: [...merged] }),
+          }).catch(() => {});
+        }
+        return merged;
+      });
+    } catch (err) {
+      console.warn("Could not fetch bookmarks:", err);
+    }
+  }
 
   // Handler when a new user-created card arrives from AskFlowModal
   function handleNewCard(raw: any) {
@@ -852,6 +892,8 @@ export default function App() {
         onAdminClick={() => setAdminPanelOpen(true)}
         onInfoClick={() => setInfoOpen(true)}
         onActClick={() => setActOpen(true)}
+        onBookmarksClick={() => setBookmarksOpen(true)}
+        bookmarkCount={bookmarkedCards.size}
         matchActive={matchPrefs !== null}
         onMatchClear={() => { setMatchPrefs(null); clearPreferences(); }}
         statsActsCount={hasActiveFilters ? displayedCards.length : (synced && serverTotal > 0 ? serverTotal : cards.length)}
@@ -1040,6 +1082,18 @@ export default function App() {
           Action cards on ResistAct are submitted by members of the general public. Their inclusion does not constitute endorsement, sponsorship, verification, or recommendation by ResistAct, its operators, contributors, or affiliates. ResistAct makes no representations or warranties as to the accuracy, legality, safety, or efficacy of any submitted action and expressly disclaims all liability arising from any reliance on, or participation in, content posted by users. Participants act at their own risk and are solely responsible for evaluating the legality and safety of any action in their jurisdiction.
         </p>
       </footer>
+
+      {/* Bookmarks Panel */}
+      {bookmarksOpen && (
+        <BookmarksPanel
+          cards={cards}
+          bookmarkedIds={bookmarkedCards}
+          onBookmark={handleBookmark}
+          onClose={() => setBookmarksOpen(false)}
+          isLoggedIn={!!approval}
+          onLoginClick={() => { setBookmarksOpen(false); setAuthModalOpen(true); }}
+        />
+      )}
 
       {/* Auth Modal */}
       {authModalOpen && (

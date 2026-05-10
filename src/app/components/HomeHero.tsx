@@ -17,8 +17,8 @@ export function HomeHero({ onMatchClick, onAskClick }: HomeHeroProps) {
 
         <div className="flex items-center justify-center gap-2 mt-3 mb-0">
           <img src={logoImg} alt="" aria-hidden="true" className="h-10 md:h-12 w-auto" />
-          <p className="font-['Poppins',sans-serif] text-[26px] md:text-[34px] font-extrabold text-[#23297e] leading-tight">
-            ResistAct.
+          <p className="font-['Poppins',sans-serif] text-[34px] md:text-[44px] font-extrabold text-[#23297e] leading-tight">
+            ResistAct
           </p>
         </div>
 
@@ -27,7 +27,7 @@ export function HomeHero({ onMatchClick, onAskClick }: HomeHeroProps) {
         </div>
 
         <p className="font-['Poppins',sans-serif] text-base">
-          <strong className="font-bold text-[#23297e]">Pick one. Do it. Share it.</strong>{" "}
+          <strong className="font-bold text-[#23297e]">Pick one. <span className="text-[#fd8e33]">Do it.</span> Share it.</strong>{" "}
           <em className="italic text-gray-600">Come back tomorrow.</em>
         </p>
       </div>
