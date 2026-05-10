@@ -1364,6 +1364,26 @@ app.get("/make-server-9eb1ae04/me/completions", async (c) => {
   }
 });
 
+// ─── GET /me/boosts — card IDs this user has boosted ─────────────────────────
+app.get("/make-server-9eb1ae04/me/boosts", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    if (!token) return c.json({ error: "Unauthorized" }, 401);
+    const user = await getUser(token);
+    if (!user) return c.json({ error: "Invalid or expired token" }, 401);
+
+    const records = (await kv.getByPrefix(`boost:${user.id}:`)) as any[];
+    const boostedIds: number[] = (records ?? [])
+      .filter(Boolean)
+      .map((r: any) => r.actionId)
+      .filter((id: unknown) => typeof id === "number");
+
+    return c.json({ boostedIds });
+  } catch (err) {
+    return c.json({ error: `Failed: ${err}` }, 500);
+  }
+});
+
 // ─── POST /actions/:id/act — increment boosts, return updated card ─────────
 app.post("/make-server-9eb1ae04/actions/:id/act", async (c) => {
   try {
@@ -1387,6 +1407,20 @@ app.post("/make-server-9eb1ae04/actions/:id/act", async (c) => {
     card.boosts = Math.max(0, current + (delta ?? 1));
     delete card.spotsUsed;
     await kv.set(`action:${id}`, card);
+
+    // Track per-user boost so the matcher can personalise results.
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    if (token) {
+      const user = await getUser(token);
+      if (user) {
+        const boostKey = `boost:${user.id}:${id}`;
+        if ((delta ?? 1) > 0) {
+          await kv.set(boostKey, { actionId: id, boostedAt: new Date().toISOString() });
+        } else {
+          await kv.del(boostKey);
+        }
+      }
+    }
 
     return c.json({ card });
   } catch (err) {
@@ -1672,6 +1706,92 @@ app.delete("/make-server-9eb1ae04/actions/:id", async (c) => {
   } catch (err) {
     console.log("Delete card error:", err);
     return c.json({ error: `Failed to delete card: ${err}` }, 500);
+  }
+});
+
+// ─── POST /feedback — collect beta user feedback ─────────────────────────────
+app.post("/make-server-9eb1ae04/feedback", async (c) => {
+  try {
+    const body = await c.req.json();
+    const { type, message, email, name } = body;
+    if (!message?.trim()) return c.json({ error: "Message required" }, 400);
+
+    const id = Date.now();
+    const cleanType = type || "general";
+    const cleanMessage = String(message).trim().slice(0, 5000);
+    const cleanEmail = email ? String(email).trim().slice(0, 200) : null;
+    const cleanName = name ? String(name).trim().slice(0, 200) : null;
+    const createdAt = new Date().toISOString();
+
+    const entry = {
+      id,
+      type: cleanType,
+      message: cleanMessage,
+      email: cleanEmail,
+      name: cleanName,
+      createdAt,
+      userAgent: c.req.header("user-agent")?.slice(0, 300) ?? null,
+    };
+
+    // Always store in KV
+    await kv.set(`feedback:${id}`, entry);
+    const ids = ((await kv.get("feedback:ids")) ?? []) as number[];
+    await kv.set("feedback:ids", [...ids, id]);
+
+    // Send email notification via Resend
+    const resendKey = Deno.env.get("RESEND_API_KEY");
+    if (resendKey) {
+      const from = cleanName || cleanEmail || "Anonymous";
+      const typeLabels: Record<string, string> = {
+        bug: "Bug report",
+        feature: "Feature request",
+        general: "General feedback",
+        other: "Other",
+      };
+      const typeLabel = typeLabels[cleanType] ?? cleanType;
+      const emailBody = [
+        `Type: ${typeLabel}`,
+        cleanName  ? `Name: ${cleanName}`   : null,
+        cleanEmail ? `Email: ${cleanEmail}` : null,
+        ``,
+        cleanMessage,
+        ``,
+        `Submitted: ${createdAt}`,
+      ].filter((l) => l !== null).join("\n");
+
+      await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${resendKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: "ResistAct <noreply@resistact.us>",
+          to: ["ellen@meserow.com"],
+          subject: `ResistAct Feedback from ${from}`,
+          text: emailBody,
+        }),
+      }).catch((err) => console.log("Feedback email error:", err));
+    }
+
+    return c.json({ success: true });
+  } catch (err) {
+    return c.json({ error: `Failed: ${err}` }, 500);
+  }
+});
+
+// ─── GET /admin/feedback — view all feedback submissions ─────────────────────
+app.get("/make-server-9eb1ae04/admin/feedback", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const ids = ((await kv.get("feedback:ids")) ?? []) as number[];
+    const entries = await Promise.all(ids.map((id) => kv.get(`feedback:${id}`)));
+    return c.json(entries.filter(Boolean).reverse());
+  } catch (err) {
+    return c.json({ error: `Failed: ${err}` }, 500);
   }
 });
 

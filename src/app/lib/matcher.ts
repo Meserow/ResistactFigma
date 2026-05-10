@@ -358,10 +358,30 @@ export function stateMatches(card: ActionCardData, userState: string | null): bo
   return false;
 }
 
+// ─── User history context ─────────────────────────────────────────────────────
+// Passed into the scorer when the user is logged in (or has local history).
+// Both fields are optional — omitting them disables the filter/bonus entirely.
+
+export interface UserContext {
+  /** Card IDs the user has already completed ("I did this"). Filtered out. */
+  completedIds?: Set<number> | number[];
+  /** Card IDs the user has boosted. Gets a ranking bonus — they like these. */
+  boostedIds?: Set<number> | number[];
+}
+
+function inSet(haystack: Set<number> | number[] | undefined, id: number): boolean {
+  if (!haystack) return false;
+  if (Array.isArray(haystack)) return haystack.includes(id);
+  return haystack.has(id);
+}
+
 // ─── Scoring ──────────────────────────────────────────────────────────────────
 // Higher score = better fit. Returns 0 for cards that fail a hard filter.
 
-export function score(card: ActionCardData, prefs: Preferences): number {
+export function score(card: ActionCardData, prefs: Preferences, ctx?: UserContext): number {
+  // Hard filter: already completed — don't re-suggest things the user did
+  if (card.id != null && inSet(ctx?.completedIds, card.id)) return 0;
+
   // Hard filter: setting mismatch
   if (!settingMatches(card, prefs.setting)) return 0;
   // Hard filter: state mismatch — keeps Illinois events out of California's
@@ -405,21 +425,25 @@ export function score(card: ActionCardData, prefs: Preferences): number {
   // rest so local stuff still ranks first.
   const stateBonus = (prefs.includeAnywhere && prefs.state && stateMatches(card, prefs.state)) ? 6 : 0;
 
-  return toneScore + timeScore + riskAdj + engagementScore + stateBonus;
+  // User-boost bonus — the user already signaled interest in this card.
+  // Surface it higher so they can finally do it.
+  const boostBonus = (card.id != null && inSet(ctx?.boostedIds, card.id)) ? 5 : 0;
+
+  return toneScore + timeScore + riskAdj + engagementScore + stateBonus + boostBonus;
 }
 
 // ─── Top N ────────────────────────────────────────────────────────────────────
 
-export function rankCards(cards: ActionCardData[], prefs: Preferences): ActionCardData[] {
+export function rankCards(cards: ActionCardData[], prefs: Preferences, ctx?: UserContext): ActionCardData[] {
   return cards
-    .map((c) => ({ c, s: score(c, prefs) }))
+    .map((c) => ({ c, s: score(c, prefs, ctx) }))
     .filter((x) => x.s > 0)
     .sort((a, b) => b.s - a.s)
     .map((x) => x.c);
 }
 
-export function topN(cards: ActionCardData[], prefs: Preferences, n = 5): ActionCardData[] {
-  return rankCards(cards, prefs).slice(0, n);
+export function topN(cards: ActionCardData[], prefs: Preferences, n = 5, ctx?: UserContext): ActionCardData[] {
+  return rankCards(cards, prefs, ctx).slice(0, n);
 }
 
 // ─── Explain why a card matched ───────────────────────────────────────────────
@@ -435,7 +459,7 @@ const TIME_LABEL: Record<TimeBucket, string> = {
   "ongoing":  "ongoing",
 };
 
-export function explainMatch(card: ActionCardData, prefs: Preferences): string[] {
+export function explainMatch(card: ActionCardData, prefs: Preferences, ctx?: UserContext): string[] {
   const reasons: string[] = [];
 
   // Tone reasons — only mention dimensions where BOTH user wants ≥2 AND card scores ≥2.
@@ -477,6 +501,9 @@ export function explainMatch(card: ActionCardData, prefs: Preferences): string[]
   // Community traction — only flag highly-engaged cards.
   const engagement = (card.boosts ?? 0) + (card.completions ?? 0);
   if (engagement >= 10) reasons.push("high community traction");
+
+  // Personal history signals
+  if (card.id != null && inSet(ctx?.boostedIds, card.id)) reasons.push("you boosted this");
 
   return reasons;
 }

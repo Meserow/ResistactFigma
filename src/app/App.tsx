@@ -16,7 +16,8 @@ import { locationToState, LOCATION_OPTIONS } from "./lib/locations";
 import { HomeHero } from "./components/HomeHero";
 import { LoggedInHero } from "./components/LoggedInHero";
 import { MatchMeModal } from "./components/MatchMeModal";
-import { rankCards, loadPreferences, clearPreferences, applyMatcherConfig, fetchUserPreferences, pushUserPreferences, savePreferences, type Preferences } from "./lib/matcher";
+import { FeedbackModal } from "./components/FeedbackModal";
+import { rankCards, loadPreferences, clearPreferences, applyMatcherConfig, fetchUserPreferences, pushUserPreferences, savePreferences, type Preferences, type UserContext } from "./lib/matcher";
 import svgPaths from "../imports/svg-77lgd1zdt6";
 import { projectId, publicAnonKey } from "/utils/supabase/info";
 import { supabase } from "./lib/supabase";
@@ -202,6 +203,7 @@ export default function App() {
   const [actOpen, setActOpen] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
   const [matchOpen, setMatchOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   /** Active match prefs — when set, the feed re-ranks by `rankCards`. */
   const [matchPrefs, setMatchPrefs] = useState<Preferences | null>(null);
   const [editCardId, setEditCardId] = useState<number | null>(null);
@@ -364,7 +366,8 @@ export default function App() {
     // the matcher's score already incorporates engagement and the user's intent
     // is more specific.
     if (matchPrefs) {
-      return pinFirst(rankCards(filtered, matchPrefs));
+      const userCtx: UserContext = { completedIds: completedCards, boostedIds: boostedCards };
+      return pinFirst(rankCards(filtered, matchPrefs, userCtx));
     }
 
     if (sortBy === "az") {
@@ -448,6 +451,7 @@ export default function App() {
         setAccessToken(session.access_token);
         fetchApprovalStatus(session.access_token, session.user);
         fetchMyCompletions(session.access_token);
+        fetchMyBoosts(session.access_token);
         fetchMyBookmarks(session.access_token);
         syncMatchPreferencesOnLogin(session.access_token);
       } else {
@@ -498,6 +502,26 @@ export default function App() {
       }
     } catch (err) {
       console.error("Could not fetch completions:", err);
+    }
+  }
+
+  async function fetchMyBoosts(token: string) {
+    try {
+      const res = await fetch(`${API}/me/boosts`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (Array.isArray(data.boostedIds)) {
+        setActedCards((prev) => {
+          const next = new Set(prev);
+          for (const id of data.boostedIds) next.add(id);
+          try { localStorage.setItem("resistact_boosted", JSON.stringify([...next])); } catch {}
+          return next;
+        });
+      }
+    } catch (err) {
+      console.error("Could not fetch boosts:", err);
     }
   }
 
@@ -894,6 +918,7 @@ export default function App() {
         onActClick={() => setActOpen(true)}
         onBookmarksClick={() => setBookmarksOpen(true)}
         bookmarkCount={bookmarkedCards.size}
+        onFeedbackClick={() => setFeedbackOpen(true)}
         matchActive={matchPrefs !== null}
         onMatchClear={() => { setMatchPrefs(null); clearPreferences(); }}
         statsActsCount={hasActiveFilters ? displayedCards.length : (synced && serverTotal > 0 ? serverTotal : cards.length)}
@@ -1079,7 +1104,7 @@ export default function App() {
         </p>
         <p className="mt-3 max-w-3xl mx-auto font-['Poppins',sans-serif] text-[11px] leading-[1.6] text-gray-400">
           <strong className="font-semibold text-gray-500">Disclaimer:</strong>{" "}
-          Action cards on ResistAct are submitted by members of the general public. Their inclusion does not constitute endorsement, sponsorship, verification, or recommendation by ResistAct, its operators, contributors, or affiliates. ResistAct makes no representations or warranties as to the accuracy, legality, safety, or efficacy of any submitted action and expressly disclaims all liability arising from any reliance on, or participation in, content posted by users. Participants act at their own risk and are solely responsible for evaluating the legality and safety of any action in their jurisdiction.
+          Action cards on ResistAct are gathered from and submitted by members of the general public. Their inclusion does not constitute endorsement, sponsorship, verification, or recommendation by ResistAct, its operators, contributors, or affiliates. ResistAct makes no representations or warranties as to the accuracy, legality, safety, or efficacy of any submitted action and expressly disclaims all liability arising from any reliance on, or participation in, content posted by users. Participants act at their own risk and are solely responsible for evaluating the legality and safety of any action in their jurisdiction.
         </p>
       </footer>
 
@@ -1116,11 +1141,22 @@ export default function App() {
         <InfoModal onClose={() => setInfoOpen(false)} />
       )}
 
+      {/* Feedback modal */}
+      {feedbackOpen && (
+        <FeedbackModal
+          onClose={() => setFeedbackOpen(false)}
+          userEmail={approval?.email ?? null}
+          userName={approval?.name ?? null}
+        />
+      )}
+
       {/* Match Me wizard */}
       {matchOpen && (
         <MatchMeModal
           cards={cards}
           isLoggedIn={!!approval}
+          completedIds={[...completedCards]}
+          boostedIds={[...boostedCards]}
           onClose={() => setMatchOpen(false)}
           onApply={(prefs) => {
             setMatchPrefs(prefs);

@@ -2,7 +2,7 @@ import logoImg from "../../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import type { ReactNode } from "react";
 import { FACT_CARDS } from "../data/factCards";
-import { Bell, Bookmark, ChevronDown, Clock, Flame, Info, LogOut, MapPin, Menu, Search, ShieldCheck, X, Zap } from "lucide-react";
+import { Bell, Bookmark, ChevronDown, Clock, Flame, Info, LogOut, MapPin, Menu, MessageCircle, Search, ShieldCheck, X, Zap } from "lucide-react";
 import type { UserApproval } from "../lib/supabase";
 
 function ResistActLogo() {
@@ -54,9 +54,10 @@ interface NavbarProps {
   onSortChange?: (sort: "popular" | "newest" | "az") => void;
   onBookmarksClick?: () => void;
   bookmarkCount?: number;
+  onFeedbackClick?: () => void;
 }
 
-export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount }: NavbarProps) {
+export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick }: NavbarProps) {
   // Acts filters in render order: Location dropdown first, Category pills second.
   // Used for "Clear all" and the mobile filter row that shows just the names.
   const ACTS_FILTER_OPTIONS: Record<string, string[]> = {
@@ -418,6 +419,16 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                 Join the Resistance
               </button>
             </>
+          )}
+          {onFeedbackClick && (
+            <button
+              onClick={onFeedbackClick}
+              aria-label="Share feedback"
+              title="Share feedback"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-[#23297e] text-white hover:bg-[#1a1f5e] transition-colors shrink-0"
+            >
+              <MessageCircle size={18} fill="currentColor" strokeWidth={0} />
+            </button>
           )}
         </div>
 
@@ -818,6 +829,15 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
       {/* Mobile dropdown */}
       {mobileMenuOpen && (
         <div className="md:hidden px-5 py-4 border-t border-gray-100 bg-white space-y-3">
+          {onFeedbackClick && (
+            <button
+              onClick={() => { setMobileMenuOpen(false); onFeedbackClick(); }}
+              className="w-full flex items-center gap-2 py-2.5 px-4 bg-[#23297e]/5 text-[#23297e] rounded-xl font-['Poppins',sans-serif] font-semibold text-sm"
+            >
+              <MessageCircle size={16} strokeWidth={2} />
+              Share Feedback
+            </button>
+          )}
           <button
             onClick={() => { setMobileMenuOpen(false); onInfoClick(); }}
             className="w-full flex items-center gap-2 py-2.5 px-4 bg-gray-50 text-gray-700 rounded-xl font-['Poppins',sans-serif] font-semibold text-sm"
