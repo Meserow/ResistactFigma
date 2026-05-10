@@ -14,23 +14,60 @@ import type { ActionCardData } from "../components/ActionCard";
 export type TimeBucket = "5min" | "30min" | "1hr" | "fewHours" | "fullDay" | "ongoing";
 
 /**
- * What kind of action context the user is willing to engage in.
+ * What kind of action context the user is willing to engage in. Stored as
+ * an array on Preferences so the user can pick more than one (e.g. "online"
+ * + "at home" but not in-person). An empty array means "any" — no filter.
  *  - "online":    needs an internet connection; mostly screen time
  *  - "atHome":    can be done in the user's home (online OR offline tasks like
  *                 knitting, letter-writing, phone-calling reps)
  *  - "inPerson":  requires showing up somewhere
- *  - "either":    no preference
  */
-export type Setting = "online" | "atHome" | "inPerson" | "either";
+export type Setting = "online" | "atHome" | "inPerson";
 
 export type VulnerableGroup =
+  // ── Identity (original 7) ──────────────────────────────────────────
   | "woman"
   | "immigrant"
   | "lgbtq"
   | "repro"
   | "disabled"
   | "fedWorker"
-  | "journalist";
+  | "journalist"
+  // ── Race, ethnicity, religion ─────────────────────────────────────
+  | "black"
+  | "muslim"
+  | "jewish"
+  | "asian"
+  | "indigenous"
+  | "latino"
+  | "nonChristianMinority"
+  // ── Identity additions ────────────────────────────────────────────
+  | "refugee"
+  // ── Role, occupation, status ──────────────────────────────────────
+  | "student"
+  | "educator"
+  | "publicHealthWorker"
+  | "scientist"
+  | "lawyer"
+  | "whistleblower"
+  | "libraryWorker"
+  | "nonprofitWorker"
+  | "electionWorker"
+  | "veteran"
+  | "unionWorker"
+  | "farmworker"
+  // ── Economic ──────────────────────────────────────────────────────
+  | "lowIncome"
+  | "medicaidMedicare"
+  | "obamacare"
+  | "ssdi"
+  | "renter"
+  // ── Geographic / situational ──────────────────────────────────────
+  | "ruralHealthcare"
+  | "climateAffected"
+  | "abortionTravel"
+  | "incarcerated"
+  | "unhoused";
 
 export interface Tone {
   /** Confrontational, in-the-streets energy. */
@@ -50,12 +87,19 @@ export interface Tone {
 
 export interface Preferences {
   time: TimeBucket | null;
-  setting: Setting | null;
+  /** Empty array = "any" (no filter). One or more entries = card must match
+   * at least one of them. */
+  setting: Setting[];
   /** State name (e.g. "California", "New York", "Washington DC") or null for
    * "Anywhere". When set, hard-filters out cards tied to other states.
    * Cards marked "Online", "National", "Multi-state", or `atHome=true` always
    * pass — they're location-independent. */
   state: string | null;
+  /** When true, the state field is used for ranking only — cards from other
+   * states still pass the filter, but the user's state ranks higher. Lets a
+   * user say "I'm in CA but show me everything, just put my local stuff
+   * first." Has no effect when `state` is null. */
+  includeAnywhere: boolean;
   vulnerableGroups: VulnerableGroup[];
   tone: Pick<Tone, "anger" | "comedy" | "subversion" | "hope" | "energy">;
 }
@@ -65,8 +109,9 @@ export const DEFAULT_PREFERENCES: Preferences = {
   // The wizard shows time as a slider, so it must be a real value (not null) —
   // null was a holdover from the old pill-picker step.
   time: "30min",
-  setting: null,
+  setting: [],
   state: null,
+  includeAnywhere: false,
   vulnerableGroups: [],
   tone: { anger: 1, comedy: 1, subversion: 1, hope: 1, energy: 1 },
 };
@@ -195,7 +240,10 @@ const BUCKET_MINUTES: Record<TimeBucket, number> = {
 // surface a group's voice with extra weight. Both keyed by category as a
 // reasonable default; specific cards can override later.
 
-const HIGH_RISK_FOR_GROUP: Record<VulnerableGroup, Set<string>> = {
+// Risk and amplification mappings only need entries for groups where we have
+// a clear signal. Groups not listed default to no risk and no amplification —
+// they're tracked but don't influence scoring until tuned.
+const HIGH_RISK_FOR_GROUP: Partial<Record<VulnerableGroup, Set<string>>> = {
   // Women face elevated risk at clinic-defense + trans/repro adjacent in-person
   // actions, but not on the standard protest spectrum — light touch only.
   woman:      new Set([]),
@@ -211,7 +259,7 @@ const HIGH_RISK_FOR_GROUP: Record<VulnerableGroup, Set<string>> = {
 };
 
 // Categories where the group's identity gives the action extra weight.
-const SURFACES_VOICE_FOR: Record<VulnerableGroup, Set<string>> = {
+const SURFACES_VOICE_FOR: Partial<Record<VulnerableGroup, Set<string>>> = {
   woman:      new Set(["PETITION", "EMAIL CAMPAIGN", "LETTER TO EDITOR", "MEETING", "SOCIAL MEDIA", "NEWS STORY"]),
   immigrant:  new Set(["PETITION", "EMAIL CAMPAIGN", "LETTER TO EDITOR", "MEETING", "SOCIAL MEDIA", "NEWS STORY"]),
   lgbtq:      new Set(["PETITION", "EMAIL CAMPAIGN", "LETTER TO EDITOR", "MEETING", "SOCIAL MEDIA", "NEWS STORY"]),
@@ -255,13 +303,17 @@ function cardIsAtHome(card: ActionCardData): boolean {
   return !!card.isOnline || !!card.atHome || card.location === "From Home";
 }
 
-export function settingMatches(card: ActionCardData, setting: Setting | null): boolean {
-  if (!setting || setting === "either") return true;
+/** True if the card matches at least one of the requested settings, or if
+ * the request is empty (= "any"). */
+export function settingMatches(card: ActionCardData, settings: Setting[]): boolean {
+  if (!settings || settings.length === 0) return true;
   const isOnline = !!card.isOnline;
-  if (setting === "online")   return isOnline;
-  if (setting === "atHome")   return cardIsAtHome(card);
-  if (setting === "inPerson") return !isOnline;
-  return true;
+  return settings.some((s) => {
+    if (s === "online")   return isOnline;
+    if (s === "atHome")   return cardIsAtHome(card);
+    if (s === "inPerson") return !isOnline;
+    return false;
+  });
 }
 
 // ─── Location / state filter ──────────────────────────────────────────────────
@@ -312,8 +364,10 @@ export function stateMatches(card: ActionCardData, userState: string | null): bo
 export function score(card: ActionCardData, prefs: Preferences): number {
   // Hard filter: setting mismatch
   if (!settingMatches(card, prefs.setting)) return 0;
-  // Hard filter: state mismatch — keeps Illinois events out of California's feed.
-  if (!stateMatches(card, prefs.state)) return 0;
+  // Hard filter: state mismatch — keeps Illinois events out of California's
+  // feed. When `includeAnywhere` is true, the state field is used for ranking
+  // only and the filter is bypassed (every state passes).
+  if (!prefs.includeAnywhere && !stateMatches(card, prefs.state)) return 0;
 
   // Risk assessment for selected groups (penalty/bonus, not a hard filter)
   const risk = assessRisk(card, prefs.vulnerableGroups);
@@ -346,7 +400,12 @@ export function score(card: ActionCardData, prefs: Preferences): number {
   const engagement = (card.boosts ?? 0) + (card.completions ?? 0);
   const engagementScore = Math.min(engagement, 20) / 4; // 0-5
 
-  return toneScore + timeScore + riskAdj + engagementScore;
+  // Local-state priority bonus — when the user picked a state and chose to
+  // see actions from anywhere, lift cards that match their state above the
+  // rest so local stuff still ranks first.
+  const stateBonus = (prefs.includeAnywhere && prefs.state && stateMatches(card, prefs.state)) ? 6 : 0;
+
+  return toneScore + timeScore + riskAdj + engagementScore + stateBonus;
 }
 
 // ─── Top N ────────────────────────────────────────────────────────────────────
@@ -393,10 +452,12 @@ export function explainMatch(card: ActionCardData, prefs: Preferences): string[]
     reasons.push(TIME_LABEL[prefs.time]);
   }
 
-  // Setting match — only call out if the user picked a non-"either" preference.
-  if (prefs.setting === "online" && card.isOnline) reasons.push("online");
-  if (prefs.setting === "atHome" && (card.atHome || card.isOnline)) reasons.push("at home");
-  if (prefs.setting === "inPerson" && !card.isOnline) reasons.push("in-person");
+  // Setting match — only call out if the user picked a specific subset.
+  if (prefs.setting.length > 0 && prefs.setting.length < 3) {
+    if (prefs.setting.includes("online")   && card.isOnline) reasons.push("online");
+    else if (prefs.setting.includes("atHome")   && (card.atHome || card.isOnline)) reasons.push("at home");
+    else if (prefs.setting.includes("inPerson") && !card.isOnline) reasons.push("in-person");
+  }
 
   // State match — call out a local card when the user picked a state.
   if (prefs.state) {
@@ -430,19 +491,7 @@ export function loadPreferences(): Preferences | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (typeof parsed !== "object" || !parsed) return null;
-    return {
-      time: parsed.time ?? null,
-      setting: parsed.setting ?? null,
-      state: typeof parsed.state === "string" ? parsed.state : null,
-      vulnerableGroups: Array.isArray(parsed.vulnerableGroups) ? parsed.vulnerableGroups : [],
-      tone: {
-        anger: typeof parsed.tone?.anger === "number" ? parsed.tone.anger : 1,
-        comedy: typeof parsed.tone?.comedy === "number" ? parsed.tone.comedy : 1,
-        subversion: typeof parsed.tone?.subversion === "number" ? parsed.tone.subversion : 1,
-        hope: typeof parsed.tone?.hope === "number" ? parsed.tone.hope : 1,
-        energy: typeof parsed.tone?.energy === "number" ? parsed.tone.energy : 1,
-      },
-    };
+    return normalizePreferences(parsed);
   } catch {
     return null;
   }
@@ -456,4 +505,79 @@ export function savePreferences(prefs: Preferences) {
 
 export function clearPreferences() {
   try { localStorage.removeItem(STORAGE_KEY); } catch {}
+}
+
+// ─── Server-side sync (for signed-in users) ──────────────────────────────────
+// Match prefs live in localStorage by default. When a user signs in we mirror
+// them to a `user:preferences:{userId}` row on the server so they follow the
+// account across devices. Failures are logged but never thrown — sync is a
+// best-effort enhancement, not a blocker.
+
+import { projectId } from "/utils/supabase/info";
+const PREFS_API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04/me/preferences`;
+
+/** Fetch the signed-in user's stored match prefs. Returns null on miss or
+ * any error so callers can fall back to localStorage cleanly. */
+export async function fetchUserPreferences(token: string): Promise<Preferences | null> {
+  try {
+    const res = await fetch(PREFS_API, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data?.preferences || typeof data.preferences !== "object") return null;
+    // Reuse the same loose normalization that loadPreferences applies to the
+    // localStorage payload — the server stores whatever shape the client sent,
+    // so old records may be missing newer fields.
+    return normalizePreferences(data.preferences);
+  } catch (err) {
+    console.warn("fetchUserPreferences failed:", err);
+    return null;
+  }
+}
+
+/** Push prefs to the server. Best-effort; the local copy stays the source of
+ * truth until the next login on a fresh device. */
+export async function pushUserPreferences(token: string, prefs: Preferences): Promise<void> {
+  try {
+    await fetch(PREFS_API, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(prefs),
+    });
+  } catch (err) {
+    console.warn("pushUserPreferences failed:", err);
+  }
+}
+
+/** Shared validation/migration so both `loadPreferences` (localStorage) and
+ * `fetchUserPreferences` (server) hand back a fully-shaped Preferences. */
+function normalizePreferences(parsed: any): Preferences {
+  let setting: Setting[] = [];
+  if (Array.isArray(parsed.setting)) {
+    setting = parsed.setting.filter((s: unknown): s is Setting =>
+      s === "online" || s === "atHome" || s === "inPerson"
+    );
+  } else if (typeof parsed.setting === "string" && parsed.setting !== "either") {
+    if (parsed.setting === "online" || parsed.setting === "atHome" || parsed.setting === "inPerson") {
+      setting = [parsed.setting];
+    }
+  }
+  return {
+    time: parsed.time ?? null,
+    setting,
+    state: typeof parsed.state === "string" ? parsed.state : null,
+    includeAnywhere: parsed.includeAnywhere === true,
+    vulnerableGroups: Array.isArray(parsed.vulnerableGroups) ? parsed.vulnerableGroups : [],
+    tone: {
+      anger: typeof parsed.tone?.anger === "number" ? parsed.tone.anger : 1,
+      comedy: typeof parsed.tone?.comedy === "number" ? parsed.tone.comedy : 1,
+      subversion: typeof parsed.tone?.subversion === "number" ? parsed.tone.subversion : 1,
+      hope: typeof parsed.tone?.hope === "number" ? parsed.tone.hope : 1,
+      energy: typeof parsed.tone?.energy === "number" ? parsed.tone.energy : 1,
+    },
+  };
 }

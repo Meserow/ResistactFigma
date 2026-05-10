@@ -13,6 +13,7 @@ import { LOCATION_OPTIONS } from "../lib/locations";
 import { categoryToneDefault, type VulnerableGroup, type TimeBucket } from "../lib/matcher";
 import { ToneRangeSlider } from "./ToneSlider";
 import { InvolvementPicker } from "./InvolvementPicker";
+import { GroupsDropdown } from "./GroupsDropdown";
 
 type ToneVec = { anger: number; comedy: number; subversion: number; hope: number; energy: number };
 
@@ -22,16 +23,6 @@ const TONE_FIELDS: { key: keyof ToneVec; label: string; Icon: LucideIcon; desc: 
   { key: "subversion", label: "Subversive", Icon: VenetianMask,  desc: "Disruptive, off the beaten path" },
   { key: "hope",       label: "Hope",       Icon: Sunrise,       desc: "Uplifting, optimistic, building" },
   { key: "energy",     label: "Energy",     Icon: Zap,           desc: "Physical/emotional fired-up demand on the user" },
-];
-
-const GROUP_OPTIONS: { value: VulnerableGroup; label: string }[] = [
-  { value: "immigrant",  label: "Immigrant (documented, undocumented, mixed status family)" },
-  { value: "lgbtq",      label: "LGBTQIA+ / Trans" },
-  { value: "repro",      label: "Seeking or providing reproductive care" },
-  { value: "disabled",   label: "Disabled / chronically ill / medically challenged" },
-  { value: "fedWorker",  label: "Federal worker / contractor" },
-  { value: "journalist", label: "Journalist / researcher" },
-  { value: "woman",      label: "Woman" },
 ];
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
@@ -146,13 +137,13 @@ export function AskFlowModal({
   const isApproved = approval?.status === "approved";
   const selectedCat = CATEGORIES.find((c) => c.name === selectedCategory);
 
-  /** Wizard step layout. The 4 form steps are always present; logged-out
+  /** Wizard step layout. The 5 form steps are always present; logged-out
    * users get an extra "Create an account" step at the end. */
-  const totalSteps = isLoggedIn ? 4 : 5;
+  const totalSteps = isLoggedIn ? 5 : 6;
   const isLastStep = step === totalSteps - 1;
-  const isAuthStep = !isLoggedIn && step === 4;
+  const isAuthStep = !isLoggedIn && step === 5;
 
-  const STEP_TITLES = ["What's your ask?", "Logistics", "Tone & audience", "Header & details", "Create an account"];
+  const STEP_TITLES = ["What's your ask?", "Logistics", "Tone", "Header image", "Optional details", "Create an account"];
 
   // If a user signs in while sitting on the auth step (step 4), the auth step
   // no longer renders and totalSteps shrinks to 4. Drop them on the final
@@ -312,7 +303,7 @@ export function AskFlowModal({
                           setTone({ anger: d.anger, comedy: d.comedy, subversion: d.subversion, hope: d.hope, energy: d.energy });
                         }
                       }}
-                      className={inputCls}
+                      className={selectCls(selectedCategory)}
                       style={selectedCat ? { color: selectedCat.color, fontWeight: 600 } : undefined}
                     >
                       <option value="">— select a category —</option>
@@ -361,11 +352,13 @@ export function AskFlowModal({
                     <select
                       value={formLocation}
                       onChange={(e) => setFormLocation(e.target.value)}
-                      className={inputCls}
+                      className={selectCls(formLocation)}
                     >
                       <option value="">— select —</option>
                       {LOCATION_OPTIONS.map((opt) => (
-                        <option key={opt} value={opt}>{opt}</option>
+                        <option key={opt} value={opt}>
+                          {opt === "From Home" ? "From Home (not online actions)" : opt}
+                        </option>
                       ))}
                     </select>
                   </Field>
@@ -382,9 +375,8 @@ export function AskFlowModal({
                 </Section>
                 )}
 
-                {/* ── Step 2: Tone & audience ───────────────────────────── */}
+                {/* ── Step 2: Tone of this action ────────────────────────── */}
                 {step === 2 && (
-                <>
                 <Section
                   title="Tone of this action"
                   hint="How would you describe the type of action this is? Helps us match it to people looking for the right vibe today."
@@ -412,58 +404,16 @@ export function AskFlowModal({
                     ))}
                   </div>
                 </Section>
-
-                {/* Section: Group affinity */}
-                <Section
-                  title="Who does this especially help?"
-                  hint="Pick any groups whose voice this action particularly amplifies. Optional — leave empty if it's broad."
-                >
-                  <div className="space-y-1.5">
-                    {GROUP_OPTIONS.map(({ value, label }) => {
-                      const checked = amplifiesGroups.includes(value);
-                      return (
-                        <label
-                          key={value}
-                          className="flex items-start gap-2.5 cursor-pointer select-none rounded-lg px-2 py-1.5 hover:bg-gray-50"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={(e) => {
-                              setAmplifiesGroups(
-                                e.target.checked
-                                  ? [...amplifiesGroups, value]
-                                  : amplifiesGroups.filter((g) => g !== value)
-                              );
-                            }}
-                            className="mt-0.5 w-4 h-4 rounded accent-[#fd8e33] shrink-0"
-                          />
-                          <span className="font-['Poppins',sans-serif] text-[13px] text-gray-700 leading-snug">
-                            {label}
-                          </span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                </Section>
-                </>
                 )}
 
-                {/* ── Step 3: Header + verification ─────────────────────── */}
+                {/* ── Step 3: Header image (required, own page) ──────────── */}
                 {step === 3 && (
-                <>
-                <Section title="Optional details">
-                  <Field label="Sponsor">
-                    <input
-                      type="text" value={formSponsor}
-                      onChange={(e) => setFormSponsor(e.target.value)}
-                      placeholder="Organization or person sponsoring this action"
-                      className={inputCls}
-                    />
-                  </Field>
-
+                <Section
+                  title="Header image"
+                  hint="A photo or banner that represents this action. Upload from your computer or paste any image URL."
+                >
                   <Field label="Header image" required>
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
                       <input
                         ref={fileInputRef}
                         type="file"
@@ -475,17 +425,27 @@ export function AskFlowModal({
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
                         disabled={uploading}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-[#23297e] hover:bg-[#1a2060] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-semibold text-xs rounded-lg transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-2 bg-[#fd8e33] hover:bg-[#d96612] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-semibold text-xs rounded-lg transition-colors"
                       >
                         {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
                         {uploading ? "Uploading…" : "Upload from computer"}
                       </button>
                       <span className="font-['Poppins',sans-serif] text-[11px] text-gray-400">or paste a URL ↓</span>
+                      <label className="ml-auto flex items-center gap-1.5 cursor-pointer select-none">
+                        <input
+                          type="checkbox" checked={formImageContain}
+                          onChange={(e) => setFormImageContain(e.target.checked)}
+                          className="w-3.5 h-3.5 rounded accent-[#fd8e33]"
+                        />
+                        <span className="font-['Poppins',sans-serif] text-[11.5px] text-gray-500">
+                          Fit logo (don't crop)
+                        </span>
+                      </label>
                     </div>
                     <input
                       type="url" value={formImageUrl}
                       onChange={(e) => setFormImageUrl(e.target.value)}
-                      placeholder="https://… (optional)"
+                      placeholder="https://… (paste any image URL)"
                       className={inputCls}
                     />
                     {formImageUrl.trim() && (
@@ -501,20 +461,38 @@ export function AskFlowModal({
                     {uploadError && (
                       <p className="mt-1.5 font-['Poppins',sans-serif] text-[11px] text-red-500">{uploadError}</p>
                     )}
-                    <label className="flex items-center gap-2 mt-2 cursor-pointer select-none">
-                      <input
-                        type="checkbox" checked={formImageContain}
-                        onChange={(e) => setFormImageContain(e.target.checked)}
-                        className="w-4 h-4 rounded accent-[#fd8e33]"
-                      />
-                      <span className="font-['Poppins',sans-serif] text-[12.5px] text-gray-600">
-                        Fit logo inside header (don't crop)
-                      </span>
-                    </label>
-                    <p className="mt-1 font-['Poppins',sans-serif] text-[11px] text-gray-400">
-                      Optional. Upload a file (max 5 MB) or paste a URL. Turn on "Fit logo" for org banners; leave off for photos.
-                    </p>
                   </Field>
+                </Section>
+                )}
+
+                {/* ── Step 4: Optional details ──────────────────────────── */}
+                {step === 4 && (
+                <>
+                <Section title="Optional details">
+                  <Field label="Sponsor">
+                    <input
+                      type="text" value={formSponsor}
+                      onChange={(e) => setFormSponsor(e.target.value)}
+                      placeholder="Organization or person sponsoring this action"
+                      className={inputCls}
+                    />
+                  </Field>
+                </Section>
+
+                {/* Section: Group affinity */}
+                <Section
+                  title="Who does this especially help?"
+                  hint="Pick any groups whose voice this action particularly amplifies. Optional — leave empty if it's broad."
+                >
+                  <GroupsDropdown
+                    value={amplifiesGroups}
+                    onToggle={(g) =>
+                      setAmplifiesGroups((prev) =>
+                        prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]
+                      )
+                    }
+                    onClear={() => setAmplifiesGroups([])}
+                  />
                 </Section>
 
                 {/* Section: Verification */}
@@ -618,8 +596,15 @@ export function AskFlowModal({
 }
 
 // ─── Sub-components & helpers ──────────────────────────────────────────────────
-const inputCls =
-  "w-full px-4 py-3 bg-white border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#fd8e33]/30 focus:border-[#fd8e33] transition-colors";
+// Base shared between text inputs and selects so styling stays in lockstep.
+// The text-color class is appended per-context: text inputs always show their
+// content in dark; selects swap between dark (when a value is picked) and
+// grey-italic (when the placeholder option is selected).
+const inputBase =
+  "w-full px-4 py-3 bg-white border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm focus:outline-none focus:ring-2 focus:ring-[#fd8e33]/30 focus:border-[#fd8e33] transition-colors";
+const inputCls = `${inputBase} text-gray-800 placeholder-gray-400 placeholder:italic`;
+const selectCls = (val: string | null | undefined) =>
+  `${inputBase} ${val ? "text-gray-800" : "text-gray-400 italic"}`;
 
 function Section({
   title, hint, children,

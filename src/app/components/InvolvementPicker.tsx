@@ -17,9 +17,9 @@ interface Level {
 /** Subtitle copy from the user's perspective — used in the matcher wizard
  * where the question is "how involved do *you* want to be?". */
 const LEVELS_MATCH: Level[] = [
-  { key: "5min",     title: "Just the basics", subtitle: "When I have a sec", desc: "Quick sign-and-send actions" },
+  { key: "5min",     title: "Just the basics", subtitle: "When I have a sec", desc: "Quick, < 5 minutes" },
   { key: "30min",    title: "A little",        subtitle: "Few hrs / month",   desc: "Show up here and there" },
-  { key: "fewHours", title: "Regularly",       subtitle: "Few hrs / week",    desc: "Phone-banking, local org" },
+  { key: "fewHours", title: "Regularly",       subtitle: "Few hrs / week",    desc: "Phone bank, local org" },
   { key: "ongoing",  title: "All in",          subtitle: "Ongoing",           desc: "Organizing, leadership" },
 ];
 
@@ -27,9 +27,9 @@ const LEVELS_MATCH: Level[] = [
  * Action where the planner is describing what their action takes, not what
  * they personally have time for. */
 const LEVELS_PLAN: Level[] = [
-  { key: "5min",     title: "Just the basics", subtitle: "Takes a moment",  desc: "Quick sign-and-send" },
+  { key: "5min",     title: "Just the basics", subtitle: "Takes a moment",  desc: "Quick, < 5 minutes" },
   { key: "30min",    title: "A little",        subtitle: "Few hrs / month", desc: "Show up here and there" },
-  { key: "fewHours", title: "Regularly",       subtitle: "Few hrs / week",  desc: "Phone-banking, local org" },
+  { key: "fewHours", title: "Regularly",       subtitle: "Few hrs / week",  desc: "Phone bank, local org" },
   { key: "ongoing",  title: "All in",          subtitle: "Ongoing",         desc: "Organizing, leadership" },
 ];
 

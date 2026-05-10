@@ -2,7 +2,7 @@ import logoImg from "../../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import type { ReactNode } from "react";
 import { FACT_CARDS } from "../data/factCards";
-import { Bell, ChevronDown, Clock, Info, LogIn, LogOut, MapPin, Menu, Search, ShieldCheck, X, Zap } from "lucide-react";
+import { Bell, Bookmark, ChevronDown, Clock, Flame, Info, LogOut, MapPin, Menu, Search, ShieldCheck, X, Zap } from "lucide-react";
 import type { UserApproval } from "../lib/supabase";
 
 function ResistActLogo() {
@@ -52,9 +52,11 @@ interface NavbarProps {
   onQuickActionsChange?: (v: boolean) => void;
   sortBy?: "popular" | "newest" | "az";
   onSortChange?: (sort: "popular" | "newest" | "az") => void;
+  onBookmarksClick?: () => void;
+  bookmarkCount?: number;
 }
 
-export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, sortBy = "popular", onSortChange }: NavbarProps) {
+export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount }: NavbarProps) {
   // Acts filters in render order: Location dropdown first, Category pills second.
   // Used for "Clear all" and the mobile filter row that shows just the names.
   const ACTS_FILTER_OPTIONS: Record<string, string[]> = {
@@ -87,10 +89,15 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
     if (!ctx) return;
     ctx.font = '500 12px Poppins, ui-sans-serif, sans-serif';
     const containerWidth = containerEl.offsetWidth;
-    const MORE_BTN_W = 84;  // "+ N more" button (rough width)
+    // "+ N more" can include a 16px count badge + 12px chevron + paddings.
+    // Plus we add an extra safety buffer so the trailing "Clear all" link
+    // never collides with the rightmost pill, even if Poppins metrics differ
+    // a hair from our canvas estimate.
+    const MORE_BTN_W = 132;
+    const SAFETY_BUFFER = 24;
     const PILL_H_PAD = 22;  // px-2.5 × 2 sides = 20px + 2px border
     const GAP = 4;           // gap-1
-    let used = MORE_BTN_W;
+    let used = MORE_BTN_W + SAFETY_BUFFER;
     let count = 0;
     for (const cat of categories) {
       const w = Math.ceil(ctx.measureText(cat).width) + PILL_H_PAD + GAP;
@@ -359,6 +366,18 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                         )}
                       </div>
                     )}
+                    <button
+                      onClick={() => { setDropdownOpen(false); onBookmarksClick?.(); }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-['Poppins',sans-serif] font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                    >
+                      <Bookmark size={15} />
+                      My Bookmarks
+                      {bookmarkCount != null && bookmarkCount > 0 && (
+                        <span className="ml-auto bg-[#fd8e33] text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                          {bookmarkCount > 99 ? "99+" : bookmarkCount}
+                        </span>
+                      )}
+                    </button>
                     {isAdmin && (
                       <button
                         onClick={() => { setDropdownOpen(false); onAdminClick(); }}
@@ -393,10 +412,10 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               )}
               <button
                 onClick={onLoginClick}
-                className="flex items-center gap-2 px-5 py-3 rounded-xl border border-[#23297e] text-[#23297e] font-['Poppins',sans-serif] font-bold text-base hover:bg-[#23297e]/5 transition-colors"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#fd8e33] text-white font-['Poppins',sans-serif] font-bold text-sm hover:bg-[#d96612] transition-colors whitespace-nowrap"
               >
-                <LogIn size={16} />
-                Sign In
+                <Flame size={15} strokeWidth={2.5} />
+                Join the Resistance
               </button>
             </>
           )}
@@ -446,7 +465,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
 
         {activeTab === "facts" ? (
           /* ── Facts: top-N category pills + "More" dropdown ───────────── */
-          <div ref={factsPillsRef} className="flex-1 min-w-0 flex items-center gap-1">
+          <div ref={factsPillsRef} className="flex-1 min-w-0 flex items-center gap-1 overflow-hidden">
             {factsInlinePills.map((option) => {
               const selected = factsSelected.includes(option);
               return (
@@ -564,7 +583,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
 
             {/* Category pills + "more" overflow — mirrors Facts UX */}
             <span className="font-['Poppins',sans-serif] text-gray-400 text-[10px] uppercase tracking-widest font-semibold shrink-0">Category</span>
-            <div ref={actsPillsRef} className="flex-1 min-w-0 flex items-center gap-1">
+            <div ref={actsPillsRef} className="flex-1 min-w-0 flex items-center gap-1 overflow-hidden">
             {actsInlinePills.map((option) => {
               const selected = actsCatsSelected.includes(option);
               return (
@@ -828,10 +847,10 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
           ) : (
             <button
               onClick={() => { setMobileMenuOpen(false); onLoginClick(); }}
-              className="w-full flex items-center justify-center gap-2 py-2.5 border border-[#23297e] text-[#23297e] rounded-xl font-['Poppins',sans-serif] font-semibold text-sm"
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full bg-[#fd8e33] text-white font-['Poppins',sans-serif] font-bold text-sm hover:bg-[#d96612] transition-colors"
             >
-              <LogIn size={16} />
-              Sign In / Create Account
+              <Flame size={15} strokeWidth={2.5} />
+              Join the Resistance
             </button>
           )}
           {isLoggedIn && isAdmin && (

@@ -177,22 +177,7 @@ async function seedEllenUser() {
 
 // ─── Seed data ────────────────────────────────────────────────────────────────
 const SEED_CARDS = [
-  { id: 1, isFeatured: true, category: "BOOST", categoryColor: "#8a00e6", actionType: "Online", timeCommitment: "Ongoing", title: "Spread the Word about ResistAct", description: "The immigrant and refugee community has received direct threats about deportations and immigration raids. Our community needs your help spreading awareness about ResistAct so we can build a stronger resistance network together.", boosts: 3020, spotsTotal: "Unlimited", authorName: "Ellen Meserow", authorRole: "ResistAct Founder", authorAvatarKey: "imgImage34" },
-  { id: 2, category: "CRAFTING", categoryColor: "#c34e00", actionType: "In Person", timeCommitment: "Half day", title: "Make 1460 Orange Paper Chains", description: "Help trans kids survive the next 4 years by sending them paper chains with 365x4 links to will help them see that there will be an end to this persecution of them.", boosts: 500, spotsTotal: 1000, authorName: "Jo Jones", authorRole: "Citizen Activist", topImageKey: "imgImage12", authorAvatarKey: "imgImage", amplifiesGroups: ["lgbtq"] },
-  { id: 3, category: "FLASH MOB", categoryColor: "#ff00d5", actionType: "In Person Group", timeCommitment: "< 1 hour", title: "Join us in forming human RESIST", description: "The immigrant and refugee community has received direct threats about deportations and immigration raids. Our community is forming a human 'RESIST' sign visible from above — join us!", location: "Boston, MA", boosts: 50, spotsTotal: 200, authorName: "Meg Jones", authorRole: "Franklin High School", topImageKey: "imgImage6", authorAvatarKey: "imgImage4", amplifiesGroups: ["immigrant"] },
-  { id: 4, category: "IRREVERENCE", categoryColor: "#9333ea", actionType: "Online", timeCommitment: "Ongoing", title: "Help Me Launch Over Los Angeles", description: "I have the land to protect and the people to set up a massive Trump balloon over my house, but I need the funding to purchase it. Go to my GoFundMe and help me buy it!", isOnline: true, location: "Los Angeles, CA", boosts: 739, spotsTotal: "Unlimited", authorName: "Patrick Escarcega", authorRole: "Citizen Activist", topImageKey: "imgImage19", authorAvatarKey: "imgImage1" },
-  { id: 5, category: "PROTEST", categoryColor: "#23297e", actionType: "In Person Group", timeCommitment: "Full day", title: "Show Trump We Are United", description: "March on the Capitol with us to show Trump the size of the resistance. Spread the word about July 4th Patriotic Resistance March and bring all your friends and family!", location: "Washington DC", boosts: 2, spotsTotal: 10, authorName: "John Smith", authorRole: "MoveOn.org", topImageKey: "imgImage13", authorAvatarKey: "imgImage20" },
-  { id: 6, category: "SOCIAL MEDIA", categoryColor: "#e44b4b", actionType: "Online", timeCommitment: "1–3 hours", title: "Here Let me Pray for You", description: "We are social media warriors who prove the religious left lives its values. Join us online to pray for our conservative brothers/sisters in Christ who have strayed from His teachings.", isOnline: true, boosts: 52, spotsTotal: 75, authorName: "McKenna Hartman", authorRole: "Citizen Activist", topImageKey: "imgImage7", authorAvatarKey: "imgImage16" },
-  { id: 7, category: "BOOST", categoryColor: "#8a00e6", actionType: "Online", timeCommitment: "Ongoing", title: "Spread the Word about ResistAct", description: "The immigrant and refugee community has received direct threats about deportations and immigration raids. Our community needs your help spreading awareness about ResistAct.", boosts: 3020, spotsTotal: "Unlimited", authorName: "Ellen Meserow", authorRole: "ResistAct Founder", topImageKey: "imgImage25", authorAvatarKey: "imgImage34" },
-  { id: 8, category: "FLASH MOB", categoryColor: "#ff00d5", actionType: "In Person Group", timeCommitment: "1–3 hours", title: "Petition the Leftist Billionaires", description: "We need electronic billboards that show the daily price of eggs/gas since Trump took office. Another to show the Trump deficit versus Elon Musk's wealth. Another to show...", typeTag: "FLASH MOB", boosts: 0, spotsTotal: 10, authorName: "Nancie Kosnoff", authorRole: "Citizen Activist", topImageKey: "imgImage14", authorAvatarKey: "imgImage2" },
-  { id: 9, category: "PETITION", categoryColor: "#05737f", actionType: "In Person", timeCommitment: "< 1 hour", title: "Stop Funding Fox", description: "MoveOn Civic Action has a long history of taking on Fox's lies. With actions taken by thousands of MoveOn members, we've been able to put pressure on cable providers to drop Fox News.", location: "National", boosts: 0, spotsTotal: 10, authorName: "Meg Jones", authorRole: "Franklin High School", topImageKey: "imgImage21", authorAvatarKey: "imgImage4" },
-  { id: 10, category: "PROTEST", categoryColor: "#23297e", actionType: "In Person Group", timeCommitment: "< 1 hour", title: "Towns Across America Blackout", description: "On Tuesday, April 22, 2025, we invite you to participate in a nationwide television blackout in protest of Trump's signing of the bill to defund Planned Parenthood.", location: "National", boosts: 0, spotsTotal: 10, authorName: "Patrick Escarcega", authorRole: "Citizen Activist", topImageKey: "imgImage17", authorAvatarKey: "imgImage1", amplifiesGroups: ["repro", "woman"] },
-  { id: 12, category: "IRREVERENCE", categoryColor: "#9333ea", actionType: "Online", timeCommitment: "Ongoing", title: "Help Fund my Elon Mural!", description: "I am making a mural to show Elon as a reincarnation of Adolf Hitler, using a real photo of Trump giving the Nazi salute! It will be in my community center's parking lot!", isOnline: true, boosts: 500, spotsTotal: "Unlimited", authorName: "McKenna Hartman", authorRole: "Citizen Activist", topImageKey: "imgImage10", authorAvatarKey: "imgImage16" },
-  { id: 13, category: "TRAINING", categoryColor: "#126d89", actionType: "In Person Group", timeCommitment: "1–3 hours", title: "Online ICE Rapid Response", description: "The immigrant and refugee community has received direct threats about deportations and immigration raids. Our community has set up a rapid response network — join us.", location: "National", boosts: 0, spotsTotal: 10, authorName: "Adam Jordan", authorRole: "Catholic Legal Immigration Network", authorLink: "https://www.cliniclegal.org/", topImageKey: "imgImage5", authorAvatarKey: "imgImage3", amplifiesGroups: ["immigrant"] },
-  { id: 14, category: "FLASH MOB", categoryColor: "#ff00d5", actionType: "Online", timeCommitment: "< 1 hour", title: "Petition the Leftist Billionaires", description: "We need electronic billboards that show the daily price of eggs/gas since Trump took office. Another to show the Trump deficit versus Elon Musk's wealth. Another to show...", typeTag: "FLASH MOB", boosts: 500, spotsTotal: "Unlimited", authorName: "Nancie Kosnoff", authorRole: "Citizen Activist", topImageKey: "imgImage15", authorAvatarKey: "imgImage2" },
-  { id: 15, category: "PETITION", categoryColor: "#05737f", actionType: "In Person", timeCommitment: "< 1 hour", title: "Stop Funding Fox", description: "MoveOn Civic Action has a long history of taking on Fox's lies. With actions taken by thousands of MoveOn members, we've been able to put pressure on cable providers.", location: "National", boosts: 500, spotsTotal: "Unlimited", authorName: "Adam Jordan", authorRole: "Catholic Legal Immigration Network", authorLink: "https://www.cliniclegal.org/", topImageKey: "imgImage22", authorAvatarKey: "imgImage3" },
-  { id: 16, category: "PROTEST", categoryColor: "#23297e", actionType: "In Person Group", timeCommitment: "< 1 hour", title: "Towns Across America Blackout", description: "On Tuesday, April 22, 2025, we invite you to participate in a nationwide television blackout in protest of Trump's signing of the bill to defund Planned Parenthood.", location: "National", boosts: 500, spotsTotal: "Unlimited", authorName: "Nancie Kosnoff", authorRole: "Citizen Activist", topImageKey: "imgImage18", authorAvatarKey: "imgImage2", amplifiesGroups: ["repro", "woman"] },
-  { id: 17, category: "IRREVERENCE", categoryColor: "#9333ea", actionType: "In Person Group", timeCommitment: "Half day", title: "Puppets for March on Washington", description: "We are making effigies of Trump and his minions for the March on Washington on July 4th. Join in even if you can't attend — we will help the attendees get them!", location: "National", boosts: 500, spotsTotal: "Unlimited", authorName: "Adam Jordan", authorRole: "Catholic Legal Immigration Network", authorLink: "https://www.cliniclegal.org/", topImageKey: "imgImage9", authorAvatarKey: "imgImage3" },
+  { id: 1, isFeatured: true, pinToTop: true, category: "BOOST", categoryColor: "#8a00e6", actionType: "Online", timeCommitment: "Ongoing", title: "Spread the Word about ResistAct", description: "The immigrant and refugee community has received direct threats about deportations and immigration raids. Our community needs your help spreading awareness about ResistAct so we can build a stronger resistance network together.", boosts: 950, spotsTotal: "Unlimited", authorName: "Ellen Meserow", authorRole: "ResistAct Founder", authorAvatarKey: "imgImage34" },
   { id: 19, category: "IRREVERENCE", categoryColor: "#9333ea", actionType: "Online", timeCommitment: "< 1 hour", title: "SH*T Bag: Two Bags, One Movement", description: "Dog poop bags featuring Trump — made from plant-based materials (PBAT + PLA + Corn Starch), leak-proof, strong, traps odors, and 'resistant to hate.' Fair-trade and BSCI-compliant. Buy a pack and put it to good use.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Smolotov LLC", authorRole: "Resistance Merch", targetUrl: "https://www.smolotov.com/products/smolotov-unscented-leakproof-dog-poop-bags", topImageUrl: "https://www.smolotov.com/cdn/shop/files/4-Rolls_Box_Bag_2400px.jpg?v=1771553420&width=800", toneOverride: { energy: 1 } },
   { id: 1000, category: "BOYCOTT", categoryColor: "#7a1f7a", actionType: "Online", title: "Search any brand's political donations before you buy", description: "Search 7,000+ companies' political donations before you buy. Stop accidentally funding the people deporting your neighbors.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Goods Unite Us", authorRole: "Movement Organization", targetUrl: "https://www.goodsuniteus.com/", topImageKey: "org_goods-unite-us" },
   { id: 1001, category: "BOYCOTT", categoryColor: "#7a1f7a", actionType: "Online", title: "Get the browser extension that flags MAGA-aligned brands", description: "Browser extension auto-flags MAGA-aligned brands as you shop. Make every checkout a small political choice.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Progressive Shopper", authorRole: "Movement Organization", targetUrl: "https://progressiveshopper.com/", topImageKey: "org_progressive-shopper" },
@@ -441,7 +426,7 @@ const SEED_CARDS = [
   { id: 1275, category: "MENTAL HEALTH", categoryColor: "#6b5b95", actionType: "Online", title: "Listen to Lizz Winstead's Feminist Buzzkills podcast", description: "Daily Show co-creator Lizz Winstead's weekly comedy podcast about abortion rights, post-Roe America, and the fight against the Christian right. Subscribe wherever you get podcasts.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Abortion Access Front", authorRole: "Movement Organization", targetUrl: "https://aafront.org/feminist-buzzkills-live/", toneOverride: { anger: 2, comedy: 3, subversion: 2, hope: 2, energy: 0 }, amplifiesGroups: ["repro", "woman"], adminApproved: false },
   { id: 1276, category: "FUNDING", categoryColor: "#127f05", actionType: "Online", title: "Donate to Abortion Access Front", description: "Lizz Winstead's org — comedy meets clinic defense. Road trips to abortion clinics, destigmatizing comedy shows, post-Dobbs clinic-side support.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Abortion Access Front", authorRole: "Movement Organization", targetUrl: "https://aafront.org/donate/", toneOverride: { anger: 3, comedy: 2, subversion: 2, hope: 2, energy: 1 }, amplifiesGroups: ["repro", "woman"], adminApproved: false },
   { id: 1277, category: "SOCIAL MEDIA", categoryColor: "#e44b4b", actionType: "Online", title: "Watch and share a Blaire Erskine satire video", description: "Blaire Erskine's deadpan-news-anchor satire reels (1.1M TikTok likes) skewer MAGA talking points one fake interview at a time. Pick one, share it, tag a relative who needs it.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Blaire Erskine", authorRole: "Citizen Activist", targetUrl: "https://www.tiktok.com/@blaireerskine", toneOverride: { anger: 1, comedy: 3, subversion: 2, hope: 1, energy: 0 }, adminApproved: false },
-  { id: 1278, category: "NEWS STORY", categoryColor: "#3b4a73", actionType: "Online", title: "Subscribe to Blaire Erskine's Substack", description: "Her newsletter version of the satire — bonus posts, behind-the-scenes, no algorithm gating. Direct to your inbox.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Blaire Erskine", authorRole: "Citizen Activist", targetUrl: "https://blaireerskine.substack.com/", toneOverride: { anger: 1, comedy: 3, subversion: 1, hope: 1, energy: 0 }, adminApproved: false },
+  { id: 1278, category: "NEWS STORY", categoryColor: "#3b4a73", actionType: "Online", title: "Subscribe to Blaire Erskine's Substack", description: "The newsletter version of Blaire Erskine's deadpan-news-anchor MAGA satire — bonus fake interviews skewering Trump talking points, behind-the-scenes on her viral TikTok reels, no algorithm gating. Direct to your inbox.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Blaire Erskine", authorRole: "Citizen Activist", targetUrl: "https://blaireerskine.substack.com/", toneOverride: { anger: 1, comedy: 3, subversion: 1, hope: 1, energy: 0 }, adminApproved: false },
   { id: 1279, category: "SOCIAL MEDIA", categoryColor: "#e44b4b", actionType: "Online", title: "Subscribe to The Lincoln Project's video drops", description: "Republicans-against-Trump satirical attack ads. Subscribe on YouTube and follow on TikTok/IG for the new releases — they're shareable weapons against MAGA relatives.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "The Lincoln Project", authorRole: "Movement Organization", targetUrl: "https://www.youtube.com/@LincolnProject", toneOverride: { anger: 3, comedy: 3, subversion: 2, hope: 1, energy: 0 }, adminApproved: false },
   { id: 1280, category: "SOCIAL MEDIA", categoryColor: "#e44b4b", actionType: "Online", title: "Use a satire creator's audio to make your own anti-Trump TikTok", description: "TikTok's audio-reuse mechanic is a force multiplier. Pick a viral political satire audio (MeidasTouch, Lizz Winstead, Blaire Erskine), film a 15-second take with your local angle, post.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Independent creators", authorRole: "Citizen Activist", targetUrl: "https://www.tiktok.com/discover/political-satire", toneOverride: { anger: 2, comedy: 3, subversion: 3, hope: 1, energy: 1 }, adminApproved: false },
   { id: 1281, category: "SOCIAL MEDIA", categoryColor: "#e44b4b", actionType: "Online", title: "Comment-bomb viral Trump videos with action links", description: "TikTok and IG comment sections on Trump-aligned content reach undecided/curious viewers. Drop a clean comment with a link to a 5Calls script or local action — short, no insult, just info. Action over rage.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Independent creators", authorRole: "Citizen Activist", targetUrl: "https://www.tiktok.com/tag/50501", toneOverride: { anger: 1, comedy: 1, subversion: 3, hope: 2, energy: 1 }, adminApproved: false },
@@ -486,6 +471,97 @@ app.post("/make-server-9eb1ae04/admin/sweep", async (c) => {
     return c.json(result);
   } catch (err) {
     return c.json({ error: `Sweep failed: ${err}` }, 500);
+  }
+});
+
+// ─── ADMIN: Scan all KV cards for truncated descriptions ─────────────────────
+app.get("/make-server-9eb1ae04/admin/scan-truncated", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const truncated: { id: number; store: string; title: string; description: string; targetUrl?: string }[] = [];
+
+    // Scan action: (seed) cards
+    const actionEntries = await kv.getByPrefix("action:");
+    for (const card of actionEntries as any[]) {
+      if (card && typeof card.description === "string" && card.description.trimEnd().endsWith("...")) {
+        truncated.push({ id: card.id, store: "action", title: card.title, description: card.description, targetUrl: card.targetUrl });
+      }
+    }
+
+    // Scan user-action: (submitted) cards
+    const userActionEntries = await kv.getByPrefix("user-action:");
+    for (const card of userActionEntries as any[]) {
+      if (card && typeof card.description === "string" && card.description.trimEnd().endsWith("...")) {
+        truncated.push({ id: card.id, store: "user-action", title: card.title, description: card.description, targetUrl: card.targetUrl });
+      }
+    }
+
+    truncated.sort((a, b) => a.id - b.id);
+    return c.json({ count: truncated.length, cards: truncated });
+  } catch (err) {
+    return c.json({ error: `Scan failed: ${err}` }, 500);
+  }
+});
+
+// ─── ADMIN: Patch a card's description in KV (for fixing truncated descriptions) ──
+app.post("/make-server-9eb1ae04/admin/fix-description", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const body = await c.req.json().catch(() => null);
+    if (!body || !body.id || !body.description) {
+      return c.json({ error: "Required: id (number) and description (string)" }, 400);
+    }
+
+    const id = Number(body.id);
+    let key = `action:${id}`;
+    let existing: any = await kv.get(key);
+    if (!existing) {
+      key = `user-action:${id}`;
+      existing = await kv.get(key);
+    }
+    if (!existing) return c.json({ error: `Card ${id} not found in KV` }, 404);
+
+    await kv.set(key, { ...existing, description: String(body.description) });
+    console.log(`Admin ${admin.record.name} fixed description for card ${id}`);
+    return c.json({ ok: true, id, key });
+  } catch (err) {
+    return c.json({ error: `Fix failed: ${err}` }, 500);
+  }
+});
+
+// ─── ADMIN: Approved cards missing a targetUrl ───────────────────────────────
+app.get("/make-server-9eb1ae04/admin/actions/no-url", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const noUrl: any[] = [];
+
+    for (const card of (await kv.getByPrefix("action:")) as any[]) {
+      if (card && typeof card === "object" && card.adminApproved === true && !card.targetUrl) {
+        noUrl.push({ ...card, _store: "action" });
+      }
+    }
+
+    const userCardIds = (await kv.get("user-action:ids") ?? []) as number[];
+    for (const id of userCardIds) {
+      const card = await kv.get(`user-action:${id}`) as any;
+      if (card && typeof card === "object" && card.adminApproved === true && !card.targetUrl) {
+        noUrl.push({ ...card, _store: "user-action" });
+      }
+    }
+
+    noUrl.sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+    return c.json({ cards: noUrl });
+  } catch (err) {
+    return c.json({ error: `Failed to fetch no-url cards: ${err}` }, 500);
   }
 });
 
@@ -619,6 +695,17 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       console.log("Purged fake seed cards 1–18.");
     }
 
+    // One-time: re-purge the placeholder seed cards (ids 2–17 minus 11) that
+    // were re-seeded after the v1 cleanup ran. SEED_CARDS no longer references
+    // them, so deleting their KV records is final — they won't reappear.
+    const fakePurgedV2 = await kv.get("cleanup:purge-fake-seeds:v2");
+    if (!fakePurgedV2) {
+      const ids = [2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17];
+      for (const id of ids) await kv.del(`action:${id}`);
+      await kv.set("cleanup:purge-fake-seeds:v2", true);
+      console.log(`Purged ${ids.length} fake seed cards (v2): ${ids.join(", ")}`);
+    }
+
     // One-time: remove dropped seed cards. Add new IDs to the array and bump
     // the version key whenever you delete cards from SEED_CARDS.
     const droppedPurged = await kv.get("cleanup:dropped-seeds:v1");
@@ -644,6 +731,23 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       }
       await kv.set("cleanup:reset-boosts-5:v1", true);
       console.log(`Reset boosts to 0 on ${resetIds.length} demo cards.`);
+    }
+
+    // One-time: rewrite Blaire Erskine Substack description (id 1278). The
+    // CSV-imported version was vague about why users would subscribe; the
+    // updated copy makes the anti-MAGA satire connection explicit so admins
+    // and users can immediately see why it's on-topic.
+    const blaireUpdated = await kv.get("cleanup:blaire-substack-desc:v1");
+    if (!blaireUpdated) {
+      const newDesc = "The newsletter version of Blaire Erskine's deadpan-news-anchor MAGA satire — bonus fake interviews skewering Trump talking points, behind-the-scenes on her viral TikTok reels, no algorithm gating. Direct to your inbox.";
+      for (const prefix of ["action:", "user-action:"]) {
+        const existing = (await kv.get(`${prefix}1278`)) as any;
+        if (existing && typeof existing === "object") {
+          await kv.set(`${prefix}1278`, { ...existing, description: newDesc });
+        }
+      }
+      await kv.set("cleanup:blaire-substack-desc:v1", true);
+      console.log("Updated Blaire Erskine Substack description (id 1278).");
     }
 
     // One-time: clear stray `notOnTopic` flags on cards 265/266/267 (Apple/
@@ -737,16 +841,30 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     // feed to pick up the new title/url/image. Existing user activity (`boosts`)
     // and admin curation flags (`quickAction`) are preserved across re-seeds —
     // only seed-managed metadata (title/desc/url/image) is overwritten.
-    const orgsSeeded = await kv.get("seed:org-actions:v11");
+    // One-time: set boosts = 950 on the pinned Spread the Word card.
+    const boostsFixed1 = await kv.get("cleanup:set-boosts-1-950:v1");
+    if (!boostsFixed1) {
+      const card1 = await kv.get("action:1") as any;
+      if (card1 && typeof card1 === "object") {
+        await kv.set("action:1", { ...card1, boosts: 950 });
+      }
+      await kv.set("cleanup:set-boosts-1-950:v1", true);
+      console.log("Set boosts = 950 on action:1 (Spread the Word).");
+    }
+
+    const orgsSeeded = await kv.get("seed:org-actions:v13");
     if (!orgsSeeded) {
       // Mark the seed as done UP FRONT — if the request times out partway
       // through the 260-card loop, the next request still skips the loop
       // instead of dying again. The cards already written stay; missing ones
       // get filled in on the next version bump.
-      await kv.set("seed:org-actions:v11", true);
+      await kv.set("seed:org-actions:v13", true);
       let count = 0;
       for (const card of SEED_CARDS) {
-        if (card.id < 1000) continue;
+        // Seed every card in SEED_CARDS (no longer skipping ids <1000).
+        // The pre-1000 design placeholders were purged via the fake-seeds
+        // cleanups; the only pre-1000 IDs left in SEED_CARDS are real
+        // (id 1 = pinned ResistAct intro, id 19 = Smolotov merch).
         const existing = (await kv.get(`action:${card.id}`)) as any;
         // Default to approved, but let the card itself override (e.g. CSV
         // imports can ship with `adminApproved: false` so they land in the
@@ -761,11 +879,13 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           if (existing.quickAction === true) merged.quickAction = true;
           // Preserve eventDate if admin has set one manually.
           if (existing.eventDate) merged.eventDate = existing.eventDate;
+          // Preserve custom topImageUrl so admin-uploaded images survive re-seeds.
+          if (existing.topImageUrl && !card.topImageUrl) merged.topImageUrl = existing.topImageUrl;
         }
         await kv.set(`action:${card.id}`, merged);
         count++;
       }
-      console.log(`Re-seeded ${count} org-action cards (v10).`);
+      console.log(`Re-seeded ${count} org-action cards (v13).`);
     }
 
     // One-time migration: any pre-rename card still using `spotsUsed` gets a
@@ -958,6 +1078,120 @@ app.get("/make-server-9eb1ae04/stats", async (c) => {
   } catch (err) {
     console.log("Stats error:", err);
     return c.json({ error: `Failed to fetch stats: ${err}` }, 500);
+  }
+});
+
+// ─── GET /me/preferences ──────────────────────────────────────────────────────
+// Returns the signed-in user's stored match-me preferences (or null if none).
+app.get("/make-server-9eb1ae04/me/preferences", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    if (!token) return c.json({ error: "Unauthorized" }, 401);
+    const user = await getUser(token);
+    if (!user) return c.json({ error: "Invalid token" }, 401);
+    const prefs = await kv.get(`user:preferences:${user.id}`);
+    return c.json({ preferences: prefs ?? null });
+  } catch (err) {
+    console.log("Get preferences error:", err);
+    return c.json({ error: `Failed to load preferences: ${err}` }, 500);
+  }
+});
+
+// ─── PUT /me/preferences ──────────────────────────────────────────────────────
+// Stores the user's match-me prefs as-is. Shape validation happens client-side
+// when the prefs are read back via loadPreferences(); duplicating it here would
+// just couple the schema to the server.
+app.put("/make-server-9eb1ae04/me/preferences", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    if (!token) return c.json({ error: "Unauthorized" }, 401);
+    const user = await getUser(token);
+    if (!user) return c.json({ error: "Invalid token" }, 401);
+    const body = await c.req.json();
+    if (!body || typeof body !== "object") {
+      return c.json({ error: "Body must be an object" }, 400);
+    }
+    await kv.set(`user:preferences:${user.id}`, {
+      ...body,
+      userId: user.id,
+      updatedAt: new Date().toISOString(),
+    });
+    return c.json({ success: true });
+  } catch (err) {
+    console.log("Save preferences error:", err);
+    return c.json({ error: `Failed to save preferences: ${err}` }, 500);
+  }
+});
+
+// ─── GET /me/bookmarks ────────────────────────────────────────────────────────
+app.get("/make-server-9eb1ae04/me/bookmarks", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    if (!token) return c.json({ error: "Unauthorized" }, 401);
+    const user = await getUser(token);
+    if (!user) return c.json({ error: "Invalid token" }, 401);
+    const bookmarks = (await kv.get(`user-bookmarks:${user.id}`)) ?? [];
+    return c.json({ bookmarks });
+  } catch (err) {
+    return c.json({ error: `Failed to load bookmarks: ${err}` }, 500);
+  }
+});
+
+// ─── PUT /me/bookmarks — bulk replace ────────────────────────────────────────
+app.put("/make-server-9eb1ae04/me/bookmarks", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    if (!token) return c.json({ error: "Unauthorized" }, 401);
+    const user = await getUser(token);
+    if (!user) return c.json({ error: "Invalid token" }, 401);
+    const body = await c.req.json().catch(() => null);
+    const ids = Array.isArray(body?.ids) ? body.ids.filter((id: any) => typeof id === "number") : [];
+    await kv.set(`user-bookmarks:${user.id}`, ids);
+    return c.json({ ok: true, count: ids.length });
+  } catch (err) {
+    return c.json({ error: `Failed to save bookmarks: ${err}` }, 500);
+  }
+});
+
+// ─── POST /share-invite — send email invites to friends ──────────────────────
+app.post("/make-server-9eb1ae04/share-invite", async (c) => {
+  const resendKey = Deno.env.get("RESEND_API_KEY");
+  if (!resendKey) return c.json({ error: "Email service not configured" }, 503);
+
+  try {
+    const { emails, note } = await c.req.json<{ emails: string[]; note?: string }>();
+    if (!Array.isArray(emails) || emails.length === 0) {
+      return c.json({ error: "No email addresses provided" }, 400);
+    }
+
+    const siteUrl = "https://resistact.us";
+    const defaultMsg = `I've been using ResistAct to find small, doable actions every day to push back on what's happening in America. Check it out — new actions every day, pick what fits your schedule and mood!\n\n${siteUrl}`;
+    const body = note ? `${note}` : defaultMsg;
+
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${resendKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "ResistAct <noreply@resistact.us>",
+        to: emails,
+        subject: "Actions you can take today — ResistAct",
+        text: body,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      console.log("Resend error:", err);
+      return c.json({ error: "Failed to send" }, 500);
+    }
+
+    return c.json({ ok: true });
+  } catch (err) {
+    console.log("Share invite error:", err);
+    return c.json({ error: `Failed: ${err}` }, 500);
   }
 });
 

@@ -8,8 +8,15 @@ import { ToneRangeSlider } from "./ToneSlider";
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
 
-const INPUT_CLS =
-  "w-full px-3.5 py-2.5 border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#23297e]/30 focus:border-[#23297e]";
+// Base shared between text inputs and selects so styling stays in lockstep.
+// The text-color class is appended per-context: text inputs always show their
+// content in dark; selects swap between dark (when a value is picked) and
+// grey-italic (when the placeholder option is selected).
+const INPUT_BASE =
+  "w-full px-3.5 py-2.5 border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm focus:outline-none focus:ring-2 focus:ring-[#23297e]/30 focus:border-[#23297e]";
+const INPUT_CLS = `${INPUT_BASE} text-gray-800 placeholder-gray-400 placeholder:italic placeholder:text-gray-400`;
+const SELECT_CLS = (val: string | null | undefined) =>
+  `${INPUT_BASE} ${val ? "text-gray-800" : "text-gray-400 italic"}`;
 
 // ─── Category → colour map ─────────────────────────────────────────────────────
 const CATEGORY_OPTIONS: { label: string; color: string }[] = [
@@ -311,7 +318,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
                 <select
                   value={category}
                   onChange={(e) => handleCategoryChange(e.target.value)}
-                  className={INPUT_CLS}
+                  className={SELECT_CLS(category)}
                 >
                   {CATEGORY_OPTIONS.map((o) => (
                     <option key={o.label} value={o.label}>{o.label}</option>
@@ -326,7 +333,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
                 <select
                   value={actionType}
                   onChange={(e) => setActionType(e.target.value)}
-                  className={INPUT_CLS}
+                  className={SELECT_CLS(actionType)}
                 >
                   {ACTION_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
@@ -338,7 +345,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
               <select
                 value={timeCommitment}
                 onChange={(e) => setTimeCommitment(e.target.value)}
-                className={INPUT_CLS}
+                className={SELECT_CLS(timeCommitment)}
               >
                 <option value="">— select —</option>
                 {TIME_COMMITMENTS.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -349,7 +356,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
               <select
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                className={INPUT_CLS}
+                className={SELECT_CLS(location)}
               >
                 <option value="">— select —</option>
                 {LOCATION_OPTIONS.map((opt) => (
@@ -413,7 +420,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-[#23297e] hover:bg-[#1a2060] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-semibold text-xs rounded-lg transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-2 bg-[#fd8e33] hover:bg-[#d96612] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-semibold text-xs rounded-lg transition-colors"
                 >
                   {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
                   {uploading ? "Uploading…" : "Upload from computer"}

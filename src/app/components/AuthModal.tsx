@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Eye, EyeOff, Loader2, CheckCircle2, Clock, Mail } from "lucide-react";
+import { X, Eye, EyeOff, Loader2, CheckCircle2, Clock, Flame, Mail, Zap, ArrowRight } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { projectId } from "/utils/supabase/info";
 import type { UserApproval } from "../lib/supabase";
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
 
-// Cloudflare Turnstile site key (public). Set VITE_TURNSTILE_SITE_KEY in .env.local.
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined;
 
 declare global {
@@ -19,7 +18,6 @@ declare global {
   }
 }
 
-// ─── Turnstile widget ─────────────────────────────────────────────────────────
 function Turnstile({ onToken }: { onToken: (t: string | null) => void }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
@@ -27,12 +25,8 @@ function Turnstile({ onToken }: { onToken: (t: string | null) => void }) {
   onTokenRef.current = onToken;
 
   useEffect(() => {
-    if (!TURNSTILE_SITE_KEY) {
-      console.error("[Turnstile] Missing VITE_TURNSTILE_SITE_KEY env var.");
-      return;
-    }
+    if (!TURNSTILE_SITE_KEY) return;
     let cancelled = false;
-
     const render = () => {
       if (cancelled || !containerRef.current || !window.turnstile) return;
       widgetIdRef.current = window.turnstile.render(containerRef.current, {
@@ -42,7 +36,6 @@ function Turnstile({ onToken }: { onToken: (t: string | null) => void }) {
         "expired-callback": () => onTokenRef.current(null),
       });
     };
-
     if (window.turnstile) {
       render();
     } else {
@@ -58,7 +51,6 @@ function Turnstile({ onToken }: { onToken: (t: string | null) => void }) {
       }
       script.addEventListener("load", render, { once: true });
     }
-
     return () => {
       cancelled = true;
       if (widgetIdRef.current && window.turnstile) {
@@ -75,7 +67,6 @@ interface AuthModalProps {
   onApproval: (approval: UserApproval) => void;
 }
 
-// ─── Social login icons ───────────────────────────────────────────────────────
 function GoogleIcon() {
   return (
     <svg viewBox="0 0 24 24" className="w-5 h-5">
@@ -89,9 +80,9 @@ function GoogleIcon() {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export function AuthModal({ onClose, onApproval }: AuthModalProps) {
-  const [tab, setTab] = useState<"signin" | "register">("signin");
-  const [name, setName] = useState("");
+  const [step, setStep] = useState<"email" | "password">("email");
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -101,16 +92,8 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [captchaKey, setCaptchaKey] = useState(0);
 
-  const clearError = () => setError(null);
+  const resetCaptcha = () => { setCaptchaToken(null); setCaptchaKey(k => k + 1); };
 
-  // Force-remount the Turnstile widget so it issues a fresh token after a
-  // failed sign-in/up attempt (each token can only be redeemed once).
-  const resetCaptcha = () => {
-    setCaptchaToken(null);
-    setCaptchaKey((k) => k + 1);
-  };
-
-  // ── Fetch approval status after any successful sign-in ──
   async function fetchApproval(accessToken: string): Promise<UserApproval | null> {
     try {
       const res = await fetch(`${API}/auth/status`, {
@@ -125,62 +108,75 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
     }
   }
 
-  // ── Email sign-in ──
-  async function handleSignIn(e: React.FormEvent) {
+  // ── Step 1: Continue with email ──────────────────────────────────────────
+  function handleContinue(e: React.FormEvent) {
     e.preventDefault();
-    clearError();
+    if (!email.trim()) return;
+    setError(null);
+    setStep("password");
+  }
+
+  // ── Step 2: Smart sign-in / sign-up ─────────────────────────────────────
+  // Try sign-in first. If "Invalid login credentials" and a name was
+  // provided, treat this as a new user and attempt sign-up instead.
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
     if (TURNSTILE_SITE_KEY && !captchaToken) { setError("Please complete the CAPTCHA."); return; }
     setLoading(true);
     try {
-      const { data, error: signInErr } = await supabase.auth.signInWithPassword({
+      // Attempt sign-in first
+      const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
         email,
         password,
         options: captchaToken ? { captchaToken } : undefined,
       });
-      if (signInErr) { setError(signInErr.message); resetCaptcha(); return; }
-      const approval = await fetchApproval(data.session!.access_token);
-      if (approval) { onApproval(approval); onClose(); }
-    } finally {
-      setLoading(false);
-    }
-  }
 
-  // ── Email registration ──
-  async function handleRegister(e: React.FormEvent) {
-    e.preventDefault();
-    clearError();
-    if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
-    if (TURNSTILE_SITE_KEY && !captchaToken) { setError("Please complete the CAPTCHA."); return; }
-    setLoading(true);
-    try {
-      const { data, error: signUpErr } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { name, full_name: name },
-          emailRedirectTo: window.location.origin,
-          ...(captchaToken ? { captchaToken } : {}),
-        },
-      });
-      if (signUpErr) { setError(signUpErr.message); resetCaptcha(); return; }
-
-      // If Supabase returned a session, email confirmation is disabled in the
-      // project — the user is already signed in. Let the app's auth listener
-      // pick it up and just close. Otherwise, prompt them to verify.
-      if (data.session) {
-        onClose();
-      } else {
-        setPostRegState("verify-email");
+      if (!signInErr) {
+        const approval = await fetchApproval(signInData.session!.access_token);
+        if (approval) { onApproval(approval); onClose(); }
+        return;
       }
+
+      const isCredErr = signInErr.message.toLowerCase().includes("invalid login credentials");
+
+      // Credentials wrong AND name provided → attempt sign-up
+      if (isCredErr && name.trim()) {
+        if (password.length < 6) { setError("Password must be at least 6 characters."); resetCaptcha(); return; }
+        const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { name: name.trim(), full_name: name.trim() },
+            emailRedirectTo: window.location.origin,
+            ...(captchaToken ? { captchaToken } : {}),
+          },
+        });
+        if (signUpErr) { setError(signUpErr.message); resetCaptcha(); return; }
+        if (signUpData.session) {
+          onClose();
+        } else {
+          setPostRegState("verify-email");
+        }
+        return;
+      }
+
+      // Credentials wrong, no name → nudge them to fill in name if new
+      if (isCredErr) {
+        setError("Incorrect password. New here? Enter your name above to create your account.");
+      } else {
+        setError(signInErr.message);
+      }
+      resetCaptcha();
     } finally {
       setLoading(false);
     }
   }
 
-  // ── OAuth ──
+  // ── OAuth ────────────────────────────────────────────────────────────────
   async function handleOAuth(provider: "google") {
     setOauthLoading(provider);
-    clearError();
+    setError(null);
     try {
       const { error: oauthErr } = await supabase.auth.signInWithOAuth({
         provider,
@@ -192,7 +188,7 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
     }
   }
 
-  // ── Post-register state screens ──
+  // ── Post-register screens ────────────────────────────────────────────────
   if (postRegState === "verify-email") {
     return (
       <Backdrop onClose={onClose}>
@@ -204,10 +200,7 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
           <p className="font-['Poppins',sans-serif] text-gray-500 text-sm leading-relaxed max-w-xs">
             We sent a confirmation link to <span className="font-semibold text-gray-700">{email}</span>. Click it to finish creating your account, then come back here to sign in.
           </p>
-          <button
-            onClick={onClose}
-            className="mt-2 px-8 py-2.5 bg-[#23297e] text-white rounded-xl font-['Poppins',sans-serif] font-semibold text-sm hover:bg-[#1a2060] transition-colors"
-          >
+          <button onClick={onClose} className="mt-2 px-8 py-2.5 bg-[#23297e] text-white rounded-xl font-['Poppins',sans-serif] font-semibold text-sm hover:bg-[#1a2060] transition-colors">
             Got it
           </button>
         </div>
@@ -226,10 +219,7 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
           <p className="font-['Poppins',sans-serif] text-gray-500 text-sm leading-relaxed max-w-xs">
             Thanks for joining ResistAct! Your account is under review. We'll approve it shortly — browse all current acts while you wait.
           </p>
-          <button
-            onClick={onClose}
-            className="mt-2 px-8 py-2.5 bg-[#23297e] text-white rounded-xl font-['Poppins',sans-serif] font-semibold text-sm hover:bg-[#1a2060] transition-colors"
-          >
+          <button onClick={onClose} className="mt-2 px-8 py-2.5 bg-[#23297e] text-white rounded-xl font-['Poppins',sans-serif] font-semibold text-sm hover:bg-[#1a2060] transition-colors">
             Got it, let me browse
           </button>
         </div>
@@ -251,82 +241,123 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
     );
   }
 
+  // ── Step 1: Email ────────────────────────────────────────────────────────
+  if (step === "email") {
+    return (
+      <Backdrop onClose={onClose}>
+        {/* Header */}
+        <div className="mb-5">
+          <div className="flex items-center gap-2 mb-1">
+            <Flame size={20} className="text-[#fd8e33]" strokeWidth={2.5} />
+            <h2 className="font-['Poppins',sans-serif] font-bold text-gray-900 text-[22px] leading-tight">
+              Join the Resistance
+            </h2>
+          </div>
+          <p className="font-['Poppins',sans-serif] text-gray-400 text-[13px] leading-snug">
+            No tracking, no donation asks, no list you can't get away from.
+          </p>
+        </div>
+
+        {/* Google */}
+        <div className="mb-4">
+          <button
+            onClick={() => handleOAuth("google")}
+            disabled={!!oauthLoading}
+            className="w-full flex items-center justify-center gap-3 py-2.5 border border-gray-200 rounded-xl font-['Poppins',sans-serif] font-medium text-sm text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-60"
+          >
+            {oauthLoading === "google" ? <Loader2 size={18} className="animate-spin" /> : <GoogleIcon />}
+            Continue with Google
+          </button>
+        </div>
+
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex-1 h-px bg-gray-100" />
+          <span className="font-['Poppins',sans-serif] text-xs text-gray-400">or with email</span>
+          <div className="flex-1 h-px bg-gray-100" />
+        </div>
+
+        <form onSubmit={handleContinue} className="space-y-3">
+          <div>
+            <label className="block font-['Poppins',sans-serif] text-sm font-semibold text-gray-700 mb-1.5">
+              Email
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+              autoFocus
+              placeholder="you@example.com"
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#fd8e33]/30 focus:border-[#fd8e33] transition-colors"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={!email.trim()}
+            className="w-full py-3 bg-[#fd8e33] hover:bg-[#d96612] disabled:opacity-50 text-white font-['Poppins',sans-serif] font-bold text-sm rounded-full transition-colors flex items-center justify-center gap-2"
+          >
+            Continue
+            <ArrowRight size={16} />
+          </button>
+        </form>
+
+        <p className="mt-4 text-center font-['Poppins',sans-serif] text-[13px] text-gray-400">
+          Already with us? Click Google or enter your email and{" "}
+          <span className="font-bold text-gray-600">we'll recognize you.</span>
+        </p>
+      </Backdrop>
+    );
+  }
+
+  // ── Step 2: Password (+ optional name for new users) ────────────────────
   return (
     <Backdrop onClose={onClose}>
-      {/* Tabs */}
-      <div className="flex border-b border-gray-100 mb-6 -mx-6 px-6">
-        {(["signin", "register"] as const).map((t) => (
-          <button
-            key={t}
-            onClick={() => { setTab(t); clearError(); }}
-            className={`flex-1 pb-3 font-['Poppins',sans-serif] font-semibold text-sm transition-colors border-b-2 -mb-px ${
-              tab === t
-                ? "text-[#23297e] border-[#23297e]"
-                : "text-gray-400 border-transparent hover:text-gray-600"
-            }`}
-          >
-            {t === "signin" ? "Sign In" : "Create Account"}
-          </button>
-        ))}
-      </div>
-
-      {/* Social buttons */}
-      <div className="space-y-2.5 mb-5">
+      {/* Header */}
+      <div className="mb-5">
+        <div className="flex items-center gap-2 mb-1">
+          <Zap size={20} className="text-[#fd8e33]" strokeWidth={2.5} />
+          <h2 className="font-['Poppins',sans-serif] font-bold text-gray-900 text-[22px] leading-tight">
+            Join the Resistance
+          </h2>
+        </div>
         <button
-          onClick={() => handleOAuth("google")}
-          disabled={!!oauthLoading}
-          className="w-full flex items-center justify-center gap-3 py-2.5 border border-gray-200 rounded-xl font-['Poppins',sans-serif] font-medium text-sm text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-60"
+          onClick={() => { setStep("email"); setError(null); }}
+          className="font-['Poppins',sans-serif] text-[12px] text-gray-400 hover:text-[#fd8e33] transition-colors flex items-center gap-1"
         >
-          {oauthLoading === "google" ? <Loader2 size={18} className="animate-spin" /> : <GoogleIcon />}
-          Continue with Google
+          ← {email}
         </button>
       </div>
 
-      {/* Divider */}
-      <div className="flex items-center gap-3 mb-5">
-        <div className="flex-1 h-px bg-gray-100" />
-        <span className="font-['Poppins',sans-serif] text-xs text-gray-400">or with email</span>
-        <div className="flex-1 h-px bg-gray-100" />
-      </div>
-
-      {/* Form */}
-      <form onSubmit={tab === "signin" ? handleSignIn : handleRegister} className="space-y-3">
-        {tab === "register" && (
-          <div>
-            <label className="block font-['Poppins',sans-serif] text-xs font-semibold text-gray-600 mb-1">Full name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              placeholder="Jane Doe"
-              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#23297e]/30 focus:border-[#23297e]"
-            />
-          </div>
-        )}
-
+      <form onSubmit={handleSubmit} className="space-y-3">
+        {/* Name — optional, only needed for new users */}
         <div>
-          <label className="block font-['Poppins',sans-serif] text-xs font-semibold text-gray-600 mb-1">Email</label>
+          <label className="block font-['Poppins',sans-serif] text-xs font-semibold text-gray-500 mb-1">
+            Your name <span className="font-normal italic text-gray-400">(new members only)</span>
+          </label>
           <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            placeholder="you@example.com"
-            className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#23297e]/30 focus:border-[#23297e]"
+            type="text"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="Jane Doe"
+            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#fd8e33]/30 focus:border-[#fd8e33] transition-colors"
           />
         </div>
 
+        {/* Password */}
         <div>
-          <label className="block font-['Poppins',sans-serif] text-xs font-semibold text-gray-600 mb-1">Password</label>
+          <label className="block font-['Poppins',sans-serif] text-sm font-semibold text-gray-700 mb-1.5">
+            Password
+          </label>
           <div className="relative">
             <input
               type={showPass ? "text" : "password"}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={e => setPassword(e.target.value)}
               required
+              autoFocus
               placeholder="••••••••"
-              className="w-full px-3.5 py-2.5 pr-10 border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#23297e]/30 focus:border-[#23297e]"
+              className="w-full px-4 py-3 pr-11 border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#fd8e33]/30 focus:border-[#fd8e33] transition-colors"
             />
             <button
               type="button"
@@ -353,24 +384,22 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
         <button
           type="submit"
           disabled={loading || (!!TURNSTILE_SITE_KEY && !captchaToken)}
-          className="w-full py-3 bg-[#fd8e33] hover:bg-[#e07a28] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-bold text-sm rounded-xl transition-colors flex items-center justify-center gap-2 mt-1"
+          className="w-full py-3 bg-[#fd8e33] hover:bg-[#d96612] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-bold text-sm rounded-full transition-colors flex items-center justify-center gap-2 mt-1"
         >
           {loading && <Loader2 size={16} className="animate-spin" />}
-          {tab === "signin" ? "Sign In" : "Create Account"}
+          Continue
+          {!loading && <ArrowRight size={16} />}
         </button>
       </form>
 
-      {tab === "register" && (
-        <p className="mt-4 text-center font-['Poppins',sans-serif] text-xs text-gray-400 leading-relaxed">
-          New accounts require admin approval before posting. Browsing and reacting is always free.
-        </p>
-      )}
-
+      <p className="mt-3 text-center font-['Poppins',sans-serif] text-[11px] text-gray-400 leading-relaxed">
+        Returning? Leave the name blank and just enter your password.
+      </p>
     </Backdrop>
   );
 }
 
-// ─── Shared backdrop wrapper ──────────────────────────────────────────────────
+// ─── Backdrop ────────────────────────────────────────────────────────────────
 function Backdrop({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   return (
     <div
@@ -379,25 +408,14 @@ function Backdrop({ children, onClose }: { children: React.ReactNode; onClose: (
     >
       <div
         className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 relative"
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-start justify-between mb-2">
-          <div>
-            <h2 className="font-['Poppins',sans-serif] font-bold text-gray-900 text-lg leading-tight">
-              Join the Resistance
-            </h2>
-            <p className="font-['Poppins',sans-serif] text-gray-400 text-xs mt-0.5">
-              ResistAct — Grassroots action platform
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors text-gray-500 shrink-0 ml-3 mt-0.5"
-          >
-            <X size={16} />
-          </button>
-        </div>
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition-colors text-gray-500"
+        >
+          <X size={16} />
+        </button>
         {children}
       </div>
     </div>

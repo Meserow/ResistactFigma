@@ -1,22 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { X, Zap, Flame, Sparkles, Megaphone } from "lucide-react";
+import { X, Zap, Sparkles, Megaphone } from "lucide-react";
 
 interface HeroPillsProps {
-  onJoinClick: () => void;
   onMatchClick?: () => void;
   onAskClick?: () => void;
-  /** When true, the Join modal hides the "Create my account" CTA. */
-  isLoggedIn?: boolean;
 }
 
-type ModalKey = "how" | "join";
-
-export function HeroPills({ onJoinClick, onMatchClick, onAskClick, isLoggedIn = false }: HeroPillsProps) {
-  const [openModal, setOpenModal] = useState<ModalKey | null>(null);
-  const triggerRefs = useRef<Record<ModalKey, HTMLButtonElement | null>>({
+export function HeroPills({ onMatchClick, onAskClick }: HeroPillsProps) {
+  const [openModal, setOpenModal] = useState<"how" | null>(null);
+  const triggerRefs = useRef<Record<"how", HTMLButtonElement | null>>({
     how: null,
-    join: null,
   });
 
   useEffect(() => {
@@ -41,97 +35,74 @@ export function HeroPills({ onJoinClick, onMatchClick, onAskClick, isLoggedIn = 
 
   return (
     <>
-      <div className="flex flex-wrap justify-center gap-2">
+      <div className="flex flex-wrap lg:flex-nowrap justify-center gap-2">
         <button
           ref={(el) => { triggerRefs.current.how = el; }}
           onClick={() => setOpenModal("how")}
           aria-haspopup="dialog"
           aria-expanded={openModal === "how"}
-          className="inline-flex items-center gap-1.5 rounded-full border border-gray-400 px-4 py-2 font-['Poppins',sans-serif] text-[13px] font-medium text-gray-600 transition-colors hover:border-[#fd8e33] hover:bg-[#fd8e33]/5 hover:text-[#fd8e33]"
+          className="shrink-0 inline-flex items-center gap-2 rounded-full border border-gray-400 px-4 py-2 font-['Poppins',sans-serif] transition-colors hover:border-[#fd8e33] hover:bg-[#fd8e33]/5 hover:text-[#fd8e33] group"
         >
-          <Zap size={13} strokeWidth={2.5} />
-          How ResistAct Works
+          <Zap size={14} strokeWidth={2.5} className="text-gray-600 group-hover:text-[#fd8e33]" />
+          <span className="flex flex-col items-start text-left leading-tight whitespace-nowrap">
+            <span className="text-[13px] font-bold text-gray-600 group-hover:text-[#fd8e33]">How This Works</span>
+            <span className="text-[10.5px] font-normal text-gray-400 italic group-hover:text-[#fd8e33]/70">What is this site about?</span>
+          </span>
         </button>
         {onMatchClick && (
           <button
             onClick={onMatchClick}
-            className="inline-flex items-center gap-1.5 rounded-full border border-[#fd8e33] bg-white px-4 py-2 font-['Poppins',sans-serif] text-[13px] font-bold text-[#fd8e33] transition-colors hover:bg-[#fd8e33]/5"
+            className="shrink-0 inline-flex items-center gap-2 rounded-full border border-[#fd8e33] bg-white px-4 py-2 font-['Poppins',sans-serif] transition-colors hover:bg-[#fd8e33]/5"
           >
-            <Sparkles size={13} strokeWidth={2.5} />
-            Match me with Acts
+            <Sparkles size={14} strokeWidth={2.5} className="text-[#fd8e33]" />
+            <span className="flex flex-col items-start text-left leading-tight whitespace-nowrap">
+              <span className="text-[13px] font-bold text-[#fd8e33]">Match Me with Acts</span>
+              <span className="text-[10.5px] font-normal text-[#d97318] italic">Pressed for time? Show me what fits.</span>
+            </span>
           </button>
         )}
         {onAskClick && (
           <button
             onClick={onAskClick}
-            className="inline-flex items-center gap-1.5 rounded-full border border-[#23297e] bg-white px-4 py-2 font-['Poppins',sans-serif] text-[13px] font-bold text-[#23297e] transition-colors hover:bg-[#23297e]/5"
+            className="shrink-0 inline-flex items-center gap-2 rounded-full border border-[#23297e] bg-white px-4 py-2 font-['Poppins',sans-serif] transition-colors hover:bg-[#23297e]/5"
           >
-            <Megaphone size={13} strokeWidth={2.5} />
-            Add an Act!
-          </button>
-        )}
-        {!isLoggedIn && (
-          <button
-            ref={(el) => { triggerRefs.current.join = el; }}
-            onClick={() => setOpenModal("join")}
-            aria-haspopup="dialog"
-            aria-expanded={openModal === "join"}
-            className="inline-flex items-center gap-1.5 rounded-full border border-[#fd8e33] bg-[#fd8e33] px-4 py-2 font-['Poppins',sans-serif] text-[13px] font-bold text-white transition-colors hover:border-[#d96612] hover:bg-[#d96612]"
-          >
-            <Flame size={13} strokeWidth={2.5} />
-            Join The Resistance
+            <Megaphone size={14} strokeWidth={2.5} className="text-[#23297e]" />
+            <span className="flex flex-col items-start text-left leading-tight whitespace-nowrap">
+              <span className="text-[13px] font-bold text-[#23297e]">Add an Action!</span>
+              <span className="text-[10.5px] font-normal text-[#23297e]/70 italic">Find people to do a great idea!</span>
+            </span>
           </button>
         )}
       </div>
 
       {openModal === "how" && (
-        <HeroModal onClose={closeAndRestore} title="How ResistAct Works" titleId="hero-modal-how" accentColor="#23297e" icon={<Zap size={20} strokeWidth={2} />}>
+        <HeroModal onClose={closeAndRestore} title="How This Works" titleId="hero-modal-how" accentColor="#23297e" icon={<Zap size={20} strokeWidth={2} />}>
           <p>
             If you've been doomscrolling, rage-texting friends, or lying awake wondering how we got here —{" "}
-            <em>you're not alone.</em> And if you're tired of being told you can only "vote," "donate," or wait for the next protest — you're <em>really</em> not alone.
+            <em>you're not alone.</em> Tired of being told you can only vote, donate, or wait for the next No Kings protest? <em>You're really not alone.</em>
+          </p>
+          <p><strong>How does ResistAct help?</strong></p>
+          <p>
+            ResistAct is a daily menu of small, doable actions — text your reps, drop a flyer, knit a hat for a march, light a candle in your window. Find actions that suit your mood. Do something small if that's all you have time for this week. But keep doing small things.
           </p>
           <p>
-            ResistAct is a daily menu of small, grassroots, concrete micro-actions you can actually do.
-            Show up at a meeting. Make one phone call. Talk to one neighbor.
+            <strong>Pick what fits your day.</strong> Use the matching tool to find actions that fit the time, energy, and snark coursing through your veins. New actions every day — come back tomorrow, find new ones. Let's get the community and momentum we need to roll into the midterms…
           </p>
           <p>
-            <strong>Pick what fits your day.</strong>
+            <strong>Stay private.</strong> No tracking, no email, no list you can't get off. Resist without being afraid of leaving a trail. Only make an account if you want to gamify your ResistActs or make an action (so we can vet it).
           </p>
           <p>
-            Perform an Action without even signing in. The whole site is usable without identifying yourself. The only time we ask anything is if you want to ADD an action (so we can vet it), or allow us to count your actions so you can feel more accomplished!
+            <strong>This isn't a fundraising funnel. It's a tool for you.</strong> Find your people. Make your own actions. For example, add your local anti-fascist meetings. Or since we know mockery throws Trump off his game, let's all show up at the grocery store in a Baby Trump costume on July 1. Maybe get the local news out to see it.</p>
+          <p><strong>You get the idea.</strong>
           </p>
-          <p>
-            But our goal is to make this easy and not scary: no required account info, no email, no tracking pixels, no donation texts at 9pm.
-          </p>
-          <p><strong>This isn't a fundraising funnel. It's a tool.</strong></p>
+          <img
+            src="/trump-kroger.jpg"
+            alt="Group of people in Baby Trump inflatable costumes and orange Baby Trump t-shirts walking out of a Kroger grocery store"
+            className="rounded-xl w-full max-h-[260px] object-cover mt-2"
+          />
         </HeroModal>
       )}
 
-      {openModal === "join" && (
-        <HeroModal onClose={closeAndRestore} title="Join The Resistance" titleId="hero-modal-join" accentColor="#fd8e33" icon={<Flame size={20} strokeWidth={2} />}>
-          <p>You don't need an account to use ResistAct. But if you want to:</p>
-          <ul className="list-none space-y-1 pl-0">
-            <li className="pl-4">· Mark actions as done and build a streak</li>
-            <li className="pl-4">· Submit your own actions to the daily menu</li>
-          </ul>
-          <p>
-            …then create an account.
-          </p>
-          <p><strong>On your terms.</strong>
-          </p>
-          {!isLoggedIn && (
-            <button
-              onClick={() => {
-                closeAndRestore();
-                onJoinClick();
-              }}
-              className="mt-2 ml-auto flex items-center rounded-md bg-[#fd8e33] px-5 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#d96612]"
-            >
-              Create my account
-            </button>
-          )}
-        </HeroModal>
-      )}
     </>
   );
 }
@@ -169,7 +140,7 @@ function HeroModal({ onClose, title, titleId, children, accentColor, icon }: Her
       <div
         ref={cardRef}
         onClick={(e) => e.stopPropagation()}
-        className="hero-modal-card relative w-full max-w-[560px] my-auto max-h-[calc(100vh-2rem)] overflow-y-auto rounded-[10px] bg-white shadow-2xl"
+        className="hero-modal-card relative w-full max-w-[700px] my-auto max-h-[calc(100vh-2rem)] overflow-y-auto rounded-[10px] bg-white shadow-2xl"
       >
         <div className="relative p-6 sm:p-9 md:p-10">
           <button
