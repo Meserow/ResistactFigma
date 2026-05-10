@@ -1,8 +1,10 @@
 import { useRef, useState } from "react";
-import { X, Loader2, Pencil, Trash2, Upload } from "lucide-react";
+import { X, Loader2, Pencil, Trash2, Upload, Flame, Laugh, VenetianMask, Sunrise, Zap } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
 import type { ActionCardData } from "./ActionCard";
 import { LOCATION_OPTIONS } from "../lib/locations";
+import { ToneRangeSlider } from "./ToneSlider";
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
 
@@ -359,19 +361,8 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
                   Previous value: <span className="font-semibold">{card.location}</span> — pick a canonical location to update.
                 </p>
               )}
-              <label className="flex items-center gap-2 mt-3 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={atHome}
-                  onChange={(e) => setAtHome(e.target.checked)}
-                  className="w-4 h-4 rounded accent-[#23297e]"
-                />
-                <span className="font-['Poppins',sans-serif] text-sm text-gray-700">
-                  Can be done at home
-                </span>
-              </label>
-              <p className="mt-1 font-['Poppins',sans-serif] text-[11px] text-gray-400">
-                Check for actions doable from home that aren't computer-based — knitting, letter-writing, sign-making, calling reps, prayer. Online actions are at-home automatically.
+              <p className="mt-1.5 font-['Poppins',sans-serif] text-[11px] text-gray-400">
+                Pick "From Home" for couch-friendly actions that aren't necessarily online — knitting, letter-writing, sign-making, calling reps, prayer. Online cards already count as at-home.
               </p>
             </Field>
 
@@ -490,7 +481,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
                     />
                   </Field>
                 </div>
-                <Field label="Action URL (where the Boost button goes)">
+                <Field label="Action URL (where the title and banner link)">
                   <input
                     type="url" value={targetUrl}
                     onChange={(e) => setTargetUrl(e.target.value)}
@@ -518,39 +509,34 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
                 <p className="font-['Poppins',sans-serif] text-xs text-gray-500 mb-3">
                   Each slider is 0–3. Leave at "auto" to use the category default. Set a value when this card's tone differs from its category — for example, a serious investigative-journalism card sitting in BOOST.
                 </p>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {([
-                    { key: "anger",      label: "Angry",      val: toneAnger,      set: setToneAnger,      emoji: "😠" },
-                    { key: "comedy",     label: "Funny",      val: toneComedy,     set: setToneComedy,     emoji: "😂" },
-                    { key: "subversion", label: "Subversive", val: toneSubversion, set: setToneSubversion, emoji: "🥷" },
-                    { key: "hope",       label: "Hope",       val: toneHope,       set: setToneHope,       emoji: "🕊" },
-                    { key: "energy",     label: "Energy",     val: toneEnergy,     set: setToneEnergy,     emoji: "⚡" },
-                  ] as const).map(({ key, label, val, set, emoji }) => (
-                    <div key={key} className="flex items-center gap-3">
-                      <span className="font-['Poppins',sans-serif] text-sm text-gray-700 w-28 shrink-0">
-                        <span className="mr-1">{emoji}</span>
-                        {label}
-                      </span>
-                      <input
-                        type="range"
-                        min={0}
-                        max={3}
-                        step={1}
+                    { key: "anger",      label: "Angry",      val: toneAnger,      set: setToneAnger,      Icon: Flame as LucideIcon },
+                    { key: "comedy",     label: "Funny",      val: toneComedy,     set: setToneComedy,     Icon: Laugh as LucideIcon },
+                    { key: "subversion", label: "Subversive", val: toneSubversion, set: setToneSubversion, Icon: VenetianMask as LucideIcon },
+                    { key: "hope",       label: "Hope",       val: toneHope,       set: setToneHope,       Icon: Sunrise as LucideIcon },
+                    { key: "energy",     label: "Energy",     val: toneEnergy,     set: setToneEnergy,     Icon: Zap as LucideIcon },
+                  ] as const).map(({ key, label, val, set, Icon }) => (
+                    <div key={key}>
+                      <div className="flex items-center mb-1.5">
+                        <Icon size={14} strokeWidth={2} className="text-[#23297e] mr-1.5 shrink-0" />
+                        <strong className="font-['Poppins',sans-serif] font-semibold text-sm text-[#23297e]">
+                          {label}
+                        </strong>
+                        <button
+                          type="button"
+                          onClick={() => set(val == null ? 1 : null)}
+                          className="ml-auto font-['Poppins',sans-serif] text-[11px] text-gray-500 hover:text-[#23297e] underline"
+                        >
+                          {val == null ? "set" : "auto"}
+                        </button>
+                      </div>
+                      <ToneRangeSlider
                         value={val ?? 0}
+                        onChange={(v) => set(v)}
+                        unset={val == null}
                         disabled={val == null}
-                        onChange={(e) => set(Number(e.target.value))}
-                        className="flex-1 accent-[#fd8e33] disabled:opacity-30"
                       />
-                      <span className="font-['Poppins',sans-serif] text-xs font-bold text-[#fd8e33] w-6 text-center">
-                        {val == null ? "—" : val}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => set(val == null ? 1 : null)}
-                        className="font-['Poppins',sans-serif] text-[11px] text-gray-500 hover:text-[#23297e] underline w-12 text-right"
-                      >
-                        {val == null ? "set" : "auto"}
-                      </button>
                     </div>
                   ))}
                 </div>

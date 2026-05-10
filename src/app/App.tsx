@@ -11,11 +11,11 @@ import { JoinACTersModal } from "./components/JoinACTersModal";
 import { InfoModal } from "./components/InfoModal";
 import { EditCardModal } from "./components/EditCardModal";
 import { ErrorBoundary } from "./components/ErrorBoundary";
-import { locationToState } from "./lib/locations";
+import { locationToState, LOCATION_OPTIONS } from "./lib/locations";
 import { HomeHero } from "./components/HomeHero";
 import { LoggedInHero } from "./components/LoggedInHero";
 import { MatchMeModal } from "./components/MatchMeModal";
-import { rankCards, loadPreferences, clearPreferences, type Preferences } from "./lib/matcher";
+import { rankCards, loadPreferences, clearPreferences, applyMatcherConfig, type Preferences } from "./lib/matcher";
 import svgPaths from "../imports/svg-77lgd1zdt6";
 import { projectId, publicAnonKey } from "/utils/supabase/info";
 import { supabase } from "./lib/supabase";
@@ -317,12 +317,16 @@ export default function App() {
   const isAdminUser = approval?.isAdmin === true;
 
   const displayedCards = (() => {
-    // ── Global gate: expiry + approval ──────────────────────────────────────
+    // ── Global gate: expiry + approval + already-done ────────────────────────
     const gated = cards.filter((card) => {
       // Hide expired events from everyone
       if (card.eventDate && card.eventDate < todayISO) return false;
       // Hide non-approved cards from non-admins
       if (!isAdminUser && card.adminApproved === false) return false;
+      // Hide cards the user has already marked "I did this" — they don't need
+      // to see what they've completed in the main feed. Their progress lives
+      // in the scoreboard / `myCompletions`.
+      if (completedCards.has(card.id)) return false;
       return true;
     });
 
@@ -389,17 +393,17 @@ export default function App() {
     return Array.from(set).sort();
   }, [cards]);
 
-  // Distinct locations from currently-loaded cards. "Online" stays at the
-  // top as a special option that maps to `card.isOnline` in applyFilters.
-  // Any literal "Online" location strings are deduped so the dropdown shows
-  // a single Online entry.
+  // Distinct locations from currently-loaded cards, ordered to match the
+  // canonical `LOCATION_OPTIONS` list used by Add-an-Action and Edit. "Online"
+  // is always included (it filters cards by `isOnline`, which is independent
+  // of the literal location string).
   const dynamicLocations = useMemo(() => {
-    const set = new Set<string>();
+    const set = new Set<string>(["Online"]);
     for (const c of cards) {
-      const state = locationToState(c.location);
-      if (state && state !== "Online") set.add(state);
+      const loc = locationToState(c.location);
+      if (loc) set.add(loc);
     }
-    return ["Online", ...Array.from(set).sort()];
+    return LOCATION_OPTIONS.filter((opt) => set.has(opt));
   }, [cards]);
 
   // ── On mount: restore session + listen for OAuth redirects ──
@@ -545,6 +549,24 @@ export default function App() {
       }
     }
     syncCards();
+  }, []);
+
+  // ── Pull admin-tuned matcher config on mount so scoring uses the latest
+  //    CATEGORY_TONE values without needing a redeploy. Falls through to the
+  //    built-in defaults silently if the request fails. ─────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${API}/matcher-config`, { headers: HEADERS });
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        if (data?.config && !cancelled) applyMatcherConfig(data.config);
+      } catch {
+        // Silent fallback — defaults already in place.
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   // ── Fetch live stats (cities + users) ──
@@ -858,7 +880,7 @@ export default function App() {
             });
             return (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
                   {filteredFacts.map((fc) => (
                     <FactCard
                       key={fc.id}
@@ -911,11 +933,11 @@ export default function App() {
             )}
 
             {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
                 {Array.from({ length: 10 }).map((_, i) => <CardSkeleton key={i} />)}
               </div>
             ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
               {(hasActiveFilters ? displayedCards : displayedCards.slice(0, displayLimit)).map((card) => (
                 <ActionCard
                   key={card.id}
@@ -1028,7 +1050,9 @@ export default function App() {
           accessToken={accessToken}
           approval={approval}
           onClose={() => setAskOpen(false)}
-          onLoginRequired={() => { setAskOpen(false); setAuthModalOpen(true); }}
+          // Open AuthModal on top — leaves AskFlow mounted so the wizard's
+          // form data and current step survive a sign-in round-trip.
+          onLoginRequired={() => setAuthModalOpen(true)}
           onNewCard={handleNewCard}
         />
       )}

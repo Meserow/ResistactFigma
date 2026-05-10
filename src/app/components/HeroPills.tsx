@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Zap, Flame, Sparkles, Plus } from "lucide-react";
+import { createPortal } from "react-dom";
+import { X, Zap, Flame, Sparkles, Megaphone } from "lucide-react";
 
 interface HeroPillsProps {
   onJoinClick: () => void;
@@ -65,20 +66,22 @@ export function HeroPills({ onJoinClick, onMatchClick, onAskClick, isLoggedIn = 
             onClick={onAskClick}
             className="inline-flex items-center gap-1.5 rounded-full border border-[#23297e] bg-white px-4 py-2 font-['Poppins',sans-serif] text-[13px] font-bold text-[#23297e] transition-colors hover:bg-[#23297e]/5"
           >
-            <Plus size={13} strokeWidth={2.5} />
-            Add an Act Card
+            <Megaphone size={13} strokeWidth={2.5} />
+            Add an Act!
           </button>
         )}
-        <button
-          ref={(el) => { triggerRefs.current.join = el; }}
-          onClick={() => setOpenModal("join")}
-          aria-haspopup="dialog"
-          aria-expanded={openModal === "join"}
-          className="inline-flex items-center gap-1.5 rounded-full border border-[#fd8e33] bg-[#fd8e33] px-4 py-2 font-['Poppins',sans-serif] text-[13px] font-bold text-white transition-colors hover:border-[#d96612] hover:bg-[#d96612]"
-        >
-          <Flame size={13} strokeWidth={2.5} />
-          Join The Resistance
-        </button>
+        {!isLoggedIn && (
+          <button
+            ref={(el) => { triggerRefs.current.join = el; }}
+            onClick={() => setOpenModal("join")}
+            aria-haspopup="dialog"
+            aria-expanded={openModal === "join"}
+            className="inline-flex items-center gap-1.5 rounded-full border border-[#fd8e33] bg-[#fd8e33] px-4 py-2 font-['Poppins',sans-serif] text-[13px] font-bold text-white transition-colors hover:border-[#d96612] hover:bg-[#d96612]"
+          >
+            <Flame size={13} strokeWidth={2.5} />
+            Join The Resistance
+          </button>
+        )}
       </div>
 
       {openModal === "how" && (
@@ -152,20 +155,23 @@ function HeroModal({ onClose, title, titleId, children, accentColor, icon }: Her
     focusables?.[0]?.focus();
   }, []);
 
-  return (
+  // Portal to document.body so the overlay isn't trapped inside the navbar's
+  // sticky/z-40 stacking context (HeroPills renders as the navbar's heroSlot,
+  // which on mobile let the navbar bleed through the overlay).
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
       onClick={onClose}
-      className="hero-modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-[#0d1b2a]/60 p-6"
+      className="hero-modal-overlay fixed inset-0 z-[1000] flex items-center justify-center bg-[#0d1b2a]/60 p-4 sm:p-6 overflow-y-auto"
     >
       <div
         ref={cardRef}
         onClick={(e) => e.stopPropagation()}
-        className="hero-modal-card relative w-full max-w-[560px] overflow-hidden rounded-[10px] bg-white shadow-2xl"
+        className="hero-modal-card relative w-full max-w-[560px] my-auto max-h-[calc(100vh-2rem)] overflow-y-auto rounded-[10px] bg-white shadow-2xl"
       >
-        <div className="relative p-9 md:p-10">
+        <div className="relative p-6 sm:p-9 md:p-10">
           <button
             onClick={onClose}
             aria-label="Close"
@@ -194,6 +200,7 @@ function HeroModal({ onClose, title, titleId, children, accentColor, icon }: Her
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
