@@ -1133,6 +1133,7 @@ export default function App() {
         <AdminPanel
           accessToken={accessToken}
           onClose={() => setAdminPanelOpen(false)}
+          imageMap={IMAGE_MAP}
         />
       )}
 
