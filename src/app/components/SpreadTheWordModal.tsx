@@ -69,12 +69,12 @@ function buildPlatforms(siteUrl: string) {
   const enc = (s: string) => encodeURIComponent(s);
   return [
     { id: "facebook", label: "Facebook", bg: "#1877F2", fg: "#fff", icon: <FacebookIcon />, action: () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${enc(siteUrl)}&quote=${enc(shareText)}`, "_blank") },
-    { id: "x", label: "X / Twitter", bg: "#000", fg: "#fff", icon: <XIcon />, action: () => window.open(`https://twitter.com/intent/tweet?text=${enc(shareText)}`, "_blank") },
     { id: "threads", label: "Threads", bg: "#000", fg: "#fff", icon: <ThreadsIcon />, action: () => window.open(`https://www.threads.net/intent/post?text=${enc(shareText)}`, "_blank") },
     { id: "bluesky", label: "Bluesky", bg: "#0085FF", fg: "#fff", icon: <BlueSkyIcon />, action: () => window.open(`https://bsky.app/intent/compose?text=${enc(shareText)}`, "_blank") },
     { id: "whatsapp", label: "WhatsApp", bg: "#25D366", fg: "#fff", icon: <WhatsAppIcon />, action: () => window.open(`https://wa.me/?text=${enc(shareText)}`, "_blank") },
     { id: "instagram", label: "Instagram", bg: "linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)", fg: "#fff", icon: <InstagramIcon />, copyText: shareText, copyNote: "Text copied — paste it into Instagram!" },
     { id: "tiktok", label: "TikTok", bg: "#010101", fg: "#fff", icon: <TikTokIcon />, copyText: shareText, copyNote: "Text copied — paste it into TikTok!" },
+    { id: "x", label: "X / Twitter", bg: "#000", fg: "#fff", icon: <XIcon />, action: () => window.open(`https://twitter.com/intent/tweet?text=${enc(shareText)}`, "_blank") },
     { id: "sms", label: "SMS", bg: "#34C759", fg: "#fff", icon: <MessageSquare className="w-5 h-5" />, action: () => { window.location.href = `sms:?body=${enc(shareText)}`; } },
     { id: "email-app", label: "Email App", bg: "#6B7280", fg: "#fff", icon: <Mail className="w-5 h-5" />, action: () => window.open(`mailto:?subject=${enc("Actions you can take today — ResistAct")}&body=${enc(shareText)}`, "_blank") },
     { id: "copy", label: "Copy Link", bg: "#F3F4F6", fg: "#111827", icon: <Link className="w-5 h-5" />, copyText: siteUrl, copyNote: "Link copied!" },
