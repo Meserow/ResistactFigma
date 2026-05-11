@@ -74,18 +74,18 @@ function buildPlatforms(siteUrl: string) {
   const enc = (s: string) => encodeURIComponent(s);
   return [
     { id: "facebook", label: "Facebook", bg: "#1877F2", fg: "#fff", icon: <FacebookIcon />, action: () => {
-      // On mobile, native share avoids the Facebook app misconfiguration error
-      if (typeof navigator.share === "function" && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
-        navigator.share({ title: "ResistAct", text: shareText, url: shareUrl }).catch(() => {});
-        return;
-      }
-      // Desktop: copy caption + URL to clipboard, then open FB share dialog.
-      // FB's new Create-post flow doesn't auto-fill the body, so the user must
-      // paste (⌘V) into the composer. Once pasted, FB auto-detects the URL
-      // and renders the og:image preview card.
+      // Always send users straight to the Facebook share dialog. Copy the
+      // caption + link to the clipboard first so they can ⌘V/long-press paste
+      // into the FB composer (FB's new Create-post flow doesn't auto-fill the
+      // body, but once you paste the URL it renders the og:image preview).
+      // Note: iOS users with the FB app installed may see an FB-app login
+      // screen if Universal Links intercepts the sharer URL — fall back to
+      // mobile web via m.facebook.com which isn't an FB Universal Link target.
       try { navigator.clipboard?.writeText(shareText); } catch {}
-      window.open(`https://www.facebook.com/sharer/sharer.php?u=${enc(shareUrl)}`, "_blank", "noopener,noreferrer,width=600,height=600");
-    }, copyNote: "Caption + link copied. Paste with ⌘V into the Facebook post — the ResistAct preview will appear." },
+      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const host = isIOS ? "m.facebook.com" : "www.facebook.com";
+      window.open(`https://${host}/sharer/sharer.php?u=${enc(shareUrl)}`, "_blank", "noopener,noreferrer,width=600,height=600");
+    }, copyNote: "Caption + link copied. Paste it into the Facebook post — the ResistAct preview will appear." },
     { id: "threads", label: "Threads", bg: "#000", fg: "#fff", icon: <ThreadsIcon />, action: () => window.open(`https://www.threads.net/intent/post?text=${enc(shareText)}`, "_blank") },
     { id: "bluesky", label: "Bluesky", bg: "#0085FF", fg: "#fff", icon: <BlueSkyIcon />, action: () => window.open(`https://bsky.app/intent/compose?text=${enc(shareText)}`, "_blank") },
     { id: "whatsapp", label: "WhatsApp", bg: "#25D366", fg: "#fff", icon: <WhatsAppIcon />, action: () => window.open(`https://wa.me/?text=${enc(shareText)}`, "_blank") },
