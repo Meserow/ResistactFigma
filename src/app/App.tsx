@@ -985,7 +985,7 @@ export default function App() {
             });
             return (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-5">
                   {filteredFacts.map((fc) => (
                     <FactCard
                       key={fc.id}
@@ -1038,11 +1038,11 @@ export default function App() {
             )}
 
             {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
                 {Array.from({ length: 10 }).map((_, i) => <CardSkeleton key={i} />)}
               </div>
             ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
               {(hasActiveFilters ? displayedCards : displayedCards.slice(0, displayLimit)).map((card) => (
                 <ActionCard
                   key={card.id}
@@ -1215,6 +1215,14 @@ export default function App() {
           {toastMessage}
         </div>
       )}
+
+      {/* Build version badge (bottom-left) */}
+      <div
+        className="fixed bottom-2 left-2 z-[100] px-2 py-1 rounded-md bg-black/60 text-white text-[10px] font-mono leading-none pointer-events-none select-none"
+        title={`Built ${__APP_BUILD_DATE__}`}
+      >
+        v{__APP_VERSION__} · {__APP_GIT_SHA__}
+      </div>
     </div>
   );
 }
