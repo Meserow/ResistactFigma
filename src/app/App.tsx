@@ -53,6 +53,7 @@ interface ServerCard {
   quickAction?: boolean;
   imageContain?: boolean;
   adminApproved?: boolean;
+  firstTimerFriendly?: boolean;
   eventDate?: string;
 }
 
@@ -331,6 +332,48 @@ export default function App() {
   function engagementScore(c: ActionCardData): number {
     return (c.boosts ?? 0) + (c.completions ?? 0);
   }
+  // For anonymous users with no known location (no login, no Match Me prefs),
+  // demote hyper-local actions so the feed leads with Online / National
+  // actions instead of e.g. "Beaver, OR" or "Tesla Takedown — Boston".
+  // A new user who can't act on a hyper-local card will bounce; the global
+  // actions give them something to actually do.
+  // Doesn't change behaviour for logged-in users or anyone who has run
+  // Match Me — those flows already factor in location intent.
+  const demoteHyperLocal = !accessToken && !matchPrefs;
+
+  // ── "Today's Five" rotation for first-time anonymous visitors ─────────────
+  // Deterministically rotate the curated `firstTimerFriendly` pool by day,
+  // so everyone who lands today sees the same 5 actions; tomorrow shows a
+  // different 5; the day after, a different 5 again. With 15 cards flagged
+  // and 5/day, the cycle is 3 days. Only computed/shown for fully anonymous
+  // users (no auth, no Match Me) — once they engage, they get the full feed.
+  const todaysFive: ActionCardData[] = (() => {
+    if (accessToken || matchPrefs) return [];
+    const pool = cards.filter(
+      (c) =>
+        c.firstTimerFriendly === true &&
+        c.adminApproved !== false &&
+        !c.pinToTop && // Spread the Word is already hoisted; don't double-show
+        !(c.eventDate && c.eventDate < todayISO) &&
+        !completedCards.has(c.id),
+    );
+    if (pool.length === 0) return [];
+    // Stable order so rotation is deterministic across reloads / users.
+    const sorted = [...pool].sort((a, b) => a.id - b.id);
+    const daysSinceEpoch = Math.floor(Date.now() / 86_400_000);
+    const groups = Math.max(1, Math.ceil(sorted.length / 5));
+    const offset = (daysSinceEpoch % groups) * 5;
+    return sorted.slice(offset, offset + 5);
+  })();
+
+  function effectiveScore(c: ActionCardData): number {
+    const base = engagementScore(c);
+    if (!demoteHyperLocal) return base;
+    const lb = locationBucket(c);
+    if (lb === 3) return base * 0.35;       // specific state / city
+    if (lb === 4) return base * 0.7;        // unspecified location
+    return base;                            // Online / National / Multi-state untouched
+  }
   // Today's date as ISO string (YYYY-MM-DD) for expiry + sort comparisons.
   const todayISO = new Date().toISOString().slice(0, 10);
   const isAdminUser = approval?.isAdmin === true;
@@ -380,9 +423,13 @@ export default function App() {
     // ── Popular: pure engagement sort — boosts + completions DESC ──────────────
     // Event cards with a future date are NOT pinned; they compete on engagement
     // just like everything else. A zero-engagement event shouldn't jump the queue.
+    // `effectiveScore` is identical to `engagementScore` for logged-in users
+    // and Match-Me users; for anonymous users with no known location it
+    // additionally penalises hyper-local actions so Online/National rise.
+    // Round to integer so scores like 12.6 and 13 still tier together cleanly.
     const byScore = new Map<number, ActionCardData[]>();
     for (const c of filtered) {
-      const s = engagementScore(c);
+      const s = Math.round(effectiveScore(c));
       if (!byScore.has(s)) byScore.set(s, []);
       byScore.get(s)!.push(c);
     }
@@ -1042,8 +1089,49 @@ export default function App() {
                 {Array.from({ length: 10 }).map((_, i) => <CardSkeleton key={i} />)}
               </div>
             ) : (
+            <>
+              {/* ── Today's Five strip ──────────────────────────────────────
+                  Only shown to fully anonymous visitors (no auth, no Match Me,
+                  no active filters or search) so they don't compete with
+                  intentful browsing. Rotates daily — see `todaysFive` for the
+                  3-day cycle logic. */}
+              {todaysFive.length > 0 && !hasActiveFilters && (
+                <div className="mb-6">
+                  <div className="flex items-baseline gap-3 mb-3">
+                    <h2 className="font-['Poppins',sans-serif] font-bold text-lg text-[#23297e]">
+                      ⭐ Today's Five — start here
+                    </h2>
+                    <p className="font-['Poppins',sans-serif] text-xs text-gray-500">
+                      Five quick actions, refreshed daily. Each takes under 5 minutes.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
+                    {todaysFive.map((card) => (
+                      <ActionCard
+                        key={`today-${card.id}`}
+                        card={card}
+                        onBoost={handleBoost}
+                        onComplete={handleComplete}
+                        onShare={handleShare}
+                        onBookmark={handleBookmark}
+                        onEdit={(id) => setEditCardId(id)}
+                        isBoosted={boostedCards.has(card.id)}
+                        isCompleted={completedCards.has(card.id)}
+                        isBookmarked={bookmarkedCards.has(card.id)}
+                        canEdit={canEditCard(card)}
+                      />
+                    ))}
+                  </div>
+                  <div className="mt-4 border-b border-gray-200" />
+                </div>
+              )}
             <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
-              {(hasActiveFilters ? displayedCards : displayedCards.slice(0, displayLimit)).map((card) => (
+              {(() => {
+                const base = hasActiveFilters ? displayedCards : displayedCards.slice(0, displayLimit);
+                if (todaysFive.length === 0 || hasActiveFilters) return base;
+                const todayIds = new Set(todaysFive.map((c) => c.id));
+                return base.filter((c) => !todayIds.has(c.id));
+              })().map((card) => (
                 <ActionCard
                   key={card.id}
                   card={card.isFeatured ? { ...card, featuredIllustration: <FeaturedIllustration /> } : card}
@@ -1059,6 +1147,7 @@ export default function App() {
                 />
               ))}
             </div>
+            </>
             )}
 
             {/* Sentinel for desktop infinite scroll — sits just below the grid.

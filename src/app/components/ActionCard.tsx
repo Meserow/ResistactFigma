@@ -44,6 +44,11 @@ export interface ActionCardData {
   imageContain?: boolean;
   /** False = awaiting admin review; true / undefined = visible to all users. */
   adminApproved?: boolean;
+  /** Curated for "Today's Five" — actions that are <5 min, fun, easy, and
+   * location-agnostic so a brand-new anonymous visitor can do them right
+   * away without needing to log in or share their location. Hand-flagged
+   * by admins via the admin panel. */
+  firstTimerFriendly?: boolean;
   /** ISO date string (YYYY-MM-DD). Cards with a past date are hidden; upcoming ones sort to the top. */
   eventDate?: string;
   /** True for actions you can do without leaving your house (knit, write

@@ -120,6 +120,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
   const [topImageUrl,    setTopImageUrl]    = useState<string>((card as any).topImageUrl ?? "");
   const [imageContain,   setImageContain]   = useState<boolean>(card.imageContain === true);
   const [atHome,         setAtHome]         = useState<boolean>(card.atHome === true);
+  const [firstTimerFriendly, setFirstTimerFriendly] = useState<boolean>((card as any).firstTimerFriendly === true);
   const [eventDate,      setEventDate]      = useState<string>((card as any).eventDate ?? "");
   // Tone override — admins can manually fix cards whose category default doesn't
   // fit the matcher. null in any slot = no override (use category default).
@@ -256,6 +257,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
         topImageUrl:    topImageUrl.trim() || null,
         imageContain,
         atHome,
+        firstTimerFriendly,
         eventDate:      eventDate.trim() || undefined,
         // Send null to explicitly clear an existing override; omit the field
         // when there's nothing to send.
@@ -527,6 +529,29 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
                 </Field>
               </div>
             </div>
+
+            {/* ── First-timer curation (admin only) ── */}
+            {isAdmin && (
+              <div className="border-t border-gray-100 pt-4">
+                <h3 className="font-['Poppins',sans-serif] font-bold text-[13px] uppercase tracking-wider text-gray-700 mb-1">
+                  First-timer curation
+                </h3>
+                <p className="font-['Poppins',sans-serif] text-xs text-gray-500 mb-3">
+                  Flag this card for "Today's Five" — the rotating set of starter actions shown to brand-new anonymous visitors. Only flag if it's <strong>under 5 minutes</strong>, <strong>fun or satisfying</strong>, <strong>location-agnostic</strong>, and <strong>doable without logging in</strong>. Examples: send a pre-written email to your reps, share ResistAct with a friend, text RESIST to 50409, boost an existing action.
+                </p>
+                <label className="flex items-start gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={firstTimerFriendly}
+                    onChange={(e) => setFirstTimerFriendly(e.target.checked)}
+                    className="w-4 h-4 rounded accent-[#23297e] mt-0.5"
+                  />
+                  <span className="font-['Poppins',sans-serif] text-sm text-gray-700">
+                    Include in "Today's Five" rotation for first-time visitors
+                  </span>
+                </label>
+              </div>
+            )}
 
             {/* ── Matcher tone override (admin only) ── */}
             {isAdmin && (
