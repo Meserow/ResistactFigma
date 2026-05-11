@@ -68,7 +68,14 @@ function buildPlatforms(siteUrl: string) {
   const shareText = `I've been using ResistAct to find small, doable actions to push back. Come join the resistance! ${siteUrl}`;
   const enc = (s: string) => encodeURIComponent(s);
   return [
-    { id: "facebook", label: "Facebook", bg: "#1877F2", fg: "#fff", icon: <FacebookIcon />, action: () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${enc(siteUrl)}&quote=${enc(shareText)}`, "_blank") },
+    { id: "facebook", label: "Facebook", bg: "#1877F2", fg: "#fff", icon: <FacebookIcon />, action: () => {
+      // On mobile, native share avoids the Facebook app misconfiguration error
+      if (typeof navigator.share === "function" && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+        navigator.share({ title: "ResistAct", text: shareText, url: siteUrl }).catch(() => {});
+      } else {
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${enc(siteUrl)}&quote=${enc(shareText)}`, "_blank");
+      }
+    }},
     { id: "threads", label: "Threads", bg: "#000", fg: "#fff", icon: <ThreadsIcon />, action: () => window.open(`https://www.threads.net/intent/post?text=${enc(shareText)}`, "_blank") },
     { id: "bluesky", label: "Bluesky", bg: "#0085FF", fg: "#fff", icon: <BlueSkyIcon />, action: () => window.open(`https://bsky.app/intent/compose?text=${enc(shareText)}`, "_blank") },
     { id: "whatsapp", label: "WhatsApp", bg: "#25D366", fg: "#fff", icon: <WhatsAppIcon />, action: () => window.open(`https://wa.me/?text=${enc(shareText)}`, "_blank") },
