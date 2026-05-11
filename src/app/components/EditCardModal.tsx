@@ -5,6 +5,8 @@ import { projectId } from "/utils/supabase/info";
 import type { ActionCardData } from "./ActionCard";
 import { LOCATION_OPTIONS } from "../lib/locations";
 import { ToneRangeSlider } from "./ToneSlider";
+import { InvolvementPicker, involvementLevelFor } from "./InvolvementPicker";
+import type { TimeBucket } from "../lib/matcher";
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
 
@@ -41,7 +43,26 @@ const CATEGORY_OPTIONS: { label: string; color: string }[] = [
 ];
 
 const ACTION_TYPES = ["Online", "In Person", "In Person Group"];
-const TIME_COMMITMENTS = ["< 1 hour", "1–3 hours", "Half day", "Full day", "Ongoing"];
+
+const TIME_COMMITMENT_MAP: Record<TimeBucket, string> = {
+  "5min":     "< 1 hour",
+  "30min":    "< 1 hour",
+  "1hr":      "1–3 hours",
+  "fewHours": "1–3 hours",
+  "fullDay":  "Full day",
+  "ongoing":  "Ongoing",
+};
+
+function timeBucketFromCard(timeCommitment: string | undefined, quickAction?: boolean): TimeBucket {
+  if (quickAction) return "5min";
+  if (!timeCommitment) return "30min";
+  if (timeCommitment === "< 1 hour") return "30min";
+  if (timeCommitment === "1 hour" || timeCommitment === "1hr") return "1hr";
+  if (timeCommitment === "1–3 hours") return "fewHours";
+  if (timeCommitment === "Half day" || timeCommitment === "Full day") return "fewHours";
+  if (timeCommitment === "Ongoing") return "ongoing";
+  return "30min";
+}
 
 interface EditCardModalProps {
   card: ActionCardData;
@@ -71,7 +92,9 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
   const [category,       setCategory]       = useState(card.category.toUpperCase());
   const [categoryColor,  setCategoryColor]  = useState(card.categoryColor);
   const [actionType,     setActionType]     = useState(card.actionType ?? "In Person Group");
-  const [timeCommitment, setTimeCommitment] = useState(card.timeCommitment ?? "");
+  const [involvement, setInvolvement] = useState<TimeBucket>(() =>
+    timeBucketFromCard(card.timeCommitment, (card as any).quickAction)
+  );
   // Map the card's current location/isOnline into a single canonical option.
   // Legacy free-form values that don't match the canonical list show as blank
   // and require the editor to pick a value before saving.
@@ -220,7 +243,8 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
         category,
         categoryColor,
         actionType,
-        timeCommitment: timeCommitment || undefined,
+        timeCommitment: TIME_COMMITMENT_MAP[involvement],
+        quickAction: involvement === "5min" ? true : undefined,
         isOnline,
         location:       isOnline ? undefined : (location || undefined),
         spotsTotal:     unlimited ? "Unlimited" : (Number(spotsTotal) || 10),
@@ -342,14 +366,11 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
 
             {/* Time Commitment */}
             <Field label="Time Commitment">
-              <select
-                value={timeCommitment}
-                onChange={(e) => setTimeCommitment(e.target.value)}
-                className={SELECT_CLS(timeCommitment)}
-              >
-                <option value="">— select —</option>
-                {TIME_COMMITMENTS.map((t) => <option key={t} value={t}>{t}</option>)}
-              </select>
+              <InvolvementPicker
+                value={involvementLevelFor(involvement)}
+                onChange={setInvolvement}
+                variant="plan"
+              />
             </Field>
 
             <Field label="Location">
