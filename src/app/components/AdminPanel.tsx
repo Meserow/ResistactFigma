@@ -13,6 +13,7 @@ const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`
 interface AdminPanelProps {
   accessToken: string;
   onClose: () => void;
+  imageMap?: Record<string, string>;
 }
 
 type TabFilter = "pending" | "approved" | "rejected" | "all";
@@ -48,6 +49,7 @@ interface PendingCard {
   authorName: string;
   authorRole: string;
   topImageUrl?: string | null;
+  topImageKey?: string | null;
   targetUrl?: string | null;
   eventDate?: string;
   createdAt?: string;
@@ -57,15 +59,24 @@ interface PendingCard {
   _store?: string;
 }
 
+// ── Resolve a card's display image: explicit URL > imageKey lookup > undefined ─
+function resolveImage(card: PendingCard, imageMap?: Record<string, string>): string | undefined {
+  if (card.topImageUrl) return card.topImageUrl;
+  if (card.topImageKey && imageMap) return imageMap[card.topImageKey];
+  return undefined;
+}
+
 // ── Image preview + upload modal ──────────────────────────────────────────────
 function ImageModal({
   card,
   accessToken,
+  imageMap,
   onClose,
   onImageUpdated,
 }: {
   card: PendingCard;
   accessToken: string;
+  imageMap?: Record<string, string>;
   onClose: () => void;
   onImageUpdated: (id: number, newUrl: string) => void;
 }) {
@@ -124,9 +135,9 @@ function ImageModal({
 
         {/* Image area */}
         <div className="bg-gray-50 flex items-center justify-center min-h-[200px] max-h-[400px] overflow-hidden">
-          {card.topImageUrl ? (
+          {resolveImage(card, imageMap) ? (
             <img
-              src={card.topImageUrl}
+              src={resolveImage(card, imageMap)}
               alt={card.title}
               className="max-w-full max-h-[400px] object-contain"
             />
@@ -153,14 +164,14 @@ function ImageModal({
             className="flex items-center gap-2 px-4 py-2 bg-[#23297e] hover:bg-[#1a2060] text-white rounded-lg font-['Poppins',sans-serif] font-semibold text-sm transition-colors disabled:opacity-50"
           >
             {uploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-            {card.topImageUrl ? "Replace image" : "Upload image"}
+            {resolveImage(card, imageMap) ? "Replace image" : "Upload image"}
           </button>
           {uploadError && (
             <p className="font-['Poppins',sans-serif] text-xs text-red-500 flex-1">{uploadError}</p>
           )}
-          {card.topImageUrl && (
+          {resolveImage(card, imageMap) && (
             <a
-              href={card.topImageUrl}
+              href={resolveImage(card, imageMap)}
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs text-[#23297e] underline font-['Poppins',sans-serif] ml-auto"
@@ -174,7 +185,7 @@ function ImageModal({
   );
 }
 
-export function AdminPanel({ accessToken, onClose }: AdminPanelProps) {
+export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) {
   const [mode, setMode] = useState<PanelMode>("cards");
 
   // ── Users state ──────────────────────────────────────────────────────────────
@@ -437,9 +448,9 @@ export function AdminPanel({ accessToken, onClose }: AdminPanelProps) {
                               className="relative w-14 h-14 rounded-lg shrink-0 overflow-hidden group bg-gray-100 border border-gray-200 hover:border-[#23297e] transition-colors"
                               title="Click to view / change image"
                             >
-                              {card.topImageUrl ? (
+                              {resolveImage(card, imageMap) ? (
                                 <img
-                                  src={card.topImageUrl}
+                                  src={resolveImage(card, imageMap)}
                                   alt={card.title}
                                   className="w-full h-full object-cover"
                                   onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
@@ -776,6 +787,7 @@ export function AdminPanel({ accessToken, onClose }: AdminPanelProps) {
         <ImageModal
           card={imageModalCard}
           accessToken={accessToken}
+          imageMap={imageMap}
           onClose={() => setImageModalCard(null)}
           onImageUpdated={(id, url) => {
             setPendingCards((prev) => prev.map((c) => c.id === id ? { ...c, topImageUrl: url } : c));
