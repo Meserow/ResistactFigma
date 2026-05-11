@@ -117,37 +117,45 @@ export const DEFAULT_PREFERENCES: Preferences = {
 };
 
 // ─── Category → tone defaults ─────────────────────────────────────────────────
-// 0 = none, 3 = strong. These are coarse — IRREVERENCE is high comedy/subversion,
-// PROTEST is high anger, ACT OF KINDNESS is high care, etc.
+// 0 = none, 3 = strong. Design goal: vectors must be ORTHOGONAL so that moving
+// a single slider produces a meaningful change in results.
+//
+// Key rules enforced here:
+//   • High-energy categories (PROTEST, FLASH MOB, IRREVERENCE) get hope=0 so
+//     raising the hope slider actually surfaces petitions/prayers over them.
+//   • Low-effort categories (PETITION, EMAIL, PRAYER, BOOST) get energy=0 so
+//     lowering the energy slider lifts them above protests and flash mobs.
+//   • PETITION/EMAIL/LETTER anger is 1, not 2 — they shouldn't score high
+//     when the user wants to channel pure rage (use PROTEST/BOYCOTT for that).
 
 /** Built-in category tone defaults. Used as the fallback when no runtime
  * override has been loaded from the admin "Matcher Tuning" panel. */
 export const DEFAULT_CATEGORY_TONE: Record<string, Tone> = {
-  "IRREVERENCE":          { anger: 1, comedy: 3, subversion: 3, care: 0, hope: 1, energy: 3 },
-  "PROTEST":              { anger: 3, comedy: 0, subversion: 1, care: 1, hope: 2, energy: 3 },
-  "FLASH MOB":            { anger: 2, comedy: 2, subversion: 3, care: 0, hope: 1, energy: 3 },
-  "BOYCOTT":              { anger: 2, comedy: 0, subversion: 2, care: 0, hope: 2, energy: 1 },
-  "ART PIECE":            { anger: 1, comedy: 2, subversion: 2, care: 1, hope: 2, energy: 2 },
-  "PETITION":             { anger: 2, comedy: 0, subversion: 0, care: 1, hope: 3, energy: 1 },
-  "EMAIL CAMPAIGN":       { anger: 2, comedy: 0, subversion: 0, care: 1, hope: 3, energy: 1 },
-  "LETTER TO EDITOR":     { anger: 2, comedy: 0, subversion: 0, care: 1, hope: 3, energy: 1 },
-  "SOCIAL MEDIA":         { anger: 2, comedy: 2, subversion: 1, care: 1, hope: 1, energy: 2 },
-  "BOOST":                { anger: 1, comedy: 0, subversion: 0, care: 2, hope: 2, energy: 1 },
+  "IRREVERENCE":          { anger: 1, comedy: 3, subversion: 3, care: 0, hope: 0, energy: 2 },
+  "PROTEST":              { anger: 3, comedy: 0, subversion: 1, care: 1, hope: 1, energy: 3 },
+  "FLASH MOB":            { anger: 2, comedy: 2, subversion: 3, care: 0, hope: 0, energy: 3 },
+  "BOYCOTT":              { anger: 2, comedy: 0, subversion: 2, care: 0, hope: 1, energy: 0 },
+  "ART PIECE":            { anger: 1, comedy: 2, subversion: 2, care: 1, hope: 1, energy: 2 },
+  "PETITION":             { anger: 1, comedy: 0, subversion: 0, care: 1, hope: 3, energy: 0 },
+  "EMAIL CAMPAIGN":       { anger: 1, comedy: 0, subversion: 0, care: 1, hope: 3, energy: 0 },
+  "LETTER TO EDITOR":     { anger: 1, comedy: 0, subversion: 0, care: 1, hope: 3, energy: 0 },
+  "SOCIAL MEDIA":         { anger: 1, comedy: 2, subversion: 1, care: 1, hope: 1, energy: 2 },
+  "BOOST":                { anger: 0, comedy: 0, subversion: 0, care: 2, hope: 2, energy: 0 },
   "ACT OF KINDNESS":      { anger: 0, comedy: 0, subversion: 0, care: 3, hope: 2, energy: 1 },
-  "SPREAD POSITIVITY":    { anger: 0, comedy: 1, subversion: 0, care: 3, hope: 3, energy: 2 },
+  "SPREAD POSITIVITY":    { anger: 0, comedy: 1, subversion: 0, care: 3, hope: 3, energy: 1 },
   "PRAYER":               { anger: 0, comedy: 0, subversion: 0, care: 3, hope: 3, energy: 0 },
   "MENTAL HEALTH":        { anger: 0, comedy: 0, subversion: 0, care: 3, hope: 2, energy: 0 },
   "MEETING":              { anger: 1, comedy: 0, subversion: 0, care: 2, hope: 3, energy: 2 },
-  "TRAINING":             { anger: 1, comedy: 0, subversion: 1, care: 2, hope: 2, energy: 2 },
+  "TRAINING":             { anger: 1, comedy: 0, subversion: 1, care: 2, hope: 2, energy: 1 },
   "JOIN A GROUP":         { anger: 1, comedy: 0, subversion: 1, care: 2, hope: 2, energy: 2 },
-  "PERSONAL COMMITMENT":  { anger: 1, comedy: 0, subversion: 0, care: 2, hope: 3, energy: 1 },
-  "PROFESSIONAL SKILLS":  { anger: 1, comedy: 0, subversion: 0, care: 2, hope: 2, energy: 2 },
+  "PERSONAL COMMITMENT":  { anger: 0, comedy: 0, subversion: 0, care: 2, hope: 3, energy: 0 },
+  "PROFESSIONAL SKILLS":  { anger: 0, comedy: 0, subversion: 0, care: 2, hope: 2, energy: 2 },
   "TRANSPORTATION":       { anger: 0, comedy: 0, subversion: 0, care: 3, hope: 2, energy: 2 },
   "HOUSING":              { anger: 0, comedy: 0, subversion: 0, care: 3, hope: 2, energy: 2 },
   "LABOR":                { anger: 2, comedy: 0, subversion: 1, care: 2, hope: 2, energy: 2 },
-  "CRAFTING":             { anger: 0, comedy: 1, subversion: 0, care: 2, hope: 2, energy: 1 },
-  "NEWS STORY":           { anger: 1, comedy: 0, subversion: 0, care: 1, hope: 2, energy: 1 },
-  "FUNDING":              { anger: 1, comedy: 0, subversion: 0, care: 2, hope: 2, energy: 1 },
+  "CRAFTING":             { anger: 0, comedy: 1, subversion: 0, care: 2, hope: 2, energy: 2 },
+  "NEWS STORY":           { anger: 1, comedy: 0, subversion: 1, care: 1, hope: 1, energy: 1 },
+  "FUNDING":              { anger: 0, comedy: 0, subversion: 0, care: 2, hope: 2, energy: 0 },
   "OTHER":                { anger: 1, comedy: 1, subversion: 1, care: 1, hope: 1, energy: 1 },
 };
 
@@ -213,17 +221,60 @@ export function toneFor(card: ActionCardData): Tone {
 
 // ─── timeCommitment string → bucket ───────────────────────────────────────────
 
+// Category-level time defaults used when a card has no explicit timeCommitment.
+// Without this, every card without timeCommitment returns "30min" and the time
+// slider becomes useless — protests, training, and prayer all look identical.
+const CATEGORY_DEFAULT_BUCKET: Partial<Record<string, TimeBucket>> = {
+  // Seconds to a few minutes — click, commit, share
+  "BOYCOTT":            "5min",
+  "MENTAL HEALTH":      "5min",
+  "FUNDING":            "5min",
+  "BOOST":              "5min",
+  // 30 minutes — find, read, sign or write
+  "PETITION":           "30min",
+  "EMAIL CAMPAIGN":     "30min",
+  "LETTER TO EDITOR":   "30min",
+  "SOCIAL MEDIA":       "30min",
+  "NEWS STORY":         "30min",
+  "PERSONAL COMMITMENT":"30min",
+  "PRAYER":             "30min",
+  "SPREAD POSITIVITY":  "30min",
+  "ACT OF KINDNESS":    "30min",
+  "IRREVERENCE":        "30min",
+  "OTHER":              "30min",
+  // 1 hour — attend a call, a session, a meeting
+  "MEETING":            "1hr",
+  "TRAINING":           "1hr",
+  // Several hours — travel + attend, or a work session
+  "PROTEST":            "fewHours",
+  "FLASH MOB":          "fewHours",
+  "TRANSPORTATION":     "fewHours",
+  "HOUSING":            "fewHours",
+  "PROFESSIONAL SKILLS":"fewHours",
+  "ART PIECE":          "fewHours",
+  "CRAFTING":           "fewHours",
+  // Ongoing commitment
+  "LABOR":              "ongoing",
+  "JOIN A GROUP":       "ongoing",
+};
+
 export function timeBucketFor(card: ActionCardData): TimeBucket {
-  const t = (card.timeCommitment ?? "").toLowerCase();
   if (card.quickAction) return "5min";
-  if (t.includes("ongoing")) return "ongoing";
-  if (t.includes("full")) return "fullDay";
-  if (t.includes("half")) return "fewHours";
-  if (t.includes("1–3") || t.includes("1-3") || t.includes("hour")) {
-    if (t.includes("< 1") || t.includes("<1")) return "30min";
-    return "fewHours";
+  const t = (card.timeCommitment ?? "").toLowerCase();
+  // Explicit timeCommitment wins over the category default.
+  if (t) {
+    if (t.includes("ongoing")) return "ongoing";
+    if (t.includes("full")) return "fullDay";
+    if (t.includes("half")) return "fewHours";
+    if (t.includes("1–3") || t.includes("1-3") || t.includes("hour")) {
+      if (t.includes("< 1") || t.includes("<1")) return "30min";
+      return "fewHours";
+    }
+    if (t.includes("30") || t.includes("min")) return "30min";
+    if (t.includes("5") || t.includes("quick")) return "5min";
   }
-  return "30min"; // default — most online petitions/calls
+  // Fall back to category default so the time slider works for seed cards.
+  return CATEGORY_DEFAULT_BUCKET[card.category?.toUpperCase()] ?? "30min";
 }
 
 // Bucket → minutes-equivalent for ranking. Lower is shorter.
@@ -255,18 +306,38 @@ const HIGH_RISK_FOR_GROUP: Partial<Record<VulnerableGroup, Set<string>>> = {
   disabled:   new Set(["FLASH MOB", "PROTEST"]),
   // Federal workers risk Hatch Act issues with overt partisan in-person acts.
   fedWorker:  new Set(["PROTEST", "FLASH MOB", "LETTER TO EDITOR"]),
-  journalist: new Set([]),
+  // Journalists can be targeted at protests; arrests and equipment seizures documented.
+  journalist: new Set(["PROTEST", "FLASH MOB"]),
+  // Disproportionate police targeting at in-person actions.
+  black:      new Set(["PROTEST", "FLASH MOB"]),
+  latino:     new Set(["PROTEST", "FLASH MOB"]),
+  indigenous: new Set(["PROTEST", "FLASH MOB"]),
 };
 
 // Categories where the group's identity gives the action extra weight.
 const SURFACES_VOICE_FOR: Partial<Record<VulnerableGroup, Set<string>>> = {
   woman:      new Set(["PETITION", "EMAIL CAMPAIGN", "LETTER TO EDITOR", "MEETING", "SOCIAL MEDIA", "NEWS STORY"]),
-  immigrant:  new Set(["PETITION", "EMAIL CAMPAIGN", "LETTER TO EDITOR", "MEETING", "SOCIAL MEDIA", "NEWS STORY"]),
-  lgbtq:      new Set(["PETITION", "EMAIL CAMPAIGN", "LETTER TO EDITOR", "MEETING", "SOCIAL MEDIA", "NEWS STORY"]),
-  repro:      new Set(["PETITION", "EMAIL CAMPAIGN", "LETTER TO EDITOR", "MEETING", "SOCIAL MEDIA", "NEWS STORY"]),
-  disabled:   new Set(["PETITION", "EMAIL CAMPAIGN", "LETTER TO EDITOR", "MEETING", "SOCIAL MEDIA"]),
-  fedWorker:  new Set(["NEWS STORY", "EMAIL CAMPAIGN", "PROFESSIONAL SKILLS"]),
-  journalist: new Set(["NEWS STORY", "BOOST", "PROFESSIONAL SKILLS"]),
+  immigrant:  new Set(["PETITION", "EMAIL CAMPAIGN", "LETTER TO EDITOR", "MEETING", "SOCIAL MEDIA", "NEWS STORY", "TRAINING"]),
+  lgbtq:      new Set(["PETITION", "EMAIL CAMPAIGN", "LETTER TO EDITOR", "MEETING", "SOCIAL MEDIA", "NEWS STORY", "MENTAL HEALTH"]),
+  repro:      new Set(["PETITION", "EMAIL CAMPAIGN", "LETTER TO EDITOR", "MEETING", "SOCIAL MEDIA", "NEWS STORY", "TRANSPORTATION"]),
+  disabled:   new Set(["PETITION", "EMAIL CAMPAIGN", "LETTER TO EDITOR", "MEETING", "SOCIAL MEDIA", "PROFESSIONAL SKILLS"]),
+  fedWorker:  new Set(["NEWS STORY", "EMAIL CAMPAIGN", "PROFESSIONAL SKILLS", "TRAINING"]),
+  journalist: new Set(["NEWS STORY", "BOOST", "PROFESSIONAL SKILLS", "LETTER TO EDITOR"]),
+  black:      new Set(["PETITION", "EMAIL CAMPAIGN", "LETTER TO EDITOR", "NEWS STORY", "SOCIAL MEDIA", "MEETING"]),
+  latino:     new Set(["PETITION", "EMAIL CAMPAIGN", "LETTER TO EDITOR", "NEWS STORY", "SOCIAL MEDIA", "MEETING"]),
+  indigenous: new Set(["PETITION", "EMAIL CAMPAIGN", "LETTER TO EDITOR", "NEWS STORY", "SOCIAL MEDIA", "MEETING"]),
+  asian:      new Set(["PETITION", "EMAIL CAMPAIGN", "LETTER TO EDITOR", "NEWS STORY", "SOCIAL MEDIA"]),
+  muslim:     new Set(["PETITION", "EMAIL CAMPAIGN", "LETTER TO EDITOR", "NEWS STORY", "SOCIAL MEDIA"]),
+  jewish:     new Set(["PETITION", "EMAIL CAMPAIGN", "LETTER TO EDITOR", "NEWS STORY", "SOCIAL MEDIA", "PRAYER"]),
+  unionWorker: new Set(["LABOR", "PETITION", "EMAIL CAMPAIGN", "SOCIAL MEDIA"]),
+  veteran:    new Set(["PETITION", "EMAIL CAMPAIGN", "NEWS STORY", "MEETING"]),
+  student:    new Set(["PETITION", "EMAIL CAMPAIGN", "SOCIAL MEDIA", "MEETING"]),
+  educator:   new Set(["PETITION", "EMAIL CAMPAIGN", "LETTER TO EDITOR", "NEWS STORY"]),
+  scientist:  new Set(["NEWS STORY", "PETITION", "PROFESSIONAL SKILLS", "LETTER TO EDITOR"]),
+  lawyer:     new Set(["PROFESSIONAL SKILLS", "NEWS STORY", "PETITION"]),
+  lowIncome:  new Set(["PETITION", "EMAIL CAMPAIGN", "LABOR", "MEETING"]),
+  unhoused:   new Set(["PETITION", "EMAIL CAMPAIGN", "HOUSING"]),
+  renter:     new Set(["PETITION", "EMAIL CAMPAIGN", "HOUSING"]),
 };
 
 export interface RiskAssessment {
@@ -392,15 +463,18 @@ export function score(card: ActionCardData, prefs: Preferences, ctx?: UserContex
   // Risk assessment for selected groups (penalty/bonus, not a hard filter)
   const risk = assessRisk(card, prefs.vulnerableGroups);
 
-  // Tone match: cosine-like dot product between user's wishes and card's tone.
-  // Each user dimension is 0-3. Card dimension is 0-3.
+  // Tone match: dot product between user sliders (0-3) and card tone (0-3).
+  // `care` has no dedicated slider — it's driven by the hope slider at half
+  // weight so that ACT OF KINDNESS, PRAYER, and TRANSPORTATION surface when
+  // the user signals they want something constructive/warm.
   const t = toneFor(card);
   const toneScore =
-    (prefs.tone.anger * t.anger) +
-    (prefs.tone.comedy * t.comedy) +
+    (prefs.tone.anger      * t.anger) +
+    (prefs.tone.comedy     * t.comedy) +
     (prefs.tone.subversion * t.subversion) +
-    (prefs.tone.hope * t.hope) +
-    (prefs.tone.energy * t.energy);
+    (prefs.tone.hope       * t.hope) +
+    (prefs.tone.hope       * t.care * 0.5) +
+    (prefs.tone.energy     * t.energy);
 
   // Time match: distance between card's bucket minutes and user's pick.
   // Smaller distance = bigger bonus. Capped.
