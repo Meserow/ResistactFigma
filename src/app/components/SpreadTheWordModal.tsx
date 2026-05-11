@@ -65,17 +65,27 @@ function BlueSkyIcon() {
 }
 
 function buildPlatforms(siteUrl: string) {
-  const shareText = `I've been using ResistAct to find small, doable actions to push back. Come join the resistance! ${siteUrl}`;
+  // Always share the production URL so Facebook/Twitter can scrape og:image,
+  // even when testing on localhost.
+  const shareUrl = /^https?:\/\/(localhost|127\.|\[?::1)/.test(siteUrl)
+    ? "https://www.resistact.org/"
+    : siteUrl;
+  const shareText = `I've been using ResistAct to find small, doable actions to push back. Come join the resistance! ${shareUrl}`;
   const enc = (s: string) => encodeURIComponent(s);
   return [
     { id: "facebook", label: "Facebook", bg: "#1877F2", fg: "#fff", icon: <FacebookIcon />, action: () => {
       // On mobile, native share avoids the Facebook app misconfiguration error
       if (typeof navigator.share === "function" && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
-        navigator.share({ title: "ResistAct", text: shareText, url: siteUrl }).catch(() => {});
-      } else {
-        window.open(`https://www.facebook.com/sharer/sharer.php?u=${enc(siteUrl)}&quote=${enc(shareText)}`, "_blank");
+        navigator.share({ title: "ResistAct", text: shareText, url: shareUrl }).catch(() => {});
+        return;
       }
-    }},
+      // Desktop: copy caption + URL to clipboard, then open FB share dialog.
+      // FB's new Create-post flow doesn't auto-fill the body, so the user must
+      // paste (⌘V) into the composer. Once pasted, FB auto-detects the URL
+      // and renders the og:image preview card.
+      try { navigator.clipboard?.writeText(shareText); } catch {}
+      window.open(`https://www.facebook.com/sharer/sharer.php?u=${enc(shareUrl)}`, "_blank", "noopener,noreferrer,width=600,height=600");
+    }, copyNote: "Caption + link copied. Paste with ⌘V into the Facebook post — the ResistAct preview will appear." },
     { id: "threads", label: "Threads", bg: "#000", fg: "#fff", icon: <ThreadsIcon />, action: () => window.open(`https://www.threads.net/intent/post?text=${enc(shareText)}`, "_blank") },
     { id: "bluesky", label: "Bluesky", bg: "#0085FF", fg: "#fff", icon: <BlueSkyIcon />, action: () => window.open(`https://bsky.app/intent/compose?text=${enc(shareText)}`, "_blank") },
     { id: "whatsapp", label: "WhatsApp", bg: "#25D366", fg: "#fff", icon: <WhatsAppIcon />, action: () => window.open(`https://wa.me/?text=${enc(shareText)}`, "_blank") },
@@ -84,7 +94,7 @@ function buildPlatforms(siteUrl: string) {
     { id: "x", label: "X / Twitter", bg: "#000", fg: "#fff", icon: <XIcon />, action: () => window.open(`https://twitter.com/intent/tweet?text=${enc(shareText)}`, "_blank") },
     { id: "sms", label: "SMS", bg: "#34C759", fg: "#fff", icon: <MessageSquare className="w-5 h-5" />, action: () => { window.location.href = `sms:?body=${enc(shareText)}`; } },
     { id: "email-app", label: "Email App", bg: "#6B7280", fg: "#fff", icon: <Mail className="w-5 h-5" />, action: () => window.open(`mailto:?subject=${enc("Actions you can take today — ResistAct")}&body=${enc(shareText)}`, "_blank") },
-    { id: "copy", label: "Copy Link", bg: "#F3F4F6", fg: "#111827", icon: <Link className="w-5 h-5" />, copyText: siteUrl, copyNote: "Link copied!" },
+    { id: "copy", label: "Copy Link", bg: "#F3F4F6", fg: "#111827", icon: <Link className="w-5 h-5" />, copyText: shareUrl, copyNote: "Link copied!" },
   ];
 }
 
@@ -228,6 +238,9 @@ export function SpreadTheWordModal({ onClose }: { onClose: () => void }) {
                   showToast((p as { copyNote: string }).copyNote);
                 } else if ("action" in p && p.action) {
                   (p as { action: () => void }).action();
+                  if ("copyNote" in p && (p as { copyNote?: string }).copyNote) {
+                    showToast((p as { copyNote: string }).copyNote);
+                  }
                 }
               }}
               className="flex flex-col items-center gap-1.5 group focus:outline-none"
