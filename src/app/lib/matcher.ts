@@ -15,14 +15,13 @@ export type TimeBucket = "5min" | "30min" | "1hr" | "fewHours" | "fullDay" | "on
 
 /**
  * What kind of action context the user is willing to engage in. Stored as
- * an array on Preferences so the user can pick more than one (e.g. "online"
- * + "at home" but not in-person). An empty array means "any" — no filter.
- *  - "online":    needs an internet connection; mostly screen time
- *  - "atHome":    can be done in the user's home (online OR offline tasks like
- *                 knitting, letter-writing, phone-calling reps)
- *  - "inPerson":  requires showing up somewhere
+ * an array on Preferences so the user can pick more than one. An empty array
+ * means "any" — no filter.
+ *  - "online":   "Remote" in the UI; can be done from home (online OR offline
+ *                tasks like knitting, letter-writing, phone-calling reps)
+ *  - "inPerson": requires showing up somewhere
  */
-export type Setting = "online" | "atHome" | "inPerson";
+export type Setting = "online" | "inPerson";
 
 export type VulnerableGroup =
   // ── Identity (original 7) ──────────────────────────────────────────
@@ -101,6 +100,11 @@ export interface Preferences {
    * first." Has no effect when `state` is null. */
   includeAnywhere: boolean;
   vulnerableGroups: VulnerableGroup[];
+  /** Opt-in: when true, the matcher should surface high-leverage donation
+   * targets — close, urgent races where additional funding can tip the
+   * outcome — ahead of broader actions. Stored on the user's profile so the
+   * curation persists. */
+  focusDonations: boolean;
   tone: Pick<Tone, "anger" | "comedy" | "subversion" | "hope" | "energy">;
 }
 
@@ -113,6 +117,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   state: null,
   includeAnywhere: false,
   vulnerableGroups: [],
+  focusDonations: false,
   tone: { anger: 1, comedy: 1, subversion: 1, hope: 1, energy: 1 },
 };
 
@@ -287,34 +292,17 @@ const BUCKET_MINUTES: Record<TimeBucket, number> = {
   "ongoing": 720,
 };
 
-// ─── Risk model: which actions are risky for which groups, and which actions
-// surface a group's voice with extra weight. Both keyed by category as a
-// reasonable default; specific cards can override later.
+// ─── Amplification model ─────────────────────────────────────────────────────
+// We no longer collect personal identity, so personalized-risk down-ranking
+// is gone — the user's slider settings (Confrontational, Subversive, Motivation,
+// "Where do you want to act?") already steer risk-averse users toward calmer
+// actions without us keeping a list of who is targetable.
+//
+// What's left is amplification: when the user picks a focus group, we lift
+// actions where that group's voice carries unique weight (or where the card
+// is explicitly tagged via `amplifiesGroups`).
 
-// Risk and amplification mappings only need entries for groups where we have
-// a clear signal. Groups not listed default to no risk and no amplification —
-// they're tracked but don't influence scoring until tuned.
-const HIGH_RISK_FOR_GROUP: Partial<Record<VulnerableGroup, Set<string>>> = {
-  // Women face elevated risk at clinic-defense + trans/repro adjacent in-person
-  // actions, but not on the standard protest spectrum — light touch only.
-  woman:      new Set([]),
-  // Front-line in-person actions where ICE / arrest exposure matters.
-  immigrant:  new Set(["PROTEST", "FLASH MOB"]),
-  // Public confrontation in red areas; acceptable in blue ones — soft warning.
-  lgbtq:      new Set(["FLASH MOB"]),
-  repro:      new Set([]),
-  disabled:   new Set(["FLASH MOB", "PROTEST"]),
-  // Federal workers risk Hatch Act issues with overt partisan in-person acts.
-  fedWorker:  new Set(["PROTEST", "FLASH MOB", "LETTER TO EDITOR"]),
-  // Journalists can be targeted at protests; arrests and equipment seizures documented.
-  journalist: new Set(["PROTEST", "FLASH MOB"]),
-  // Disproportionate police targeting at in-person actions.
-  black:      new Set(["PROTEST", "FLASH MOB"]),
-  latino:     new Set(["PROTEST", "FLASH MOB"]),
-  indigenous: new Set(["PROTEST", "FLASH MOB"]),
-};
-
-// Categories where the group's identity gives the action extra weight.
+// Categories where the group's voice gives the action extra weight.
 const SURFACES_VOICE_FOR: Partial<Record<VulnerableGroup, Set<string>>> = {
   woman:      new Set(["PETITION", "EMAIL CAMPAIGN", "LETTER TO EDITOR", "MEETING", "SOCIAL MEDIA", "NEWS STORY"]),
   immigrant:  new Set(["PETITION", "EMAIL CAMPAIGN", "LETTER TO EDITOR", "MEETING", "SOCIAL MEDIA", "NEWS STORY", "TRAINING"]),
@@ -340,30 +328,14 @@ const SURFACES_VOICE_FOR: Partial<Record<VulnerableGroup, Set<string>>> = {
   renter:     new Set(["PETITION", "EMAIL CAMPAIGN", "HOUSING"]),
 };
 
-export interface RiskAssessment {
-  /** True if this card carries elevated risk for at least one selected group. */
-  risky: boolean;
-  /** True if this card surfaces the user's voice with extra weight. */
-  amplifies: boolean;
-  /** Human-readable warning, or null. */
-  warning: string | null;
-}
-
-export function assessRisk(card: ActionCardData, groups: VulnerableGroup[]): RiskAssessment {
-  if (groups.length === 0) return { risky: false, amplifies: false, warning: null };
+export function assessAmplification(card: ActionCardData, groups: VulnerableGroup[]): boolean {
+  if (groups.length === 0) return false;
   const cat = card.category?.toUpperCase() ?? "";
   const cardAmps = new Set(card.amplifiesGroups ?? []);
-  let risky = false;
-  let amplifies = false;
   for (const g of groups) {
-    if (HIGH_RISK_FOR_GROUP[g]?.has(cat)) risky = true;
-    if (SURFACES_VOICE_FOR[g]?.has(cat) || cardAmps.has(g)) amplifies = true;
+    if (SURFACES_VOICE_FOR[g]?.has(cat) || cardAmps.has(g)) return true;
   }
-  return {
-    risky,
-    amplifies,
-    warning: risky ? "In-person exposure — consider risk before joining" : null,
-  };
+  return false;
 }
 
 // ─── Setting / online / at-home filter ────────────────────────────────────────
@@ -378,11 +350,12 @@ function cardIsAtHome(card: ActionCardData): boolean {
  * the request is empty (= "any"). */
 export function settingMatches(card: ActionCardData, settings: Setting[]): boolean {
   if (!settings || settings.length === 0) return true;
-  const isOnline = !!card.isOnline;
   return settings.some((s) => {
-    if (s === "online")   return isOnline;
-    if (s === "atHome")   return cardIsAtHome(card);
-    if (s === "inPerson") return !isOnline;
+    // "online" covers anything that can be done remotely — online actions plus
+    // the rare atHome=true / location="From Home" cards. The "At home" pill
+    // collapsed into this in v0.2; remote === from home for our purposes.
+    if (s === "online")   return cardIsAtHome(card);
+    if (s === "inPerson") return !card.isOnline;
     return false;
   });
 }
@@ -429,6 +402,41 @@ export function stateMatches(card: ActionCardData, userState: string | null): bo
   return false;
 }
 
+/** Stricter than `stateMatches`: returns true only when the card is
+ * specifically tied to the user's state. National / Multi-state / online
+ * cards do NOT count as "local" here — they travel to anyone. Used to
+ * prioritize and inject genuinely state-local cards into samples. */
+export function cardIsLocalToState(card: ActionCardData, userState: string | null): boolean {
+  if (!userState) return false;
+  if (card.isOnline) return false;
+  const cardLoc = (card.location ?? "").trim();
+  if (!cardLoc) return false;
+  if (cardLoc === "National" || cardLoc === "Multi-state") return false;
+  const userLower = userState.toLowerCase();
+  if (cardLoc.toLowerCase() === userLower) return true;
+  const m = cardLoc.match(/,\s*([^,]+)\s*$/);
+  if (!m) return false;
+  const tail = m[1].trim();
+  if (tail.toLowerCase() === userLower) return true;
+  const code = tail.toUpperCase();
+  const codeToState: Record<string, string> = {
+    AL: "Alabama", AK: "Alaska", AZ: "Arizona", AR: "Arkansas",
+    CA: "California", CO: "Colorado", CT: "Connecticut", DE: "Delaware",
+    DC: "Washington DC", FL: "Florida", GA: "Georgia", HI: "Hawaii",
+    ID: "Idaho", IL: "Illinois", IN: "Indiana", IA: "Iowa", KS: "Kansas",
+    KY: "Kentucky", LA: "Louisiana", ME: "Maine", MD: "Maryland",
+    MA: "Massachusetts", MI: "Michigan", MN: "Minnesota", MS: "Mississippi",
+    MO: "Missouri", MT: "Montana", NE: "Nebraska", NV: "Nevada",
+    NH: "New Hampshire", NJ: "New Jersey", NM: "New Mexico", NY: "New York",
+    NC: "North Carolina", ND: "North Dakota", OH: "Ohio", OK: "Oklahoma",
+    OR: "Oregon", PA: "Pennsylvania", RI: "Rhode Island", SC: "South Carolina",
+    SD: "South Dakota", TN: "Tennessee", TX: "Texas", UT: "Utah",
+    VT: "Vermont", VA: "Virginia", WA: "Washington", WV: "West Virginia",
+    WI: "Wisconsin", WY: "Wyoming",
+  };
+  return codeToState[code]?.toLowerCase() === userLower;
+}
+
 // ─── User history context ─────────────────────────────────────────────────────
 // Passed into the scorer when the user is logged in (or has local history).
 // Both fields are optional — omitting them disables the filter/bonus entirely.
@@ -460,8 +468,9 @@ export function score(card: ActionCardData, prefs: Preferences, ctx?: UserContex
   // only and the filter is bypassed (every state passes).
   if (!prefs.includeAnywhere && !stateMatches(card, prefs.state)) return 0;
 
-  // Risk assessment for selected groups (penalty/bonus, not a hard filter)
-  const risk = assessRisk(card, prefs.vulnerableGroups);
+  // Amplification check — lifts cards where the user's focus group(s) have
+  // unique standing. We no longer down-rank for personal risk; sliders do that.
+  const amplifies = assessAmplification(card, prefs.vulnerableGroups);
 
   // Tone match: dot product between user sliders (0-3) and card tone (0-3).
   // `care` has no dedicated slider — it's driven by the hope slider at half
@@ -486,8 +495,8 @@ export function score(card: ActionCardData, prefs: Preferences, ctx?: UserContex
     timeScore = ratio * 10; // 0-10
   }
 
-  // Risk penalty / amplification bonus
-  const riskAdj = (risk.amplifies ? 8 : 0) - (risk.risky ? 12 : 0);
+  // Amplification bonus — lifts cards where the user's focus group has weight.
+  const amplifyBonus = amplifies ? 8 : 0;
 
   // Engagement floor — boost cards that have community traction so a tie
   // breaks toward proven actions.
@@ -497,13 +506,16 @@ export function score(card: ActionCardData, prefs: Preferences, ctx?: UserContex
   // Local-state priority bonus — when the user picked a state and chose to
   // see actions from anywhere, lift cards that match their state above the
   // rest so local stuff still ranks first.
-  const stateBonus = (prefs.includeAnywhere && prefs.state && stateMatches(card, prefs.state)) ? 6 : 0;
+  // Only TRULY state-local cards get the bonus — National/Multi-state/online
+  // cards already travel everywhere, so giving them this bonus would dilute
+  // the lift meant for local stuff.
+  const stateBonus = (prefs.state && cardIsLocalToState(card, prefs.state)) ? 6 : 0;
 
   // User-boost bonus — the user already signaled interest in this card.
   // Surface it higher so they can finally do it.
   const boostBonus = (card.id != null && inSet(ctx?.boostedIds, card.id)) ? 5 : 0;
 
-  return toneScore + timeScore + riskAdj + engagementScore + stateBonus + boostBonus;
+  return toneScore + timeScore + amplifyBonus + engagementScore + stateBonus + boostBonus;
 }
 
 // ─── Top N ────────────────────────────────────────────────────────────────────
@@ -551,9 +563,8 @@ export function explainMatch(card: ActionCardData, prefs: Preferences, ctx?: Use
   }
 
   // Setting match — only call out if the user picked a specific subset.
-  if (prefs.setting.length > 0 && prefs.setting.length < 3) {
-    if (prefs.setting.includes("online")   && card.isOnline) reasons.push("online");
-    else if (prefs.setting.includes("atHome")   && (card.atHome || card.isOnline)) reasons.push("at home");
+  if (prefs.setting.length > 0 && prefs.setting.length < 2) {
+    if (prefs.setting.includes("online")   && cardIsAtHome(card)) reasons.push("remote");
     else if (prefs.setting.includes("inPerson") && !card.isOnline) reasons.push("in-person");
   }
 
@@ -565,11 +576,11 @@ export function explainMatch(card: ActionCardData, prefs: Preferences, ctx?: Use
     }
   }
 
-  // Voice amplification + risk
+  // Group amplification — only when the user picked a focus group.
   if (prefs.vulnerableGroups.length > 0) {
-    const risk = assessRisk(card, prefs.vulnerableGroups);
-    if (risk.amplifies) reasons.push("your voice carries weight");
-    if (risk.risky) reasons.push("⚠ may carry risk for you");
+    if (assessAmplification(card, prefs.vulnerableGroups)) {
+      reasons.push("centers this group's fight");
+    }
   }
 
   // Community traction — only flag highly-engaged cards.
@@ -657,15 +668,22 @@ export async function pushUserPreferences(token: string, prefs: Preferences): Pr
 /** Shared validation/migration so both `loadPreferences` (localStorage) and
  * `fetchUserPreferences` (server) hand back a fully-shaped Preferences. */
 function normalizePreferences(parsed: any): Preferences {
+  // Migration: "atHome" collapsed into "online" (now "Remote") in v0.2.
+  // Old stored prefs with atHome get rewritten to online; dedup the array.
+  const migrate = (s: unknown): Setting | null => {
+    if (s === "online" || s === "atHome") return "online";
+    if (s === "inPerson") return "inPerson";
+    return null;
+  };
   let setting: Setting[] = [];
   if (Array.isArray(parsed.setting)) {
-    setting = parsed.setting.filter((s: unknown): s is Setting =>
-      s === "online" || s === "atHome" || s === "inPerson"
-    );
+    const mapped = parsed.setting
+      .map(migrate)
+      .filter((s: Setting | null): s is Setting => s !== null);
+    setting = Array.from(new Set(mapped));
   } else if (typeof parsed.setting === "string" && parsed.setting !== "either") {
-    if (parsed.setting === "online" || parsed.setting === "atHome" || parsed.setting === "inPerson") {
-      setting = [parsed.setting];
-    }
+    const one = migrate(parsed.setting);
+    if (one) setting = [one];
   }
   return {
     time: parsed.time ?? null,
@@ -673,6 +691,7 @@ function normalizePreferences(parsed: any): Preferences {
     state: typeof parsed.state === "string" ? parsed.state : null,
     includeAnywhere: parsed.includeAnywhere === true,
     vulnerableGroups: Array.isArray(parsed.vulnerableGroups) ? parsed.vulnerableGroups : [],
+    focusDonations: parsed.focusDonations === true,
     tone: {
       anger: typeof parsed.tone?.anger === "number" ? parsed.tone.anger : 1,
       comedy: typeof parsed.tone?.comedy === "number" ? parsed.tone.comedy : 1,

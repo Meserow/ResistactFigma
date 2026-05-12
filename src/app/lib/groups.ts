@@ -8,6 +8,9 @@ export interface GroupSection {
   options: { value: VulnerableGroup; label: string }[];
 }
 
+// Labels are written in plural / collective form because the picker asks
+// "Do you want to focus on a particular group being targeted?" — the user is
+// picking a group to amplify, not declaring personal identity.
 export const GROUP_SECTIONS: GroupSection[] = [
   {
     title: "Race, ethnicity, religion",
@@ -24,51 +27,51 @@ export const GROUP_SECTIONS: GroupSection[] = [
   {
     title: "Demographic",
     options: [
-      { value: "woman",     label: "Woman" },
-      { value: "lgbtq",     label: "LGBTQIA+ / Trans" },
-      { value: "immigrant", label: "Immigrant (documented, undocumented, mixed-status)" },
-      { value: "refugee",   label: "Refugee or asylum seeker" },
-      { value: "disabled",  label: "Disabled / chronically ill / medically challenged" },
-      { value: "repro",     label: "Seeking or providing reproductive care" },
+      { value: "woman",     label: "Women" },
+      { value: "lgbtq",     label: "LGBTQIA+ / Trans people" },
+      { value: "immigrant", label: "Immigrants (documented, undocumented, mixed-status)" },
+      { value: "refugee",   label: "Refugees and asylum seekers" },
+      { value: "disabled",  label: "Disabled / chronically ill / medically challenged people" },
+      { value: "repro",     label: "People seeking or providing reproductive care" },
     ],
   },
   {
     title: "Role, occupation, status",
     options: [
-      { value: "student",            label: "Student" },
-      { value: "educator",           label: "Educator / teacher / professor" },
-      { value: "publicHealthWorker", label: "Public health worker" },
-      { value: "scientist",          label: "Scientist or federal researcher" },
-      { value: "lawyer",             label: "Lawyer or judge" },
-      { value: "whistleblower",      label: "Government whistleblower" },
-      { value: "libraryWorker",      label: "Library worker or librarian" },
-      { value: "nonprofitWorker",    label: "Nonprofit / NGO worker" },
-      { value: "electionWorker",     label: "Election worker or poll worker" },
-      { value: "veteran",            label: "Veteran" },
-      { value: "fedWorker",          label: "Federal worker / contractor" },
-      { value: "journalist",         label: "Journalist / researcher" },
-      { value: "unionWorker",        label: "Union worker or organizer" },
-      { value: "farmworker",         label: "Farmworker" },
+      { value: "student",            label: "Students" },
+      { value: "educator",           label: "Educators, teachers, professors" },
+      { value: "publicHealthWorker", label: "Public health workers" },
+      { value: "scientist",          label: "Scientists and federal researchers" },
+      { value: "lawyer",             label: "Lawyers and judges" },
+      { value: "whistleblower",      label: "Government whistleblowers" },
+      { value: "libraryWorker",      label: "Library workers and librarians" },
+      { value: "nonprofitWorker",    label: "Nonprofit / NGO workers" },
+      { value: "electionWorker",     label: "Election workers and poll workers" },
+      { value: "veteran",            label: "Veterans" },
+      { value: "fedWorker",          label: "Federal workers and contractors" },
+      { value: "journalist",         label: "Journalists and researchers" },
+      { value: "unionWorker",        label: "Union workers and organizers" },
+      { value: "farmworker",         label: "Farmworkers" },
     ],
   },
   {
     title: "Economic",
     options: [
-      { value: "lowIncome",        label: "Low-income family" },
-      { value: "medicaidMedicare", label: "Relies on Medicaid or Medicare" },
-      { value: "obamacare",        label: "Relies on Obamacare" },
-      { value: "ssdi",             label: "Receives Social Security or SSDI" },
-      { value: "renter",           label: "Renter or housing-insecure" },
+      { value: "lowIncome",        label: "Low-income families" },
+      { value: "medicaidMedicare", label: "People who rely on Medicaid or Medicare" },
+      { value: "obamacare",        label: "People who rely on Obamacare" },
+      { value: "ssdi",             label: "People on Social Security or SSDI" },
+      { value: "renter",           label: "Renters and housing-insecure people" },
     ],
   },
   {
     title: "Geographic or situational",
     options: [
-      { value: "ruralHealthcare",  label: "Rural community losing healthcare or USDA programs" },
-      { value: "climateAffected",  label: "Affected by climate disasters" },
-      { value: "abortionTravel",   label: "In a state with an abortion ban, seeking interstate care" },
-      { value: "incarcerated",     label: "Incarcerated or family of an incarcerated person" },
-      { value: "unhoused",         label: "Unhoused" },
+      { value: "ruralHealthcare",  label: "Rural communities losing healthcare or USDA programs" },
+      { value: "climateAffected",  label: "People affected by climate disasters" },
+      { value: "abortionTravel",   label: "People in abortion-ban states seeking interstate care" },
+      { value: "incarcerated",     label: "Incarcerated people and their families" },
+      { value: "unhoused",         label: "Unhoused people" },
     ],
   },
 ];

@@ -16,6 +16,7 @@ import { locationToState, LOCATION_OPTIONS } from "./lib/locations";
 import { HomeHero } from "./components/HomeHero";
 import { LoggedInHero } from "./components/LoggedInHero";
 import { MatchMeModal } from "./components/MatchMeModal";
+import { ChangelogModal } from "./components/ChangelogModal";
 import { FeedbackModal } from "./components/FeedbackModal";
 import { rankCards, loadPreferences, clearPreferences, applyMatcherConfig, fetchUserPreferences, pushUserPreferences, savePreferences, type Preferences, type UserContext } from "./lib/matcher";
 import svgPaths from "../imports/svg-77lgd1zdt6";
@@ -53,7 +54,11 @@ interface ServerCard {
   quickAction?: boolean;
   imageContain?: boolean;
   adminApproved?: boolean;
+  firstTimerFriendly?: boolean;
+  urlOk?: boolean;
+  urlCheckedAt?: string;
   eventDate?: string;
+  toneOverride?: { anger?: number; comedy?: number; subversion?: number; care?: number; hope?: number; energy?: number };
 }
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
@@ -201,6 +206,7 @@ export default function App() {
   const [adminPanelOpen, setAdminPanelOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [actOpen, setActOpen] = useState(false);
+  const [changelogOpen, setChangelogOpen] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
   const [matchOpen, setMatchOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -331,6 +337,24 @@ export default function App() {
   function engagementScore(c: ActionCardData): number {
     return (c.boosts ?? 0) + (c.completions ?? 0);
   }
+  // For anonymous users with no known location (no login, no Match Me prefs),
+  // demote hyper-local actions so the feed leads with Online / National
+  // actions instead of e.g. "Beaver, OR" or "Tesla Takedown — Boston".
+  // A new user who can't act on a hyper-local card will bounce; the global
+  // actions give them something to actually do.
+  // Doesn't change behaviour for logged-in users or anyone who has run
+  // Match Me — those flows already factor in location intent.
+  const demoteHyperLocal = !accessToken && !matchPrefs;
+
+
+  function effectiveScore(c: ActionCardData): number {
+    const base = engagementScore(c);
+    if (!demoteHyperLocal) return base;
+    const lb = locationBucket(c);
+    if (lb === 3) return base * 0.35;       // specific state / city
+    if (lb === 4) return base * 0.7;        // unspecified location
+    return base;                            // Online / National / Multi-state untouched
+  }
   // Today's date as ISO string (YYYY-MM-DD) for expiry + sort comparisons.
   const todayISO = new Date().toISOString().slice(0, 10);
   const isAdminUser = approval?.isAdmin === true;
@@ -342,10 +366,9 @@ export default function App() {
       if (card.eventDate && card.eventDate < todayISO) return false;
       // Hide unapproved cards from everyone — use the admin panel to approve
       if (card.adminApproved === false) return false;
-      // Hide cards the user has already marked "I did this" — they don't need
-      // to see what they've completed in the main feed. Their progress lives
-      // in the scoreboard / `myCompletions`.
-      if (completedCards.has(card.id)) return false;
+      // Completed cards stay in the feed but get sorted to the bottom (see
+      // `completedLast` below) so users can still find things they've done
+      // without them dominating the top.
       return true;
     });
 
@@ -361,28 +384,47 @@ export default function App() {
       return [...pinned, ...arr.filter((c) => !c.pinToTop)];
     };
 
+    // Push completed cards to the bottom while preserving relative order
+    // within each group. Applied AFTER sort/rank but BEFORE pinFirst so a
+    // pinned-but-completed card still rises to the top.
+    const completedLast = (arr: ActionCardData[]): ActionCardData[] => {
+      if (completedCards.size === 0) return arr;
+      const active: ActionCardData[] = [];
+      const done: ActionCardData[] = [];
+      for (const c of arr) {
+        if (completedCards.has(c.id)) done.push(c);
+        else active.push(c);
+      }
+      return [...active, ...done];
+    };
+
     // ── Match-me mode: rank by user-supplied tone/time/setting/risk prefs ─────
     // Drops engagement-based, location-bucket, and category-interleave ordering;
     // the matcher's score already incorporates engagement and the user's intent
-    // is more specific.
+    // is more specific. We pass an empty completedIds so the matcher doesn't
+    // drop completed cards — completedLast pushes them to the bottom instead.
     if (matchPrefs) {
-      const userCtx: UserContext = { completedIds: completedCards, boostedIds: boostedCards };
-      return pinFirst(rankCards(filtered, matchPrefs, userCtx));
+      const userCtx: UserContext = { boostedIds: boostedCards };
+      return pinFirst(completedLast(rankCards(filtered, matchPrefs, userCtx)));
     }
 
     if (sortBy === "az") {
-      return pinFirst([...filtered].sort((a, b) => a.title.localeCompare(b.title)));
+      return pinFirst(completedLast([...filtered].sort((a, b) => a.title.localeCompare(b.title))));
     }
     if (sortBy === "newest") {
-      return pinFirst([...filtered].sort((a, b) => (b.id ?? 0) - (a.id ?? 0)));
+      return pinFirst(completedLast([...filtered].sort((a, b) => (b.id ?? 0) - (a.id ?? 0))));
     }
 
     // ── Popular: pure engagement sort — boosts + completions DESC ──────────────
     // Event cards with a future date are NOT pinned; they compete on engagement
     // just like everything else. A zero-engagement event shouldn't jump the queue.
+    // `effectiveScore` is identical to `engagementScore` for logged-in users
+    // and Match-Me users; for anonymous users with no known location it
+    // additionally penalises hyper-local actions so Online/National rise.
+    // Round to integer so scores like 12.6 and 13 still tier together cleanly.
     const byScore = new Map<number, ActionCardData[]>();
     for (const c of filtered) {
-      const s = engagementScore(c);
+      const s = Math.round(effectiveScore(c));
       if (!byScore.has(s)) byScore.set(s, []);
       byScore.get(s)!.push(c);
     }
@@ -401,7 +443,7 @@ export default function App() {
         if (grp && grp.length > 0) out.push(...interleaveByCategory(grp));
       }
     }
-    return pinFirst(out);
+    return pinFirst(completedLast(out));
   })();
 
   // True when any filter chip is selected OR a search is active — bypasses
@@ -1042,6 +1084,7 @@ export default function App() {
                 {Array.from({ length: 10 }).map((_, i) => <CardSkeleton key={i} />)}
               </div>
             ) : (
+            <>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
               {(hasActiveFilters ? displayedCards : displayedCards.slice(0, displayLimit)).map((card) => (
                 <ActionCard
@@ -1059,6 +1102,7 @@ export default function App() {
                 />
               ))}
             </div>
+            </>
             )}
 
             {/* Sentinel for desktop infinite scroll — sits just below the grid.
@@ -1216,13 +1260,16 @@ export default function App() {
         </div>
       )}
 
-      {/* Build version badge (bottom-left) */}
-      <div
-        className="fixed bottom-2 left-2 z-[100] px-2 py-1 rounded-md bg-black/60 text-white text-[10px] font-mono leading-none pointer-events-none select-none"
-        title={`Built ${__APP_BUILD_DATE__}`}
+      {/* Build version badge (bottom-left) — click to open the changelog. */}
+      <button
+        onClick={() => setChangelogOpen(true)}
+        title={`Built ${__APP_BUILD_DATE__} — click for changelog`}
+        className="fixed bottom-2 left-2 z-[100] px-2 py-1 rounded-md bg-black/60 hover:bg-black/80 text-white text-[10px] font-mono leading-none select-none transition-colors cursor-pointer"
       >
         v{__APP_VERSION__} · {__APP_GIT_SHA__}
-      </div>
+      </button>
+
+      {changelogOpen && <ChangelogModal onClose={() => setChangelogOpen(false)} />}
     </div>
   );
 }

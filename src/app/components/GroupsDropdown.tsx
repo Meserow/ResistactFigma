@@ -9,15 +9,16 @@ interface GroupsDropdownProps {
   onClear: () => void;
   /** Override the placeholder when nothing is selected. */
   placeholder?: string;
+  /** Start with the sectioned list open so users see all options without
+   * an extra click. Used in MatchMe where the picker is the focus of the
+   * step; left false in Add-an-Action where the picker is one field of many. */
+  defaultOpen?: boolean;
 }
 
 /** Sectioned multi-select used in MatchMe (asking the user about themselves)
  * and Add-an-Action (asking the planner who an action especially helps). */
-export function GroupsDropdown({ value, onToggle, onClear, placeholder = "Select any that apply" }: GroupsDropdownProps) {
-  // Default to closed even when items are selected — the chips above the
-  // toggle make it obvious what's picked, and keeping the panel collapsed
-  // makes the surrounding modal fit without scrolling.
-  const [open, setOpen] = useState(false);
+export function GroupsDropdown({ value, onToggle, onClear, placeholder = "Select any that apply", defaultOpen = false }: GroupsDropdownProps) {
+  const [open, setOpen] = useState(defaultOpen);
   const count = value.length;
   return (
     <div>

@@ -12,7 +12,7 @@ export function HomeHero({ onMatchClick, onAskClick }: HomeHeroProps) {
       <div className="relative z-10 max-w-[880px] mx-auto px-5 pt-9 pb-7 text-center">
         <h1 className="font-['Poppins',sans-serif] text-gray-900 text-[18px] md:text-[24px] font-bold leading-[1.2]">
           America is out of control. MAGA is nuts.{" "}
-          <em className="italic font-semibold text-[#fd8e33] underline">But what can I do?</em>
+          <em className="italic font-semibold text-[#fd8e33]">But what can I do?</em>
         </h1>
 
         <div className="flex items-center justify-center gap-2 mt-3 mb-0">
