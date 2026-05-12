@@ -1,11 +1,12 @@
 import { useEffect, useRef } from "react";
-import { ExternalLink, Globe, MapPin, X } from "lucide-react";
+import { ExternalLink, Flame, Globe, MapPin, X } from "lucide-react";
 import type { ActionCardData } from "./ActionCard";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 
 interface CardDetailsModalProps {
   card: ActionCardData;
   onClose: () => void;
+  onShare?: () => void;
 }
 
 /**
@@ -13,7 +14,7 @@ interface CardDetailsModalProps {
  * `line-clamp-5` cuts it off in the grid view. Click the "Read more" link on a
  * card to open this; click overlay / Escape / X to close.
  */
-export function CardDetailsModal({ card, onClose }: CardDetailsModalProps) {
+export function CardDetailsModal({ card, onClose, onShare }: CardDetailsModalProps) {
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -109,8 +110,15 @@ export function CardDetailsModal({ card, onClose }: CardDetailsModalProps) {
             {card.description}
           </p>
 
-          {/* Primary action — link to targetUrl when present */}
-          {link && (
+          {/* Primary action */}
+          {onShare ? (
+            <button
+              onClick={() => { onClose(); onShare(); }}
+              className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-[#fd8e33] px-5 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#d96612]"
+            >
+              <Flame size={14} /> Spread the Word!
+            </button>
+          ) : link ? (
             <a
               href={link}
               target="_blank"
@@ -119,7 +127,7 @@ export function CardDetailsModal({ card, onClose }: CardDetailsModalProps) {
             >
               Take this action <ExternalLink size={14} />
             </a>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

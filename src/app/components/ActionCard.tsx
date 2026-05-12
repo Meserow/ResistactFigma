@@ -224,7 +224,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           {/* Illustration — use uploaded image if available, else navy illustration */}
           <div className={`relative ${compact ? "h-[70px]" : "h-[160px]"} shrink-0 bg-[#23297e] flex items-center justify-center overflow-hidden`}>
             {card.topImage
-              ? <img src={card.topImage} alt={card.title} className="absolute inset-0 w-full h-full object-cover" />
+              ? <img src={card.topImage} alt={card.title} className="absolute inset-0 w-full h-full object-cover object-top" />
               : card.featuredIllustration
             }
             <div className="absolute top-2.5 right-3">
@@ -245,7 +245,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
               {card.category}
             </span>
 
-            <h3 className="font-['Poppins',sans-serif] font-bold text-[15px] text-gray-900 leading-snug">
+            <h3 className={`font-['Poppins',sans-serif] font-bold text-gray-900 leading-snug ${compact ? "text-[13px]" : "text-[15px]"}`}>
               {(card.targetUrl || card.authorLink) ? (
                 <a href={card.targetUrl ?? card.authorLink} target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-[#23297e] transition-colors">
                   {card.title}
@@ -260,7 +260,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
             {isDescriptionLong && (
               <button
                 onClick={(e) => { e.stopPropagation(); setDetailsOpen(true); }}
-                className="self-end font-['Poppins',sans-serif] italic text-[11px] font-normal text-[#fd8e33] underline underline-offset-2 decoration-[#fd8e33]/40 hover:decoration-[#fd8e33]"
+                className="self-end font-['Poppins',sans-serif] italic text-[12px] font-normal text-[#fd8e33] underline underline-offset-2 decoration-[#fd8e33]/40 hover:decoration-[#fd8e33]"
               >
                 Read more →
               </button>
@@ -290,7 +290,11 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
             : <ShareModal title={card.title} description={card.description} onClose={() => setShareOpen(false)} />
         )}
         {detailsOpen && (
-          <CardDetailsModal card={card} onClose={() => setDetailsOpen(false)} />
+          <CardDetailsModal
+            card={card}
+            onClose={() => setDetailsOpen(false)}
+            onShare={card.pinToTop ? () => setShareOpen(true) : undefined}
+          />
         )}
       </>
     );

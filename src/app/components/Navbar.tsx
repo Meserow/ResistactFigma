@@ -230,7 +230,9 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
        <div className="flex items-center gap-4">
         {/* Logo + Brand */}
         <div className="flex items-center gap-3 shrink-0">
-          <ResistActLogo />
+          <button onClick={onInfoClick} title="How does ResistAct work?" className="focus:outline-none focus-visible:ring-2 focus-visible:ring-[#fd8e33] rounded-full">
+            <ResistActLogo />
+          </button>
           <div className="hidden sm:block">
             <p className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-2xl leading-tight tracking-tight">
               ResistAct

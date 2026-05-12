@@ -1006,6 +1006,7 @@ export default function App() {
               : <HomeHero
                   onMatchClick={() => setMatchOpen(true)}
                   onAskClick={() => setAskOpen(true)}
+                  onHowClick={() => setInfoOpen(true)}
                 />
             : null
         }

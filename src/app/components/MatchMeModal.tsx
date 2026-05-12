@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { X, ChevronLeft, ChevronRight, Clock, Flame, Laugh, Lock, Sparkles, Sunrise, ThumbsDown, VenetianMask, Zap } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Clock, Flame, Laugh, Lock, MapPin, Sparkles, Sunrise, ThumbsDown, VenetianMask, Zap } from "lucide-react";
+import logoImg from "../../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
 import type { LucideIcon } from "lucide-react";
 import { ToneRangeSlider } from "./ToneSlider";
 import {
@@ -64,16 +65,29 @@ interface MatchMeModalProps {
   boostedIds?: number[];
 }
 
-const SETTING_OPTIONS: { value: Setting; label: string }[] = [
-  { value: "online",   label: "Remote" },
-  { value: "inPerson", label: "In-person" },
+// 4-stop slider for the "where" preference.
+// "Mostly Remote" opens both online + in-person cards (you're *open* to in-person
+// occasionally); "Remote only" hard-filters to online cards only.
+const SETTING_STOPS: { label: string; setting: Setting[]; showState: boolean }[] = [
+  { label: "Remote only",   setting: ["online"],              showState: false },
+  { label: "Mostly Remote", setting: ["online", "inPerson"],  showState: true  },
+  { label: "In-person",     setting: ["inPerson"],            showState: true  },
+  { label: "Both equal",    setting: [],                       showState: true  },
 ];
+
+function settingIndex(setting: Setting[]): number {
+  if (setting.length === 0) return 3;
+  if (setting.includes("online") && setting.includes("inPerson")) return 1;
+  if (setting.includes("online")) return 0;
+  if (setting.includes("inPerson")) return 2;
+  return 3;
+}
 
 // State picker options — actual US states only. "Online", "National", and
 // "Multi-state" aren't picked here because they're not where a *user* lives;
 // the state filter passes those locations through automatically.
 const STATE_OPTIONS = LOCATION_OPTIONS.filter(
-  (o) => o !== "Online" && o !== "National" && o !== "Multi-state"
+  (o) => o !== "Online" && o !== "National" && o !== "Multi-state" && o !== "From Home"
 );
 
 const TONE_LABELS: Record<"anger" | "comedy" | "subversion" | "hope" | "energy", { Icon: LucideIcon; label: string; desc: string }> = {
@@ -153,9 +167,10 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJo
         ? cards.find((c) => c.id === 1) ?? null
         : null;
 
-    // Then walk the ranking and fill slots 2-4 with UNIQUE images so the
-    // preview doesn't show two Tesla cards back-to-back. Falls back to score
-    // order if we run out of unique-image cards before we hit 4.
+    // Walk the ranking and fill 10 slots with UNIQUE images so the
+    // carousel doesn't show two Tesla cards back-to-back. Falls back to score
+    // order if we run out of unique-image cards before we hit 10.
+    const TARGET = 10;
     const picked: ActionCardData[] = [];
     const seenImages = new Set<string>();
     if (spreadCard) {
@@ -164,17 +179,17 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJo
       if (img) seenImages.add(img);
     }
     for (const c of ranked) {
-      if (picked.length >= 4) break;
+      if (picked.length >= TARGET) break;
       if (spreadCard && c.id === spreadCard.id) continue;
       const img = (c.topImage ?? "").trim();
       if (img && seenImages.has(img)) continue;
       if (img) seenImages.add(img);
       picked.push(c);
     }
-    if (picked.length < 4) {
+    if (picked.length < TARGET) {
       const pickedIds = new Set(picked.map((c) => c.id));
       for (const c of ranked) {
-        if (picked.length >= 4) break;
+        if (picked.length >= TARGET) break;
         if (pickedIds.has(c.id)) continue;
         picked.push(c);
       }
@@ -248,6 +263,10 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJo
             onClear={() => setPrefs((p) => ({ ...p, vulnerableGroups: [] }))}
             focusDonations={prefs.focusDonations}
             onFocusDonationsChange={(v) => setPrefs((p) => ({ ...p, focusDonations: v }))}
+            state={prefs.state}
+            onStateChange={(s) => setPrefs((p) => ({ ...p, state: s }))}
+            includeAnywhere={prefs.includeAnywhere}
+            onIncludeAnywhereChange={(v) => setPrefs((p) => ({ ...p, includeAnywhere: v }))}
           />
         )}
 
@@ -333,6 +352,12 @@ function StepToneAndPreview({
   // We use this set both to (a) skip the flagged card when computing
   // replacement matches, and (b) gray-out the slot if no replacement exists.
   const [flagged, setFlagged] = useState<Set<number>>(new Set());
+  const [carouselPage, setCarouselPage] = useState(0);
+  const PAGE_SIZE = 4;
+
+  // Reset carousel to page 0 when prefs change so the user always sees their
+  // freshest top matches first after adjusting sliders.
+  useEffect(() => { setCarouselPage(0); }, [prefs]);
 
   // Live-replace flagged matches with the next-best candidates not in the
   // current visible list. Rebuilds whenever prefs change or a card is flagged.
@@ -386,109 +411,24 @@ function StepToneAndPreview({
   return (
     <div>
       <div className="mb-5">
-        <h2 id="match-me-title" className="font-['Poppins',sans-serif] text-[20px] font-semibold text-[#23297e] leading-tight">
-          Quick Match Tool
-        </h2>
-      </div>
-
-      {/* Setting + (conditional) state. State only matters when the user is
-        * open to in-person actions — online/at-home cards aren't state-bound. */}
-      <div className="mb-5 mt-4">
-        <h3 className="font-['Poppins',sans-serif] font-semibold text-gray-800 text-sm leading-tight mb-1.5">
-          Where do you want to act?
-        </h3>
-        <div className="pl-5">
-          <div className="flex flex-wrap items-center gap-1.5">
-            {SETTING_OPTIONS.map((opt) => {
-              const selected = prefs.setting.includes(opt.value);
-              return (
-                <button
-                  key={opt.value}
-                  onClick={() =>
-                    onPrefsChange((p) => ({
-                      ...p,
-                      setting: selected
-                        ? p.setting.filter((s) => s !== opt.value)
-                        : [...p.setting, opt.value],
-                    }))
-                  }
-                  aria-pressed={selected}
-                  className={`rounded-full border px-3 py-1 font-['Poppins',sans-serif] text-[12px] font-medium transition-colors ${
-                    selected
-                      ? "border-[#fd8e33] bg-[#fd8e33] text-white"
-                      : "border-gray-400 text-gray-700 hover:border-[#fd8e33] hover:text-[#fd8e33]"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
-            <button
-              onClick={() => onPrefsChange((p) => ({ ...p, setting: [] }))}
-              aria-pressed={prefs.setting.length === 0}
-              className={`rounded-full border px-3 py-1 font-['Poppins',sans-serif] text-[12px] font-medium transition-colors ${
-                prefs.setting.length === 0
-                  ? "border-[#fd8e33] bg-[#fd8e33] text-white"
-                  : "border-gray-400 text-gray-700 hover:border-[#fd8e33] hover:text-[#fd8e33]"
-              }`}
-            >
-              Both
-            </button>
-            {/* State picker — inline on the same row as the setting pills,
-                only when in-person (or unset / "Both") is in play. */}
-            {(prefs.setting.length === 0 || prefs.setting.includes("inPerson")) && (
-              <>
-                <span className="font-['Poppins',sans-serif] text-xs text-gray-500 shrink-0 ml-1">
-                  ↳ Where are you?
-                </span>
-                <select
-                  value={prefs.state ?? ""}
-                  onChange={(e) => onPrefsChange((p) => ({ ...p, state: e.target.value || null }))}
-                  className={`rounded-lg border border-gray-300 px-3 py-1 font-['Poppins',sans-serif] text-xs focus:outline-none focus:ring-2 focus:ring-[#23297e]/30 focus:border-[#23297e] ${
-                    prefs.state ? "text-gray-800" : "text-gray-400 italic"
-                  }`}
-                >
-                  <option value="">— pick your state —</option>
-                  {STATE_OPTIONS.map((s) => (
-                    <option key={s} value={s}>{s}</option>
-                  ))}
-                </select>
-                {prefs.state && (
-                  <label className="flex items-center gap-1.5 cursor-pointer select-none whitespace-nowrap">
-                    <input
-                      type="checkbox"
-                      checked={prefs.includeAnywhere}
-                      onChange={(e) => onPrefsChange((p) => ({ ...p, includeAnywhere: e.target.checked }))}
-                      className="w-4 h-4 rounded accent-[#fd8e33]"
-                    />
-                    <span className="font-['Poppins',sans-serif] text-xs text-gray-600">
-                      Show all states, prioritize mine
-                    </span>
-                  </label>
-                )}
-              </>
-            )}
-          </div>
+        <div className="flex items-center gap-2.5">
+          <img src={logoImg} alt="" aria-hidden="true" className="w-9 h-9 object-contain shrink-0" />
+          <h2 id="match-me-title" className="font-['Poppins',sans-serif] text-[20px] font-semibold text-[#23297e] leading-tight">
+            Quick Match Tool
+          </h2>
         </div>
+        <p className="font-['Poppins',sans-serif] text-sm text-gray-500 mt-0.5 pl-[46px]">
+          What kind of actions are you up for?
+        </p>
       </div>
 
-      {/* Time + tone sliders — two-column grid, calmed visual weight.
-       *   • Section title is the only navy heading on the page (anchors hierarchy)
-       *   • Slider labels demoted to medium-gray (was bold navy x6)
-       *   • Descriptions shrunk to 10.5px gray-500
-       *   • Each slider capped + flanked by tiny 0 / 3 endpoint labels
-       *   • Names indented past the icon for a cleaner left edge
-       */}
-      <h3 className="font-['Poppins',sans-serif] font-semibold text-gray-800 text-sm leading-tight mb-3 mt-6">
-        What kind of actions are you up for?
-      </h3>
-      <div className="pl-5 grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-2 mb-3">
-        {/* Time — first slider, drives time bucket. */}
+      <div className="pl-5 grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-2 mb-1">
+        {/* Time Commitment — spans both columns, aligned with the grid below */}
         {(() => {
           const tIdx = timeIndex(prefs.time);
           const tLevel = TIME_LEVELS[tIdx];
           return (
-            <div className="flex flex-col gap-0.5">
+            <div className="sm:col-span-2 flex flex-col gap-0.5 mb-1">
               <div className="flex items-center gap-1.5 pl-1">
                 <Clock size={12} strokeWidth={1.75} className="text-gray-500 shrink-0" />
                 <span className="font-['Poppins',sans-serif] font-medium text-[12px] text-gray-800">
@@ -498,11 +438,45 @@ function StepToneAndPreview({
                   · <span className="font-medium text-[#fd8e33]">{tLevel.title}</span> — {tLevel.desc}
                 </span>
               </div>
-              <div className="pl-5">
+              {/* Slider track starts at pl-5 — same offset as Location + tone sliders.
+                  "Quick wins" / "All in" sit in ToneRangeSlider's built-in px-16 padding
+                  zones so they don't shift the track left. */}
+              <div className="pl-5 relative">
                 <ToneRangeSlider
                   value={tIdx}
+                  onChange={(v) => onPrefsChange((p) => ({ ...p, time: TIME_LEVELS[v].key }))}
+                  max={5}
+                />
+                <span className="absolute left-0 w-16 text-right top-1/2 -translate-y-1/2 font-['Poppins',sans-serif] text-[9px] text-gray-400 pointer-events-none">
+                  Quick wins
+                </span>
+                <span className="absolute right-0 w-16 pl-2 text-left top-1/2 -translate-y-1/2 font-['Poppins',sans-serif] text-[9px] text-gray-400 pointer-events-none">
+                  All in
+                </span>
+              </div>
+            </div>
+          );
+        })()}
+        {/* Setting — first slider cell, same style as tone sliders */}
+        {(() => {
+          const sIdx = settingIndex(prefs.setting);
+          const sStop = SETTING_STOPS[sIdx];
+          return (
+            <div className="flex flex-col gap-0.5">
+              <div className="flex items-center gap-1.5 pl-1">
+                <MapPin size={12} strokeWidth={1.75} className="text-gray-500 shrink-0" />
+                <span className="font-['Poppins',sans-serif] font-medium text-[12px] text-gray-800">
+                  Location
+                </span>
+                <span className="font-['Poppins',sans-serif] text-[10.5px] text-gray-500 truncate">
+                  · <span className="font-medium text-[#fd8e33]">{sStop.label}</span> — online/at home or in person
+                </span>
+              </div>
+              <div className="pl-5">
+                <ToneRangeSlider
+                  value={sIdx}
                   onChange={(v) =>
-                    onPrefsChange((p) => ({ ...p, time: TIME_LEVELS[v].key }))
+                    onPrefsChange((p) => ({ ...p, setting: SETTING_STOPS[v].setting }))
                   }
                   max={3}
                 />
@@ -510,7 +484,6 @@ function StepToneAndPreview({
             </div>
           );
         })()}
-
         {(["anger", "comedy", "subversion", "hope", "energy"] as const).map((k) => {
           const { Icon, label, desc } = TONE_LABELS[k];
           return (
@@ -548,43 +521,78 @@ function StepToneAndPreview({
           <p className="font-['Poppins',sans-serif] text-sm italic text-gray-500 mb-3 min-h-[240px]">
             Move the sliders to see matches.
           </p>
-        ) : (
-          // Fixed row height keeps the modal from jumping as different cards
-          // swap in/out while the user drags sliders. 240px fits a compact
-          // card with 2-line description; shorter cards just get a small
-          // blank space below.
-          <ul className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4 min-h-[240px]">
-            {visibleMatches.map((m) => {
-              const isFlagged = flagged.has(m.id);
-              return (
-                <li key={m.id} className="flex flex-col gap-2 min-w-0 h-[240px]">
-                  {/* p-px so the inner ActionCard's shadow doesn't get clipped
-                      by the flex bounds. ring on this wrapper gives a crisp
-                      hairline border that reads well in the modal context. */}
-                  <div className={`flex-1 min-h-0 rounded-2xl ring-1 ring-gray-200 transition-opacity ${isFlagged ? "opacity-40" : ""}`}>
-                    <ActionCard card={m} compact />
+        ) : (() => {
+          const totalPages = Math.ceil(visibleMatches.length / PAGE_SIZE);
+          const pageCards = visibleMatches.slice(carouselPage * PAGE_SIZE, (carouselPage + 1) * PAGE_SIZE);
+          return (
+            <div className="mb-4">
+              <ul className="grid grid-cols-2 sm:grid-cols-4 gap-3 min-h-[240px]">
+                {pageCards.map((m) => {
+                  const isFlagged = flagged.has(m.id);
+                  return (
+                    <li key={m.id} className="flex flex-col gap-2 min-w-0 h-[240px]">
+                      <div className={`flex-1 min-h-0 rounded-2xl ring-1 ring-gray-200 transition-opacity ${isFlagged ? "opacity-40" : ""}`}>
+                        <ActionCard card={m} compact />
+                      </div>
+                      <div className="flex justify-center">
+                        <button
+                          onClick={() => handleBadMatch(m)}
+                          disabled={isFlagged}
+                          aria-label={isFlagged ? "Marked as bad match" : "Flag as bad match"}
+                          title={isFlagged ? "Thanks — feedback recorded" : "Bad match? Let us know."}
+                          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-['Poppins',sans-serif] text-xs transition ${
+                            isFlagged
+                              ? "border-gray-200 text-gray-400 opacity-60 cursor-default"
+                              : "border-[#fd8e33] text-gray-700 hover:bg-[#fd8e33]/10 hover:text-[#fd8e33]"
+                          }`}
+                        >
+                          <ThumbsDown size={14} strokeWidth={2} className="shrink-0" />
+                          <span>{isFlagged ? "Thanks!" : "Not a great match"}</span>
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              {/* Carousel nav — only shown when there's more than one page */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-3">
+                  <button
+                    onClick={() => setCarouselPage((p) => Math.max(0, p - 1))}
+                    disabled={carouselPage === 0}
+                    className="inline-flex items-center gap-1 rounded-full border border-gray-300 px-3 py-1 font-['Poppins',sans-serif] text-xs text-gray-600 hover:border-[#23297e] hover:text-[#23297e] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronLeft size={13} strokeWidth={2} /> Prev
+                  </button>
+
+                  <div className="flex items-center gap-1.5">
+                    {Array.from({ length: totalPages }).map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setCarouselPage(i)}
+                        className={`rounded-full transition-all ${
+                          i === carouselPage
+                            ? "w-4 h-1.5 bg-[#23297e]"
+                            : "w-1.5 h-1.5 bg-gray-300 hover:bg-gray-400"
+                        }`}
+                        aria-label={`Page ${i + 1}`}
+                      />
+                    ))}
                   </div>
-                  <div className="flex justify-center">
-                    <button
-                      onClick={() => handleBadMatch(m)}
-                      disabled={isFlagged}
-                      aria-label={isFlagged ? "Marked as bad match" : "Flag as bad match"}
-                      title={isFlagged ? "Thanks — feedback recorded" : "Bad match? Let us know."}
-                      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-['Poppins',sans-serif] text-xs transition ${
-                        isFlagged
-                          ? "border-gray-200 text-gray-400 opacity-60 cursor-default"
-                          : "border-[#fd8e33] text-gray-700 hover:bg-[#fd8e33]/10 hover:text-[#fd8e33]"
-                      }`}
-                    >
-                      <ThumbsDown size={14} strokeWidth={2} className="shrink-0" />
-                      <span>{isFlagged ? "Thanks!" : "Not a good match"}</span>
-                    </button>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+
+                  <button
+                    onClick={() => setCarouselPage((p) => Math.min(totalPages - 1, p + 1))}
+                    disabled={carouselPage === totalPages - 1}
+                    className="inline-flex items-center gap-1 rounded-full border border-gray-300 px-3 py-1 font-['Poppins',sans-serif] text-xs text-gray-600 hover:border-[#23297e] hover:text-[#23297e] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next <ChevronRight size={13} strokeWidth={2} />
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Twin CTAs:
          *   primary  → apply current prefs and dive into the full filtered feed
@@ -592,22 +600,32 @@ function StepToneAndPreview({
          * Both are orange because both are valid forward actions; the primary
          * is solid (most users will tap this), the secondary is outline so it
          * doesn't compete visually. */}
-        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2 mt-5">
           <ProgressDots step={step} total={totalSteps} />
           <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-2">
             <button
               onClick={onNext}
-              className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#23297e] bg-white px-5 py-2.5 font-['Poppins',sans-serif] text-sm font-medium text-[#23297e] hover:bg-[#23297e]/5 transition-colors"
+              className="inline-flex flex-col items-center justify-center rounded-2xl border border-[#23297e] bg-white px-5 py-2 font-['Poppins',sans-serif] text-[#23297e] hover:bg-[#23297e]/5 transition-colors"
             >
-              <Sparkles size={14} strokeWidth={2} />
-              Sharpen your matches — tell us more about who you are
+              <span className="flex items-center gap-1.5 text-sm font-semibold leading-tight">
+                <Sparkles size={13} strokeWidth={2} />
+                Sharpen your matches
+              </span>
+              <span className="text-[11px] font-normal italic text-[#23297e]/70 leading-tight mt-0.5">
+                Tell us more about who you are
+              </span>
             </button>
             <button
               onClick={onApply}
               disabled={matches.length === 0}
-              className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#23297e] px-6 py-2.5 font-['Poppins',sans-serif] text-sm font-semibold text-white shadow-sm hover:bg-[#1a2060] hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="inline-flex flex-col items-center justify-center rounded-2xl bg-[#23297e] px-6 py-2 font-['Poppins',sans-serif] text-white shadow-sm hover:bg-[#1a2060] hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
-              Show me more matches <ChevronRight size={15} strokeWidth={2} />
+              <span className="flex items-center gap-1.5 text-sm font-semibold leading-tight">
+                These Matches Look Good!
+              </span>
+              <span className="flex items-center gap-1 text-[11px] font-normal italic text-white/80 leading-tight mt-0.5">
+                Show Me More <ChevronRight size={12} strokeWidth={2} />
+              </span>
             </button>
           </div>
         </div>
@@ -616,22 +634,20 @@ function StepToneAndPreview({
   );
 }
 
-// Slider stops for the involvement picker. The 6-bucket TimeBucket folds into
-// these 4 visible levels — `1hr` rounds to "A little", `fullDay` to "Regularly".
+// All 6 TimeBucket values mapped to friendly slider stops.
 const TIME_LEVELS: { key: TimeBucket; title: string; desc: string }[] = [
-  { key: "5min",     title: "Just the basics",  desc: "< 5 minutes" },
-  { key: "30min",    title: "A little",         desc: "A few hours per month" },
-  { key: "fewHours", title: "Regularly",        desc: "A few hours per week" },
-  { key: "ongoing",  title: "All in",           desc: "Ongoing organizing" },
+  { key: "5min",     title: "Quick wins",    desc: "Under 5 min" },
+  { key: "30min",    title: "Light touch",   desc: "~30 min / month" },
+  { key: "1hr",      title: "Some effort",   desc: "~1 hr / month" },
+  { key: "fewHours", title: "Regular",       desc: "Few hrs / week" },
+  { key: "fullDay",  title: "Committed",     desc: "~1 day / month" },
+  { key: "ongoing",  title: "All in",        desc: "Ongoing organizing" },
 ];
 
 function timeIndex(t: TimeBucket | null): number {
   if (!t) return 1;
   const i = TIME_LEVELS.findIndex((l) => l.key === t);
-  if (i >= 0) return i;
-  if (t === "1hr") return 1;
-  if (t === "fullDay") return 2;
-  return 1;
+  return i >= 0 ? i : 1;
 }
 
 // ─── Step 1: vulnerable-group affinity (own page) ────────────────────────────
@@ -642,16 +658,61 @@ function StepGroups({
   onClear,
   focusDonations,
   onFocusDonationsChange,
+  state,
+  onStateChange,
+  includeAnywhere,
+  onIncludeAnywhereChange,
 }: {
   value: VulnerableGroup[];
   onToggle: (g: VulnerableGroup) => void;
   onClear: () => void;
   focusDonations: boolean;
   onFocusDonationsChange: (v: boolean) => void;
+  state: string | null;
+  onStateChange: (s: string | null) => void;
+  includeAnywhere: boolean;
+  onIncludeAnywhereChange: (v: boolean) => void;
 }) {
   return (
     <div>
-      {/* ── Targeted-group affinity (first question) ─────────────────────── */}
+      {/* ── Where are you? (state picker) ───────────────────────────────── */}
+      <div className="mb-5">
+        <h3 className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-base leading-tight mb-1">
+          Where could you show up for in-person actions?
+        </h3>
+        <p className="font-['Poppins',sans-serif] text-xs text-gray-500 mb-3">
+          Optional. We'll surface nearby in-person actions when they match your other settings.
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={state ?? ""}
+            onChange={(e) => onStateChange(e.target.value || null)}
+            className={`rounded-lg border border-gray-300 px-3 py-1.5 font-['Poppins',sans-serif] text-sm focus:outline-none focus:ring-2 focus:ring-[#23297e]/30 focus:border-[#23297e] ${
+              state ? "text-gray-800" : "text-gray-400 italic"
+            }`}
+          >
+            <option value="">— pick your state —</option>
+            {STATE_OPTIONS.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+          {state && (
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={includeAnywhere}
+                onChange={(e) => onIncludeAnywhereChange(e.target.checked)}
+                className="w-4 h-4 rounded accent-[#fd8e33]"
+              />
+              <span className="font-['Poppins',sans-serif] text-sm text-gray-600">
+                Show all states, prioritize mine
+              </span>
+            </label>
+          )}
+        </div>
+      </div>
+
+      {/* ── Targeted-group affinity ──────────────────────────────────────── */}
       <div className="mb-5">
         <h3 className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-base leading-tight mb-1">
           Do you want to focus on a particular group being targeted?

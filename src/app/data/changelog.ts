@@ -16,6 +16,53 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.3.0",
+    date: "2026-05-12",
+    title: "Quick Match carousel, smarter slider layout, unified 'How It Works' modal",
+    sections: [
+      {
+        heading: "Quick Match Tool",
+        items: [
+          "Now surfaces 10 matches instead of 4 — browse them 4 at a time with Prev / Next carousel navigation and dot indicators.",
+          "Sliders reset the carousel to page 1 automatically so your freshest top picks are always shown first.",
+          "Admin-highlighted cards (⭐ HIGHLIGHTED in the admin panel) get a +7 scoring boost so your curated picks reliably appear in Quick Matches.",
+          "Time Commitment expanded from 4 to 6 stops: Quick wins → Light touch → Some effort → Regular → Committed → All in.",
+          "Time Commitment slider runs full width above the two-column grid, with 'Quick wins' and 'All in' labels flanking the track.",
+          "Location preference replaced the pill buttons (Remote / In-person / Both) with a 4-stop slider: Remote only → Mostly Remote → In-person → Both equal.",
+          "'Where are you?' state picker moved to the Sharpen Your Matches page and restyled to match that page's layout.",
+          "Footer buttons redesigned as two-line stacked cards: 'These Matches Look Good! / Show Me More' and 'Sharpen your matches / Tell us more about who you are'.",
+          "'What kind of actions are you up for?' is now a subtitle under the Quick Match Tool heading rather than a standalone section title.",
+          "ResistAct fist logo added to the Quick Match Tool header.",
+          "'Not a good match' renamed to 'Not a great match'.",
+        ],
+      },
+      {
+        heading: "How Does ResistAct Work modal",
+        items: [
+          "Logo click, Mead quote click, and the 'How This Works' hero pill all open the same modal — no more duplicate modals.",
+          "Rewritten to blend the emotional mission statement with the structured how-it-works explainer.",
+          "Two-column 50/50 layout: steps with icons on the left, Kroger Baby Trump photo on the right.",
+          "ResistAct fist logo added to the modal header.",
+          "'Pick what fits your day' icon is pink to distinguish it from the orange brand color.",
+        ],
+      },
+      {
+        heading: "Card improvements",
+        items: [
+          "'Read more →' on the Spread the Word card now matches the font size of other cards.",
+          "Spread the Word 'Read more' modal now includes a 'Spread the Word!' action button that launches the share flow.",
+          "Card details modal updated to accept an optional share callback for pinToTop cards.",
+        ],
+      },
+      {
+        heading: "Navigation",
+        items: [
+          "ResistAct logo in the navbar is now a clickable button — opens the How It Works modal.",
+        ],
+      },
+    ],
+  },
+  {
     version: "0.2.1",
     date: "2026-05-12",
     title: "Quick Match Tool polish, brand-aligned join CTA, calmer visuals",
