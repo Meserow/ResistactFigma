@@ -413,7 +413,7 @@ function StepToneAndPreview({
       <div className="mb-5">
         <div className="flex items-center gap-2.5">
           <img src={logoImg} alt="" aria-hidden="true" className="w-9 h-9 object-contain shrink-0" />
-          <h2 id="match-me-title" className="font-['Poppins',sans-serif] text-[20px] font-semibold text-[#23297e] leading-tight">
+          <h2 id="match-me-title" className="font-['Poppins',sans-serif] text-[20px] font-bold text-[#23297e] leading-tight">
             Quick Match Tool
           </h2>
         </div>
@@ -676,11 +676,11 @@ function StepGroups({
   return (
     <div>
       {/* ── Where are you? (state picker) ───────────────────────────────── */}
-      <div className="mb-5">
-        <h3 className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-base leading-tight mb-1">
+      <div className="mb-4">
+        <h3 className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-base leading-tight mb-0.5">
           Where could you show up for in-person actions?
         </h3>
-        <p className="font-['Poppins',sans-serif] text-xs text-gray-500 mb-3">
+        <p className="font-['Poppins',sans-serif] text-xs text-gray-500 mb-2">
           Optional. We'll surface nearby in-person actions when they match your other settings.
         </p>
         <div className="flex flex-wrap items-center gap-2">
@@ -713,11 +713,11 @@ function StepGroups({
       </div>
 
       {/* ── Targeted-group affinity ──────────────────────────────────────── */}
-      <div className="mb-5">
-        <h3 className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-base leading-tight mb-1">
+      <div className="mb-4">
+        <h3 className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-base leading-tight mb-0.5">
           Do you want to focus on a particular group being targeted?
         </h3>
-        <p className="font-['Poppins',sans-serif] text-xs text-gray-500 mb-3">
+        <p className="font-['Poppins',sans-serif] text-xs text-gray-500 mb-2">
           Optional. We'll prioritize actions centered on the group(s) you pick.
         </p>
         <GroupsDropdown value={value} onToggle={onToggle} onClear={onClear} defaultOpen />
@@ -725,10 +725,10 @@ function StepGroups({
 
       {/* ── Donation-focus opt-in (second question) ─────────────────────── */}
       <div>
-        <h3 className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-base leading-tight mb-1">
+        <h3 className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-base leading-tight mb-0.5">
           Include laser-focused donation guidance?
         </h3>
-        <p className="font-['Poppins',sans-serif] text-xs text-gray-500 mb-3">
+        <p className="font-['Poppins',sans-serif] text-xs text-gray-500 mb-2">
           As we get closer to the midterms we'll add to your matches the closest, most pivotal races — the ones where every extra dollar tips the outcome. Avoid the spray-and-pray fundraising lists.
         </p>
         <div className="flex flex-col sm:flex-row items-stretch gap-2">

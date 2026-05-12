@@ -545,7 +545,7 @@ app.get("/make-server-9eb1ae04/admin/actions/no-url", async (c) => {
     const noUrl: any[] = [];
 
     for (const card of (await kv.getByPrefix("action:")) as any[]) {
-      if (card && typeof card === "object" && card.adminApproved === true && !card.targetUrl) {
+      if (card && typeof card === "object" && card.adminApproved === true && !card.targetUrl && !card.pinToTop) {
         noUrl.push({ ...card, _store: "action" });
       }
     }

@@ -483,7 +483,8 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
 
         {activeTab === "facts" ? (
           /* ── Facts: top-N category pills + "More" dropdown ───────────── */
-          <div ref={factsPillsRef} className="flex-1 min-w-0 flex items-center gap-1 overflow-hidden">
+          <div ref={factsPillsRef} className="flex-1 min-w-0 flex items-center gap-1">
+            <div className="flex-1 min-w-0 flex items-center gap-1 overflow-hidden">
             {factsInlinePills.map((option) => {
               const selected = factsSelected.includes(option);
               return (
@@ -500,6 +501,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                 </button>
               );
             })}
+            </div>
             {factsOverflow.length > 0 && (
               <div className="relative shrink-0">
                 <button
@@ -601,7 +603,8 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
 
             {/* Category pills + "more" overflow — mirrors Facts UX */}
             <span className="font-['Poppins',sans-serif] text-gray-400 text-[10px] uppercase tracking-widest font-semibold shrink-0">Category</span>
-            <div ref={actsPillsRef} className="flex-1 min-w-0 flex items-center gap-1 overflow-hidden">
+            <div ref={actsPillsRef} className="flex-1 min-w-0 flex items-center gap-1">
+            <div className="flex-1 min-w-0 flex items-center gap-1 overflow-hidden">
             {actsInlinePills.map((option) => {
               const selected = actsCatsSelected.includes(option);
               return (
@@ -618,6 +621,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                 </button>
               );
             })}
+            </div>
             {actsOverflow.length > 0 && (
               <div className="relative shrink-0">
                 <button

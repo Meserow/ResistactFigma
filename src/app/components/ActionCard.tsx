@@ -281,7 +281,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
               <CompletionPill />
             </div>
 
-            <FloatingShareButton />
+            {!compact && <FloatingShareButton />}
           </div>
         </div>
         {shareOpen && (

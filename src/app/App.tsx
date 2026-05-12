@@ -64,6 +64,11 @@ interface ServerCard {
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
 const HEADERS = { "Content-Type": "application/json", Authorization: `Bearer ${publicAnonKey}` };
 
+// Canonical description for the pinToTop "Spread the Word" card — kept in
+// code so it's always current regardless of what's stored in the database.
+const SPREAD_THE_WORD_DESCRIPTION =
+  "Resistance grows one share at a time — but only if you actually share. Pick a friend who's been doomscrolling and send this their way. If everyone here invites two friends, ResistAct doubles by Tuesday. That's how movements actually scale — not virally, but two-by-two, through people who trust each other.";
+
 function resolveCard(raw: ServerCard): ActionCardData {
   return {
     ...raw,
@@ -76,6 +81,8 @@ function resolveCard(raw: ServerCard): ActionCardData {
                     ? raw.topImageUrl
                     : (raw.topImageKey ? IMAGE_MAP[raw.topImageKey] : undefined),
     authorAvatar: raw.authorAvatarKey ? IMAGE_MAP[raw.authorAvatarKey] : (raw.authorAvatarUrl ?? undefined),
+    // Override description for the pinToTop card so it's always current.
+    description:  raw.pinToTop ? SPREAD_THE_WORD_DESCRIPTION : raw.description,
   };
 }
 
@@ -1276,20 +1283,20 @@ export default function App() {
         </div>
       )}
 
-      {/* Build version badge (bottom-left) — barely visible at rest so it
-          doesn't compete with the UI; fades in on hover. Click opens the
-          changelog. Still always present so admins/QA can verify the live
-          build without having to dig through the network panel. */}
-      <button
-        onClick={() => setChangelogOpen(true)}
-        title={`v${__APP_VERSION__} · ${__APP_GIT_SHA__} — built ${__APP_BUILD_DATE__} · click for changelog`}
-        aria-label={`Version ${__APP_VERSION__}, click to view changelog`}
-        className="fixed bottom-2 left-2 z-[100] px-1.5 py-0.5 rounded text-gray-400/40 hover:text-gray-600 hover:bg-white/80 text-[9px] font-mono leading-none select-none transition-all cursor-pointer"
-      >
-        v{__APP_VERSION__}
-      </button>
-
-      {changelogOpen && <ChangelogModal onClose={() => setChangelogOpen(false)} />}
+      {/* Build version badge — admin-only */}
+      {isAdminUser && (
+        <>
+          <button
+            onClick={() => setChangelogOpen(true)}
+            title={`v${__APP_VERSION__} · ${__APP_GIT_SHA__} — built ${__APP_BUILD_DATE__} · click for changelog`}
+            aria-label={`Version ${__APP_VERSION__}, click to view changelog`}
+            className="fixed bottom-2 left-2 z-[100] px-1.5 py-0.5 rounded text-gray-400/40 hover:text-gray-600 hover:bg-white/80 text-[9px] font-mono leading-none select-none transition-all cursor-pointer"
+          >
+            v{__APP_VERSION__}
+          </button>
+          {changelogOpen && <ChangelogModal onClose={() => setChangelogOpen(false)} />}
+        </>
+      )}
     </div>
   );
 }
