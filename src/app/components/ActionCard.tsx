@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { Bookmark, BookmarkCheck, Flame, Globe, MapPin, Pencil, Share2 } from "lucide-react";
 import { ShareModal } from "./ShareModal";
 import { SpreadTheWordModal } from "./SpreadTheWordModal";
@@ -96,7 +96,7 @@ interface ActionCardProps {
   compact?: boolean;
 }
 
-export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onEdit, isBoosted, isCompleted, isBookmarked, canEdit, compact = false }: ActionCardProps) {
+function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdit, isBoosted, isCompleted, isBookmarked, canEdit, compact = false }: ActionCardProps) {
   const [shareOpen, setShareOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
@@ -468,3 +468,9 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
     </>
   );
 }
+
+// Memoised wrapper — skips re-render when none of the props changed. The big
+// win is during search-typing: setSearchQuery triggers a parent re-render, but
+// the cards' own props (card, isBoosted, etc.) haven't moved, so memo bails
+// out and we skip ~400 ActionCard renders per keystroke.
+export const ActionCard = memo(ActionCardInner);
