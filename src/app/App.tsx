@@ -1210,12 +1210,22 @@ export default function App() {
           onClose={() => setMatchOpen(false)}
           onApply={(prefs) => {
             setMatchPrefs(prefs);
+            savePreferences(prefs);
             setMatchOpen(false);
             // Sync to the user's profile so prefs follow them across devices.
             // Anonymous users skip the push — their prefs stay in localStorage
             // until they sign up, at which point syncMatchPreferencesOnLogin
             // hands them up on first auth.
             if (accessToken) pushUserPreferences(accessToken, prefs);
+          }}
+          onJoinResistance={(prefs) => {
+            // Save the picks first so they survive the auth flow — when the
+            // user comes back signed in, syncMatchPreferencesOnLogin pushes
+            // them to the server and they keep their lineup.
+            setMatchPrefs(prefs);
+            savePreferences(prefs);
+            setMatchOpen(false);
+            setAuthModalOpen(true);
           }}
         />
       )}
@@ -1265,13 +1275,17 @@ export default function App() {
         </div>
       )}
 
-      {/* Build version badge (bottom-left) — click to open the changelog. */}
+      {/* Build version badge (bottom-left) — barely visible at rest so it
+          doesn't compete with the UI; fades in on hover. Click opens the
+          changelog. Still always present so admins/QA can verify the live
+          build without having to dig through the network panel. */}
       <button
         onClick={() => setChangelogOpen(true)}
-        title={`Built ${__APP_BUILD_DATE__} — click for changelog`}
-        className="fixed bottom-2 left-2 z-[100] px-2 py-1 rounded-md bg-black/60 hover:bg-black/80 text-white text-[10px] font-mono leading-none select-none transition-colors cursor-pointer"
+        title={`v${__APP_VERSION__} · ${__APP_GIT_SHA__} — built ${__APP_BUILD_DATE__} · click for changelog`}
+        aria-label={`Version ${__APP_VERSION__}, click to view changelog`}
+        className="fixed bottom-2 left-2 z-[100] px-1.5 py-0.5 rounded text-gray-400/40 hover:text-gray-600 hover:bg-white/80 text-[9px] font-mono leading-none select-none transition-all cursor-pointer"
       >
-        v{__APP_VERSION__} · {__APP_GIT_SHA__}
+        v{__APP_VERSION__}
       </button>
 
       {changelogOpen && <ChangelogModal onClose={() => setChangelogOpen(false)} />}

@@ -413,10 +413,15 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               )}
               <button
                 onClick={onLoginClick}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#fd8e33] text-white font-['Poppins',sans-serif] font-bold text-sm hover:bg-[#d96612] transition-colors whitespace-nowrap"
+                className="inline-flex flex-col items-start rounded-2xl bg-[#fd8e33] px-4 py-1.5 text-left font-['Poppins',sans-serif] text-white hover:bg-[#d96612] transition-colors whitespace-nowrap"
               >
-                <Flame size={15} strokeWidth={2.5} />
-                Join the Resistance
+                <span className="inline-flex items-center gap-1.5 text-sm font-semibold leading-tight">
+                  <Flame size={14} strokeWidth={2.25} className="shrink-0" />
+                  #jointheresistance
+                </span>
+                <span className="text-[10.5px] font-normal italic text-white/85 leading-tight mt-0.5">
+                  Log in or sign up to save your progress.
+                </span>
               </button>
             </>
           )}
@@ -867,10 +872,15 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
           ) : (
             <button
               onClick={() => { setMobileMenuOpen(false); onLoginClick(); }}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full bg-[#fd8e33] text-white font-['Poppins',sans-serif] font-bold text-sm hover:bg-[#d96612] transition-colors"
+              className="w-full flex flex-col items-center py-2 rounded-2xl bg-[#fd8e33] text-white font-['Poppins',sans-serif] hover:bg-[#d96612] transition-colors"
             >
-              <Flame size={15} strokeWidth={2.5} />
-              Join the Resistance
+              <span className="inline-flex items-center gap-1.5 text-sm font-semibold leading-tight">
+                <Flame size={14} strokeWidth={2.25} />
+                #jointheresistance
+              </span>
+              <span className="text-[10.5px] font-normal italic text-white/85 leading-tight mt-0.5">
+                Log in or sign up to save your progress.
+              </span>
             </button>
           )}
           {isLoggedIn && isAdmin && (

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { X, ChevronLeft, ChevronRight, CircleAlert, Clock, Flame, Laugh, Sparkles, Sunrise, VenetianMask, Zap } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Clock, Flame, Laugh, Lock, Sparkles, Sunrise, ThumbsDown, VenetianMask, Zap } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { ToneRangeSlider } from "./ToneSlider";
 import {
@@ -53,6 +53,11 @@ interface MatchMeModalProps {
    * notice — anonymous users get an extra-loud "we are not recording you"
    * message; signed-in users get the same guarantee in less-shouting form. */
   isLoggedIn?: boolean;
+  /** Anonymous users see a second CTA at the end of the wizard:
+   * "Save my picks — Join the Resistance". Calling this should apply the
+   * prefs (so they're preserved across the auth flow) AND open the sign-up
+   * modal. No-op / hidden when isLoggedIn is true. */
+  onJoinResistance?: (prefs: Preferences) => void;
   /** Cards the user has already completed — excluded from match results. */
   completedIds?: number[];
   /** Cards the user has boosted — ranked higher in match results. */
@@ -100,7 +105,7 @@ function ProgressDots({ step, total }: { step: number; total: number }) {
   );
 }
 
-export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, completedIds, boostedIds }: MatchMeModalProps) {
+export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJoinResistance, completedIds, boostedIds }: MatchMeModalProps) {
   const [step, setStep] = useState<Step>(0);
   const [prefs, setPrefs] = useState<Preferences>(() => loadPreferences() ?? DEFAULT_PREFERENCES);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -127,21 +132,64 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, comp
     boostedIds: boostedIds ?? [],
   }), [completedIds, boostedIds]);
 
-  // When the user picks In-person + a state, guarantee at least one of the 3
-  // sample matches is genuinely local to that state. Without this, a Louisiana
+  // When the user picks In-person + a state, guarantee at least one of the 4
+  // quick matches is genuinely local to that state. Without this, a Louisiana
   // user could see three Multi-state Tesla protests scoring higher than any
   // Louisiana-specific action — technically correct, but unhelpful.
   const matches = useMemo(() => {
-    const top = topN(cards, prefs, 3, userCtx);
+    // Slot 1 is always "Spread the Word about ResistAct" (id=1) until the
+    // user has marked it done — it's the cheapest, most-impactful first
+    // action and reinforces the social-graph growth flywheel.
+    const ranked = rankCards(cards, prefs, userCtx);
+    // completedIds is typed Set<number> | number[]; normalise to a check that
+    // works on either shape.
+    const isCompleted = (id: number) => {
+      const c = userCtx.completedIds;
+      if (!c) return false;
+      return c instanceof Set ? c.has(id) : c.includes(id);
+    };
+    const spreadCard =
+      !isCompleted(1)
+        ? cards.find((c) => c.id === 1) ?? null
+        : null;
+
+    // Then walk the ranking and fill slots 2-4 with UNIQUE images so the
+    // preview doesn't show two Tesla cards back-to-back. Falls back to score
+    // order if we run out of unique-image cards before we hit 4.
+    const picked: ActionCardData[] = [];
+    const seenImages = new Set<string>();
+    if (spreadCard) {
+      picked.push(spreadCard);
+      const img = (spreadCard.topImage ?? "").trim();
+      if (img) seenImages.add(img);
+    }
+    for (const c of ranked) {
+      if (picked.length >= 4) break;
+      if (spreadCard && c.id === spreadCard.id) continue;
+      const img = (c.topImage ?? "").trim();
+      if (img && seenImages.has(img)) continue;
+      if (img) seenImages.add(img);
+      picked.push(c);
+    }
+    if (picked.length < 4) {
+      const pickedIds = new Set(picked.map((c) => c.id));
+      for (const c of ranked) {
+        if (picked.length >= 4) break;
+        if (pickedIds.has(c.id)) continue;
+        picked.push(c);
+      }
+    }
+    const top = picked;
+
+    // State-local guarantee — swap in the best-scoring local card if none of
+    // the unique-image top picks were local to the user's state.
     const wantsLocal =
       prefs.state &&
       (prefs.setting.length === 0 || prefs.setting.includes("inPerson"));
     if (!wantsLocal) return top;
     if (top.some((c) => cardIsLocalToState(c, prefs.state))) return top;
-    // Find the best-scoring local card and swap it into the last slot.
-    const ranked = rankCards(cards, prefs, userCtx);
     const bestLocal = ranked.find((c) => cardIsLocalToState(c, prefs.state));
-    if (!bestLocal) return top; // No local card exists for this state — leave as is.
+    if (!bestLocal) return top;
     if (top.length < 3) return [...top, bestLocal];
     return [...top.slice(0, 2), bestLocal];
   }, [cards, prefs, userCtx]);
@@ -204,29 +252,51 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, comp
         )}
 
         {/* Step 1 footer — Back to first page | Apply (Show me my matches) +
-         * privacy footnote tucked beneath. */}
+         * privacy footnote tucked beneath the buttons on the right. */}
         {step === 1 && (
-          <>
-            <div className="mt-6 flex items-center justify-between border-t border-gray-200 pt-4">
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={prev}
-                  className="inline-flex items-center gap-1 font-['Poppins',sans-serif] text-sm font-medium text-gray-600 hover:text-[#23297e]"
-                >
-                  <ChevronLeft size={16} /> Back
-                </button>
-                <ProgressDots step={step} total={TOTAL_STEPS} />
-              </div>
+          <div className="mt-6 flex items-start justify-between gap-4 border-t border-gray-200 pt-4">
+            <div className="flex items-center gap-4 pt-2.5">
               <button
-                onClick={() => onApply(prefs)}
-                disabled={matches.length === 0}
-                className="rounded-full bg-[#fd8e33] px-6 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-white hover:bg-[#d96612] disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={prev}
+                className="inline-flex items-center gap-1 font-['Poppins',sans-serif] text-sm font-medium text-gray-600 hover:text-[#23297e]"
               >
-                Show me my matches
+                <ChevronLeft size={16} /> Back
               </button>
+              <ProgressDots step={step} total={TOTAL_STEPS} />
             </div>
-            <PrivacyFootnote isLoggedIn={isLoggedIn} />
-          </>
+            <div className="flex flex-col items-end gap-2 max-w-[440px]">
+              <div className="flex flex-col sm:flex-row items-stretch gap-2">
+                <button
+                  onClick={() => onApply(prefs)}
+                  disabled={matches.length === 0}
+                  className="inline-flex flex-col items-start rounded-2xl border border-[#23297e] bg-white px-5 py-2 font-['Poppins',sans-serif] text-left text-[#23297e] hover:bg-[#23297e]/5 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap transition-colors"
+                >
+                  <span className="text-sm font-semibold leading-tight">
+                    Show me all my matches →
+                  </span>
+                  <span className="text-[11px] font-normal italic text-[#23297e]/70 leading-tight mt-0.5">
+                    No sign up required
+                  </span>
+                </button>
+                {!isLoggedIn && onJoinResistance && (
+                  <button
+                    onClick={() => onJoinResistance(prefs)}
+                    disabled={matches.length === 0}
+                    className="inline-flex flex-col items-start rounded-2xl bg-[#23297e] px-5 py-2 font-['Poppins',sans-serif] text-left text-white hover:bg-[#1a2060] disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap transition-colors"
+                  >
+                    <span className="inline-flex items-center gap-1.5 text-sm font-semibold leading-tight">
+                      <Flame size={14} strokeWidth={2.25} className="shrink-0" />
+                      #jointheresistance
+                    </span>
+                    <span className="text-[11px] font-normal italic text-white/80 leading-tight mt-0.5">
+                      Sign up to save your match settings.
+                    </span>
+                  </button>
+                )}
+              </div>
+              <PrivacyFootnote isLoggedIn={isLoggedIn} />
+            </div>
+          </div>
         )}
       </div>
     </div>
@@ -274,12 +344,29 @@ function StepToneAndPreview({
     // Pre-populate `used` with all non-flagged matches so a replacement card
     // can't accidentally duplicate a card already visible in another slot.
     const used = new Set<number>(matches.filter((m) => !flagged.has(m.id)).map((m) => m.id));
+    // Track which images are visible so replacements don't introduce a
+    // duplicate-image card (e.g. another Tesla Takedown card).
+    const usedImages = new Set<string>(
+      matches
+        .filter((m) => !flagged.has(m.id))
+        .map((m) => (m.topImage ?? "").trim())
+        .filter(Boolean)
+    );
     const out: ActionCardData[] = [];
     for (const m of matches) {
       if (!flagged.has(m.id)) { out.push(m); continue; }
-      const replacement = ranked.find((c) => !flagged.has(c.id) && !used.has(c.id));
-      if (replacement) { out.push(replacement); used.add(replacement.id); }
-      else { out.push(m); }  // No replacement available — keep the dimmed card.
+      const replacement = ranked.find((c) => {
+        if (flagged.has(c.id) || used.has(c.id)) return false;
+        const img = (c.topImage ?? "").trim();
+        if (img && usedImages.has(img)) return false;
+        return true;
+      });
+      if (replacement) {
+        out.push(replacement);
+        used.add(replacement.id);
+        const rImg = (replacement.topImage ?? "").trim();
+        if (rImg) usedImages.add(rImg);
+      } else { out.push(m); }  // No replacement available — keep the dimmed card.
     }
     return out;
   }, [matches, flagged, cards, prefs, userCtx]);
@@ -298,23 +385,20 @@ function StepToneAndPreview({
 
   return (
     <div>
-      <div className="mb-3">
-        <h2 id="match-me-title" className="font-['Poppins',sans-serif] text-[22px] font-bold text-[#23297e] leading-tight">
-          What's your fit today?
+      <div className="mb-5">
+        <h2 id="match-me-title" className="font-['Poppins',sans-serif] text-[20px] font-semibold text-[#23297e] leading-tight">
+          Quick Match Tool
         </h2>
-        <p className="font-['Poppins',sans-serif] text-sm text-gray-600 mt-0.5">
-          Move the sliders to find actions that match how you're feeling. Your sample matches update live.
-        </p>
       </div>
 
       {/* Setting + (conditional) state. State only matters when the user is
         * open to in-person actions — online/at-home cards aren't state-bound. */}
-      <div className="mb-2.5">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <h3 className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-sm leading-tight shrink-0">
-            Where do you want to act?
-          </h3>
-          <div className="flex flex-wrap gap-1.5">
+      <div className="mb-5 mt-4">
+        <h3 className="font-['Poppins',sans-serif] font-semibold text-gray-800 text-sm leading-tight mb-1.5">
+          Where do you want to act?
+        </h3>
+        <div className="pl-5">
+          <div className="flex flex-wrap items-center gap-1.5">
             {SETTING_OPTIONS.map((opt) => {
               const selected = prefs.setting.includes(opt.value);
               return (
@@ -350,67 +434,71 @@ function StepToneAndPreview({
             >
               Both
             </button>
-          </div>
-        </div>
-
-        {/* State picker — sub-question, indented under the In-person pill. */}
-        {(prefs.setting.length === 0 || prefs.setting.includes("inPerson")) && (
-          <div className="mt-2 ml-[180px] flex flex-col sm:flex-row sm:items-center gap-2">
-            <span className="font-['Poppins',sans-serif] text-xs text-gray-500 shrink-0">
-              ↳ Where are you?
-            </span>
-            <select
-              value={prefs.state ?? ""}
-              onChange={(e) => onPrefsChange((p) => ({ ...p, state: e.target.value || null }))}
-              className={`rounded-lg border border-gray-300 px-3 py-1 font-['Poppins',sans-serif] text-xs focus:outline-none focus:ring-2 focus:ring-[#23297e]/30 focus:border-[#23297e] ${
-                prefs.state ? "text-gray-800" : "text-gray-400 italic"
-              }`}
-            >
-              <option value="">— pick your state —</option>
-              {STATE_OPTIONS.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-            {prefs.state && (
-              <label className="flex items-center gap-1.5 cursor-pointer select-none whitespace-nowrap">
-                <input
-                  type="checkbox"
-                  checked={prefs.includeAnywhere}
-                  onChange={(e) => onPrefsChange((p) => ({ ...p, includeAnywhere: e.target.checked }))}
-                  className="w-4 h-4 rounded accent-[#fd8e33]"
-                />
-                <span className="font-['Poppins',sans-serif] text-xs text-gray-600">
-                  Show all states, prioritize mine
+            {/* State picker — inline on the same row as the setting pills,
+                only when in-person (or unset / "Both") is in play. */}
+            {(prefs.setting.length === 0 || prefs.setting.includes("inPerson")) && (
+              <>
+                <span className="font-['Poppins',sans-serif] text-xs text-gray-500 shrink-0 ml-1">
+                  ↳ Where are you?
                 </span>
-              </label>
+                <select
+                  value={prefs.state ?? ""}
+                  onChange={(e) => onPrefsChange((p) => ({ ...p, state: e.target.value || null }))}
+                  className={`rounded-lg border border-gray-300 px-3 py-1 font-['Poppins',sans-serif] text-xs focus:outline-none focus:ring-2 focus:ring-[#23297e]/30 focus:border-[#23297e] ${
+                    prefs.state ? "text-gray-800" : "text-gray-400 italic"
+                  }`}
+                >
+                  <option value="">— pick your state —</option>
+                  {STATE_OPTIONS.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+                {prefs.state && (
+                  <label className="flex items-center gap-1.5 cursor-pointer select-none whitespace-nowrap">
+                    <input
+                      type="checkbox"
+                      checked={prefs.includeAnywhere}
+                      onChange={(e) => onPrefsChange((p) => ({ ...p, includeAnywhere: e.target.checked }))}
+                      className="w-4 h-4 rounded accent-[#fd8e33]"
+                    />
+                    <span className="font-['Poppins',sans-serif] text-xs text-gray-600">
+                      Show all states, prioritize mine
+                    </span>
+                  </label>
+                )}
+              </>
             )}
           </div>
-        )}
+        </div>
       </div>
 
-      {/* Time + tone sliders — horizontal layout, label left + slider right. */}
-      <h3 className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-sm leading-tight mb-1.5">
-        How are you feeling today?
+      {/* Time + tone sliders — two-column grid, calmed visual weight.
+       *   • Section title is the only navy heading on the page (anchors hierarchy)
+       *   • Slider labels demoted to medium-gray (was bold navy x6)
+       *   • Descriptions shrunk to 10.5px gray-500
+       *   • Each slider capped + flanked by tiny 0 / 3 endpoint labels
+       *   • Names indented past the icon for a cleaner left edge
+       */}
+      <h3 className="font-['Poppins',sans-serif] font-semibold text-gray-800 text-sm leading-tight mb-3 mt-6">
+        What kind of actions are you up for?
       </h3>
-      <div className="space-y-1 mb-3">
+      <div className="pl-5 grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-2 mb-3">
         {/* Time — first slider, drives time bucket. */}
         {(() => {
           const tIdx = timeIndex(prefs.time);
           const tLevel = TIME_LEVELS[tIdx];
           return (
-            <div className="flex items-center gap-1.5">
-              <div className="w-[260px] shrink-0 flex items-start gap-1">
-                <Clock size={13} strokeWidth={2} className="text-[#23297e] mt-[1px] shrink-0" />
-                <div className="leading-tight">
-                  <div className="font-['Poppins',sans-serif] font-semibold text-[12px] text-[#23297e]">
-                    Time Commitment
-                  </div>
-                  <div className="font-['Poppins',sans-serif] text-[10px] text-gray-500">
-                    <span className="font-semibold text-[#fd8e33]">{tLevel.title}</span> — {tLevel.desc}
-                  </div>
-                </div>
+            <div className="flex flex-col gap-0.5">
+              <div className="flex items-center gap-1.5 pl-1">
+                <Clock size={12} strokeWidth={1.75} className="text-gray-500 shrink-0" />
+                <span className="font-['Poppins',sans-serif] font-medium text-[12px] text-gray-800">
+                  Time Commitment
+                </span>
+                <span className="font-['Poppins',sans-serif] text-[10.5px] text-gray-500 truncate">
+                  · <span className="font-medium text-[#fd8e33]">{tLevel.title}</span> — {tLevel.desc}
+                </span>
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="pl-5">
                 <ToneRangeSlider
                   value={tIdx}
                   onChange={(v) =>
@@ -426,19 +514,17 @@ function StepToneAndPreview({
         {(["anger", "comedy", "subversion", "hope", "energy"] as const).map((k) => {
           const { Icon, label, desc } = TONE_LABELS[k];
           return (
-            <div key={k} className="flex items-center gap-1.5">
-              <div className="w-[260px] shrink-0 flex items-start gap-1">
-                <Icon size={13} strokeWidth={2} className="text-[#23297e] mt-[1px] shrink-0" />
-                <div className="leading-tight">
-                  <div className="font-['Poppins',sans-serif] font-semibold text-[12px] text-[#23297e]">
-                    {label}
-                  </div>
-                  <div className="font-['Poppins',sans-serif] text-[10px] text-gray-500">
-                    {desc}
-                  </div>
-                </div>
+            <div key={k} className="flex flex-col gap-0.5">
+              <div className="flex items-center gap-1.5 pl-1">
+                <Icon size={12} strokeWidth={1.75} className="text-gray-500 shrink-0" />
+                <span className="font-['Poppins',sans-serif] font-medium text-[12px] text-gray-800">
+                  {label}
+                </span>
+                <span className="font-['Poppins',sans-serif] text-[10.5px] text-gray-500 truncate">
+                  · {desc}
+                </span>
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="pl-5">
                 <ToneRangeSlider
                   value={tone[k]}
                   onChange={(v) => setTone({ ...tone, [k]: v })}
@@ -449,29 +535,33 @@ function StepToneAndPreview({
         })}
       </div>
 
-      <div className="border-t border-gray-200 pt-3">
+      <div className="border-t border-gray-200 pt-5 mt-5">
         <h3 className="font-['Poppins',sans-serif] text-xs font-bold uppercase tracking-wider text-gray-500 mb-0.5">
-          Sample Matches
+          Quick Matches
         </h3>
-        <div className="flex items-baseline justify-between gap-3 mb-2">
+        <div className="mb-2">
           <p className="font-['Poppins',sans-serif] text-[12px] text-gray-600">
-            Some quick actions that align with your settings — let us know if these feel right?
-          </p>
-          <p className="font-['Poppins',sans-serif] text-[10.5px] italic text-gray-400 whitespace-nowrap shrink-0">
-            Off the mark? Tap 👎 to teach the matcher.
+            Some quick actions that align with your settings above — let us know if these feel right?
           </p>
         </div>
         {visibleMatches.length === 0 ? (
-          <p className="font-['Poppins',sans-serif] text-sm italic text-gray-500 mb-3">
+          <p className="font-['Poppins',sans-serif] text-sm italic text-gray-500 mb-3 min-h-[240px]">
             Move the sliders to see matches.
           </p>
         ) : (
-          <ul className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+          // Fixed row height keeps the modal from jumping as different cards
+          // swap in/out while the user drags sliders. 240px fits a compact
+          // card with 2-line description; shorter cards just get a small
+          // blank space below.
+          <ul className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4 min-h-[240px]">
             {visibleMatches.map((m) => {
               const isFlagged = flagged.has(m.id);
               return (
-                <li key={m.id} className="flex flex-col gap-2 min-w-0">
-                  <div className={`flex-1 transition-opacity ${isFlagged ? "opacity-40" : ""}`}>
+                <li key={m.id} className="flex flex-col gap-2 min-w-0 h-[240px]">
+                  {/* p-px so the inner ActionCard's shadow doesn't get clipped
+                      by the flex bounds. ring on this wrapper gives a crisp
+                      hairline border that reads well in the modal context. */}
+                  <div className={`flex-1 min-h-0 rounded-2xl ring-1 ring-gray-200 transition-opacity ${isFlagged ? "opacity-40" : ""}`}>
                     <ActionCard card={m} compact />
                   </div>
                   <div className="flex justify-center">
@@ -483,10 +573,10 @@ function StepToneAndPreview({
                       className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-['Poppins',sans-serif] text-xs transition ${
                         isFlagged
                           ? "border-gray-200 text-gray-400 opacity-60 cursor-default"
-                          : "border-gray-300 text-gray-700 hover:border-[#fd8e33] hover:text-[#fd8e33] hover:bg-[#fd8e33]/5"
+                          : "border-[#fd8e33] text-gray-700 hover:bg-[#fd8e33]/10 hover:text-[#fd8e33]"
                       }`}
                     >
-                      <span className="text-lg leading-none">👎</span>
+                      <ThumbsDown size={14} strokeWidth={2} className="shrink-0" />
                       <span>{isFlagged ? "Thanks!" : "Not a good match"}</span>
                     </button>
                   </div>
@@ -507,17 +597,17 @@ function StepToneAndPreview({
           <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-2">
             <button
               onClick={onNext}
-              className="inline-flex items-center justify-center gap-1.5 rounded-full border-2 border-[#fd8e33] bg-white px-5 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-[#fd8e33] hover:bg-[#fd8e33]/5 transition-colors"
+              className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#23297e] bg-white px-5 py-2.5 font-['Poppins',sans-serif] text-sm font-medium text-[#23297e] hover:bg-[#23297e]/5 transition-colors"
             >
-              <Sparkles size={15} strokeWidth={2.5} />
-              Sharpen matches — tell us who you are
+              <Sparkles size={14} strokeWidth={2} />
+              Sharpen your matches — tell us more about who you are
             </button>
             <button
               onClick={onApply}
               disabled={matches.length === 0}
-              className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#fd8e33] px-6 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-white shadow-md hover:bg-[#e6792a] hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="inline-flex items-center justify-center gap-1.5 rounded-full bg-[#23297e] px-6 py-2.5 font-['Poppins',sans-serif] text-sm font-semibold text-white shadow-sm hover:bg-[#1a2060] hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
-              Show Me More Matches! <ChevronRight size={16} />
+              Show me more matches <ChevronRight size={15} strokeWidth={2} />
             </button>
           </div>
         </div>
@@ -578,32 +668,42 @@ function StepGroups({
           Include laser-focused donation guidance?
         </h3>
         <p className="font-['Poppins',sans-serif] text-xs text-gray-500 mb-3">
-          As we get closer to the midterms we will point you to the closest, most pivotal races — the ones where every extra dollar tips the outcome. Skip the spray-and-pray fundraising lists.
+          As we get closer to the midterms we'll add to your matches the closest, most pivotal races — the ones where every extra dollar tips the outcome. Avoid the spray-and-pray fundraising lists.
         </p>
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-col sm:flex-row items-stretch gap-2">
           <button
             type="button"
             onClick={() => onFocusDonationsChange(true)}
             aria-pressed={focusDonations}
-            className={`rounded-full border px-4 py-1.5 font-['Poppins',sans-serif] text-[13px] font-medium transition-colors ${
+            className={`inline-flex flex-col items-start rounded-2xl border px-4 py-2 font-['Poppins',sans-serif] text-left transition-colors ${
               focusDonations
                 ? "border-[#fd8e33] bg-[#fd8e33] text-white"
-                : "border-gray-300 text-gray-700 hover:border-[#fd8e33] hover:text-[#fd8e33]"
+                : "border-gray-300 bg-white text-gray-700 hover:border-[#fd8e33] hover:text-[#fd8e33]"
             }`}
           >
-            Yes — show me the high-leverage races
+            <span className="text-[13px] font-semibold leading-tight">
+              Yes — show me high-leverage races
+            </span>
+            <span className={`text-[11px] font-normal italic leading-tight mt-0.5 ${focusDonations ? "text-white/85" : "text-gray-500"}`}>
+              Target dollars where they tip races
+            </span>
           </button>
           <button
             type="button"
             onClick={() => onFocusDonationsChange(false)}
             aria-pressed={!focusDonations}
-            className={`rounded-full border px-4 py-1.5 font-['Poppins',sans-serif] text-[13px] font-medium transition-colors ${
+            className={`inline-flex flex-col items-start rounded-2xl border px-4 py-2 font-['Poppins',sans-serif] text-left transition-colors ${
               !focusDonations
                 ? "border-[#23297e] bg-[#23297e] text-white"
-                : "border-gray-300 text-gray-700 hover:border-[#23297e] hover:text-[#23297e]"
+                : "border-gray-300 bg-white text-gray-700 hover:border-[#23297e] hover:text-[#23297e]"
             }`}
           >
-            No thanks — I'm using my sweat equity alone, doing ResistActs as often as possible
+            <span className="text-[13px] font-semibold leading-tight">
+              No thanks — sweat equity only
+            </span>
+            <span className={`text-[11px] font-normal italic leading-tight mt-0.5 ${!focusDonations ? "text-white/85" : "text-gray-500"}`}>
+              I'll do ResistActs as often as I can
+            </span>
           </button>
         </div>
       </div>
@@ -616,13 +716,12 @@ function StepGroups({
  * (synced to the user's profile after account creation). */
 function PrivacyFootnote({ isLoggedIn }: { isLoggedIn: boolean }) {
   return (
-    <p className="mt-3 flex items-start justify-end gap-1.5 font-['Poppins',sans-serif] text-[11px] leading-[1.5] text-gray-500 text-right">
-      <CircleAlert size={13} className="shrink-0 mt-[1.5px]" />
+    <p className="flex items-start gap-1.5 font-['Poppins',sans-serif] text-[10.5px] leading-[1.45] text-gray-400 italic text-right">
+      <Lock size={10} strokeWidth={1.75} className="shrink-0 mt-[2px] text-gray-400 not-italic" aria-hidden />
       <span>
-        <strong className="font-semibold">NOTE:</strong>{" "}
         {isLoggedIn
-          ? "Selections live on this device and on your profile so they follow you across devices."
-          : "Selections live on this device. If you create an account, we'll save them to your profile so they follow you across devices."}
+          ? "Selections live on this device and on your profile so they follow you across devices. We're not using your data for evil nor sharing it with anyone."
+          : "Until you login, match settings live temporarily on this device so you can operate anonymously. If you create an account, we'll save them to your profile so they follow you across devices. But no matter what, we're not using your data for evil nor sharing it with anyone."}
       </span>
     </p>
   );

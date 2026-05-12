@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { X, Loader2, Pencil, Trash2, Upload, Flame, Laugh, VenetianMask, Sunrise, Zap } from "lucide-react";
+import { X, Loader2, Pencil, Trash2, Upload, Clock, Flame, Laugh, VenetianMask, Sunrise, Zap } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
 import type { ActionCardData } from "./ActionCard";
@@ -370,15 +370,6 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
               </Field>
             </div>
 
-            {/* Time Commitment */}
-            <Field label="Time Commitment">
-              <InvolvementPicker
-                value={involvementLevelFor(involvement)}
-                onChange={setInvolvement}
-                variant="plan"
-              />
-            </Field>
-
             <Field label="Location">
               <select
                 value={location}
@@ -556,6 +547,44 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
                 </label>
               </div>
             )}
+
+            {/* ── Sliders: time commitment + (admin) matcher tone override ── */}
+            <div className="border-t border-gray-100 pt-4">
+              {/* Time Commitment — slider matches the Quick Match Tool style:
+                  0 = Just the basics (<5 min) … 3 = All in (ongoing organizing). */}
+              {(() => {
+                const TIME_STOPS = [
+                  { key: "5min"     as TimeBucket, title: "Just the basics",  desc: "< 5 minutes" },
+                  { key: "30min"    as TimeBucket, title: "A little",         desc: "A few hours per month" },
+                  { key: "fewHours" as TimeBucket, title: "Regularly",        desc: "A few hours per week" },
+                  { key: "ongoing"  as TimeBucket, title: "All in",           desc: "Ongoing organizing" },
+                ];
+                const normalized = involvementLevelFor(involvement);
+                const tIdx = Math.max(
+                  0,
+                  TIME_STOPS.findIndex((l) => l.key === normalized),
+                );
+                const tLevel = TIME_STOPS[tIdx];
+                return (
+                  <div className="mb-4">
+                    <div className="flex items-center mb-1.5">
+                      <Clock size={14} strokeWidth={2} className="text-[#23297e] mr-1.5 shrink-0" />
+                      <strong className="font-['Poppins',sans-serif] font-semibold text-sm text-[#23297e]">
+                        Time Commitment
+                      </strong>
+                      <span className="ml-2 font-['Poppins',sans-serif] text-[12px] text-gray-500">
+                        <span className="font-medium text-[#fd8e33]">{tLevel.title}</span> — {tLevel.desc}
+                      </span>
+                    </div>
+                    <ToneRangeSlider
+                      value={tIdx}
+                      onChange={(v) => setInvolvement(TIME_STOPS[v].key)}
+                      max={3}
+                    />
+                  </div>
+                );
+              })()}
+            </div>
 
             {/* ── Matcher tone override (admin only) ── */}
             {isAdmin && (
