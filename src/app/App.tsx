@@ -18,7 +18,7 @@ import { LoggedInHero } from "./components/LoggedInHero";
 import { MatchMeModal } from "./components/MatchMeModal";
 import { ChangelogModal } from "./components/ChangelogModal";
 import { FeedbackModal } from "./components/FeedbackModal";
-import { rankCards, loadPreferences, clearPreferences, applyMatcherConfig, fetchUserPreferences, pushUserPreferences, savePreferences, type Preferences, type UserContext } from "./lib/matcher";
+import { rankCards, score as scoreCard, loadPreferences, clearPreferences, applyMatcherConfig, fetchUserPreferences, pushUserPreferences, savePreferences, type Preferences, type UserContext } from "./lib/matcher";
 import svgPaths from "../imports/svg-77lgd1zdt6";
 import { projectId, publicAnonKey } from "/utils/supabase/info";
 import { supabase } from "./lib/supabase";
@@ -285,14 +285,16 @@ export default function App() {
       const cats = activeFilters["Category"] ?? [];
       if (cats.length > 0 && !cats.includes(card.category)) return false;
 
-      // Location — match by canonical state (or "Online"/"National"/etc).
-      // legacy "City, ST" values get normalized via locationToState.
+      // Location — match by canonical state (or "Remote"/"National"/etc).
+      // Legacy "City, ST" values and old names ("Online"/"From Home"/"Multi-state")
+      // get normalized via locationToState.
       const locs = activeFilters["Location"] ?? [];
       if (locs.length > 0) {
-        const matchesOnline = locs.includes("Online") && card.isOnline;
+        // "Remote" matches any card with isOnline=true regardless of location string.
+        const matchesRemote = locs.includes("Remote") && card.isOnline;
         const cardState = locationToState(card.location);
         const matchesLoc = cardState !== null && locs.includes(cardState);
-        if (!matchesOnline && !matchesLoc) return false;
+        if (!matchesRemote && !matchesLoc) return false;
       }
 
       // Quick actions only (5–10 min wins)
@@ -342,7 +344,7 @@ export default function App() {
     if (c.isOnline) return 0;
     const loc = (c.location ?? "").trim();
     if (loc === "National") return 1;
-    if (loc === "Multi-state") return 2;
+    if (loc === "Multi-state" || loc === "Multi-State") return 2;
     if (loc) return 3;
     return 4;
   }
@@ -417,7 +419,18 @@ export default function App() {
     // drop completed cards — completedLast pushes them to the bottom instead.
     if (matchPrefs) {
       const userCtx: UserContext = { boostedIds: boostedCards };
-      return pinFirst(completedLast(rankCards(filtered, matchPrefs, userCtx)));
+      const ranked = rankCards(filtered, matchPrefs, userCtx);
+      // Apply a score floor so only genuine matches surface. Score every card,
+      // keep only those hitting ≥ 30% of the top card's score. This prevents
+      // the "396 matches" problem where low-preference-overlap cards still pass
+      // because the engagement floor alone keeps them above zero.
+      if (ranked.length > 0) {
+        const topScore = scoreCard(ranked[0], matchPrefs, userCtx);
+        const threshold = topScore * 0.30;
+        const matched = ranked.filter((c) => scoreCard(c, matchPrefs, userCtx) >= threshold);
+        return pinFirst(completedLast(matched));
+      }
+      return [];
     }
 
     if (sortBy === "az") {
@@ -482,7 +495,7 @@ export default function App() {
   // is always included (it filters cards by `isOnline`, which is independent
   // of the literal location string).
   const dynamicLocations = useMemo(() => {
-    const set = new Set<string>(["Online"]);
+    const set = new Set<string>(["Remote"]);
     for (const c of cards) {
       const loc = locationToState(c.location);
       if (loc) set.add(loc);
@@ -1210,6 +1223,7 @@ export default function App() {
 
       {/* Match Me wizard */}
       {matchOpen && (
+        <ErrorBoundary>
         <MatchMeModal
           cards={cards}
           isLoggedIn={!!approval}
@@ -1236,6 +1250,7 @@ export default function App() {
             setAuthModalOpen(true);
           }}
         />
+        </ErrorBoundary>
       )}
 
       {/* Join ACTers modal (orange — Act button) */}

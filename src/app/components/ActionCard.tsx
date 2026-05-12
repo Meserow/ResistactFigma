@@ -240,8 +240,8 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           </div>
 
           {/* Content */}
-          <div className="relative flex flex-col flex-1 px-4 pb-4 pt-3 gap-2">
-            <span className="font-['Poppins',sans-serif] font-bold text-[11px] uppercase tracking-wider" style={{ color: card.categoryColor }}>
+          <div className={`relative flex flex-col flex-1 ${compact ? "gap-1 px-3 pb-2 pt-1.5" : "gap-2 px-4 pb-4 pt-3"}`}>
+            <span className={`font-['Poppins',sans-serif] font-bold uppercase tracking-wider ${compact ? "text-[10px]" : "text-[11px]"}`} style={{ color: card.categoryColor }}>
               {card.category}
             </span>
 
@@ -387,7 +387,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           </span>
 
           {/* Title */}
-          <h3 className={`font-['Poppins',sans-serif] font-bold text-gray-900 leading-snug pr-8 ${compact ? "text-[13px]" : "text-[15px]"}`}>
+          <h3 className={`font-['Poppins',sans-serif] font-bold text-gray-900 leading-snug ${compact ? "text-[13px]" : "text-[15px] pr-8"}`}>
             {(card.targetUrl || card.authorLink) ? (
               <a href={card.targetUrl ?? card.authorLink} target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-[#23297e] transition-colors">
                 {card.title}

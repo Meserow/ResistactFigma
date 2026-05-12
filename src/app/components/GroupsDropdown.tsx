@@ -80,13 +80,16 @@ export function GroupsDropdown({ value, onToggle, onClear, placeholder = "Select
       </div>
 
       {open && (
-        <div className="mt-2 max-h-44 overflow-y-auto rounded-lg border border-gray-300 bg-white p-3">
+        <div
+          className="mt-2 max-h-72 overflow-y-auto rounded-lg border border-gray-300 bg-white p-3"
+          onClick={(e) => e.stopPropagation()}
+        >
           {GROUP_SECTIONS.map((section) => (
             <div key={section.title} className="mb-3 last:mb-0">
               <h4 className="font-['Poppins',sans-serif] text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1.5">
                 {section.title}
               </h4>
-              <ul className="space-y-0.5">
+              <ul className="grid grid-cols-2 gap-x-2 gap-y-0.5">
                 {section.options.map((opt) => {
                   const checked = value.includes(opt.value);
                   return (

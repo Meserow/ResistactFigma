@@ -18,7 +18,7 @@ const INPUT_BASE =
   "w-full px-3.5 py-2.5 border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm focus:outline-none focus:ring-2 focus:ring-[#23297e]/30 focus:border-[#23297e]";
 const INPUT_CLS = `${INPUT_BASE} text-gray-800 placeholder-gray-400 placeholder:italic placeholder:text-gray-400`;
 const SELECT_CLS = (val: string | null | undefined) =>
-  `${INPUT_BASE} ${val ? "text-gray-800" : "text-gray-400 italic"}`;
+  `${INPUT_BASE} !pr-10 ${val ? "text-gray-800" : "text-gray-400 italic"}`;
 
 // ─── Category → colour map ─────────────────────────────────────────────────────
 const CATEGORY_OPTIONS: { label: string; color: string }[] = [

@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { X, ChevronLeft, ChevronRight, Clock, Flame, Laugh, Lock, MapPin, Sparkles, Sunrise, ThumbsDown, VenetianMask, Zap } from "lucide-react";
 import logoImg from "../../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
 import type { LucideIcon } from "lucide-react";
 import { ToneRangeSlider } from "./ToneSlider";
 import {
   DEFAULT_PREFERENCES,
+  cardIsAtHome,
   cardIsLocalToState,
   loadPreferences,
   rankCards,
@@ -87,7 +88,7 @@ function settingIndex(setting: Setting[]): number {
 // "Multi-state" aren't picked here because they're not where a *user* lives;
 // the state filter passes those locations through automatically.
 const STATE_OPTIONS = LOCATION_OPTIONS.filter(
-  (o) => o !== "Online" && o !== "National" && o !== "Multi-state" && o !== "From Home"
+  (o) => o !== "Remote" && o !== "At Home" && o !== "National" && o !== "Multi-State"
 );
 
 const TONE_LABELS: Record<"anger" | "comedy" | "subversion" | "hope" | "energy", { Icon: LucideIcon; label: string; desc: string }> = {
@@ -167,31 +168,54 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJo
         ? cards.find((c) => c.id === 1) ?? null
         : null;
 
-    // Walk the ranking and fill 10 slots with UNIQUE images so the
+    // Walk the ranking and fill 12 slots with UNIQUE images so the
     // carousel doesn't show two Tesla cards back-to-back. Falls back to score
-    // order if we run out of unique-image cards before we hit 10.
-    const TARGET = 10;
+    // order if we run out of unique-image cards before we hit 12.
+    //
+    // When the user picks "Both equal" (online + in-person), enforce a ~50/50
+    // split so the carousel doesn't skew 11/12 online just because there are
+    // more online cards in the DB.
+    const TARGET = 12;
+    const wantsBothEqual =
+      prefs.setting.includes("online") && prefs.setting.includes("inPerson");
+    // Spread card is always online — count it toward the online quota.
+    const ONLINE_MAX = wantsBothEqual ? Math.ceil(TARGET / 2) : TARGET;
+    const IN_PERSON_MAX = wantsBothEqual ? Math.floor(TARGET / 2) : TARGET;
+
     const picked: ActionCardData[] = [];
     const seenImages = new Set<string>();
-    if (spreadCard) {
-      picked.push(spreadCard);
-      const img = (spreadCard.topImage ?? "").trim();
+    let onlineCount = 0;
+    let inPersonCount = 0;
+
+    const addCard = (c: ActionCardData) => {
+      picked.push(c);
+      const img = (c.topImage ?? "").trim();
       if (img) seenImages.add(img);
+      if (cardIsAtHome(c)) onlineCount++; else inPersonCount++;
+    };
+
+    if (spreadCard) {
+      addCard(spreadCard);
     }
     for (const c of ranked) {
       if (picked.length >= TARGET) break;
       if (spreadCard && c.id === spreadCard.id) continue;
       const img = (c.topImage ?? "").trim();
       if (img && seenImages.has(img)) continue;
-      if (img) seenImages.add(img);
-      picked.push(c);
+      // Quota check — skip if this bucket is already full.
+      if (wantsBothEqual) {
+        if (cardIsAtHome(c) && onlineCount >= ONLINE_MAX) continue;
+        if (!cardIsAtHome(c) && inPersonCount >= IN_PERSON_MAX) continue;
+      }
+      addCard(c);
     }
+    // Fallback: fill remaining slots ignoring quotas if one bucket ran dry.
     if (picked.length < TARGET) {
       const pickedIds = new Set(picked.map((c) => c.id));
       for (const c of ranked) {
         if (picked.length >= TARGET) break;
         if (pickedIds.has(c.id)) continue;
-        picked.push(c);
+        addCard(c);
       }
     }
     const top = picked;
@@ -212,6 +236,16 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJo
   function next() { setStep((s) => Math.min(1, (s + 1) as Step)); }
   function prev() { setStep((s) => Math.max(0, (s - 1) as Step)); }
 
+  // Scroll the modal card back to the top whenever the step changes. Using
+  // useLayoutEffect (fires before paint) so the reset is invisible to the
+  // user — useEffect fires too late and the old scroll position is briefly
+  // visible before it corrects.
+  useLayoutEffect(() => {
+    if (cardRef.current) {
+      cardRef.current.scrollTop = 0;
+    }
+  }, [step]);
+
   function toggleGroup(g: VulnerableGroup) {
     setPrefs((p) => ({
       ...p,
@@ -229,51 +263,57 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJo
       onClick={onClose}
       className="hero-modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-[#0d1b2a]/60 p-4 sm:p-6"
     >
+      {/* Outer card — flex column so the footer can be pinned outside the
+          scroll area. overflow-hidden clips the rounded corners. */}
       <div
-        ref={cardRef}
         onClick={(e) => e.stopPropagation()}
-        className="hero-modal-card relative w-full max-w-[1100px] max-h-[92vh] overflow-y-auto rounded-[10px] bg-white p-4 sm:p-5 shadow-2xl"
+        className="hero-modal-card relative flex flex-col w-full max-w-[1100px] max-h-[92vh] overflow-hidden rounded-[10px] bg-white shadow-2xl"
       >
         <button
           onClick={onClose}
           aria-label="Close"
-          className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-[#f0e8de] hover:text-[#23297e]"
+          className="absolute top-3 right-3 z-10 flex h-8 w-8 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-[#f0e8de] hover:text-[#23297e]"
         >
           <X size={20} />
         </button>
 
-        {step === 0 && (
-          <StepToneAndPreview
-            cards={cards}
-            prefs={prefs}
-            onPrefsChange={setPrefs}
-            matches={matches}
-            onNext={next}
-            onApply={() => onApply(prefs)}
-            userCtx={userCtx}
-            step={step}
-            totalSteps={TOTAL_STEPS}
-          />
-        )}
+        {/* Scrollable content area — flex-1 so it fills the space above the
+            pinned footer. cardRef lives here so the scroll-to-top on step
+            change resets only this div. */}
+        <div ref={cardRef} className="flex-1 overflow-y-auto p-4 sm:p-5">
+          {step === 0 && (
+            <StepToneAndPreview
+              cards={cards}
+              prefs={prefs}
+              onPrefsChange={setPrefs}
+              matches={matches}
+              onNext={next}
+              onApply={() => onApply(prefs)}
+              userCtx={userCtx}
+              step={step}
+              totalSteps={TOTAL_STEPS}
+            />
+          )}
 
-        {step === 1 && (
-          <StepGroups
-            value={prefs.vulnerableGroups}
-            onToggle={toggleGroup}
-            onClear={() => setPrefs((p) => ({ ...p, vulnerableGroups: [] }))}
-            focusDonations={prefs.focusDonations}
-            onFocusDonationsChange={(v) => setPrefs((p) => ({ ...p, focusDonations: v }))}
-            state={prefs.state}
-            onStateChange={(s) => setPrefs((p) => ({ ...p, state: s }))}
-            includeAnywhere={prefs.includeAnywhere}
-            onIncludeAnywhereChange={(v) => setPrefs((p) => ({ ...p, includeAnywhere: v }))}
-          />
-        )}
+          {step === 1 && (
+            <StepGroups
+              value={prefs.vulnerableGroups}
+              onToggle={toggleGroup}
+              onClear={() => setPrefs((p) => ({ ...p, vulnerableGroups: [] }))}
+              focusDonations={prefs.focusDonations}
+              onFocusDonationsChange={(v) => setPrefs((p) => ({ ...p, focusDonations: v }))}
+              state={prefs.state}
+              onStateChange={(s) => setPrefs((p) => ({ ...p, state: s }))}
+              includeAnywhere={prefs.includeAnywhere}
+              onIncludeAnywhereChange={(v) => setPrefs((p) => ({ ...p, includeAnywhere: v }))}
+            />
+          )}
+        </div>
 
-        {/* Step 1 footer — Back to first page | Apply (Show me my matches) +
-         * privacy footnote tucked beneath the buttons on the right. */}
+        {/* Step 1 footer — pinned outside the scroll area so it's always
+            visible and doesn't contribute to the scrollable height. */}
         {step === 1 && (
-          <div className="mt-6 flex items-start justify-between gap-4 border-t border-gray-200 pt-4">
+          <div className="shrink-0 flex items-start justify-between gap-4 border-t border-gray-200 px-4 sm:px-5 pt-4 pb-4">
             <div className="flex items-center gap-4 pt-2.5">
               <button
                 onClick={prev}
@@ -526,11 +566,11 @@ function StepToneAndPreview({
           const pageCards = visibleMatches.slice(carouselPage * PAGE_SIZE, (carouselPage + 1) * PAGE_SIZE);
           return (
             <div className="mb-4">
-              <ul className="grid grid-cols-2 sm:grid-cols-4 gap-3 min-h-[240px]">
+              <ul className="grid grid-cols-2 sm:grid-cols-4 gap-3 min-h-[270px]">
                 {pageCards.map((m) => {
                   const isFlagged = flagged.has(m.id);
                   return (
-                    <li key={m.id} className="flex flex-col gap-2 min-w-0 h-[240px]">
+                    <li key={m.id} className="flex flex-col gap-2 min-w-0 h-[270px]">
                       <div className={`flex-1 min-h-0 rounded-2xl ring-1 ring-gray-200 transition-opacity ${isFlagged ? "opacity-40" : ""}`}>
                         <ActionCard card={m} compact />
                       </div>
@@ -687,7 +727,7 @@ function StepGroups({
           <select
             value={state ?? ""}
             onChange={(e) => onStateChange(e.target.value || null)}
-            className={`rounded-lg border border-gray-300 px-3 py-1.5 font-['Poppins',sans-serif] text-sm focus:outline-none focus:ring-2 focus:ring-[#23297e]/30 focus:border-[#23297e] ${
+            className={`rounded-lg border border-gray-300 pl-3 pr-10 py-1.5 font-['Poppins',sans-serif] text-sm focus:outline-none focus:ring-2 focus:ring-[#23297e]/30 focus:border-[#23297e] ${
               state ? "text-gray-800" : "text-gray-400 italic"
             }`}
           >
@@ -782,7 +822,7 @@ function PrivacyFootnote({ isLoggedIn }: { isLoggedIn: boolean }) {
       <span>
         {isLoggedIn
           ? "Selections live on this device and on your profile so they follow you across devices. We're not using your data for evil nor sharing it with anyone."
-          : "Until you login, match settings live temporarily on this device so you can operate anonymously. If you create an account, we'll save them to your profile so they follow you across devices. But no matter what, we're not using your data for evil nor sharing it with anyone."}
+          : "Until you login, match settings live temporarily on this device so you can operate anonymously. Create an account and we'll sync them across devices. Either way, we're not using your data for evil nor sharing it with anyone."}
       </span>
     </p>
   );

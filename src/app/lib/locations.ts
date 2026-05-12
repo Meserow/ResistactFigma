@@ -4,10 +4,10 @@
 // re-saved.
 
 export const LOCATION_OPTIONS = [
-  "Online",
-  "From Home",
+  "Remote",
+  "At Home",
   "National",
-  "Multi-state",
+  "Multi-State",
   "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado",
   "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho",
   "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine",
@@ -18,6 +18,14 @@ export const LOCATION_OPTIONS = [
   "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia",
   "Washington", "Washington DC", "West Virginia", "Wisconsin", "Wyoming",
 ] as const;
+
+// Legacy location strings that existed before the canonical rename. Mapped
+// to their new equivalents so existing cards and filter chips stay consistent.
+const LEGACY_MAP: Record<string, string> = {
+  "Online":     "Remote",
+  "From Home":  "At Home",
+  "Multi-state": "Multi-State",
+};
 
 // USPS 2-letter codes → full state name. Used to normalize legacy
 // "City, ST" location strings down to a state for the filter dropdown.
@@ -40,16 +48,21 @@ const STATE_BY_CODE: Record<string, string> = {
 const STATE_NAMES = new Set<string>(LOCATION_OPTIONS as readonly string[]);
 
 // Normalize any free-form location string down to a single canonical
-// dropdown value (a state, "Online", "National", "Multi-state", or null).
+// dropdown value (a state, "Remote", "At Home", "National", "Multi-State",
+// or null).
 //   "Odenton, MD"      -> "Maryland"
 //   "Beaver County, PA" -> "Pennsylvania"
 //   "California"       -> "California"
-//   "Online"           -> "Online"
+//   "Online"           -> "Remote"   (legacy)
+//   "From Home"        -> "At Home"  (legacy)
+//   "Multi-state"      -> "Multi-State" (legacy)
 //   "Earth"            -> null
 export function locationToState(raw: string | null | undefined): string | null {
   if (!raw) return null;
   const s = raw.trim();
   if (!s) return null;
+  // Remap legacy canonical strings before anything else.
+  if (LEGACY_MAP[s]) return LEGACY_MAP[s];
   if (STATE_NAMES.has(s)) return s;
   // Strip a trailing ", XX" 2-letter code or ", FullStateName" suffix.
   const m = s.match(/,\s*([^,]+)\s*$/);

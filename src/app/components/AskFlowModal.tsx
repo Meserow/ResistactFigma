@@ -603,7 +603,7 @@ const inputBase =
   "w-full px-4 py-3 bg-white border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm focus:outline-none focus:ring-2 focus:ring-[#fd8e33]/30 focus:border-[#fd8e33] transition-colors";
 const inputCls = `${inputBase} text-gray-800 placeholder-gray-400 placeholder:italic`;
 const selectCls = (val: string | null | undefined) =>
-  `${inputBase} ${val ? "text-gray-800" : "text-gray-400 italic"}`;
+  `${inputBase} !pr-10 ${val ? "text-gray-800" : "text-gray-400 italic"}`;
 
 function Section({
   title, hint, children,

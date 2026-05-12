@@ -57,7 +57,7 @@ export function HeroPills({ onMatchClick, onAskClick, onHowClick }: HeroPillsPro
           >
             <Sparkles size={16} strokeWidth={2.75} className="text-white" />
             <span className="flex flex-col items-start text-left leading-tight whitespace-nowrap">
-              <span className="text-[14px] font-extrabold text-white tracking-tight">Quick Matches for My Mood</span>
+              <span className="text-[14px] font-extrabold text-white tracking-tight">Quick Matches for Me</span>
               <span className="text-[11px] font-medium text-white/90 italic">Pressed for time? Show me what fits.</span>
             </span>
           </button>
