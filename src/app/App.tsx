@@ -16,6 +16,7 @@ import { locationToState, LOCATION_OPTIONS } from "./lib/locations";
 import { HomeHero } from "./components/HomeHero";
 import { LoggedInHero } from "./components/LoggedInHero";
 import { MatchMeModal } from "./components/MatchMeModal";
+import { ChangelogModal } from "./components/ChangelogModal";
 import { FeedbackModal } from "./components/FeedbackModal";
 import { rankCards, loadPreferences, clearPreferences, applyMatcherConfig, fetchUserPreferences, pushUserPreferences, savePreferences, type Preferences, type UserContext } from "./lib/matcher";
 import svgPaths from "../imports/svg-77lgd1zdt6";
@@ -205,6 +206,7 @@ export default function App() {
   const [adminPanelOpen, setAdminPanelOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [actOpen, setActOpen] = useState(false);
+  const [changelogOpen, setChangelogOpen] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
   const [matchOpen, setMatchOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -1258,13 +1260,16 @@ export default function App() {
         </div>
       )}
 
-      {/* Build version badge (bottom-left) */}
-      <div
-        className="fixed bottom-2 left-2 z-[100] px-2 py-1 rounded-md bg-black/60 text-white text-[10px] font-mono leading-none pointer-events-none select-none"
-        title={`Built ${__APP_BUILD_DATE__}`}
+      {/* Build version badge (bottom-left) — click to open the changelog. */}
+      <button
+        onClick={() => setChangelogOpen(true)}
+        title={`Built ${__APP_BUILD_DATE__} — click for changelog`}
+        className="fixed bottom-2 left-2 z-[100] px-2 py-1 rounded-md bg-black/60 hover:bg-black/80 text-white text-[10px] font-mono leading-none select-none transition-colors cursor-pointer"
       >
         v{__APP_VERSION__} · {__APP_GIT_SHA__}
-      </div>
+      </button>
+
+      {changelogOpen && <ChangelogModal onClose={() => setChangelogOpen(false)} />}
     </div>
   );
 }
