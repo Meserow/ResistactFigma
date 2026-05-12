@@ -420,7 +420,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                   #jointheresistance
                 </span>
                 <span className="text-[10.5px] font-normal italic text-white/85 leading-tight mt-0.5">
-                  Sign up to save your progress.
+                  Log in or sign up to save your progress.
                 </span>
               </button>
             </>
@@ -879,7 +879,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                 #jointheresistance
               </span>
               <span className="text-[10.5px] font-normal italic text-white/85 leading-tight mt-0.5">
-                Sign up to save your progress.
+                Log in or sign up to save your progress.
               </span>
             </button>
           )}
