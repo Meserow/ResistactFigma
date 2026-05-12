@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useDeferredValue } from "react";
 import { Navbar } from "./components/Navbar";
 import { ActionCard, ActionCardData } from "./components/ActionCard";
 import { FactCard } from "./components/FactCard";
@@ -228,6 +228,11 @@ export default function App() {
   const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>({});
   const [activeTab, setActiveTab] = useState<"facts" | "acts">("acts");
   const [searchQuery, setSearchQuery] = useState("");
+  // useDeferredValue lets React keep the input responsive: keystrokes update
+  // `searchQuery` synchronously (so the textbox shows them instantly), while
+  // the heavy feed re-filter uses `deferredSearchQuery` and runs as a low-
+  // priority update React can interrupt for more typing.
+  const deferredSearchQuery = useDeferredValue(searchQuery);
   const [quickActionsOnly, setQuickActionsOnly] = useState(false);
   const [sortBy, setSortBy] = useState<"popular" | "newest" | "az">("popular");
 
@@ -244,7 +249,7 @@ export default function App() {
 
   // ── Apply filters client-side ──
   function applyFilters(allCards: ActionCardData[]): ActionCardData[] {
-    const q = searchQuery.toLowerCase().trim();
+    const q = deferredSearchQuery.toLowerCase().trim();
     return allCards.filter((card) => {
       // Search — matches across the broadest reasonable surface so a user can
       // find a card by partial title, a phrase in the description, an author,
@@ -1011,7 +1016,7 @@ export default function App() {
         {activeTab === "facts" ? (
           /* ── Facts view ── */
           (() => {
-            const q = searchQuery.toLowerCase().trim();
+            const q = deferredSearchQuery.toLowerCase().trim();
             const catFilters = activeFilters["Category"] ?? [];
             const filteredFacts = FACT_CARDS.filter((fc) => {
               // Search overrides category filters
