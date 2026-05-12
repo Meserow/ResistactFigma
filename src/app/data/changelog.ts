@@ -16,6 +16,59 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.4.0",
+    date: "2026-05-12",
+    title: "Smarter matching, location rename, modal polish, and UI fixes",
+    sections: [
+      {
+        heading: "Quick Matches for Me",
+        items: [
+          "Hero panel button renamed to "Quick Matches for Me".",
+          "Carousel expanded to 12 matches (up from 10).",
+          "When you pick "Both equal" location, the 12 slots are now split 50/50 online vs. in-person — no more 11/12 online results.",
+          ""Show me all my matches" now applies a score floor (30% of the top match) so you see genuine matches instead of all 396 cards re-sorted.",
+          "Targeted group checkboxes display in two columns so the list is half the height.",
+          "Page 2 footer (Back / Show me my matches) is pinned below the scrollable content — no more white gap at the bottom.",
+          "Clicking a targeted-group checkbox no longer collapses the dropdown and blanks the modal.",
+        ],
+      },
+      {
+        heading: "Location filter",
+        items: [
+          ""Online" renamed to "Remote", "From Home" renamed to "At Home", "Multi-state" renamed to "Multi-State" — consistent with how people actually talk about these options.",
+          "Existing cards with the old location strings continue to filter and display correctly (backward-compatible mapping).",
+          "The Add-an-Action and Edit-card location dropdowns use the same new names.",
+        ],
+      },
+      {
+        heading: "Add an Action modal",
+        items: [
+          "ResistAct fist logo added to the header; "Make an ASK" label removed.",
+          "Title field moved above Category so the most important field comes first.",
+        ],
+      },
+      {
+        heading: "Admin panel",
+        items: [
+          "Edit button added to each pending card's approval row — opens the full edit modal inline.",
+          "Version badge and changelog link are now visible to admin users only.",
+          "Spread the Word card is excluded from the "cards without URLs" admin list.",
+          "95 existing cards had their URL migrated from the authorLink field into the proper targetUrl field.",
+        ],
+      },
+      {
+        heading: "Bug fixes & polish",
+        items: [
+          "Spread the Word card always shows the correct description regardless of what's stored in the database.",
+          "Category filter "+ N more" dropdown is no longer clipped by the navbar's overflow-hidden container.",
+          "All native select dropdowns now have right padding so the browser chevron doesn't crowd the text.",
+          "Compact carousel cards (Quick Match strip) no longer show the flame / share button.",
+          "Modal titles across Match Me, Add an Action, and Info are all styled consistently (bold, navy, 20px).",
+        ],
+      },
+    ],
+  },
+  {
     version: "0.3.0",
     date: "2026-05-12",
     title: "Quick Match carousel, smarter slider layout, unified 'How It Works' modal",
