@@ -117,7 +117,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   state: null,
   includeAnywhere: false,
   vulnerableGroups: [],
-  focusDonations: false,
+  focusDonations: true,
   tone: { anger: 1, comedy: 1, subversion: 1, hope: 1, energy: 1 },
 };
 
