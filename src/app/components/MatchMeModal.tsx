@@ -147,6 +147,16 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJo
     boostedIds: boostedIds ?? [],
   }), [completedIds, boostedIds]);
 
+  // Carousel-specific context: omit completedIds so that cards the user has
+  // already done aren't hard-excluded from ranking (score = 0 → dropped).
+  // Without this, completedIds loading from Supabase ~3 s after modal open
+  // can collapse 12 carousel cards down to 3. Completed cards still sort to
+  // the back of the picked list so fresh actions lead.
+  const carouselCtx = useMemo<UserContext>(() => ({
+    completedIds: [],
+    boostedIds: boostedIds ?? [],
+  }), [boostedIds]);
+
   // When the user picks In-person + a state, guarantee at least one of the 4
   // quick matches is genuinely local to that state. Without this, a Louisiana
   // user could see three Multi-state Tesla protests scoring higher than any
@@ -155,7 +165,7 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJo
     // Slot 1 is always "Spread the Word about ResistAct" (id=1) until the
     // user has marked it done — it's the cheapest, most-impactful first
     // action and reinforces the social-graph growth flywheel.
-    const ranked = rankCards(cards, prefs, userCtx);
+    const ranked = rankCards(cards, prefs, carouselCtx);
     // completedIds is typed Set<number> | number[]; normalise to a check that
     // works on either shape.
     const isCompleted = (id: number) => {
@@ -231,7 +241,7 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJo
     if (!bestLocal) return top;
     if (top.length < 3) return [...top, bestLocal];
     return [...top.slice(0, 2), bestLocal];
-  }, [cards, prefs, userCtx]);
+  }, [cards, prefs, carouselCtx, userCtx]);
 
   function next() { setStep((s) => Math.min(1, (s + 1) as Step)); }
   function prev() { setStep((s) => Math.max(0, (s - 1) as Step)); }
