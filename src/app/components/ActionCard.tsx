@@ -49,6 +49,11 @@ export interface ActionCardData {
    * away without needing to log in or share their location. Hand-flagged
    * by admins via the admin panel. */
   firstTimerFriendly?: boolean;
+  /** Last automated URL health check result. False = link is broken /
+   * 404s — card is auto-pulled from the public feed until an admin
+   * fixes the URL and re-approves. */
+  urlOk?: boolean;
+  urlCheckedAt?: string;
   /** ISO date string (YYYY-MM-DD). Cards with a past date are hidden; upcoming ones sort to the top. */
   eventDate?: string;
   /** True for actions you can do without leaving your house (knit, write

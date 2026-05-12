@@ -52,12 +52,12 @@ export function HeroPills({ onMatchClick, onAskClick }: HeroPillsProps) {
         {onMatchClick && (
           <button
             onClick={onMatchClick}
-            className="shrink-0 inline-flex items-center gap-2 rounded-full border border-[#fd8e33] bg-white px-4 py-2 font-['Poppins',sans-serif] transition-colors hover:bg-[#fd8e33]/5"
+            className="shrink-0 inline-flex items-center gap-2.5 rounded-full bg-[#fd8e33] px-5 py-2.5 font-['Poppins',sans-serif] shadow-md ring-1 ring-[#fd8e33] transition-all hover:bg-[#e6792a] hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#fd8e33]/40 focus:ring-offset-2"
           >
-            <Sparkles size={14} strokeWidth={2.5} className="text-[#fd8e33]" />
+            <Sparkles size={16} strokeWidth={2.75} className="text-white" />
             <span className="flex flex-col items-start text-left leading-tight whitespace-nowrap">
-              <span className="text-[13px] font-bold text-[#fd8e33]">Match Me with Acts</span>
-              <span className="text-[10.5px] font-normal text-[#d97318] italic">Pressed for time? Show me what fits.</span>
+              <span className="text-[14px] font-extrabold text-white tracking-tight">Match Me with Acts</span>
+              <span className="text-[11px] font-medium text-white/90 italic">Pressed for time? Show me what fits.</span>
             </span>
           </button>
         )}

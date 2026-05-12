@@ -54,7 +54,10 @@ interface ServerCard {
   imageContain?: boolean;
   adminApproved?: boolean;
   firstTimerFriendly?: boolean;
+  urlOk?: boolean;
+  urlCheckedAt?: string;
   eventDate?: string;
+  toneOverride?: { anger?: number; comedy?: number; subversion?: number; care?: number; hope?: number; energy?: number };
 }
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
@@ -349,21 +352,95 @@ export default function App() {
   // users (no auth, no Match Me) — once they engage, they get the full feed.
   const todaysFive: ActionCardData[] = (() => {
     if (accessToken || matchPrefs) return [];
-    const pool = cards.filter(
-      (c) =>
-        c.firstTimerFriendly === true &&
-        c.adminApproved !== false &&
-        !c.pinToTop && // Spread the Word is already hoisted; don't double-show
-        !(c.eventDate && c.eventDate < todayISO) &&
-        !completedCards.has(c.id),
-    );
-    if (pool.length === 0) return [];
-    // Stable order so rotation is deterministic across reloads / users.
-    const sorted = [...pool].sort((a, b) => a.id - b.id);
+    // Gate on synced so the pool doesn't shift while pages are still streaming
+    // in. Without this, Today's Five visibly shuffles as more cards arrive.
+    if (!synced) return [];
+    const _today = new Date().toISOString().slice(0, 10);
+
+    // Slot 5 is always "Spread the Word about ResistAct" (id=1).
+    const pinned = cards.find((c) => c.id === 1) ?? null;
+
+    // Auto-pick eligibility — no admin micro-curation required, just:
+    //   • approved
+    //   • has a real working link
+    //   • has an image
+    //   • Online / National / Multi-state (not hyper-local)
+    //   • not already completed
+    // Admins can still force a card IN via `firstTimerFriendly: true` even if
+    // engagement is low — that flag gives a big score boost below.
+    const isOnlineOrBroad = (c: ActionCardData) =>
+      c.isOnline === true ||
+      c.location === "National" ||
+      c.location === "Multi-state";
+    const isEligible = (c: ActionCardData) =>
+      c.adminApproved !== false &&
+      !c.pinToTop &&
+      !!c.targetUrl &&
+      c.urlOk !== false &&
+      !!c.topImage &&
+      isOnlineOrBroad(c) &&
+      !(c.eventDate && c.eventDate < _today) &&
+      !completedCards.has(c.id);
+
+    const pool = cards.filter(isEligible);
+    if (pool.length === 0) return pinned ? [pinned] : [];
+
+    // "Funny" = explicit IRREVERENCE category OR comedy tone >= 2.
+    // We want exactly one of these in the rotation every day so the strip
+    // doesn't read like 5 letters-to-Congress.
+    const isFunny = (c: ActionCardData) =>
+      (c.category ?? "").toUpperCase() === "IRREVERENCE" ||
+      (c.toneOverride?.comedy ?? 0) >= 2;
+
+    // Engagement score with a +5000 boost for explicit firstTimerFriendly so
+    // admin opt-in always wins the ranking. Boosts and completions count
+    // 1:1 — both signal "users found this worth doing."
+    const score = (c: ActionCardData) =>
+      (c.boosts ?? 0) + (c.completions ?? 0) + (c.firstTimerFriendly ? 5000 : 0);
+
     const daysSinceEpoch = Math.floor(Date.now() / 86_400_000);
-    const groups = Math.max(1, Math.ceil(sorted.length / 5));
-    const offset = (daysSinceEpoch % groups) * 5;
-    return sorted.slice(offset, offset + 5);
+
+    // Slot 4: top funny card, rotated daily.
+    const funnyPool = pool
+      .filter(isFunny)
+      .sort((a, b) => score(b) - score(a) || a.id - b.id);
+    const funnyPick = funnyPool.length > 0
+      ? funnyPool[daysSinceEpoch % Math.min(funnyPool.length, 8)]
+      : null;
+
+    // Slots 1–3: top-K most-engaging non-funny cards, walked with a daily
+    // offset and an author-diversity guard. K = 12 so we have headroom for
+    // diversity without dipping into low-engagement long-tail.
+    const fillerPool = pool
+      .filter((c) => !isFunny(c) && c.id !== funnyPick?.id)
+      .sort((a, b) => score(b) - score(a) || a.id - b.id)
+      .slice(0, 12);
+
+    const picked: ActionCardData[] = [];
+    const seenAuthor = new Set<string>();
+    for (let i = 0; i < fillerPool.length && picked.length < 3; i++) {
+      const idx = (i + daysSinceEpoch) % fillerPool.length;
+      const c = fillerPool[idx];
+      if (picked.some((p) => p.id === c.id)) continue;
+      const a = (c.authorName ?? "").trim().toLowerCase();
+      if (seenAuthor.has(a)) continue;
+      seenAuthor.add(a);
+      picked.push(c);
+    }
+    // Backfill if the diversity guard left us short.
+    if (picked.length < 3) {
+      for (const c of fillerPool) {
+        if (picked.length >= 3) break;
+        if (picked.some((p) => p.id === c.id)) continue;
+        picked.push(c);
+      }
+    }
+
+    return [
+      ...picked.slice(0, 3),
+      ...(funnyPick ? [funnyPick] : []),
+      ...(pinned ? [pinned] : []),
+    ];
   })();
 
   function effectiveScore(c: ActionCardData): number {
