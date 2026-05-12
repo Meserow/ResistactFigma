@@ -7,9 +7,9 @@ import { ImageWithFallback } from "./figma/ImageWithFallback";
 
 // Approximate threshold for when the description gets clamped in the grid view.
 // We use a character count rather than measuring DOM because measuring on every
-// card render is overkill and ResizeObserver is overkill-er. ~250 chars roughly
-// matches what fits in a 5-line clamp at 13px / 4-col grid.
-const READ_MORE_THRESHOLD = 250;
+// card render is overkill and ResizeObserver is overkill-er. ~150 chars roughly
+// matches what fits in a 3-line clamp at 13px / 4-col grid.
+const READ_MORE_THRESHOLD = 150;
 
 export interface ActionCardData {
   id: number;
@@ -91,9 +91,12 @@ interface ActionCardProps {
   isCompleted?: boolean;
   isBookmarked?: boolean;
   canEdit?: boolean;
+  /** Smaller image + tighter padding + 2-line description. Used inside the
+   * Match Me sample preview so cards read as previews, not as the main event. */
+  compact?: boolean;
 }
 
-export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onEdit, isBoosted, isCompleted, isBookmarked, canEdit }: ActionCardProps) {
+export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onEdit, isBoosted, isCompleted, isBookmarked, canEdit, compact = false }: ActionCardProps) {
   const [shareOpen, setShareOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
@@ -244,7 +247,7 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
               ) : card.title}
             </h3>
 
-            <p className="font-['Poppins',sans-serif] text-[13px] text-gray-600 leading-relaxed line-clamp-5 flex-1">
+            <p className="font-['Poppins',sans-serif] text-[13px] text-gray-600 leading-relaxed line-clamp-3 flex-1">
               {card.description}
             </p>
 
@@ -293,7 +296,7 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
       <div className="bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full hover:shadow-lg transition-shadow">
         {/* Top image */}
         {showTopImage ? (
-          <div className={`relative h-[160px] shrink-0 ${card.imageContain ? "bg-gray-50" : ""}`}>
+          <div className={`relative ${compact ? "h-[80px]" : "h-[160px]"} shrink-0 ${card.imageContain ? "bg-gray-50" : ""}`}>
             <ImageWithFallback
               src={card.topImage}
               alt={card.title}
@@ -317,10 +320,12 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
               />
             )}
 
-            {/* Pencil + Bookmark */}
-            <div className="absolute top-2.5 right-3">
-              <TopControls light={true} />
-            </div>
+            {/* Pencil + Bookmark — hidden in compact preview mode. */}
+            {!compact && (
+              <div className="absolute top-2.5 right-3">
+                <TopControls light={true} />
+              </div>
+            )}
 
             {/* Type tag */}
             {card.typeTag && (
@@ -339,35 +344,39 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
               </div>
             )}
 
-            {/* "I did this" — overlaid bottom-left so it reads across image styles */}
-            <div className="absolute bottom-2 left-3 z-10">
-              <BoostButton onImage />
-            </div>
+            {/* "I did this" — hidden in compact preview mode. */}
+            {!compact && (
+              <div className="absolute bottom-2 left-3 z-10">
+                <BoostButton onImage />
+              </div>
+            )}
           </div>
         ) : (
-          /* No image — show controls in top-right corner of card */
-          <div className="relative h-8 shrink-0">
-            <div className="absolute top-2 right-3">
-              <TopControls light={false} />
+          /* No image — show controls in top-right corner of card (skip in compact mode). */
+          !compact && (
+            <div className="relative h-8 shrink-0">
+              <div className="absolute top-2 right-3">
+                <TopControls light={false} />
+              </div>
             </div>
-          </div>
+          )
         )}
 
         {/* Content */}
-        <div className="relative flex flex-col flex-1 px-4 pb-4 pt-3 gap-2">
-          {/* Floating share button — top-right of content area, below header. */}
-          <FloatingShareButton />
+        <div className={`relative flex flex-col flex-1 ${compact ? "gap-1 px-3 pb-2 pt-1.5" : "gap-2 px-4 pb-4 pt-3"}`}>
+          {/* Floating share button — top-right of content area, below header. Hidden in compact. */}
+          {!compact && <FloatingShareButton />}
 
           {/* Category */}
           <span
-            className="font-['Poppins',sans-serif] font-bold text-[11px] uppercase tracking-wider"
+            className={`font-['Poppins',sans-serif] font-bold uppercase tracking-wider ${compact ? "text-[10px]" : "text-[11px]"}`}
             style={{ color: card.categoryColor }}
           >
             {card.category}
           </span>
 
           {/* Title */}
-          <h3 className="font-['Poppins',sans-serif] font-bold text-[15px] text-gray-900 leading-snug pr-8">
+          <h3 className={`font-['Poppins',sans-serif] font-bold text-gray-900 leading-snug pr-8 ${compact ? "text-[13px]" : "text-[15px]"}`}>
             {(card.targetUrl || card.authorLink) ? (
               <a href={card.targetUrl ?? card.authorLink} target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-[#23297e] transition-colors">
                 {card.title}
@@ -376,9 +385,29 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
           </h3>
 
           {/* Description */}
-          <p className="font-['Poppins',sans-serif] text-[13px] text-gray-600 leading-relaxed line-clamp-5 flex-1">
+          <p className={`font-['Poppins',sans-serif] text-gray-600 leading-relaxed flex-1 ${compact ? "text-[12px] line-clamp-1" : "text-[13px] line-clamp-3"}`}>
             {card.description}
           </p>
+
+          {/* Universal Know-Your-Rights chip on PROTEST / FLASH MOB cards in
+              the main feed. Hidden in compact (sample matches) mode to keep
+              the modal short — users will see it when they open the card. */}
+          {!compact && (() => {
+            const cat = (card.category ?? "").toUpperCase();
+            if (cat !== "PROTEST" && cat !== "FLASH MOB") return null;
+            return (
+              <a
+                href="https://www.aclu.org/know-your-rights/protesters-rights"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="self-start inline-flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-2 py-0.5 font-['Poppins',sans-serif] text-[11px] font-semibold text-amber-800 hover:bg-amber-100 transition-colors"
+                title="ACLU protesters' rights guide"
+              >
+                ⚠ In-person — know your rights
+              </a>
+            );
+          })()}
 
           {isDescriptionLong && (
             <button
@@ -390,41 +419,44 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
           )}
 
           {/* Cards without a header image — show "I did this" inline since
-              we have no image to overlay it on. */}
-          {!showTopImage && <BoostButton />}
+              we have no image to overlay it on. Skipped in compact mode so
+              the mini card stays a focused preview. */}
+          {!showTopImage && !compact && <BoostButton />}
 
-          {/* Author + Boost button */}
-          <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-100">
-            {/* Author */}
-            <div className="flex items-center gap-2.5 min-w-0">
-              {card.authorAvatar && (
-                <ImageWithFallback
-                  src={card.authorAvatar}
-                  alt={card.authorName}
-                  className="w-8 h-8 rounded-full object-cover ring-1 ring-gray-200 shrink-0"
-                />
-              )}
-              <div className="min-w-0">
-                <p className="font-['Poppins',sans-serif] font-semibold text-[12px] text-gray-800 truncate leading-tight">
-                  {card.authorName}
-                </p>
-                {card.authorLink ? (
-                  <a
-                    href={card.authorLink}
-                    className="font-['Poppins',sans-serif] text-[11px] text-[#23297e] underline truncate block hover:text-[#1a2060] leading-tight"
-                  >
-                    {card.authorRole}
-                  </a>
-                ) : (
-                  <p className="font-['Poppins',sans-serif] text-[11px] text-gray-400 truncate leading-tight">
-                    {card.authorRole}
-                  </p>
+          {/* Author + Boost button — hidden in compact mode (mini preview). */}
+          {!compact && (
+            <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-100">
+              {/* Author */}
+              <div className="flex items-center gap-2.5 min-w-0">
+                {card.authorAvatar && (
+                  <ImageWithFallback
+                    src={card.authorAvatar}
+                    alt={card.authorName}
+                    className="rounded-full object-cover ring-1 ring-gray-200 shrink-0 w-8 h-8"
+                  />
                 )}
+                <div className="min-w-0">
+                  <p className="font-['Poppins',sans-serif] font-semibold text-[12px] text-gray-800 truncate leading-tight">
+                    {card.authorName}
+                  </p>
+                  {card.authorLink ? (
+                    <a
+                      href={card.authorLink}
+                      className="font-['Poppins',sans-serif] text-[11px] text-[#23297e] underline truncate block hover:text-[#1a2060] leading-tight"
+                    >
+                      {card.authorRole}
+                    </a>
+                  ) : (
+                    <p className="font-['Poppins',sans-serif] text-[11px] text-gray-400 truncate leading-tight">
+                      {card.authorRole}
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
 
-            <CompletionPill />
-          </div>
+              <CompletionPill />
+            </div>
+          )}
         </div>
       </div>
       {shareOpen && (

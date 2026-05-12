@@ -344,104 +344,6 @@ export default function App() {
   // Match Me — those flows already factor in location intent.
   const demoteHyperLocal = !accessToken && !matchPrefs;
 
-  // ── "Today's Five" rotation for first-time anonymous visitors ─────────────
-  // Deterministically rotate the curated `firstTimerFriendly` pool by day,
-  // so everyone who lands today sees the same 5 actions; tomorrow shows a
-  // different 5; the day after, a different 5 again. With 15 cards flagged
-  // and 5/day, the cycle is 3 days. Only computed/shown for fully anonymous
-  // users (no auth, no Match Me) — once they engage, they get the full feed.
-  const todaysFive: ActionCardData[] = (() => {
-    if (accessToken || matchPrefs) return [];
-    // Gate on synced so the pool doesn't shift while pages are still streaming
-    // in. Without this, Today's Five visibly shuffles as more cards arrive.
-    if (!synced) return [];
-    const _today = new Date().toISOString().slice(0, 10);
-
-    // Slot 5 is always "Spread the Word about ResistAct" (id=1).
-    const pinned = cards.find((c) => c.id === 1) ?? null;
-
-    // Auto-pick eligibility — no admin micro-curation required, just:
-    //   • approved
-    //   • has a real working link
-    //   • has an image
-    //   • Online / National / Multi-state (not hyper-local)
-    //   • not already completed
-    // Admins can still force a card IN via `firstTimerFriendly: true` even if
-    // engagement is low — that flag gives a big score boost below.
-    const isOnlineOrBroad = (c: ActionCardData) =>
-      c.isOnline === true ||
-      c.location === "National" ||
-      c.location === "Multi-state";
-    const isEligible = (c: ActionCardData) =>
-      c.adminApproved !== false &&
-      !c.pinToTop &&
-      !!c.targetUrl &&
-      c.urlOk !== false &&
-      !!c.topImage &&
-      isOnlineOrBroad(c) &&
-      !(c.eventDate && c.eventDate < _today) &&
-      !completedCards.has(c.id);
-
-    const pool = cards.filter(isEligible);
-    if (pool.length === 0) return pinned ? [pinned] : [];
-
-    // "Funny" = explicit IRREVERENCE category OR comedy tone >= 2.
-    // We want exactly one of these in the rotation every day so the strip
-    // doesn't read like 5 letters-to-Congress.
-    const isFunny = (c: ActionCardData) =>
-      (c.category ?? "").toUpperCase() === "IRREVERENCE" ||
-      (c.toneOverride?.comedy ?? 0) >= 2;
-
-    // Engagement score with a +5000 boost for explicit firstTimerFriendly so
-    // admin opt-in always wins the ranking. Boosts and completions count
-    // 1:1 — both signal "users found this worth doing."
-    const score = (c: ActionCardData) =>
-      (c.boosts ?? 0) + (c.completions ?? 0) + (c.firstTimerFriendly ? 5000 : 0);
-
-    const daysSinceEpoch = Math.floor(Date.now() / 86_400_000);
-
-    // Slot 4: top funny card, rotated daily.
-    const funnyPool = pool
-      .filter(isFunny)
-      .sort((a, b) => score(b) - score(a) || a.id - b.id);
-    const funnyPick = funnyPool.length > 0
-      ? funnyPool[daysSinceEpoch % Math.min(funnyPool.length, 8)]
-      : null;
-
-    // Slots 1–3: top-K most-engaging non-funny cards, walked with a daily
-    // offset and an author-diversity guard. K = 12 so we have headroom for
-    // diversity without dipping into low-engagement long-tail.
-    const fillerPool = pool
-      .filter((c) => !isFunny(c) && c.id !== funnyPick?.id)
-      .sort((a, b) => score(b) - score(a) || a.id - b.id)
-      .slice(0, 12);
-
-    const picked: ActionCardData[] = [];
-    const seenAuthor = new Set<string>();
-    for (let i = 0; i < fillerPool.length && picked.length < 3; i++) {
-      const idx = (i + daysSinceEpoch) % fillerPool.length;
-      const c = fillerPool[idx];
-      if (picked.some((p) => p.id === c.id)) continue;
-      const a = (c.authorName ?? "").trim().toLowerCase();
-      if (seenAuthor.has(a)) continue;
-      seenAuthor.add(a);
-      picked.push(c);
-    }
-    // Backfill if the diversity guard left us short.
-    if (picked.length < 3) {
-      for (const c of fillerPool) {
-        if (picked.length >= 3) break;
-        if (picked.some((p) => p.id === c.id)) continue;
-        picked.push(c);
-      }
-    }
-
-    return [
-      ...picked.slice(0, 3),
-      ...(funnyPick ? [funnyPick] : []),
-      ...(pinned ? [pinned] : []),
-    ];
-  })();
 
   function effectiveScore(c: ActionCardData): number {
     const base = engagementScore(c);
@@ -462,10 +364,9 @@ export default function App() {
       if (card.eventDate && card.eventDate < todayISO) return false;
       // Hide unapproved cards from everyone — use the admin panel to approve
       if (card.adminApproved === false) return false;
-      // Hide cards the user has already marked "I did this" — they don't need
-      // to see what they've completed in the main feed. Their progress lives
-      // in the scoreboard / `myCompletions`.
-      if (completedCards.has(card.id)) return false;
+      // Completed cards stay in the feed but get sorted to the bottom (see
+      // `completedLast` below) so users can still find things they've done
+      // without them dominating the top.
       return true;
     });
 
@@ -481,20 +382,35 @@ export default function App() {
       return [...pinned, ...arr.filter((c) => !c.pinToTop)];
     };
 
+    // Push completed cards to the bottom while preserving relative order
+    // within each group. Applied AFTER sort/rank but BEFORE pinFirst so a
+    // pinned-but-completed card still rises to the top.
+    const completedLast = (arr: ActionCardData[]): ActionCardData[] => {
+      if (completedCards.size === 0) return arr;
+      const active: ActionCardData[] = [];
+      const done: ActionCardData[] = [];
+      for (const c of arr) {
+        if (completedCards.has(c.id)) done.push(c);
+        else active.push(c);
+      }
+      return [...active, ...done];
+    };
+
     // ── Match-me mode: rank by user-supplied tone/time/setting/risk prefs ─────
     // Drops engagement-based, location-bucket, and category-interleave ordering;
     // the matcher's score already incorporates engagement and the user's intent
-    // is more specific.
+    // is more specific. We pass an empty completedIds so the matcher doesn't
+    // drop completed cards — completedLast pushes them to the bottom instead.
     if (matchPrefs) {
-      const userCtx: UserContext = { completedIds: completedCards, boostedIds: boostedCards };
-      return pinFirst(rankCards(filtered, matchPrefs, userCtx));
+      const userCtx: UserContext = { boostedIds: boostedCards };
+      return pinFirst(completedLast(rankCards(filtered, matchPrefs, userCtx)));
     }
 
     if (sortBy === "az") {
-      return pinFirst([...filtered].sort((a, b) => a.title.localeCompare(b.title)));
+      return pinFirst(completedLast([...filtered].sort((a, b) => a.title.localeCompare(b.title))));
     }
     if (sortBy === "newest") {
-      return pinFirst([...filtered].sort((a, b) => (b.id ?? 0) - (a.id ?? 0)));
+      return pinFirst(completedLast([...filtered].sort((a, b) => (b.id ?? 0) - (a.id ?? 0))));
     }
 
     // ── Popular: pure engagement sort — boosts + completions DESC ──────────────
@@ -525,7 +441,7 @@ export default function App() {
         if (grp && grp.length > 0) out.push(...interleaveByCategory(grp));
       }
     }
-    return pinFirst(out);
+    return pinFirst(completedLast(out));
   })();
 
   // True when any filter chip is selected OR a search is active — bypasses
@@ -1167,48 +1083,8 @@ export default function App() {
               </div>
             ) : (
             <>
-              {/* ── Today's Five strip ──────────────────────────────────────
-                  Only shown to fully anonymous visitors (no auth, no Match Me,
-                  no active filters or search) so they don't compete with
-                  intentful browsing. Rotates daily — see `todaysFive` for the
-                  3-day cycle logic. */}
-              {todaysFive.length > 0 && !hasActiveFilters && (
-                <div className="mb-6">
-                  <div className="flex items-baseline gap-3 mb-3">
-                    <h2 className="font-['Poppins',sans-serif] font-bold text-lg text-[#23297e]">
-                      ⭐ Today's Five — start here
-                    </h2>
-                    <p className="font-['Poppins',sans-serif] text-xs text-gray-500">
-                      Five quick actions, refreshed daily. Each takes under 5 minutes.
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
-                    {todaysFive.map((card) => (
-                      <ActionCard
-                        key={`today-${card.id}`}
-                        card={card}
-                        onBoost={handleBoost}
-                        onComplete={handleComplete}
-                        onShare={handleShare}
-                        onBookmark={handleBookmark}
-                        onEdit={(id) => setEditCardId(id)}
-                        isBoosted={boostedCards.has(card.id)}
-                        isCompleted={completedCards.has(card.id)}
-                        isBookmarked={bookmarkedCards.has(card.id)}
-                        canEdit={canEditCard(card)}
-                      />
-                    ))}
-                  </div>
-                  <div className="mt-4 border-b border-gray-200" />
-                </div>
-              )}
             <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
-              {(() => {
-                const base = hasActiveFilters ? displayedCards : displayedCards.slice(0, displayLimit);
-                if (todaysFive.length === 0 || hasActiveFilters) return base;
-                const todayIds = new Set(todaysFive.map((c) => c.id));
-                return base.filter((c) => !todayIds.has(c.id));
-              })().map((card) => (
+              {(hasActiveFilters ? displayedCards : displayedCards.slice(0, displayLimit)).map((card) => (
                 <ActionCard
                   key={card.id}
                   card={card.isFeatured ? { ...card, featuredIllustration: <FeaturedIllustration /> } : card}
