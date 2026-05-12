@@ -5,9 +5,10 @@ import { X, Zap, Sparkles, Megaphone } from "lucide-react";
 interface HeroPillsProps {
   onMatchClick?: () => void;
   onAskClick?: () => void;
+  onHowClick?: () => void;
 }
 
-export function HeroPills({ onMatchClick, onAskClick }: HeroPillsProps) {
+export function HeroPills({ onMatchClick, onAskClick, onHowClick }: HeroPillsProps) {
   const [openModal, setOpenModal] = useState<"how" | null>(null);
   const triggerRefs = useRef<Record<"how", HTMLButtonElement | null>>({
     how: null,
@@ -38,7 +39,7 @@ export function HeroPills({ onMatchClick, onAskClick }: HeroPillsProps) {
       <div className="flex flex-wrap lg:flex-nowrap justify-center gap-2">
         <button
           ref={(el) => { triggerRefs.current.how = el; }}
-          onClick={() => setOpenModal("how")}
+          onClick={() => onHowClick ? onHowClick() : setOpenModal("how")}
           aria-haspopup="dialog"
           aria-expanded={openModal === "how"}
           className="shrink-0 inline-flex items-center gap-2 rounded-full border border-gray-400 px-4 py-2 font-['Poppins',sans-serif] transition-colors hover:border-[#fd8e33] hover:bg-[#fd8e33]/5 hover:text-[#fd8e33] group"

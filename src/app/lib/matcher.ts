@@ -515,7 +515,11 @@ export function score(card: ActionCardData, prefs: Preferences, ctx?: UserContex
   // Surface it higher so they can finally do it.
   const boostBonus = (card.id != null && inSet(ctx?.boostedIds, card.id)) ? 5 : 0;
 
-  return toneScore + timeScore + amplifyBonus + engagementScore + stateBonus + boostBonus;
+  // Highlighted bonus — admin-curated cards get a lift so they reliably
+  // appear in Quick Matches regardless of tone slider position.
+  const highlightBonus = (card as any).firstTimerFriendly ? 7 : 0;
+
+  return toneScore + timeScore + amplifyBonus + engagementScore + stateBonus + boostBonus + highlightBonus;
 }
 
 // ─── Top N ────────────────────────────────────────────────────────────────────

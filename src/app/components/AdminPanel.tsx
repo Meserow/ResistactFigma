@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { X, CheckCircle2, XCircle, Clock, Users, ShieldCheck, Loader2, RefreshCw, FileText, Trash2, Calendar, ExternalLink, ImageIcon, Upload, ZoomIn, AlertTriangle, Sliders, RotateCcw, Save, Eye, Flame, Laugh, VenetianMask, Heart, Sunrise, Zap, Link2 } from "lucide-react";
+import { X, CheckCircle2, XCircle, Clock, Users, ShieldCheck, Loader2, RefreshCw, FileText, Trash2, Calendar, ExternalLink, ImageIcon, Upload, ZoomIn, AlertTriangle, Sliders, RotateCcw, Save, Eye, Flame, Laugh, VenetianMask, Heart, Sunrise, Zap, Link2, Pencil } from "lucide-react";
 import { CardDetailsModal } from "./CardDetailsModal";
+import { EditCardModal } from "./EditCardModal";
 import type { ActionCardData } from "./ActionCard";
 import type { LucideIcon } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
@@ -204,6 +205,8 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
   const [imageModalCard, setImageModalCard] = useState<PendingCard | null>(null);
   /** Pending card whose full preview (CardDetailsModal) is open. */
   const [previewCard, setPreviewCard] = useState<PendingCard | null>(null);
+  /** Pending card open in EditCardModal. */
+  const [editingCard, setEditingCard] = useState<PendingCard | null>(null);
 
   // ── No-URL cards state ───────────────────────────────────────────────────────
   const [noUrlCards, setNoUrlCards] = useState<PendingCard[]>([]);
@@ -536,6 +539,17 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
                               View
                             </button>
 
+                            {/* Edit */}
+                            <button
+                              onClick={() => setEditingCard(card)}
+                              disabled={isActing}
+                              className="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg font-['Poppins',sans-serif] font-semibold text-xs text-amber-700 transition-colors disabled:opacity-50"
+                              title="Edit this card"
+                            >
+                              <Pencil size={13} />
+                              Edit
+                            </button>
+
                             {/* Approve */}
                             <button
                               onClick={() => handleApproveCard(card.id)}
@@ -813,6 +827,26 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
             topImage: previewCard.topImageUrl ?? undefined,
           }}
           onClose={() => setPreviewCard(null)}
+        />
+      )}
+
+      {editingCard && (
+        <EditCardModal
+          card={{
+            ...(editingCard as unknown as ActionCardData),
+            topImage: editingCard.topImageUrl ?? undefined,
+          }}
+          accessToken={accessToken}
+          isAdmin={true}
+          onClose={() => setEditingCard(null)}
+          onSaved={(updated) => {
+            setPendingCards((prev) => prev.map((c) => c.id === updated.id ? { ...c, ...updated } as unknown as PendingCard : c));
+            setEditingCard(null);
+          }}
+          onDeleted={(id) => {
+            setPendingCards((prev) => prev.filter((c) => c.id !== id));
+            setEditingCard(null);
+          }}
         />
       )}
     </>

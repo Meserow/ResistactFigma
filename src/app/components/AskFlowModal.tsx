@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import logoImg from "../../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
 import {
   X, Loader2, Megaphone, Upload,
   Ban, DollarSign, Bike, Newspaper, Calendar, Share2, Hammer, PenLine, Users,
@@ -251,11 +252,9 @@ export function AskFlowModal({
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header */}
         <div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-gray-100">
+          <img src={logoImg} alt="" aria-hidden="true" className="w-9 h-9 object-contain shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="font-['Poppins',sans-serif] font-semibold text-[11px] uppercase tracking-[0.14em] text-[#fd8e33]">
-              Make an ASK
-            </p>
-            <h2 className="font-['Poppins',sans-serif] font-bold text-gray-900 text-lg leading-tight mt-0.5">
+            <h2 className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-[20px] leading-tight">
               Add an Action
             </h2>
           </div>
@@ -290,6 +289,16 @@ export function AskFlowModal({
                   title="What's your ask?"
                   hint="Make it clear and compelling — this is the headline people will see."
                 >
+                  <Field label="Title" required>
+                    <input
+                      type="text" value={formTitle} maxLength={80}
+                      onChange={(e) => setFormTitle(e.target.value)}
+                      placeholder="e.g. March on the Capitol on July 4th"
+                      className={inputCls}
+                    />
+                    <Counter value={formTitle} max={80} />
+                  </Field>
+
                   <Field label="Category" required>
                     <select
                       value={selectedCategory ?? ""}
@@ -311,16 +320,6 @@ export function AskFlowModal({
                         <option key={name} value={name}>{name}</option>
                       ))}
                     </select>
-                  </Field>
-
-                  <Field label="Title" required>
-                    <input
-                      type="text" value={formTitle} maxLength={80}
-                      onChange={(e) => setFormTitle(e.target.value)}
-                      placeholder="e.g. March on the Capitol on July 4th"
-                      className={inputCls}
-                    />
-                    <Counter value={formTitle} max={80} />
                   </Field>
 
                   <Field label="Description" required>
