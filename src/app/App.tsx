@@ -1205,12 +1205,22 @@ export default function App() {
           onClose={() => setMatchOpen(false)}
           onApply={(prefs) => {
             setMatchPrefs(prefs);
+            savePreferences(prefs);
             setMatchOpen(false);
             // Sync to the user's profile so prefs follow them across devices.
             // Anonymous users skip the push — their prefs stay in localStorage
             // until they sign up, at which point syncMatchPreferencesOnLogin
             // hands them up on first auth.
             if (accessToken) pushUserPreferences(accessToken, prefs);
+          }}
+          onJoinResistance={(prefs) => {
+            // Save the picks first so they survive the auth flow — when the
+            // user comes back signed in, syncMatchPreferencesOnLogin pushes
+            // them to the server and they keep their lineup.
+            setMatchPrefs(prefs);
+            savePreferences(prefs);
+            setMatchOpen(false);
+            setAuthModalOpen(true);
           }}
         />
       )}

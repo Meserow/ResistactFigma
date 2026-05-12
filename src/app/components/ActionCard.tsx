@@ -103,7 +103,9 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
   useEffect(() => { setImageFailed(false); }, [card.topImage]);
   const showTopImage = !!card.topImage && !imageFailed;
 
-  const isDescriptionLong = (card.description?.length ?? 0) > READ_MORE_THRESHOLD;
+  // Compact (Quick Matches preview) only shows 2 lines, so the threshold for
+  // surfacing "Read more →" is lower than the full card's 3-line clamp.
+  const isDescriptionLong = (card.description?.length ?? 0) > (compact ? 90 : READ_MORE_THRESHOLD);
 
   const completionsCount = card.completions ?? 0;
 
@@ -220,7 +222,7 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
           onClick={card.pinToTop ? () => setShareOpen(true) : undefined}
         >
           {/* Illustration — use uploaded image if available, else navy illustration */}
-          <div className="relative h-[160px] shrink-0 bg-[#23297e] flex items-center justify-center overflow-hidden">
+          <div className={`relative ${compact ? "h-[70px]" : "h-[160px]"} shrink-0 bg-[#23297e] flex items-center justify-center overflow-hidden`}>
             {card.topImage
               ? <img src={card.topImage} alt={card.title} className="absolute inset-0 w-full h-full object-cover" />
               : card.featuredIllustration
@@ -228,9 +230,13 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
             <div className="absolute top-2.5 right-3">
               <TopControls light={true} />
             </div>
-            <div className="absolute bottom-2 left-3 z-10">
-              <BoostButton onImage />
-            </div>
+            {/* Spread the Word (pinToTop) doesn't show a boost — boosting yourself
+                doesn't make sense; share is the action. */}
+            {!card.pinToTop && (
+              <div className="absolute bottom-2 left-3 z-10">
+                <BoostButton onImage />
+              </div>
+            )}
           </div>
 
           {/* Content */}
@@ -247,14 +253,14 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
               ) : card.title}
             </h3>
 
-            <p className="font-['Poppins',sans-serif] text-[13px] text-gray-600 leading-relaxed line-clamp-3 flex-1">
+            <p className="font-['Poppins',sans-serif] text-[13px] text-gray-600 leading-relaxed line-clamp-2 flex-1">
               {card.description}
             </p>
 
             {isDescriptionLong && (
               <button
                 onClick={(e) => { e.stopPropagation(); setDetailsOpen(true); }}
-                className="self-start font-['Poppins',sans-serif] italic text-[11px] font-medium text-[#fd8e33] underline underline-offset-2 decoration-[#fd8e33]/40 hover:decoration-[#fd8e33]"
+                className="self-end font-['Poppins',sans-serif] italic text-[11px] font-normal text-[#fd8e33] underline underline-offset-2 decoration-[#fd8e33]/40 hover:decoration-[#fd8e33]"
               >
                 Read more →
               </button>
@@ -296,7 +302,7 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
       <div className="bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full hover:shadow-lg transition-shadow">
         {/* Top image */}
         {showTopImage ? (
-          <div className={`relative ${compact ? "h-[80px]" : "h-[160px]"} shrink-0 ${card.imageContain ? "bg-gray-50" : ""}`}>
+          <div className={`relative ${compact ? "h-[70px]" : "h-[160px]"} shrink-0 ${card.imageContain ? "bg-gray-50" : ""}`}>
             <ImageWithFallback
               src={card.topImage}
               alt={card.title}
@@ -344,8 +350,9 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
               </div>
             )}
 
-            {/* "I did this" — hidden in compact preview mode. */}
-            {!compact && (
+            {/* "I did this" — hidden in compact preview mode and on the
+                Spread the Word pin (boosting yourself doesn't make sense). */}
+            {!compact && !card.pinToTop && (
               <div className="absolute bottom-2 left-3 z-10">
                 <BoostButton onImage />
               </div>
@@ -384,8 +391,10 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
             ) : card.title}
           </h3>
 
-          {/* Description */}
-          <p className={`font-['Poppins',sans-serif] text-gray-600 leading-relaxed flex-1 ${compact ? "text-[12px] line-clamp-1" : "text-[13px] line-clamp-3"}`}>
+          {/* Description — line-clamp without flex-1 in compact so the clamp
+              actually applies (flex-1 fights line-clamp by forcing the element
+              to fill remaining height). */}
+          <p className={`font-['Poppins',sans-serif] text-gray-600 leading-relaxed ${compact ? "text-[12px] line-clamp-2" : "text-[13px] line-clamp-3 flex-1"}`}>
             {card.description}
           </p>
 
@@ -412,7 +421,7 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
           {isDescriptionLong && (
             <button
               onClick={(e) => { e.stopPropagation(); setDetailsOpen(true); }}
-              className="self-start font-['Poppins',sans-serif] text-[12px] font-semibold text-[#23297e] hover:underline"
+              className="self-end font-['Poppins',sans-serif] italic text-[12px] font-normal text-[#23297e] hover:underline"
             >
               Read more →
             </button>
@@ -421,7 +430,7 @@ export function ActionCard({ card, onBoost, onComplete, onShare, onBookmark, onE
           {/* Cards without a header image — show "I did this" inline since
               we have no image to overlay it on. Skipped in compact mode so
               the mini card stays a focused preview. */}
-          {!showTopImage && !compact && <BoostButton />}
+          {!showTopImage && !compact && !card.pinToTop && <BoostButton />}
 
           {/* Author + Boost button — hidden in compact mode (mini preview). */}
           {!compact && (

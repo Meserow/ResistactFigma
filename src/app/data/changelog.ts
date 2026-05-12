@@ -16,6 +16,50 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.2.1",
+    date: "2026-05-12",
+    title: "Quick Match Tool polish, brand-aligned join CTA, calmer visuals",
+    sections: [
+      {
+        heading: "Quick Match Tool",
+        items: [
+          "Renamed from “What's your fit today?” to “Quick Match Tool”.",
+          "Four sample matches (up from three) and they're now visually distinct — no two cards in the strip share the same image.",
+          "Slot 1 is always “Spread the Word about ResistAct” until you mark it done — easy first action that grows the community.",
+          "Setting picker + state field share one row above the sliders for a tighter top half.",
+          "Sliders moved to a two-column layout to halve vertical scroll, with calmer type weight and indented under the section heading.",
+          "Card descriptions in the preview clamp to 2 lines + a right-aligned italic “Read more →” so the modal doesn't jump as you slide.",
+          "“Not a good match” buttons get an orange outline and a monochrome thumbs-down icon (no more yellow emoji).",
+          "Card heights locked to a stable 240px so the modal stops jumping around when you drag sliders.",
+        ],
+      },
+      {
+        heading: "Decisions made clearer",
+        items: [
+          "Donation-focus question defaults to “Yes — show me high-leverage races” so people don't miss it.",
+          "Donation toggle buttons stacked title + subtitle for legibility.",
+          "Two final CTAs on the modal's last page: an outline “Show me all my matches → no sign up required” and a filled “#jointheresistance → Sign up to save your match settings.”",
+          "Privacy footnote uses a modern lock icon (instead of a starred *) and is tucked under the buttons in a single right-aligned block.",
+        ],
+      },
+      {
+        heading: "Brand consistency",
+        items: [
+          "Navbar “Join the Resistance” CTA adopts the same #jointheresistance two-line treatment used in the modal — sign-up reason explicit on the button.",
+          "Spread the Word card never shows a boost button (you can't boost the share-this-site card on behalf of yourself).",
+        ],
+      },
+      {
+        heading: "Visual rest",
+        items: [
+          "Less bold, less navy. Most headings demoted to dark-gray semibold so the modal stops shouting.",
+          "“Read more →” links across all cards are now right-aligned and italic (was left-aligned and bold).",
+          "Subtitle removed under the modal title — the title is enough.",
+        ],
+      },
+    ],
+  },
+  {
     version: "0.2.0",
     date: "2026-05-12",
     title: "Quick Matches overhaul, completed-cards-stay-visible, safer privacy posture",
