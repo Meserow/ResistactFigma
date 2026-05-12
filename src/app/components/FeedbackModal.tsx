@@ -121,7 +121,7 @@ export function FeedbackModal({ onClose, userEmail, userName }: FeedbackModalPro
                 <select
                   value={type}
                   onChange={(e) => setType(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 font-['Poppins',sans-serif] text-[13px] text-gray-700 focus:border-[#23297e] focus:ring-1 focus:ring-[#23297e]/30 focus:outline-none transition-colors bg-white"
+                  className="w-full rounded-lg border border-gray-300 pl-3 pr-10 py-2 font-['Poppins',sans-serif] text-[13px] text-gray-700 focus:border-[#23297e] focus:ring-1 focus:ring-[#23297e]/30 focus:outline-none transition-colors bg-white"
                 >
                   {TYPES.map((t) => (
                     <option key={t.value} value={t.value}>{t.label}</option>

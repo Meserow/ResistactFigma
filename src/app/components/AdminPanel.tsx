@@ -1001,7 +1001,7 @@ function MatcherTuning({ accessToken }: { accessToken: string }) {
         <select
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
-          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg font-['Poppins',sans-serif] text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#23297e]/30 focus:border-[#23297e]"
+          className="w-full pl-3 pr-10 py-2 bg-white border border-gray-200 rounded-lg font-['Poppins',sans-serif] text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#23297e]/30 focus:border-[#23297e]"
         >
           {Object.keys(DEFAULT_CATEGORY_TONE).sort().map((cat) => (
             <option key={cat} value={cat}>{cat}</option>

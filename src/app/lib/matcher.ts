@@ -342,8 +342,8 @@ export function assessAmplification(card: ActionCardData, groups: VulnerableGrou
 
 /** True for cards that can be done from a couch — online, the legacy `atHome`
  * boolean, or the canonical `location === "From Home"` string. */
-function cardIsAtHome(card: ActionCardData): boolean {
-  return !!card.isOnline || !!card.atHome || card.location === "From Home";
+export function cardIsAtHome(card: ActionCardData): boolean {
+  return !!card.isOnline || !!card.atHome || card.location === "From Home" || card.location === "At Home";
 }
 
 /** True if the card matches at least one of the requested settings, or if
