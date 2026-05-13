@@ -331,7 +331,7 @@ export function AskFlowModal({
                 >
                   <Field label="Title" required>
                     <input
-                      type="text" value={formTitle} maxLength={80}
+                      type="text" value={formTitle} maxLength={80} autoComplete="off"
                       onChange={(e) => setFormTitle(e.target.value)}
                       placeholder="e.g. March on the Capitol on July 4th"
                       className={inputCls}
@@ -404,7 +404,7 @@ export function AskFlowModal({
 
                   <Field label="Link" required>
                     <input
-                      type="url" value={formLink}
+                      type="url" value={formLink} autoComplete="off"
                       onChange={(e) => setFormLink(e.target.value)}
                       placeholder="https://…"
                       className={inputCls}
@@ -490,7 +490,7 @@ export function AskFlowModal({
                       </label>
                     </div>
                     <input
-                      type="url" value={formImageUrl}
+                      type="url" value={formImageUrl} autoComplete="off"
                       onChange={(e) => setFormImageUrl(e.target.value)}
                       placeholder="https://… (paste any image URL)"
                       className={inputCls}
@@ -518,7 +518,7 @@ export function AskFlowModal({
                 <Section title="Optional details">
                   <Field label="Sponsor">
                     <input
-                      type="text" value={formSponsor}
+                      type="text" value={formSponsor} autoComplete="off"
                       onChange={(e) => setFormSponsor(e.target.value)}
                       placeholder="Organization or person sponsoring this action"
                       className={inputCls}
