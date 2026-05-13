@@ -536,6 +536,38 @@ app.post("/make-server-9eb1ae04/admin/fix-description", async (c) => {
 });
 
 // ─── ADMIN: Approved cards missing a targetUrl ───────────────────────────────
+// ─── ADMIN: User-submitted cards missing a targetUrl ─────────────────────────
+// Returns user-action cards that have no targetUrl so the admin can find and
+// add the correct action link. authorLink (author homepage) is shown for
+// context but is a separate field.
+app.get("/make-server-9eb1ae04/admin/actions/missing-url", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const results: any[] = [];
+    const userCardIds = (await kv.get("user-action:ids") ?? []) as number[];
+    for (const id of userCardIds) {
+      const card = await kv.get(`user-action:${id}`) as any;
+      if (card && typeof card === "object" && !card.targetUrl && !card.pinToTop) {
+        results.push({
+          id: card.id,
+          title: card.title,
+          category: card.category,
+          authorName: card.authorName,
+          authorLink: card.authorLink ?? null,
+          adminApproved: card.adminApproved,
+        });
+      }
+    }
+    results.sort((a, b) => (a.title ?? "").localeCompare(b.title ?? ""));
+    return c.json({ count: results.length, cards: results });
+  } catch (err) {
+    return c.json({ error: `Failed: ${err}` }, 500);
+  }
+});
+
 app.get("/make-server-9eb1ae04/admin/actions/no-url", async (c) => {
   try {
     const token = c.req.header("Authorization")?.split(" ")[1];
@@ -1030,6 +1062,25 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       console.log("User-card migration v1 complete.");
     }
 
+    // One-time: mark user-submitted cards (user-action:*) that have NO
+    // targetUrl as unapproved so the admin can review and add the correct
+    // action link. authorLink (author homepage) is a separate field and is
+    // intentionally NOT used as a substitute here.
+    const noUrlReviewDone = await kv.get("migration:nourl-review:v1");
+    if (!noUrlReviewDone) {
+      let marked = 0;
+      const userCardIds3 = (await kv.get("user-action:ids") ?? []) as number[];
+      for (const id of userCardIds3) {
+        const card = await kv.get(`user-action:${id}`) as any;
+        if (card && typeof card === "object" && !card.targetUrl && !card.pinToTop) {
+          await kv.set(`user-action:${id}`, { ...card, adminApproved: false });
+          marked++;
+        }
+      }
+      await kv.set("migration:nourl-review:v1", true);
+      console.log(`nourl-review: marked ${marked} user-submitted cards without a targetUrl as unapproved.`);
+    }
+
     // Fetch ALL action:* cards from the KV store (real cards only after purge)
     const allActionCards = await kv.getByPrefix("action:");
     const seenIds = new Set<number>();
@@ -1239,6 +1290,54 @@ app.post("/make-server-9eb1ae04/notifications", async (c) => {
   }
 });
 
+// ─── Relevance checker ────────────────────────────────────────────────────────
+// Heuristic scan of a submitted card's text. Returns true if the content looks
+// clearly off-topic for an anti-Trump / MAGA-resistance site.
+// Logic: award points for resistance signals, penalise for red-flag signals.
+// If red flags outweigh resistance signals by enough, flag as not-on-topic.
+function looksOffTopic(title: string, description: string, category: string): boolean {
+  const text = `${title} ${description} ${category}`.toLowerCase();
+
+  // Categories that are inherently resistance-adjacent — never flag these.
+  const onTopicCategories = [
+    "protest", "boycott", "petition", "letter", "email campaign",
+    "social media", "flash mob", "funding", "training", "meeting",
+    "join a group", "news story", "labor", "legal", "professional skills",
+    "mental health", "prayer", "boost", "spread positivity", "crafting",
+    "transportation", "housing", "other", "irreverence", "personal commitment",
+  ];
+  if (onTopicCategories.some((c) => category.toLowerCase().includes(c))) return false;
+
+  // Resistance / political relevance signals — each adds 1 point.
+  const resistanceTerms = [
+    "trump", "maga", "resist", "resistance", "protest", "boycott",
+    "fascis", "authoritar", "democrat", "republican", "congress", "senate",
+    "legislat", "vote", "election", "policy", "civil rights", "immigrant",
+    "deportat", "abortion", "repro", "lgbtq", "trans", "climate", "union",
+    "labor rights", "worker", "petition", "rally", "march", "activist",
+    "organiz", "campaign", "movement", "solidarity", "justice", "equity",
+    "inequality", "discrimination", "rights", "freedom", "constitution",
+    "executive order", "white house", "administration", "government",
+    "federal", "supreme court", "aclu", "indivisible", "50501",
+  ];
+
+  // Strong off-topic red flags — each adds 2 penalty points.
+  const redFlagTerms = [
+    "crypto", "bitcoin", "nft", "forex", "trading", "stock tip",
+    "weight loss", "diet pill", "supplement", "mlm", "multi-level",
+    "make money", "earn money", "passive income", "side hustle",
+    "adult content", "casino", "gambling", "lottery",
+    "buy now", "limited time offer", "discount code", "promo code",
+    "follow me", "subscribe to my", "check out my channel",
+  ];
+
+  const resistanceScore = resistanceTerms.filter((t) => text.includes(t)).length;
+  const redFlagScore = redFlagTerms.filter((t) => text.includes(t)).length * 2;
+
+  // Flag as off-topic only if red flags dominate AND there are no resistance signals.
+  return redFlagScore > 0 && resistanceScore === 0;
+}
+
 // ─── POST /actions/create — submit a new user-created ASK ─────────────────────
 app.post("/make-server-9eb1ae04/actions/create", async (c) => {
   try {
@@ -1272,6 +1371,8 @@ app.post("/make-server-9eb1ae04/actions/create", async (c) => {
     const currentIds = (await kv.get("user-action:ids") ?? []) as number[];
     const nextId = Math.max(...currentIds, 1271) + 1;
 
+    const offTopic = looksOffTopic(title, description, category);
+
     const card = {
       id: nextId,
       category: category.toUpperCase(),
@@ -1295,6 +1396,7 @@ app.post("/make-server-9eb1ae04/actions/create", async (c) => {
       topImageUrl: topImageUrl || null,
       imageContain: imageContain === true ? true : undefined,
       adminApproved: false,
+      ...(offTopic ? { notOnTopic: true } : {}),
       createdAt: new Date().toISOString(),
       createdBy: user.id,
       toneOverride: toneOverride && Object.keys(toneOverride).length > 0 ? toneOverride : undefined,
@@ -1303,7 +1405,7 @@ app.post("/make-server-9eb1ae04/actions/create", async (c) => {
 
     await kv.set(`user-action:${nextId}`, card);
     await kv.set("user-action:ids", [...currentIds, nextId]);
-    console.log(`User ${approval.name} created ASK #${nextId}: "${title}"`);
+    console.log(`User ${approval.name} created ASK #${nextId}: "${title}"${offTopic ? " [AUTO-FLAGGED: off-topic]" : ""}`);
     return c.json({ card });
   } catch (err) {
     console.log("Create action error:", err);
