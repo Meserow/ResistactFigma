@@ -988,7 +988,7 @@ export default function App() {
         onFeedbackClick={() => setFeedbackOpen(true)}
         matchActive={matchPrefs !== null}
         onMatchClear={() => { setMatchPrefs(null); clearPreferences(); }}
-        statsActsCount={hasActiveFilters ? displayedCards.length : (synced && serverTotal > 0 ? serverTotal : cards.length)}
+        statsActsCount={displayedCards.length}
         statsResistorsCount={statsUsersCount}
         statsCitiesCount={statsCitiesCount}
         statsSynced={synced}
@@ -1158,7 +1158,7 @@ export default function App() {
                   {loadingMore ? "Loading…" : "Load More Campaigns"}
                 </button>
                 <p className="font-['Poppins',sans-serif] text-xs text-gray-400">
-                  Showing {Math.min(displayLimit, displayedCards.length)} of {serverTotal} campaigns
+                  Showing {Math.min(displayLimit, displayedCards.length)} of {displayedCards.length} campaigns
                 </p>
               </div>
             )}

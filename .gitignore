@@ -4,3 +4,5 @@ dist/
 # Supabase CLI machine-local cache
 supabase/.temp/
 .image-backup/
+
+CLAUDE.md
