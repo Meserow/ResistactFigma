@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
-import type { UserApproval } from "../lib/supabase";
+import { supabase, type UserApproval } from "../lib/supabase";
 import { LOCATION_OPTIONS } from "../lib/locations";
 import { categoryToneDefault, type VulnerableGroup, type TimeBucket } from "../lib/matcher";
 import { ToneRangeSlider } from "./ToneSlider";
@@ -18,12 +18,37 @@ import { GroupsDropdown } from "./GroupsDropdown";
 
 type ToneVec = { anger: number; comedy: number; subversion: number; hope: number; energy: number };
 
-const TONE_FIELDS: { key: keyof ToneVec; label: string; Icon: LucideIcon; desc: string }[] = [
-  { key: "anger",      label: "Angry",      Icon: Flame,         desc: "Confrontational, serious efforts" },
-  { key: "comedy",     label: "Funny",      Icon: Laugh,         desc: "Mockery, irreverence, prank" },
-  { key: "subversion", label: "Subversive", Icon: VenetianMask,  desc: "Disruptive, off the beaten path" },
-  { key: "hope",       label: "Hope",       Icon: Sunrise,       desc: "Uplifting, optimistic, building" },
-  { key: "energy",     label: "Energy",     Icon: Zap,           desc: "Physical/emotional fired-up demand on the user" },
+const TONE_FIELDS: { key: keyof ToneVec; label: string; Icon: LucideIcon; stops: { label: string; desc: string }[] }[] = [
+  { key: "anger",      label: "Angry",      Icon: Flame,        stops: [
+    { label: "None",   desc: "Calm, no confrontation" },
+    { label: "Low",    desc: "A little edge, stays subtle" },
+    { label: "Bold",   desc: "Direct and attention-getting" },
+    { label: "High",   desc: "In-the-streets energy" },
+  ]},
+  { key: "comedy",     label: "Funny",      Icon: Laugh,        stops: [
+    { label: "None",         desc: "Straight-faced, serious" },
+    { label: "Light",        desc: "A bit of wit" },
+    { label: "Irreverent",   desc: "Mockery and mischief" },
+    { label: "Full mockery", desc: "Absurdity as resistance" },
+  ]},
+  { key: "subversion", label: "Subversive", Icon: VenetianMask, stops: [
+    { label: "None",    desc: "Conventional approach" },
+    { label: "Mild",    desc: "Slightly off the beaten path" },
+    { label: "Edgy",    desc: "Disruptive, unconventional" },
+    { label: "Radical", desc: "Throw the rulebook out" },
+  ]},
+  { key: "hope",       label: "Hope",       Icon: Sunrise,      stops: [
+    { label: "None",      desc: "Realistic, no rose-tinting" },
+    { label: "Some",      desc: "A glimmer of optimism" },
+    { label: "Uplifting", desc: "Building and inspiring" },
+    { label: "Full hope", desc: "Movement energy, community-first" },
+  ]},
+  { key: "energy",     label: "Energy",     Icon: Zap,          stops: [
+    { label: "Low",     desc: "Low demand on the participant" },
+    { label: "Mild",    desc: "A moderate lift" },
+    { label: "Engaged", desc: "Requires real showing up" },
+    { label: "On fire", desc: "All in, maximum commitment" },
+  ]},
 ];
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
@@ -112,11 +137,21 @@ export function AskFlowModal({
     setUploadError(null);
     setUploading(true);
     try {
+      // Get a fresh token from the Supabase client — the prop may be stale
+      // if the token was auto-refreshed since the modal opened.
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token ?? accessToken;
+      if (!token) {
+        setUploadError("Sign in to upload images, or paste an image URL instead.");
+        setUploading(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        return;
+      }
       const fd = new FormData();
       fd.append("file", file);
       const res = await fetch(`${API}/actions/upload-image`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${accessToken}` },
+        headers: { Authorization: `Bearer ${token}` },
         body: fd,
       });
       const data = await res.json();
@@ -381,26 +416,29 @@ export function AskFlowModal({
                   hint="How would you describe the type of action this is? Helps us match it to people looking for the right vibe today."
                 >
                   <div className="space-y-3.5">
-                    {TONE_FIELDS.map(({ key, label, Icon, desc }) => (
-                      <div key={key}>
-                        <div className="flex items-center mb-1.5">
-                          <Icon size={15} strokeWidth={2} className="text-[#23297e] mr-1.5 shrink-0" />
-                          <strong className="font-['Poppins',sans-serif] font-semibold text-sm text-[#23297e]">
-                            {label}
-                          </strong>
-                          <span className="ml-2 font-['Poppins',sans-serif] text-xs text-gray-500">
-                            {desc}
-                          </span>
+                    {TONE_FIELDS.map(({ key, label, Icon, stops }) => {
+                      const stop = stops[tone[key]];
+                      return (
+                        <div key={key}>
+                          <div className="flex items-center mb-1.5">
+                            <Icon size={15} strokeWidth={2} className="text-[#23297e] mr-1.5 shrink-0" />
+                            <strong className="font-['Poppins',sans-serif] font-semibold text-sm text-[#23297e]">
+                              {label}
+                            </strong>
+                            <span className="ml-2 font-['Poppins',sans-serif] text-xs text-gray-500 truncate">
+                              · <span className="font-medium text-[#fd8e33]">{stop.label}</span> — {stop.desc}
+                            </span>
+                          </div>
+                          <ToneRangeSlider
+                            value={tone[key]}
+                            onChange={(v) => {
+                              setTone({ ...tone, [key]: v });
+                              setToneEdited(true);
+                            }}
+                          />
                         </div>
-                        <ToneRangeSlider
-                          value={tone[key]}
-                          onChange={(v) => {
-                            setTone({ ...tone, [key]: v });
-                            setToneEdited(true);
-                          }}
-                        />
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </Section>
                 )}

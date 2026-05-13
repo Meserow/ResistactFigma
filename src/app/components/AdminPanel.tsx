@@ -20,13 +20,25 @@ interface AdminPanelProps {
 type TabFilter = "pending" | "approved" | "rejected" | "all";
 type PanelMode = "cards" | "users" | "nourl" | "matcher";
 
-const TONE_DIMS: { key: keyof Tone; label: string; Icon: LucideIcon }[] = [
-  { key: "anger",      label: "Angry",      Icon: Flame },
-  { key: "comedy",     label: "Funny",      Icon: Laugh },
-  { key: "subversion", label: "Subversive", Icon: VenetianMask },
-  { key: "care",       label: "Care",       Icon: Heart },
-  { key: "hope",       label: "Hope",       Icon: Sunrise },
-  { key: "energy",     label: "Energy",     Icon: Zap },
+const TONE_DIMS: { key: keyof Tone; label: string; Icon: LucideIcon; stops: { label: string; desc: string }[] }[] = [
+  { key: "anger",      label: "Angry",      Icon: Flame,        stops: [
+    { label: "None", desc: "Calm, no confrontation" }, { label: "Low", desc: "A little edge, stays subtle" }, { label: "Bold", desc: "Direct and attention-getting" }, { label: "High", desc: "In-the-streets energy" },
+  ]},
+  { key: "comedy",     label: "Funny",      Icon: Laugh,        stops: [
+    { label: "None", desc: "Straight-faced, serious" }, { label: "Light", desc: "A bit of wit" }, { label: "Irreverent", desc: "Mockery and mischief" }, { label: "Full mockery", desc: "Absurdity as resistance" },
+  ]},
+  { key: "subversion", label: "Subversive", Icon: VenetianMask, stops: [
+    { label: "None", desc: "Conventional approach" }, { label: "Mild", desc: "Slightly off the beaten path" }, { label: "Edgy", desc: "Disruptive, unconventional" }, { label: "Radical", desc: "Throw the rulebook out" },
+  ]},
+  { key: "care",       label: "Care",       Icon: Heart,        stops: [
+    { label: "None", desc: "Action-focused, no emotional appeal" }, { label: "Some", desc: "Gentle warmth" }, { label: "Warm", desc: "Community and connection" }, { label: "Deep", desc: "Led by love and solidarity" },
+  ]},
+  { key: "hope",       label: "Hope",       Icon: Sunrise,      stops: [
+    { label: "None", desc: "Realistic, no rose-tinting" }, { label: "Some", desc: "A glimmer of optimism" }, { label: "Uplifting", desc: "Building and inspiring" }, { label: "Full hope", desc: "Movement energy, community-first" },
+  ]},
+  { key: "energy",     label: "Energy",     Icon: Zap,          stops: [
+    { label: "Low", desc: "Low demand on the participant" }, { label: "Mild", desc: "A moderate lift" }, { label: "Engaged", desc: "Requires real showing up" }, { label: "On fire", desc: "All in, maximum commitment" },
+  ]},
 ];
 
 const PROVIDER_LABELS: Record<string, string> = {
@@ -1011,10 +1023,11 @@ function MatcherTuning({ accessToken }: { accessToken: string }) {
 
       {/* Sliders */}
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3.5">
-        {TONE_DIMS.map(({ key, label, Icon }) => {
+        {TONE_DIMS.map(({ key, label, Icon, stops }) => {
           const v = current[key];
           const defV = def ? def[key] : 1;
           const isModified = v !== defV;
+          const stop = stops[v];
           return (
             <div key={key}>
               <div className="flex items-center mb-1.5">
@@ -1022,8 +1035,11 @@ function MatcherTuning({ accessToken }: { accessToken: string }) {
                 <strong className="font-['Poppins',sans-serif] font-semibold text-sm text-[#23297e]">
                   {label}
                 </strong>
+                <span className="ml-2 font-['Poppins',sans-serif] text-xs text-gray-500 truncate">
+                  · <span className="font-medium text-[#fd8e33]">{stop.label}</span> — {stop.desc}
+                </span>
                 {isModified && (
-                  <span className="ml-auto font-['Poppins',sans-serif] text-[10px] text-gray-400">
+                  <span className="ml-auto shrink-0 font-['Poppins',sans-serif] text-[10px] text-gray-400">
                     default {defV}
                   </span>
                 )}
