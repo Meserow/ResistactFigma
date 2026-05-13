@@ -1635,7 +1635,9 @@ app.post("/make-server-9eb1ae04/admin/unflag-off-topic/:id", async (c) => {
 });
 
 // ─── POST /actions/upload-image — upload to Supabase Storage, return URL ─────
-// Approved users only. Auto-creates the public bucket on first call.
+// Any authenticated user can upload. Approval is checked when the card is
+// submitted, not at image upload time — new users need to upload a photo
+// before their account is approved.
 app.post("/make-server-9eb1ae04/actions/upload-image", async (c) => {
   try {
     const token = c.req.header("Authorization")?.split(" ")[1];
@@ -1643,11 +1645,6 @@ app.post("/make-server-9eb1ae04/actions/upload-image", async (c) => {
 
     const user = await getUser(token);
     if (!user) return c.json({ error: "Invalid or expired token" }, 401);
-
-    const approval = await kv.get(`user:approval:${user.id}`) as any;
-    if (!approval || approval.status !== "approved") {
-      return c.json({ error: "Your account must be approved to upload." }, 403);
-    }
 
     const body = await c.req.parseBody();
     const file = body.file;

@@ -597,34 +597,52 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
                 </p>
                 <div className="space-y-3">
                   {([
-                    { key: "anger",      label: "Angry",      val: toneAnger,      set: setToneAnger,      Icon: Flame as LucideIcon },
-                    { key: "comedy",     label: "Funny",      val: toneComedy,     set: setToneComedy,     Icon: Laugh as LucideIcon },
-                    { key: "subversion", label: "Subversive", val: toneSubversion, set: setToneSubversion, Icon: VenetianMask as LucideIcon },
-                    { key: "hope",       label: "Hope",       val: toneHope,       set: setToneHope,       Icon: Sunrise as LucideIcon },
-                    { key: "energy",     label: "Energy",     val: toneEnergy,     set: setToneEnergy,     Icon: Zap as LucideIcon },
-                  ] as const).map(({ key, label, val, set, Icon }) => (
-                    <div key={key}>
-                      <div className="flex items-center mb-1.5">
-                        <Icon size={14} strokeWidth={2} className="text-[#23297e] mr-1.5 shrink-0" />
-                        <strong className="font-['Poppins',sans-serif] font-semibold text-sm text-[#23297e]">
-                          {label}
-                        </strong>
-                        <button
-                          type="button"
-                          onClick={() => set(val == null ? 1 : null)}
-                          className="ml-auto font-['Poppins',sans-serif] text-[11px] text-gray-500 hover:text-[#23297e] underline"
-                        >
-                          {val == null ? "set" : "auto"}
-                        </button>
+                    { key: "anger",      label: "Angry",      val: toneAnger,      set: setToneAnger,      Icon: Flame as LucideIcon,        stops: [
+                      { label: "None", desc: "Calm, no confrontation" }, { label: "Low", desc: "A little edge, stays subtle" }, { label: "Bold", desc: "Direct and attention-getting" }, { label: "High", desc: "In-the-streets energy" },
+                    ]},
+                    { key: "comedy",     label: "Funny",      val: toneComedy,     set: setToneComedy,     Icon: Laugh as LucideIcon,        stops: [
+                      { label: "None", desc: "Straight-faced, serious" }, { label: "Light", desc: "A bit of wit" }, { label: "Irreverent", desc: "Mockery and mischief" }, { label: "Full mockery", desc: "Absurdity as resistance" },
+                    ]},
+                    { key: "subversion", label: "Subversive", val: toneSubversion, set: setToneSubversion, Icon: VenetianMask as LucideIcon, stops: [
+                      { label: "None", desc: "Conventional approach" }, { label: "Mild", desc: "Slightly off the beaten path" }, { label: "Edgy", desc: "Disruptive, unconventional" }, { label: "Radical", desc: "Throw the rulebook out" },
+                    ]},
+                    { key: "hope",       label: "Hope",       val: toneHope,       set: setToneHope,       Icon: Sunrise as LucideIcon,      stops: [
+                      { label: "None", desc: "Realistic, no rose-tinting" }, { label: "Some", desc: "A glimmer of optimism" }, { label: "Uplifting", desc: "Building and inspiring" }, { label: "Full hope", desc: "Movement energy, community-first" },
+                    ]},
+                    { key: "energy",     label: "Energy",     val: toneEnergy,     set: setToneEnergy,     Icon: Zap as LucideIcon,          stops: [
+                      { label: "Low", desc: "Low demand on the participant" }, { label: "Mild", desc: "A moderate lift" }, { label: "Engaged", desc: "Requires real showing up" }, { label: "On fire", desc: "All in, maximum commitment" },
+                    ]},
+                  ] as const).map(({ key, label, val, set, Icon, stops }) => {
+                    const stop = val != null ? stops[val] : null;
+                    return (
+                      <div key={key}>
+                        <div className="flex items-center mb-1.5">
+                          <Icon size={14} strokeWidth={2} className="text-[#23297e] mr-1.5 shrink-0" />
+                          <strong className="font-['Poppins',sans-serif] font-semibold text-sm text-[#23297e]">
+                            {label}
+                          </strong>
+                          {stop && (
+                            <span className="ml-2 font-['Poppins',sans-serif] text-xs text-gray-500 truncate">
+                              · <span className="font-medium text-[#fd8e33]">{stop.label}</span> — {stop.desc}
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => set(val == null ? 1 : null)}
+                            className="ml-auto shrink-0 font-['Poppins',sans-serif] text-[11px] text-gray-500 hover:text-[#23297e] underline"
+                          >
+                            {val == null ? "set" : "auto"}
+                          </button>
+                        </div>
+                        <ToneRangeSlider
+                          value={val ?? 0}
+                          onChange={(v) => set(v)}
+                          unset={val == null}
+                          disabled={val == null}
+                        />
                       </div>
-                      <ToneRangeSlider
-                        value={val ?? 0}
-                        onChange={(v) => set(v)}
-                        unset={val == null}
-                        disabled={val == null}
-                      />
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
