@@ -183,8 +183,8 @@ export function AskFlowModal({
   const imageStep = isLoggedIn ? 4 : 5;
 
   const STEP_TITLES = isLoggedIn
-    ? ["What's your ask?", "Logistics", "Tone", "Optional details", "Header image"]
-    : ["What's your ask?", "Logistics", "Tone", "Optional details", "Create an account", "Header image"];
+    ? ["What's the Action?", "Logistics", "Tone", "Optional details", "Header image"]
+    : ["What's the Action?", "Logistics", "Tone", "Optional details", "Create an account", "Header image"];
 
   // If a user signs in while sitting on the auth step (step 4), the auth step
   // no longer renders and totalSteps shrinks to 4. Drop them on the final
@@ -326,7 +326,7 @@ export function AskFlowModal({
                 {/* ── Step 0: The ask ───────────────────────────────────── */}
                 {step === 0 && (
                 <Section
-                  title="What's your ask?"
+                  title="What's the Action?"
                   hint="Make it clear and compelling — this is the headline people will see."
                 >
                   <Field label="Title" required>
@@ -379,7 +379,7 @@ export function AskFlowModal({
                   title="Logistics"
                   hint="Where this lives, what it links to, and how much commitment it takes."
                 >
-                  <Field label="How much does this action ask of people?">
+                  <Field label="How much does this action require of people?">
                     <InvolvementPicker
                       value={involvement}
                       onChange={setInvolvement}
@@ -626,11 +626,11 @@ export function AskFlowModal({
                       className="ml-3 px-5 py-2.5 bg-[#fd8e33] hover:bg-[#e07a28] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-['Poppins',sans-serif] font-bold text-sm rounded-xl transition-colors flex items-center gap-2"
                     >
                       {createLoading ? (
-                        <><Loader2 size={14} className="animate-spin" /> Posting…</>
+                        <><Loader2 size={14} className="animate-spin" /> Submitting…</>
                       ) : !isApproved ? (
                         <><Megaphone size={14} /> Pending approval</>
                       ) : (
-                        <><Megaphone size={14} /> Post my ASK</>
+                        <><Megaphone size={14} /> Submit for Review</>
                       )}
                     </button>
                   )}

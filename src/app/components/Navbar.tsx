@@ -2,7 +2,7 @@ import logoImg from "../../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import type { ReactNode } from "react";
 import { FACT_CARDS } from "../data/factCards";
-import { Bell, Bookmark, ChevronDown, Clock, Flame, Info, LogOut, MapPin, Menu, MessageCircle, Search, ShieldCheck, X, Zap } from "lucide-react";
+import { Bell, Bookmark, ChevronDown, Clock, Flame, Info, LogOut, MapPin, Menu, MessageCircle, Search, ShieldCheck, SlidersHorizontal, X, Zap } from "lucide-react";
 import type { UserApproval } from "../lib/supabase";
 
 function ResistActLogo() {
@@ -55,9 +55,10 @@ interface NavbarProps {
   onBookmarksClick?: () => void;
   bookmarkCount?: number;
   onFeedbackClick?: () => void;
+  onMatchClick?: () => void;
 }
 
-export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick }: NavbarProps) {
+export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick }: NavbarProps) {
   // Acts filters in render order: Location dropdown first, Category pills second.
   // Used for "Clear all" and the mobile filter row that shows just the names.
   const ACTS_FILTER_OPTIONS: Record<string, string[]> = {
@@ -380,6 +381,13 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                           {bookmarkCount > 99 ? "99+" : bookmarkCount}
                         </span>
                       )}
+                    </button>
+                    <button
+                      onClick={() => { setDropdownOpen(false); onMatchClick?.(); }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-['Poppins',sans-serif] font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                    >
+                      <SlidersHorizontal size={15} />
+                      My Match Settings
                     </button>
                     {isAdmin && (
                       <button
@@ -887,6 +895,15 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               <span className="text-[10.5px] font-normal italic text-white/85 leading-tight mt-0.5">
                 Log in or sign up to save your progress.
               </span>
+            </button>
+          )}
+          {isLoggedIn && (
+            <button
+              onClick={() => { setMobileMenuOpen(false); onMatchClick?.(); }}
+              className="w-full flex items-center gap-2 py-2.5 px-4 bg-gray-50 text-gray-700 rounded-xl font-['Poppins',sans-serif] font-semibold text-sm"
+            >
+              <SlidersHorizontal size={16} />
+              My Match Settings
             </button>
           )}
           {isLoggedIn && isAdmin && (

@@ -7,6 +7,7 @@ interface LoggedInHeroProps {
   newActionsToday: number;
   onMatchClick?: () => void;
   onAskClick?: () => void;
+  hasMatchPrefs?: boolean;
 }
 
 interface StreakState {
@@ -43,7 +44,7 @@ function writeStreak(userId: string, s: StreakState) {
   } catch {}
 }
 
-export function LoggedInHero({ userId, name, newActionsToday, onMatchClick, onAskClick }: LoggedInHeroProps) {
+export function LoggedInHero({ userId, name, newActionsToday, onMatchClick, onAskClick, hasMatchPrefs }: LoggedInHeroProps) {
   const [streak, setStreak] = useState(1);
   const [isFirstVisit, setIsFirstVisit] = useState(false);
 
@@ -85,7 +86,7 @@ export function LoggedInHero({ userId, name, newActionsToday, onMatchClick, onAs
         </p>
 
         <div className="mt-4">
-          <HeroPills onMatchClick={onMatchClick} onAskClick={onAskClick} />
+          <HeroPills onMatchClick={onMatchClick} onAskClick={onAskClick} hasMatchPrefs={hasMatchPrefs} />
         </div>
       </div>
     </div>
