@@ -219,10 +219,27 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJo
       }
       addCard(c);
     }
-    // Fallback: fill remaining slots ignoring quotas if one bucket ran dry.
+    // Fallback 1: fill remaining slots ignoring quotas if one bucket ran dry.
     if (picked.length < TARGET) {
       const pickedIds = new Set(picked.map((c) => c.id));
       for (const c of ranked) {
+        if (picked.length >= TARGET) break;
+        if (pickedIds.has(c.id)) continue;
+        addCard(c);
+      }
+    }
+    // Fallback 2: if setting/state prefs were so restrictive that ranked itself
+    // had fewer than TARGET cards (e.g. "In-person only" + "Massachusetts" with
+    // only 3 local in-person cards), re-rank ignoring setting and state so the
+    // carousel always fills 12 slots. Cards already picked are skipped.
+    if (picked.length < TARGET) {
+      const relaxedRanked = rankCards(
+        cards,
+        { ...prefs, setting: [], state: null },
+        carouselCtx,
+      );
+      const pickedIds = new Set(picked.map((c) => c.id));
+      for (const c of relaxedRanked) {
         if (picked.length >= TARGET) break;
         if (pickedIds.has(c.id)) continue;
         addCard(c);
