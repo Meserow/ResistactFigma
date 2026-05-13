@@ -257,7 +257,7 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJo
     const bestLocal = ranked.find((c) => cardIsLocalToState(c, prefs.state));
     if (!bestLocal) return top;
     if (top.length < 3) return [...top, bestLocal];
-    return [...top.slice(0, 2), bestLocal];
+    return [...top.slice(0, 2), bestLocal, ...top.slice(3)];
   }, [cards, prefs, carouselCtx, userCtx]);
 
   function next() { setStep((s) => Math.min(1, (s + 1) as Step)); }
