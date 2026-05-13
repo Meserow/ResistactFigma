@@ -91,12 +91,52 @@ const STATE_OPTIONS = LOCATION_OPTIONS.filter(
   (o) => o !== "Remote" && o !== "At Home" && o !== "National" && o !== "Multi-State"
 );
 
-const TONE_LABELS: Record<"anger" | "comedy" | "subversion" | "hope" | "energy", { Icon: LucideIcon; label: string; desc: string }> = {
-  anger:      { Icon: Flame,        label: "Confrontational", desc: "In-the-streets energy — may attract attention" },
-  comedy:     { Icon: Laugh,        label: "Humorous",        desc: "Mockery, irreverence, prank" },
-  subversion: { Icon: VenetianMask, label: "Subversive",      desc: "Disruptive, off the beaten path" },
-  hope:       { Icon: Sunrise,      label: "Hopeful",         desc: "Uplifting, optimistic, building" },
-  energy:     { Icon: Zap,          label: "Motivation",      desc: "How fired-up are you today?" },
+const TONE_LABELS: Record<"anger" | "comedy" | "subversion" | "hope" | "energy", { Icon: LucideIcon; label: string; stops: { label: string; desc: string }[] }> = {
+  anger: {
+    Icon: Flame, label: "Confrontational",
+    stops: [
+      { label: "None",   desc: "Keep it calm, no heat" },
+      { label: "Low",    desc: "A little edge, stays subtle" },
+      { label: "Bold",   desc: "Direct and attention-getting" },
+      { label: "High",   desc: "In-the-streets energy" },
+    ],
+  },
+  comedy: {
+    Icon: Laugh, label: "Humorous",
+    stops: [
+      { label: "None",         desc: "Straight-faced, serious" },
+      { label: "Light",        desc: "A bit of wit" },
+      { label: "Irreverent",   desc: "Mockery and mischief" },
+      { label: "Full mockery", desc: "Absurdity as resistance" },
+    ],
+  },
+  subversion: {
+    Icon: VenetianMask, label: "Subversive",
+    stops: [
+      { label: "None",     desc: "Conventional approach" },
+      { label: "Mild",     desc: "Slightly off the beaten path" },
+      { label: "Edgy",     desc: "Disruptive, unconventional" },
+      { label: "Radical",  desc: "Throw the rulebook out" },
+    ],
+  },
+  hope: {
+    Icon: Sunrise, label: "Hopeful",
+    stops: [
+      { label: "None",      desc: "Realistic, no rose-tinting" },
+      { label: "Some",      desc: "A glimmer of optimism" },
+      { label: "Uplifting", desc: "Building and inspiring" },
+      { label: "Full hope", desc: "Movement energy, community-first" },
+    ],
+  },
+  energy: {
+    Icon: Zap, label: "Motivation",
+    stops: [
+      { label: "Low",      desc: "Low energy day, that's ok" },
+      { label: "Mild",     desc: "Getting there" },
+      { label: "Engaged",  desc: "Ready to show up" },
+      { label: "On fire",  desc: "Fully fired up, let's go" },
+    ],
+  },
 };
 
 type Step = 0 | 1;
@@ -552,7 +592,8 @@ function StepToneAndPreview({
           );
         })()}
         {(["anger", "comedy", "subversion", "hope", "energy"] as const).map((k) => {
-          const { Icon, label, desc } = TONE_LABELS[k];
+          const { Icon, label, stops } = TONE_LABELS[k];
+          const stop = stops[tone[k]];
           return (
             <div key={k} className="flex flex-col gap-0.5">
               <div className="flex items-center gap-1.5 pl-1">
@@ -561,7 +602,7 @@ function StepToneAndPreview({
                   {label}
                 </span>
                 <span className="font-['Poppins',sans-serif] text-[10.5px] text-gray-500 truncate">
-                  · {desc}
+                  · <span className="font-medium text-[#fd8e33]">{stop.label}</span> — {stop.desc}
                 </span>
               </div>
               <div className="pl-5">
