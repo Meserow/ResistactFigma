@@ -177,9 +177,14 @@ export function AskFlowModal({
    * users get an extra "Create an account" step at the end. */
   const totalSteps = isLoggedIn ? 5 : 6;
   const isLastStep = step === totalSteps - 1;
-  const isAuthStep = !isLoggedIn && step === 5;
+  // Auth step is step 4 for logged-out users. Image step comes after so
+  // upload is always available once they're signed in.
+  const isAuthStep = !isLoggedIn && step === 4;
+  const imageStep = isLoggedIn ? 4 : 5;
 
-  const STEP_TITLES = ["What's your ask?", "Logistics", "Tone", "Header image", "Optional details", "Create an account"];
+  const STEP_TITLES = isLoggedIn
+    ? ["What's your ask?", "Logistics", "Tone", "Optional details", "Header image"]
+    : ["What's your ask?", "Logistics", "Tone", "Optional details", "Create an account", "Header image"];
 
   // If a user signs in while sitting on the auth step (step 4), the auth step
   // no longer renders and totalSteps shrinks to 4. Drop them on the final
@@ -199,7 +204,7 @@ export function AskFlowModal({
     } else if (s === 1) {
       if (!formLocation) m.push("Location");
       if (!formLink.trim()) m.push("Link");
-    } else if (s === 3) {
+    } else if (s === imageStep) {
       if (!formImageUrl.trim()) m.push("Header image");
     }
     return m;
@@ -443,11 +448,16 @@ export function AskFlowModal({
                 </Section>
                 )}
 
-                {/* ── Step 3: Header image (required, own page) ──────────── */}
-                {step === 3 && (
+                {/* ── Step 3: Optional details ─────────────────────────── */}
+                {/* (Moved before sign-in so image upload always has a session) */}
+
+                {/* ── Image step: comes after sign-in for logged-out users ── */}
+                {step === imageStep && (
                 <Section
                   title="Header image"
-                  hint="A photo or banner that represents this action. Upload from your computer or paste any image URL."
+                  hint={isLoggedIn
+                    ? "A photo or banner that represents this action. Upload from your computer or paste any image URL."
+                    : "Almost done — add a photo or banner for your action. You're signed in, so upload works now, or paste any image URL."}
                 >
                   <Field label="Header image" required>
                     <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -502,8 +512,8 @@ export function AskFlowModal({
                 </Section>
                 )}
 
-                {/* ── Step 4: Optional details ──────────────────────────── */}
-                {step === 4 && (
+                {/* ── Step 3: Optional details ──────────────────────────── */}
+                {step === 3 && (
                 <>
                 <Section title="Optional details">
                   <Field label="Sponsor">
@@ -553,11 +563,11 @@ export function AskFlowModal({
                 {isAuthStep && (
                   <div className="text-center py-6">
                     <h3 className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-2xl mb-2">
-                      You're almost there!
+                      One more step!
                     </h3>
                     <p className="font-['Poppins',sans-serif] text-sm text-gray-600 max-w-md mx-auto mb-6">
-                      Create an account or sign in to publish your action. We'll keep
-                      the form filled in — just come back here once you're signed in.
+                      Sign in to add your header image and publish. Your form is saved —
+                      once you're signed in you'll land right on the image step.
                     </p>
                     <button
                       type="button"
@@ -612,7 +622,7 @@ export function AskFlowModal({
                     <button
                       type="button"
                       onClick={() => { if (!isApproved) return; handleCreateAsk(); }}
-                      disabled={createLoading || !isApproved || missingForStep(0).length > 0 || missingForStep(1).length > 0 || missingForStep(3).length > 0}
+                      disabled={createLoading || !isApproved || missingForStep(0).length > 0 || missingForStep(1).length > 0 || missingForStep(imageStep).length > 0}
                       className="ml-3 px-5 py-2.5 bg-[#fd8e33] hover:bg-[#e07a28] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-['Poppins',sans-serif] font-bold text-sm rounded-xl transition-colors flex items-center gap-2"
                     >
                       {createLoading ? (
