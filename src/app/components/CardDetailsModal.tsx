@@ -125,7 +125,7 @@ export function CardDetailsModal({ card, onClose, onShare }: CardDetailsModalPro
               rel="noopener noreferrer"
               className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-[#fd8e33] px-5 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#d96612]"
             >
-              Take this action <ExternalLink size={14} />
+              I want to ResistAct! <ExternalLink size={14} />
             </a>
           ) : null}
         </div>
