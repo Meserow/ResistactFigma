@@ -608,8 +608,8 @@ export function AskFlowModal({
                   <span className="ml-auto font-['Poppins',sans-serif] text-[11px] text-gray-400">
                     Step {step + 1} of {totalSteps} · {STEP_TITLES[step]}
                   </span>
-                  {/* Right action: Next / Post / (auth step has no right button — its own button is in the body) */}
-                  {!isLastStep ? (
+                  {/* Right action: Next / Post / nothing on auth step (sign-in button lives in the body) */}
+                  {isAuthStep ? null : !isLastStep ? (
                     <button
                       type="button"
                       onClick={() => setStep((s) => Math.min(totalSteps - 1, s + 1))}
@@ -618,7 +618,7 @@ export function AskFlowModal({
                     >
                       Next
                     </button>
-                  ) : isAuthStep ? null : (
+                  ) : (
                     <button
                       type="button"
                       onClick={() => { if (!isApproved) return; handleCreateAsk(); }}
