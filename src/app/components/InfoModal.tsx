@@ -13,7 +13,7 @@ export function InfoModal({ onClose }: InfoModalProps) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[980px] overflow-hidden"
+        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-[980px] max-h-[90vh] overflow-y-auto"
       >
         {/* Close */}
         <button
@@ -83,7 +83,7 @@ export function InfoModal({ onClose }: InfoModalProps) {
           </div>
 
           {/* Right — photo, takes the remaining width */}
-          <div className="sm:w-1/2 min-h-[420px] overflow-hidden">
+          <div className="sm:w-1/2 h-48 sm:h-auto sm:min-h-[420px] overflow-hidden">
             <img
               src="/trump-kroger.jpg"
               alt="Group of people in Baby Trump inflatable costumes walking out of a Kroger grocery store"
