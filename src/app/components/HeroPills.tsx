@@ -6,9 +6,10 @@ interface HeroPillsProps {
   onMatchClick?: () => void;
   onAskClick?: () => void;
   onHowClick?: () => void;
+  hasMatchPrefs?: boolean;
 }
 
-export function HeroPills({ onMatchClick, onAskClick, onHowClick }: HeroPillsProps) {
+export function HeroPills({ onMatchClick, onAskClick, onHowClick, hasMatchPrefs }: HeroPillsProps) {
   const [openModal, setOpenModal] = useState<"how" | null>(null);
   const triggerRefs = useRef<Record<"how", HTMLButtonElement | null>>({
     how: null,
@@ -57,8 +58,17 @@ export function HeroPills({ onMatchClick, onAskClick, onHowClick }: HeroPillsPro
           >
             <Sparkles size={16} strokeWidth={2.75} className="text-white" />
             <span className="flex flex-col items-start text-left leading-tight whitespace-nowrap">
-              <span className="text-[14px] font-extrabold text-white tracking-tight">Quick Matches for Me</span>
-              <span className="text-[11px] font-medium text-white/90 italic">Pressed for time? Show me what fits.</span>
+              {hasMatchPrefs ? (
+                <>
+                  <span className="text-[14px] font-extrabold text-white tracking-tight">Edit My Match Settings</span>
+                  <span className="text-[11px] font-medium text-white/90 italic">Update your preferences.</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-[14px] font-extrabold text-white tracking-tight">Quick Matches for Me</span>
+                  <span className="text-[11px] font-medium text-white/90 italic">Pressed for time? Show me what fits.</span>
+                </>
+              )}
             </span>
           </button>
         )}

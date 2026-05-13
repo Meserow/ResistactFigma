@@ -94,7 +94,7 @@ function FeaturedIllustration() {
     <div className="relative w-full h-full flex items-center justify-center">
       <img
         src={diagramImg}
-        alt="ASK → MATCH → ACT → CHANGE"
+        alt="ACTION → MATCH → ACT → CHANGE"
         className="w-full h-full object-contain"
       />
     </div>
@@ -986,6 +986,7 @@ export default function App() {
         onBookmarksClick={() => setBookmarksOpen(true)}
         bookmarkCount={bookmarkedCards.size}
         onFeedbackClick={() => setFeedbackOpen(true)}
+        onMatchClick={() => setMatchOpen(true)}
         matchActive={matchPrefs !== null}
         onMatchClear={() => { setMatchPrefs(null); clearPreferences(); }}
         statsActsCount={displayedCards.length}
@@ -1020,6 +1021,7 @@ export default function App() {
                       newActionsToday={newToday}
                       onMatchClick={() => setMatchOpen(true)}
                       onAskClick={() => setAskOpen(true)}
+                      hasMatchPrefs={matchPrefs !== null}
                     />
                   );
                 })()
