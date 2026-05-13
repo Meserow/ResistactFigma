@@ -403,7 +403,7 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
 function Backdrop({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
   return (
     <div
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-60 flex items-center justify-center p-4"
       onClick={onClose}
     >
       <div
