@@ -492,14 +492,14 @@ const SEED_CARDS = [
   { id: 1254, category: "PROTEST", categoryColor: "#23297e", actionType: "In Person Group", title: "Plan a Tesla Takedown protest in your city", description: "No protest in your area yet? Tesla Takedown has a host-an-action toolkit — permits, sign templates, safety protocol, comms scripts. Pick a Saturday and start a chapter.", location: "Multi-state", boosts: 0, spotsTotal: "Unlimited", authorName: "Tesla Takedown", authorRole: "Movement Organization", targetUrl: "https://www.teslatakedown.com", topImageKey: "org_tesla-takedown", toneOverride: { anger: 3, comedy: 0, subversion: 1, hope: 2, energy: 3 }, adminApproved: false },
   { id: 1255, category: "PETITION", categoryColor: "#05737f", actionType: "Online", title: "Push your city to pass a Tesla divestment resolution", description: "Tesla Takedown's City Resolutions track helps you draft and pass a municipal resolution to drop Tesla from city fleets and pension exposure. Templates + sample testimony included.", location: "Multi-state", boosts: 0, spotsTotal: "Unlimited", authorName: "Tesla Takedown", authorRole: "Movement Organization", targetUrl: "https://www.teslatakedown.com/city-resolutions", topImageKey: "org_tesla-takedown", toneOverride: { anger: 2, comedy: 0, subversion: 1, hope: 2, energy: 1 }, adminApproved: false },
   { id: 1256, category: "NEWS STORY", categoryColor: "#3b4a73", actionType: "Online", title: "Share your 'I sold my Tesla' story", description: "Tesla Takedown collects defection testimonies — short written or video stories about why you ditched the car. They use them in press, social, and recruitment.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Tesla Takedown", authorRole: "Movement Organization", targetUrl: "https://www.teslatakedown.com/share-your-story", topImageKey: "org_tesla-takedown", toneOverride: { anger: 2, comedy: 1, subversion: 1, hope: 1, energy: 1 }, firstTimerFriendly: true },
-  { id: 1257, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Email Republican Reps: Not One Penny More for ICE Brutality", description: "Indivisible action — pre-written email to Republican members of Congress demanding they vote against any new ICE funding. Editable script.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Indivisible", authorRole: "Movement Organization", targetUrl: "https://indivisible.org/get-involved/take-action/", toneOverride: { anger: 3, comedy: 0, subversion: 0, hope: 1, energy: 1 }, amplifiesGroups: ["immigrant"], firstTimerFriendly: true },
-  { id: 1258, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Call your Republican Rep: Stop Bankrolling ICE Brutality", description: "Indivisible script + your Rep's number. 60-second call demanding they oppose ICE funding expansion. Currently flagged TRENDING NOW on Indivisible's action board.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Indivisible", authorRole: "Movement Organization", targetUrl: "https://indivisible.org/get-involved/take-action/", toneOverride: { anger: 3, comedy: 0, subversion: 0, hope: 1, energy: 1 }, amplifiesGroups: ["immigrant"], adminApproved: false },
-  { id: 1259, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Call your Republican Senator: Stop Bankrolling ICE Brutality", description: "Indivisible's Senate-side companion call. Same ask: vote no on more ICE money. Senate phone numbers + script provided.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Indivisible", authorRole: "Movement Organization", targetUrl: "https://indivisible.org/get-involved/take-action/", toneOverride: { anger: 3, comedy: 0, subversion: 0, hope: 1, energy: 1 }, amplifiesGroups: ["immigrant"], adminApproved: false },
-  { id: 1260, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Email Democrats: Fiercely Oppose the New GOP ICE Funding Push", description: "Indivisible action targeting Democratic Reps — telling your own party to actually fight, not just vote no quietly. Anti-rollover messaging.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Indivisible", authorRole: "Movement Organization", targetUrl: "https://indivisible.org/get-involved/take-action/", toneOverride: { anger: 3, comedy: 0, subversion: 1, hope: 1, energy: 1 }, amplifiesGroups: ["immigrant"], adminApproved: false },
-  { id: 1261, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Call your Senator: Oppose Warrantless AI Mass Surveillance", description: "Indivisible action against AI-driven mass-surveillance authorities being added to spending bills. Script + Senate switchboard.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Indivisible", authorRole: "Movement Organization", targetUrl: "https://indivisible.org/get-involved/take-action/", toneOverride: { anger: 2, comedy: 0, subversion: 0, hope: 1, energy: 1 }, amplifiesGroups: ["immigrant", "journalist"], adminApproved: false },
-  { id: 1262, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Call your Rep: Oppose Warrantless AI Mass Surveillance", description: "Indivisible House-side companion. Same ask, House script.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Indivisible", authorRole: "Movement Organization", targetUrl: "https://indivisible.org/get-involved/take-action/", toneOverride: { anger: 2, comedy: 0, subversion: 0, hope: 1, energy: 1 }, amplifiesGroups: ["immigrant", "journalist"], adminApproved: false },
-  { id: 1263, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Email Congress: Reject the Deportation & Detention Agenda", description: "Indivisible omnibus action against the Trump deportation expansion package — email your Reps and Senators with one click.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Indivisible", authorRole: "Movement Organization", targetUrl: "https://indivisible.org/get-involved/take-action/", toneOverride: { anger: 3, comedy: 0, subversion: 0, hope: 1, energy: 1 }, amplifiesGroups: ["immigrant"], firstTimerFriendly: true },
-  { id: 1264, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Call your Senators: End the Illegal War on Iran", description: "Indivisible Senate call companion. Phone is louder than email — staff log calls separately.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Indivisible", authorRole: "Movement Organization", targetUrl: "https://indivisible.org/get-involved/take-action/", toneOverride: { anger: 3, comedy: 0, subversion: 1, hope: 1, energy: 1 }, adminApproved: false },
+  { id: 1257, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Email Republican Reps: Not One Penny More for ICE Brutality", description: "Indivisible action — pre-written email to Republican members of Congress demanding they vote against any new ICE funding. Editable script.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Indivisible", authorRole: "Movement Organization", authorLink: "https://indivisible.org/", targetUrl: "https://act.indivisible.org/sign/tell-your-republican-members-of-congress-not-one-penny-more-for-ice/", topImageUrl: "https://indivisible.org/wp-content/uploads/2026/04/260429_No-Money-for-ICE_Email-R-MoC-500x319.png", toneOverride: { anger: 3, comedy: 0, subversion: 0, hope: 1, energy: 1 }, amplifiesGroups: ["immigrant"], firstTimerFriendly: true },
+  { id: 1258, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Call your Republican Rep: Stop Bankrolling ICE Brutality", description: "Indivisible script + your Rep's number. 60-second call demanding they oppose ICE funding expansion. Currently flagged TRENDING NOW on Indivisible's action board.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Indivisible", authorRole: "Movement Organization", authorLink: "https://indivisible.org/", targetUrl: "https://indivisible.org/actions/gop-house-stop-bankrolling-ice/", topImageUrl: "https://indivisible.org/wp-content/uploads/2026/04/260429_No-Money-for-ICE_Call-R-Rep-500x319.png", toneOverride: { anger: 3, comedy: 0, subversion: 0, hope: 1, energy: 1 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1259, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Call your Republican Senator: Stop Bankrolling ICE Brutality", description: "Indivisible's Senate-side companion call. Same ask: vote no on more ICE money. Senate phone numbers + script provided.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Indivisible", authorRole: "Movement Organization", authorLink: "https://indivisible.org/", targetUrl: "https://indivisible.org/actions/gop-senate-stop-ice-brutality/", topImageUrl: "https://indivisible.org/wp-content/uploads/2026/04/260429_No-Money-for-ICE_Call-R-Senator-500x319.png", toneOverride: { anger: 3, comedy: 0, subversion: 0, hope: 1, energy: 1 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1260, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Email Democrats: Fiercely Oppose the New GOP ICE Funding Push", description: "Indivisible action targeting Democratic Reps — telling your own party to actually fight, not just vote no quietly. Anti-rollover messaging.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Indivisible", authorRole: "Movement Organization", authorLink: "https://indivisible.org/", targetUrl: "https://act.indivisible.org/sign/urge-democrats-fiercely-oppose-new-gop-effort-shovel-billions-more-dollars-ice-and-border-patrol/", topImageUrl: "https://indivisible.org/wp-content/uploads/2026/04/260429_No-Money-for-ICE_Email-D-MoC-500x319.png", toneOverride: { anger: 3, comedy: 0, subversion: 1, hope: 1, energy: 1 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1261, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Call your Senator: Oppose Warrantless AI Mass Surveillance", description: "Indivisible action against AI-driven mass-surveillance authorities being added to spending bills. Script + Senate switchboard.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Indivisible", authorRole: "Movement Organization", authorLink: "https://indivisible.org/", targetUrl: "https://indivisible.org/actions/tell-your-senators-oppose-warrantless-ai-mass-surveillance/", topImageUrl: "https://indivisible.org/wp-content/uploads/2026/04/240409_FISA-CTA-2_1240x790-500x319.png", toneOverride: { anger: 2, comedy: 0, subversion: 0, hope: 1, energy: 1 }, amplifiesGroups: ["immigrant", "journalist"], adminApproved: false },
+  { id: 1262, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Call your Rep: Oppose Warrantless AI Mass Surveillance", description: "Indivisible House-side companion. Same ask, House script.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Indivisible", authorRole: "Movement Organization", authorLink: "https://indivisible.org/", targetUrl: "https://indivisible.org/actions/tell-representatives-no-to-ai-warrantless-mass-surveillance/", topImageUrl: "https://indivisible.org/wp-content/uploads/2026/04/240409_FISA-CTA-2_1240x790-500x319.png", toneOverride: { anger: 2, comedy: 0, subversion: 0, hope: 1, energy: 1 }, amplifiesGroups: ["immigrant", "journalist"], adminApproved: false },
+  { id: 1263, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Email Congress: Reject the Deportation & Detention Agenda", description: "Indivisible omnibus action against the Trump deportation expansion package — email your Reps and Senators with one click.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Indivisible", authorRole: "Movement Organization", authorLink: "https://indivisible.org/", targetUrl: "https://act.indivisible.org/sign/reject-the-deportation-and-detention-agenda/", topImageUrl: "https://indivisible.org/wp-content/uploads/2026/03/260309_No-More-Detention-Centers-blue_1240x790-500x319.jpg", toneOverride: { anger: 3, comedy: 0, subversion: 0, hope: 1, energy: 1 }, amplifiesGroups: ["immigrant"], firstTimerFriendly: true },
+  { id: 1264, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Call your Senators: End the Illegal War on Iran", description: "Indivisible Senate call companion. Phone is louder than email — staff log calls separately.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Indivisible", authorRole: "Movement Organization", authorLink: "https://indivisible.org/", targetUrl: "https://indivisible.org/actions/no-war-iran-senate/", topImageUrl: "https://indivisible.org/wp-content/uploads/2026/02/250618_1200-x-600_No-War-with-Iran-500x281.png", toneOverride: { anger: 3, comedy: 0, subversion: 1, hope: 1, energy: 1 }, adminApproved: false },
   { id: 1265, category: "CRAFTING", categoryColor: "#c34e00", actionType: "In Person", title: "Make a 'No Kings' protest sign and bring it to your next rally", description: "#NoKings has 271K+ posts on TikTok — creators sharing sign templates, slogans, and crowd footage. Make your own using their templates and tag #NoKings to amplify.", location: "National", boosts: 0, spotsTotal: "Unlimited", authorName: "No Kings (50501-aligned)", authorRole: "Movement Organization", targetUrl: "https://www.tiktok.com/tag/nokings", toneOverride: { anger: 2, comedy: 1, subversion: 1, hope: 2, energy: 2 }, firstTimerFriendly: true },
   { id: 1266, category: "SOCIAL MEDIA", categoryColor: "#e44b4b", actionType: "Online", title: "Film a '50501 [your state]' intro reel", description: "TikTok pattern: short intro videos like 'We Are 50501 Georgia' from state chapters. Film one for your state, post on TikTok and Reels, link to your chapter's signup. Recruitment in 30 seconds.", location: "National", boosts: 0, spotsTotal: "Unlimited", authorName: "50501 state chapters", authorRole: "Movement Organization", targetUrl: "https://www.tiktok.com/tag/50501", topImageKey: "org_tiktok", imageContain: true, toneOverride: { anger: 1, comedy: 1, subversion: 2, hope: 3, energy: 2 }, adminApproved: false },
   { id: 1267, category: "SOCIAL MEDIA", categoryColor: "#e44b4b", actionType: "Online", title: "Stitch or duet a Trump clip with your counter-narrative", description: "TikTok's stitch/duet format is being used to debunk and ridicule Trump quotes in real time. Pick a clip, add 30 seconds of your own context or mockery, post with #Resist or #50501.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Independent creators", authorRole: "Citizen Activist", targetUrl: "https://www.tiktok.com/tag/50501", topImageKey: "org_tiktok", imageContain: true, toneOverride: { anger: 2, comedy: 3, subversion: 2, hope: 1, energy: 1 }, firstTimerFriendly: true },
@@ -517,6 +517,15 @@ const SEED_CARDS = [
   { id: 1279, category: "SOCIAL MEDIA", categoryColor: "#e44b4b", actionType: "Online", title: "Subscribe to The Lincoln Project's video drops", description: "Republicans-against-Trump satirical attack ads. Subscribe on YouTube and follow on TikTok/IG for the new releases — they're shareable weapons against MAGA relatives.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "The Lincoln Project", authorRole: "Movement Organization", targetUrl: "https://www.youtube.com/@LincolnProject", topImageKey: "org_youtube", imageContain: true, toneOverride: { anger: 3, comedy: 3, subversion: 2, hope: 1, energy: 0 }, adminApproved: false },
   { id: 1280, category: "SOCIAL MEDIA", categoryColor: "#e44b4b", actionType: "Online", title: "Use a satire creator's audio to make your own anti-Trump TikTok", description: "TikTok's audio-reuse mechanic is a force multiplier. Pick a viral political satire audio (MeidasTouch, Lizz Winstead, Blaire Erskine), film a 15-second take with your local angle, post.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Independent creators", authorRole: "Citizen Activist", targetUrl: "https://www.tiktok.com/discover/political-satire", topImageKey: "org_tiktok", imageContain: true, toneOverride: { anger: 2, comedy: 3, subversion: 3, hope: 1, energy: 1 }, adminApproved: false },
   { id: 1281, category: "SOCIAL MEDIA", categoryColor: "#e44b4b", actionType: "Online", title: "Comment-bomb viral Trump videos with action links", description: "TikTok and IG comment sections on Trump-aligned content reach undecided/curious viewers. Drop a clean comment with a link to a 5Calls script or local action — short, no insult, just info. Action over rage.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Independent creators", authorRole: "Citizen Activist", targetUrl: "https://www.tiktok.com/tag/50501", topImageKey: "org_tiktok", imageContain: true, toneOverride: { anger: 1, comedy: 1, subversion: 3, hope: 2, energy: 1 }, adminApproved: false },
+  { id: 1282, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Email Congress: No to Warrantless AI Mass Surveillance", description: "One-click Indivisible email to your full Congressional delegation. Demands they strip warrantless AI surveillance provisions from spending bills before they pass.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Indivisible", authorRole: "Movement Organization", authorLink: "https://indivisible.org/", targetUrl: "https://act.indivisible.org/sign/tell-congress-say-no-warrantless-ai-mass-surveillance/", topImageUrl: "https://indivisible.org/wp-content/uploads/2026/04/240409_FISA-CTA_1240x790-500x319.png", toneOverride: { anger: 2, comedy: 0, subversion: 0, hope: 1, energy: 1 }, amplifiesGroups: ["immigrant", "journalist"], adminApproved: false },
+  { id: 1283, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Call your Senators: Block the Deportation & Detention Expansion", description: "Call your Senators and demand they publicly oppose new ICE detention centers and the mass deportation expansion. Indivisible script + direct Senate numbers included.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Indivisible", authorRole: "Movement Organization", authorLink: "https://indivisible.org/", targetUrl: "https://indivisible.org/actions/deportation-detention-agenda-senate/", topImageUrl: "https://indivisible.org/wp-content/uploads/2026/03/260309_No-More-Detention-Centers-red_sen_1240x790-500x319.jpg", toneOverride: { anger: 3, comedy: 0, subversion: 0, hope: 1, energy: 1 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1284, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Call your Rep: Reject the Deportation & Detention Agenda", description: "Call your House Representative to block Trump's mass deportation and detention expansion. Indivisible call script and Rep phone numbers provided.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Indivisible", authorRole: "Movement Organization", authorLink: "https://indivisible.org/", targetUrl: "https://indivisible.org/actions/deportation-detention-agenda-house/", topImageUrl: "https://indivisible.org/wp-content/uploads/2026/03/260309_No-More-Detention-Centers-blue_rep_1240x790-500x319.jpg", toneOverride: { anger: 3, comedy: 0, subversion: 0, hope: 1, energy: 1 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1285, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Email Congress: Stop Trump's Illegal War on Iran", description: "One-click Indivisible email to your full delegation invoking the War Powers Act. Demands Congress vote to halt Trump's unauthorized military escalation against Iran.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Indivisible", authorRole: "Movement Organization", authorLink: "https://indivisible.org/", targetUrl: "https://act.indivisible.org/sign/no-iran-war/", topImageUrl: "https://indivisible.org/wp-content/uploads/2026/02/260224_1200-x-600_No-War-with-Iran-500x281.png", toneOverride: { anger: 3, comedy: 0, subversion: 0, hope: 1, energy: 1 }, adminApproved: false },
+  { id: 1286, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Call your Rep: End the Illegal War on Iran", description: "Call your House Representative to demand a vote to end Trump's unauthorized war on Iran. Indivisible script + direct House phone numbers.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Indivisible", authorRole: "Movement Organization", authorLink: "https://indivisible.org/", targetUrl: "https://indivisible.org/actions/no-war-iran-house/", topImageUrl: "https://indivisible.org/wp-content/uploads/2026/02/260224_1200-x-600_No-War-with-Iran-500x281.png", toneOverride: { anger: 3, comedy: 0, subversion: 0, hope: 1, energy: 1 }, adminApproved: false },
+  { id: 1287, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Email Congress: Kill the GOP Voter Suppression Bills", description: "Email your full delegation to stop the SAVE Act and MEGA Act — GOP bills that would purge millions of eligible voters before the 2026 elections. One-click Indivisible action.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Indivisible", authorRole: "Movement Organization", authorLink: "https://indivisible.org/", targetUrl: "https://act.indivisible.org/sign/stop-gops-new-voter-suppression-legislation/", topImageUrl: "https://indivisible.org/wp-content/uploads/2026/02/260206_SAVE-MEGA-Act_Email-MoC-500x319.png", toneOverride: { anger: 3, comedy: 0, subversion: 0, hope: 2, energy: 1 }, adminApproved: false },
+  { id: 1288, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Call your Senators: Vote NO on GOP Voter Suppression", description: "Call your Senators to vote against the SAVE Act and MEGA Act — Republican bills that would gut voter registration and purge eligible voters before 2026. Indivisible script included.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Indivisible", authorRole: "Movement Organization", authorLink: "https://indivisible.org/", targetUrl: "https://indivisible.org/actions/stop-save-senate/", topImageUrl: "https://indivisible.org/wp-content/uploads/2026/02/260206_SAVE-MEGA-Act_Call-Sen-500x319.png", toneOverride: { anger: 3, comedy: 0, subversion: 0, hope: 2, energy: 1 }, adminApproved: false },
+  { id: 1289, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Email your Governor: Stop the Redistricting Coup", description: "Republicans are redrawing congressional maps mid-decade to lock in House control before 2026. Email your governor demanding they commit to fair redistricting — not partisan gerrymandering.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Indivisible", authorRole: "Movement Organization", authorLink: "https://indivisible.org/", targetUrl: "https://indivisible.org/campaigns/redistricting-coup-underway/", topImageUrl: "https://indivisible.org/wp-content/uploads/2025/11/The-Redistricting-Coup-is-Underway-500x281.png", toneOverride: { anger: 3, comedy: 0, subversion: 1, hope: 1, energy: 1 }, adminApproved: false },
+  { id: 1290, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Call Democratic Senators: Block Trump's Crypto Corruption Bill", description: "Call your Democratic Senators to oppose the CLARITY Act — Trump's crypto deregulation bill that strips SEC authority and enables his own crypto-corruption schemes. Indivisible script provided.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Indivisible", authorRole: "Movement Organization", authorLink: "https://indivisible.org/", targetUrl: "https://indivisible.org/actions/stop-trumps-crypto-corruption/", topImageUrl: "https://indivisible.org/wp-content/uploads/2025/12/crypto_corruption-500x500.jpg", toneOverride: { anger: 3, comedy: 0, subversion: 1, hope: 1, energy: 1 }, adminApproved: false },
 ];
 
 // ─── Health check ─────────────────────────────────────────────────────────────
@@ -623,6 +632,38 @@ app.post("/make-server-9eb1ae04/admin/fix-description", async (c) => {
 });
 
 // ─── ADMIN: Approved cards missing a targetUrl ───────────────────────────────
+// ─── ADMIN: User-submitted cards missing a targetUrl ─────────────────────────
+// Returns user-action cards that have no targetUrl so the admin can find and
+// add the correct action link. authorLink (author homepage) is shown for
+// context but is a separate field.
+app.get("/make-server-9eb1ae04/admin/actions/missing-url", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const results: any[] = [];
+    const userCardIds = (await kv.get("user-action:ids") ?? []) as number[];
+    for (const id of userCardIds) {
+      const card = await kv.get(`user-action:${id}`) as any;
+      if (card && typeof card === "object" && !card.targetUrl && !card.pinToTop) {
+        results.push({
+          id: card.id,
+          title: card.title,
+          category: card.category,
+          authorName: card.authorName,
+          authorLink: card.authorLink ?? null,
+          adminApproved: card.adminApproved,
+        });
+      }
+    }
+    results.sort((a, b) => (a.title ?? "").localeCompare(b.title ?? ""));
+    return c.json({ count: results.length, cards: results });
+  } catch (err) {
+    return c.json({ error: `Failed: ${err}` }, 500);
+  }
+});
+
 app.get("/make-server-9eb1ae04/admin/actions/no-url", async (c) => {
   try {
     const token = c.req.header("Authorization")?.split(" ")[1];
@@ -632,7 +673,7 @@ app.get("/make-server-9eb1ae04/admin/actions/no-url", async (c) => {
     const noUrl: any[] = [];
 
     for (const card of (await kv.getByPrefix("action:")) as any[]) {
-      if (card && typeof card === "object" && card.adminApproved === true && !card.targetUrl) {
+      if (card && typeof card === "object" && card.adminApproved === true && !card.targetUrl && !card.pinToTop) {
         noUrl.push({ ...card, _store: "action" });
       }
     }
@@ -990,6 +1031,9 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           if (existing.eventDate) merged.eventDate = existing.eventDate;
           // Preserve custom topImageUrl so admin-uploaded images survive re-seeds.
           if (existing.topImageUrl && !card.topImageUrl) merged.topImageUrl = existing.topImageUrl;
+          // Never demote a card the admin has already approved — re-seeding
+          // should never send an approved card back to the pending queue.
+          if (existing.adminApproved === true) merged.adminApproved = true;
         }
         await kv.set(`action:${card.id}`, merged);
         count++;
@@ -1115,6 +1159,44 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       }
       await kv.set("migration:user-cards:v1", true);
       console.log("User-card migration v1 complete.");
+    }
+
+    // One-time: mark user-submitted cards (user-action:*) that have NO
+    // targetUrl as unapproved so the admin can review and add the correct
+    // action link. authorLink (author homepage) is a separate field and is
+    // intentionally NOT used as a substitute here.
+    const noUrlReviewDone = await kv.get("migration:nourl-review:v1");
+    if (!noUrlReviewDone) {
+      let marked = 0;
+      const userCardIds3 = (await kv.get("user-action:ids") ?? []) as number[];
+      for (const id of userCardIds3) {
+        const card = await kv.get(`user-action:${id}`) as any;
+        if (card && typeof card === "object" && !card.targetUrl && !card.pinToTop) {
+          await kv.set(`user-action:${id}`, { ...card, adminApproved: false });
+          marked++;
+        }
+      }
+      await kv.set("migration:nourl-review:v1", true);
+      console.log(`nourl-review: marked ${marked} user-submitted cards without a targetUrl as unapproved.`);
+    }
+
+    // One-time: re-approve the "Be Pretti Good" memorial beanie card.
+    // The nourl-review migration flagged it because it has no targetUrl
+    // (it's a crafting card with no external link), but it was previously
+    // approved and should stay live.
+    const beanieReapproved = await kv.get("cleanup:reapprove-beanie:v1");
+    if (!beanieReapproved) {
+      let reapproved = 0;
+      for (const c of (await kv.getByPrefix("user-action:")) as any[]) {
+        if (!c || typeof c !== "object" || typeof c.id !== "number") continue;
+        if (typeof c.title === "string" && c.title.toLowerCase().includes("pretti good")) {
+          await kv.set(`user-action:${c.id}`, { ...c, adminApproved: true });
+          reapproved++;
+          console.log(`Re-approved beanie card user-action:${c.id}: "${c.title}"`);
+        }
+      }
+      await kv.set("cleanup:reapprove-beanie:v1", true);
+      console.log(`Beanie re-approval migration: ${reapproved} cards updated.`);
     }
 
     // Fetch ALL action:* cards from the KV store (real cards only after purge)
@@ -1326,6 +1408,54 @@ app.post("/make-server-9eb1ae04/notifications", async (c) => {
   }
 });
 
+// ─── Relevance checker ────────────────────────────────────────────────────────
+// Heuristic scan of a submitted card's text. Returns true if the content looks
+// clearly off-topic for an anti-Trump / MAGA-resistance site.
+// Logic: award points for resistance signals, penalise for red-flag signals.
+// If red flags outweigh resistance signals by enough, flag as not-on-topic.
+function looksOffTopic(title: string, description: string, category: string): boolean {
+  const text = `${title} ${description} ${category}`.toLowerCase();
+
+  // Categories that are inherently resistance-adjacent — never flag these.
+  const onTopicCategories = [
+    "protest", "boycott", "petition", "letter", "email campaign",
+    "social media", "flash mob", "funding", "training", "meeting",
+    "join a group", "news story", "labor", "legal", "professional skills",
+    "mental health", "prayer", "boost", "spread positivity", "crafting",
+    "transportation", "housing", "other", "irreverence", "personal commitment",
+  ];
+  if (onTopicCategories.some((c) => category.toLowerCase().includes(c))) return false;
+
+  // Resistance / political relevance signals — each adds 1 point.
+  const resistanceTerms = [
+    "trump", "maga", "resist", "resistance", "protest", "boycott",
+    "fascis", "authoritar", "democrat", "republican", "congress", "senate",
+    "legislat", "vote", "election", "policy", "civil rights", "immigrant",
+    "deportat", "abortion", "repro", "lgbtq", "trans", "climate", "union",
+    "labor rights", "worker", "petition", "rally", "march", "activist",
+    "organiz", "campaign", "movement", "solidarity", "justice", "equity",
+    "inequality", "discrimination", "rights", "freedom", "constitution",
+    "executive order", "white house", "administration", "government",
+    "federal", "supreme court", "aclu", "indivisible", "50501",
+  ];
+
+  // Strong off-topic red flags — each adds 2 penalty points.
+  const redFlagTerms = [
+    "crypto", "bitcoin", "nft", "forex", "trading", "stock tip",
+    "weight loss", "diet pill", "supplement", "mlm", "multi-level",
+    "make money", "earn money", "passive income", "side hustle",
+    "adult content", "casino", "gambling", "lottery",
+    "buy now", "limited time offer", "discount code", "promo code",
+    "follow me", "subscribe to my", "check out my channel",
+  ];
+
+  const resistanceScore = resistanceTerms.filter((t) => text.includes(t)).length;
+  const redFlagScore = redFlagTerms.filter((t) => text.includes(t)).length * 2;
+
+  // Flag as off-topic only if red flags dominate AND there are no resistance signals.
+  return redFlagScore > 0 && resistanceScore === 0;
+}
+
 // ─── POST /actions/create — submit a new user-created ASK ─────────────────────
 app.post("/make-server-9eb1ae04/actions/create", async (c) => {
   try {
@@ -1359,6 +1489,8 @@ app.post("/make-server-9eb1ae04/actions/create", async (c) => {
     const currentIds = (await kv.get("user-action:ids") ?? []) as number[];
     const nextId = Math.max(...currentIds, 1271) + 1;
 
+    const offTopic = looksOffTopic(title, description, category);
+
     const card = {
       id: nextId,
       category: category.toUpperCase(),
@@ -1382,6 +1514,7 @@ app.post("/make-server-9eb1ae04/actions/create", async (c) => {
       topImageUrl: topImageUrl || null,
       imageContain: imageContain === true ? true : undefined,
       adminApproved: false,
+      ...(offTopic ? { notOnTopic: true } : {}),
       createdAt: new Date().toISOString(),
       createdBy: user.id,
       toneOverride: toneOverride && Object.keys(toneOverride).length > 0 ? toneOverride : undefined,
@@ -1390,7 +1523,7 @@ app.post("/make-server-9eb1ae04/actions/create", async (c) => {
 
     await kv.set(`user-action:${nextId}`, card);
     await kv.set("user-action:ids", [...currentIds, nextId]);
-    console.log(`User ${approval.name} created ASK #${nextId}: "${title}"`);
+    console.log(`User ${approval.name} created ASK #${nextId}: "${title}"${offTopic ? " [AUTO-FLAGGED: off-topic]" : ""}`);
     return c.json({ card });
   } catch (err) {
     console.log("Create action error:", err);
@@ -1722,7 +1855,9 @@ app.post("/make-server-9eb1ae04/admin/unflag-off-topic/:id", async (c) => {
 });
 
 // ─── POST /actions/upload-image — upload to Supabase Storage, return URL ─────
-// Approved users only. Auto-creates the public bucket on first call.
+// Any authenticated user can upload. Approval is checked when the card is
+// submitted, not at image upload time — new users need to upload a photo
+// before their account is approved.
 app.post("/make-server-9eb1ae04/actions/upload-image", async (c) => {
   try {
     const token = c.req.header("Authorization")?.split(" ")[1];
@@ -1730,11 +1865,6 @@ app.post("/make-server-9eb1ae04/actions/upload-image", async (c) => {
 
     const user = await getUser(token);
     if (!user) return c.json({ error: "Invalid or expired token" }, 401);
-
-    const approval = await kv.get(`user:approval:${user.id}`) as any;
-    if (!approval || approval.status !== "approved") {
-      return c.json({ error: "Your account must be approved to upload." }, 403);
-    }
 
     const body = await c.req.parseBody();
     const file = body.file;
