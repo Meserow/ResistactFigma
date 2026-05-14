@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import logoImg from "../../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
 import {
-  X, Loader2, Megaphone, Upload,
+  X, Loader2, Megaphone, Upload, Clock,
   Ban, DollarSign, Bike, Newspaper, Calendar, Share2, Hammer, PenLine, Users,
   HandHeart, Home, HardHat, Sparkles, Briefcase, Heart, Mail, GraduationCap,
   Smile, Volume2, Palette, Handshake, Send, Brain, Lightbulb, Mailbox,
@@ -13,7 +13,7 @@ import { supabase, type UserApproval } from "../lib/supabase";
 import { LOCATION_OPTIONS } from "../lib/locations";
 import { categoryToneDefault, type VulnerableGroup, type TimeBucket } from "../lib/matcher";
 import { ToneRangeSlider } from "./ToneSlider";
-import { InvolvementPicker } from "./InvolvementPicker";
+import { involvementLevelFor } from "./InvolvementPicker";
 import { GroupsDropdown } from "./GroupsDropdown";
 
 type ToneVec = { anger: number; comedy: number; subversion: number; hope: number; energy: number };
@@ -50,6 +50,23 @@ const TONE_FIELDS: { key: keyof ToneVec; label: string; Icon: LucideIcon; stops:
     { label: "On fire", desc: "All in, maximum commitment" },
   ]},
 ];
+
+/** 4-stop time commitment scale — matches EditCardModal and MatchMe style. */
+const TIME_STOPS: { key: TimeBucket; title: string; desc: string }[] = [
+  { key: "5min",     title: "Just the basics",  desc: "< 5 minutes" },
+  { key: "30min",    title: "A little",         desc: "A few hours per month" },
+  { key: "fewHours", title: "Regularly",        desc: "A few hours per week" },
+  { key: "ongoing",  title: "All in",           desc: "Ongoing organizing" },
+];
+
+const TIME_COMMITMENT_MAP: Record<TimeBucket, string> = {
+  "5min":     "< 1 hour",
+  "30min":    "< 1 hour",
+  "1hr":      "1 hour",
+  "fewHours": "1–3 hours",
+  "fullDay":  "Full day",
+  "ongoing":  "Ongoing",
+};
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
 
@@ -99,29 +116,31 @@ export function AskFlowModal({
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   // Form state
-  const [formTitle,       setFormTitle]       = useState("");
-  const [formDesc,        setFormDesc]        = useState("");
-  const [formSponsor,     setFormSponsor]     = useState("");
-  const [formLink,        setFormLink]        = useState("");
-  const [formLocation,    setFormLocation]    = useState("");
-  const [formVettingInfo, setFormVettingInfo] = useState("");
-  const [formImageUrl,    setFormImageUrl]    = useState("");
+  const [formTitle,        setFormTitle]        = useState("");
+  const [formDesc,         setFormDesc]         = useState("");
+  const [formLink,         setFormLink]         = useState(""); // action URL → sent as targetUrl
+  const [formAuthorLink,   setFormAuthorLink]   = useState(""); // org/author homepage
+  const [formAuthorName,   setFormAuthorName]   = useState(""); // submitter-supplied author
+  const [formAuthorRole,   setFormAuthorRole]   = useState(""); // role / org name
+  const [formLocation,     setFormLocation]     = useState("");
+  const [formSponsor,      setFormSponsor]      = useState("");
+  const [formVettingInfo,  setFormVettingInfo]  = useState("");
+  const [formEventDate,    setFormEventDate]    = useState("");
+  const [formImageUrl,     setFormImageUrl]     = useState("");
   const [formImageContain, setFormImageContain] = useState(false);
-  const [involvement, setInvolvement] = useState<TimeBucket>("30min");
+  const [involvement,      setInvolvement]      = useState<TimeBucket>("30min");
   const [tone, setTone] = useState<ToneVec>({ anger: 1, comedy: 1, subversion: 1, hope: 1, energy: 1 });
-  /** Tracks whether the user has manually adjusted the sliders. If false, the
-   * tone vector follows the category default whenever category changes. */
-  const [toneEdited, setToneEdited] = useState(false);
-  const [amplifiesGroups, setAmplifiesGroups] = useState<VulnerableGroup[]>([]);
-  const [createLoading,   setCreateLoading]   = useState(false);
-  const [formError,       setFormError]       = useState<string | null>(null);
-  const [uploading,       setUploading]       = useState(false);
-  const [uploadError,     setUploadError]     = useState<string | null>(null);
-  /** Wizard step. Step count depends on auth state: a logged-out user gets an
-   * extra "Create an account" step at the end. */
+  /** True once the user manually moves any tone slider — stops auto-sync from category. */
+  const [toneEdited,       setToneEdited]       = useState(false);
+  const [amplifiesGroups,  setAmplifiesGroups]  = useState<VulnerableGroup[]>([]);
+  const [createLoading,    setCreateLoading]    = useState(false);
+  const [formError,        setFormError]        = useState<string | null>(null);
+  const [uploading,        setUploading]        = useState(false);
+  const [uploadError,      setUploadError]      = useState<string | null>(null);
+  /** Wizard step. Logged-in users see 3 steps; logged-out get a 4th auth gate. */
   const [step, setStep] = useState(0);
   const submittingRef = useRef(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef  = useRef<HTMLInputElement>(null);
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -137,8 +156,6 @@ export function AskFlowModal({
     setUploadError(null);
     setUploading(true);
     try {
-      // Get a fresh token from the Supabase client — the prop may be stale
-      // if the token was auto-refreshed since the modal opened.
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token ?? accessToken;
       if (!token) {
@@ -173,37 +190,34 @@ export function AskFlowModal({
   const isApproved = approval?.status === "approved";
   const selectedCat = CATEGORIES.find((c) => c.name === selectedCategory);
 
-  /** Wizard step layout. The 5 form steps are always present; logged-out
-   * users get an extra "Create an account" step at the end. */
-  const totalSteps = isLoggedIn ? 5 : 6;
+  // ── Step layout ──────────────────────────────────────────────────────────────
+  // Logged-in:  4 steps  (0 = What's the Action, 1 = Details & Vibe, 2 = Optional, 3 = Header Image)
+  // Logged-out: 5 steps  (same 3 + auth gate, then Header Image last)
+  const imageStep = isLoggedIn ? 3 : 4;
+  const totalSteps = isLoggedIn ? 4 : 5;
   const isLastStep = step === totalSteps - 1;
-  // Auth step is step 4 for logged-out users. Image step comes after so
-  // upload is always available once they're signed in.
-  const isAuthStep = !isLoggedIn && step === 4;
-  const imageStep = isLoggedIn ? 4 : 5;
+  const isAuthStep = !isLoggedIn && step === 3;
+  const isImageStep = step === imageStep;
 
   const STEP_TITLES = isLoggedIn
-    ? ["What's the Action?", "Logistics", "Tone", "Optional details", "Header image"]
-    : ["What's the Action?", "Logistics", "Tone", "Optional details", "Create an account", "Header image"];
+    ? ["What's the Action?", "Details & Vibe", "Optional", "Header Image"]
+    : ["What's the Action?", "Details & Vibe", "Optional", "Create an Account", "Header Image"];
 
-  // If a user signs in while sitting on the auth step (step 4), the auth step
-  // no longer renders and totalSteps shrinks to 4. Drop them on the final
-  // form step (3) so they can hit "Post my ASK" without a confusing empty
-  // body.
+  // If the user signs in while on the auth step, totalSteps shrinks — drop back.
   useEffect(() => {
     if (step > totalSteps - 1) setStep(totalSteps - 1);
   }, [step, totalSteps]);
 
-  /** Per-step requirements. Returns the list of missing field labels. */
+  /** Per-step required-field check — returns missing field labels. */
   function missingForStep(s: number): string[] {
     const m: string[] = [];
     if (s === 0) {
-      if (!selectedCategory) m.push("Category");
-      if (!formTitle.trim()) m.push("Title");
-      if (!formDesc.trim()) m.push("Description");
+      if (!selectedCategory)    m.push("Category");
+      if (!formTitle.trim())    m.push("Title");
+      if (!formDesc.trim())     m.push("Description");
+      if (!formLink.trim())     m.push("Action URL");
     } else if (s === 1) {
-      if (!formLocation) m.push("Location");
-      if (!formLink.trim()) m.push("Link");
+      if (!formLocation)        m.push("Location");
     } else if (s === imageStep) {
       if (!formImageUrl.trim()) m.push("Header image");
     }
@@ -212,6 +226,10 @@ export function AskFlowModal({
   const missingNow = missingForStep(step);
   const canAdvance = missingNow.length === 0;
 
+  // Normalise involvement → 0–3 index for ToneRangeSlider (same as EditCardModal)
+  const tIdx   = Math.max(0, TIME_STOPS.findIndex((l) => l.key === involvementLevelFor(involvement)));
+  const tLevel = TIME_STOPS[tIdx];
+
   async function handleCreateAsk() {
     if (submittingRef.current) return;
     if (!isLoggedIn) { onLoginRequired(); return; }
@@ -219,47 +237,40 @@ export function AskFlowModal({
       setFormError("Pick a category."); return;
     }
     if (!formTitle.trim() || !formDesc.trim() || !formLink.trim() || !formImageUrl.trim()) {
-      setFormError("Title, description, link, and header image are required."); return;
+      setFormError("Title, description, action URL, and header image are required."); return;
     }
+    if (!formLocation) { setFormError("Location is required."); return; }
     submittingRef.current = true;
     setFormError(null);
     setCreateLoading(true);
     try {
       const isOnline = formLocation === "Online";
-      // Map the picker's TimeBucket to the human-readable timeCommitment string
-      // the matcher's `timeBucketFor` already understands. The "5min" level also
-      // sets quickAction so the Quick Actions filter picks it up.
-      const TIME_COMMITMENT: Record<TimeBucket, string> = {
-        "5min":     "< 1 hour",
-        "30min":    "< 1 hour",
-        "1hr":      "1 hour",
-        "fewHours": "1–3 hours",
-        "fullDay":  "Full day",
-        "ongoing":  "Ongoing",
-      };
       let res: Response;
       try {
         res = await fetch(`${API}/actions/create`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
           body: JSON.stringify({
-            title: formTitle.trim(), description: formDesc.trim(),
-            category: selectedCategory!, categoryColor: selectedCat?.color ?? "#23297e",
-            location: isOnline ? undefined : formLocation || undefined,
+            title:          formTitle.trim(),
+            description:    formDesc.trim(),
+            category:       selectedCategory!,
+            categoryColor:  selectedCat?.color ?? "#23297e",
+            location:       isOnline ? undefined : formLocation || undefined,
             isOnline,
-            actionType: isOnline ? "Online" : "In Person Group",
-            timeCommitment: TIME_COMMITMENT[involvement],
-            quickAction: involvement === "5min" ? true : undefined,
-            sponsor: formSponsor.trim() || undefined,
-            link: formLink.trim() || undefined,
-            vettingInfo: formVettingInfo.trim() || undefined,
-            spotsTotal: "Unlimited",
-            topImageUrl: formImageUrl.trim() || null,
-            imageContain: formImageContain,
-            // Send the full 5-dim tone vector as an override only when the
-            // submitter actually moved a slider away from the category default.
-            // Otherwise the matcher will fall through to the category baseline.
-            toneOverride: toneEdited ? tone : undefined,
+            actionType:     isOnline ? "Online" : "In Person Group",
+            timeCommitment: TIME_COMMITMENT_MAP[involvement],
+            quickAction:    involvement === "5min" ? true : undefined,
+            sponsor:        formSponsor.trim()      || undefined,
+            targetUrl:      formLink.trim()         || undefined,
+            authorLink:     formAuthorLink.trim()   || undefined,
+            authorName:     formAuthorName.trim()   || undefined,
+            authorRole:     formAuthorRole.trim()   || undefined,
+            vettingInfo:    formVettingInfo.trim()  || undefined,
+            eventDate:      formEventDate.trim()    || undefined,
+            spotsTotal:     "Unlimited",
+            topImageUrl:    formImageUrl.trim()     || null,
+            imageContain:   formImageContain,
+            toneOverride:   toneEdited ? tone : undefined,
             amplifiesGroups: amplifiesGroups.length > 0 ? amplifiesGroups : undefined,
           }),
         });
@@ -286,11 +297,12 @@ export function AskFlowModal({
     }
   }
 
-  // ── Form ────────────────────────────────────────────────────────────────────
+  // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <Overlay onClose={onClose}>
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[92vh]">
-        {/* Header */}
+
+        {/* ── Header ── */}
         <div className="flex items-center gap-3 px-6 pt-5 pb-4 border-b border-gray-100">
           <img src={logoImg} alt="" aria-hidden="true" className="w-9 h-9 object-contain shrink-0" />
           <div className="flex-1 min-w-0">
@@ -307,7 +319,7 @@ export function AskFlowModal({
           </button>
         </div>
 
-        {/* Progress dots */}
+        {/* ── Progress dots ── */}
         <div className="px-6 pt-3 pb-1 shrink-0 flex justify-center gap-1.5">
           {Array.from({ length: totalSteps }).map((_, i) => (
             <div
@@ -320,117 +332,122 @@ export function AskFlowModal({
         </div>
 
         <>
-              {/* Body — scrollable */}
-              <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+          {/* ── Body — scrollable ── */}
+          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
 
-                {/* ── Step 0: The ask ───────────────────────────────────── */}
-                {step === 0 && (
-                <Section
-                  title="What's the Action?"
-                  hint="Make it clear and compelling — this is the headline people will see."
-                >
-                  <Field label="Title" required>
-                    <input
-                      type="text" value={formTitle} maxLength={80} autoComplete="off"
-                      onChange={(e) => setFormTitle(e.target.value)}
-                      placeholder="e.g. March on the Capitol on July 4th"
-                      className={inputCls}
+            {/* ── Step 0: What's the Action? ──────────────────────────────── */}
+            {step === 0 && (
+              <Section
+                title="What's the Action?"
+                hint="Make it clear and compelling — this is the headline people will see."
+              >
+                <Field label="Title" required>
+                  <input
+                    type="text" value={formTitle} maxLength={80} autoComplete="off"
+                    onChange={(e) => setFormTitle(e.target.value)}
+                    placeholder="e.g. March on the Capitol on July 4th"
+                    className={inputCls}
+                  />
+                  <Counter value={formTitle} max={80} />
+                </Field>
+
+                <Field label="Category" required>
+                  <select
+                    value={selectedCategory ?? ""}
+                    onChange={(e) => {
+                      const next = e.target.value || null;
+                      setSelectedCategory(next);
+                      if (next && !toneEdited) {
+                        const d = categoryToneDefault(next);
+                        setTone({ anger: d.anger, comedy: d.comedy, subversion: d.subversion, hope: d.hope, energy: d.energy });
+                      }
+                    }}
+                    className={selectCls(selectedCategory)}
+                    style={selectedCat ? { color: selectedCat.color, fontWeight: 600 } : undefined}
+                  >
+                    <option value="">— select a category —</option>
+                    {CATEGORIES.map(({ name }) => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                  </select>
+                </Field>
+
+                <Field label="Description" required>
+                  <textarea
+                    rows={4} value={formDesc}
+                    onChange={(e) => setFormDesc(e.target.value)}
+                    placeholder="Describe what you need help with and why it matters…"
+                    className={`${inputCls} resize-none`}
+                  />
+                </Field>
+
+                <Field label="Action URL" required>
+                  <input
+                    type="url" value={formLink} autoComplete="off"
+                    onChange={(e) => setFormLink(e.target.value)}
+                    placeholder="https://… (where people go to take this action)"
+                    className={inputCls}
+                  />
+                </Field>
+
+              </Section>
+            )}
+
+            {/* ── Step 1: Details & Vibe ──────────────────────────────────── */}
+            {step === 1 && (
+              <Section
+                title="Details & Vibe"
+                hint="Where, how much time, and what energy — helps us match this to the right people."
+              >
+                <Field label="Location" required>
+                  <select
+                    value={formLocation}
+                    onChange={(e) => setFormLocation(e.target.value)}
+                    className={selectCls(formLocation)}
+                  >
+                    <option value="">— select —</option>
+                    {LOCATION_OPTIONS.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt === "From Home" ? "From Home (not online)" : opt}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+
+                {/* Tone & Time — unified section */}
+                <div className="rounded-2xl border border-gray-100 bg-gray-50/60 px-4 py-4 space-y-4">
+                  <p className="font-['Poppins',sans-serif] text-[13px] font-semibold text-[#23297e]">
+                    Tone & Time <span className="font-normal text-gray-400 text-[11px]">— defaults from your category, adjust if off</span>
+                  </p>
+
+                  {/* Time commitment */}
+                  <div>
+                    <div className="flex items-center mb-1.5">
+                      <Clock size={14} strokeWidth={2} className="text-[#23297e] mr-1.5 shrink-0" />
+                      <strong className="font-['Poppins',sans-serif] font-semibold text-xs text-[#23297e]">Time</strong>
+                      <span className="ml-1.5 font-['Poppins',sans-serif] text-[11px] text-gray-500">
+                        · <span className="font-medium text-[#fd8e33]">{tLevel.title}</span> — {tLevel.desc}
+                      </span>
+                    </div>
+                    <ToneRangeSlider
+                      value={tIdx}
+                      onChange={(v) => setInvolvement(TIME_STOPS[v].key)}
+                      max={3}
                     />
-                    <Counter value={formTitle} max={80} />
-                  </Field>
+                  </div>
 
-                  <Field label="Category" required>
-                    <select
-                      value={selectedCategory ?? ""}
-                      onChange={(e) => {
-                        const next = e.target.value || null;
-                        setSelectedCategory(next);
-                        // Pre-populate tone sliders with the category's defaults until the
-                        // submitter manually edits them. Once edited, we leave them alone.
-                        if (next && !toneEdited) {
-                          const d = categoryToneDefault(next);
-                          setTone({ anger: d.anger, comedy: d.comedy, subversion: d.subversion, hope: d.hope, energy: d.energy });
-                        }
-                      }}
-                      className={selectCls(selectedCategory)}
-                      style={selectedCat ? { color: selectedCat.color, fontWeight: 600 } : undefined}
-                    >
-                      <option value="">— select a category —</option>
-                      {CATEGORIES.map(({ name }) => (
-                        <option key={name} value={name}>{name}</option>
-                      ))}
-                    </select>
-                  </Field>
-
-                  <Field label="Description" required>
-                    <textarea
-                      rows={4} value={formDesc}
-                      onChange={(e) => setFormDesc(e.target.value)}
-                      placeholder="Describe what you need help with and why it matters…"
-                      className={`${inputCls} resize-none`}
-                    />
-                  </Field>
-                </Section>
-                )}
-
-                {/* ── Step 1: Logistics ─────────────────────────────────── */}
-                {step === 1 && (
-                <Section
-                  title="Logistics"
-                  hint="Where this lives, what it links to, and how much commitment it takes."
-                >
-                  <Field label="How much does this action require of people?">
-                    <InvolvementPicker
-                      value={involvement}
-                      onChange={setInvolvement}
-                      variant="plan"
-                    />
-                  </Field>
-
-                  <Field label="Location" required>
-                    <select
-                      value={formLocation}
-                      onChange={(e) => setFormLocation(e.target.value)}
-                      className={selectCls(formLocation)}
-                    >
-                      <option value="">— select —</option>
-                      {LOCATION_OPTIONS.map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt === "From Home" ? "From Home (not online actions)" : opt}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-
-                  <Field label="Link" required>
-                    <input
-                      type="url" value={formLink} autoComplete="off"
-                      onChange={(e) => setFormLink(e.target.value)}
-                      placeholder="https://…"
-                      className={inputCls}
-                    />
-                  </Field>
-
-                </Section>
-                )}
-
-                {/* ── Step 2: Tone of this action ────────────────────────── */}
-                {step === 2 && (
-                <Section
-                  title="Tone of this action"
-                  hint="How would you describe the type of action this is? Helps us match it to people looking for the right vibe today."
-                >
-                  <div className="space-y-3.5">
+                  {/* Tone sliders — 2-col grid on wider screens */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
                     {TONE_FIELDS.map(({ key, label, Icon, stops }) => {
                       const stop = stops[tone[key]];
                       return (
                         <div key={key}>
                           <div className="flex items-center mb-1.5">
-                            <Icon size={15} strokeWidth={2} className="text-[#23297e] mr-1.5 shrink-0" />
-                            <strong className="font-['Poppins',sans-serif] font-semibold text-sm text-[#23297e]">
+                            <Icon size={14} strokeWidth={2} className="text-[#23297e] mr-1.5 shrink-0" />
+                            <strong className="font-['Poppins',sans-serif] font-semibold text-xs text-[#23297e]">
                               {label}
                             </strong>
-                            <span className="ml-2 font-['Poppins',sans-serif] text-xs text-gray-500 truncate">
+                            <span className="ml-1.5 font-['Poppins',sans-serif] text-[11px] text-gray-500 truncate">
                               · <span className="font-medium text-[#fd8e33]">{stop.label}</span> — {stop.desc}
                             </span>
                           </div>
@@ -445,92 +462,55 @@ export function AskFlowModal({
                       );
                     })}
                   </div>
-                </Section>
-                )}
+                </div>
 
-                {/* ── Step 3: Optional details ─────────────────────────── */}
-                {/* (Moved before sign-in so image upload always has a session) */}
+              </Section>
+            )}
 
-                {/* ── Image step: comes after sign-in for logged-out users ── */}
-                {step === imageStep && (
-                <Section
-                  title="Header image"
-                  hint={isLoggedIn
-                    ? "A photo or banner that represents this action. Upload from your computer or paste any image URL."
-                    : "Almost done — add a photo or banner for your action. You're signed in, so upload works now, or paste any image URL."}
-                >
-                  <Field label="Header image" required>
-                    <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="hidden"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={uploading}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-[#fd8e33] hover:bg-[#d96612] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-semibold text-xs rounded-lg transition-colors"
-                      >
-                        {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
-                        {uploading ? "Uploading…" : "Upload from computer"}
-                      </button>
-                      <span className="font-['Poppins',sans-serif] text-[11px] text-gray-400">or paste a URL ↓</span>
-                      <label className="ml-auto flex items-center gap-1.5 cursor-pointer select-none">
-                        <input
-                          type="checkbox" checked={formImageContain}
-                          onChange={(e) => setFormImageContain(e.target.checked)}
-                          className="w-3.5 h-3.5 rounded accent-[#fd8e33]"
-                        />
-                        <span className="font-['Poppins',sans-serif] text-[11.5px] text-gray-500">
-                          Fit logo (don't crop)
-                        </span>
-                      </label>
-                    </div>
+            {/* ── Step 2: Optional ────────────────────────────────────────── */}
+            {step === 2 && !isAuthStep && (
+              <Section
+                title="Optional"
+                hint="Skip this if you like — these fields help us vet and credit your action."
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Field label="Your name or org">
                     <input
-                      type="url" value={formImageUrl} autoComplete="off"
-                      onChange={(e) => setFormImageUrl(e.target.value)}
-                      placeholder="https://… (paste any image URL)"
-                      className={inputCls}
-                    />
-                    {formImageUrl.trim() && (
-                      <div className="mt-2 relative h-24 rounded-xl overflow-hidden bg-gray-50 border border-gray-200">
-                        <img
-                          src={formImageUrl.trim()}
-                          alt="Header preview"
-                          className="w-full h-full object-cover"
-                          onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = "none"; }}
-                        />
-                      </div>
-                    )}
-                    {uploadError && (
-                      <p className="mt-1.5 font-['Poppins',sans-serif] text-[11px] text-red-500">{uploadError}</p>
-                    )}
-                  </Field>
-                </Section>
-                )}
-
-                {/* ── Step 3: Optional details ──────────────────────────── */}
-                {step === 3 && (
-                <>
-                <Section title="Optional details">
-                  <Field label="Sponsor">
-                    <input
-                      type="text" value={formSponsor} autoComplete="off"
-                      onChange={(e) => setFormSponsor(e.target.value)}
-                      placeholder="Organization or person sponsoring this action"
+                      type="text" value={formAuthorName} autoComplete="off"
+                      onChange={(e) => setFormAuthorName(e.target.value)}
+                      placeholder="e.g. NAACP, Indivisible"
                       className={inputCls}
                     />
                   </Field>
-                </Section>
+                  <Field label="Role">
+                    <input
+                      type="text" value={formAuthorRole} autoComplete="off"
+                      onChange={(e) => setFormAuthorRole(e.target.value)}
+                      placeholder="e.g. Organizer, Chapter Lead"
+                      className={inputCls}
+                    />
+                  </Field>
+                </div>
+                <Field label="Your org's website">
+                  <input
+                    type="url" value={formAuthorLink} autoComplete="off"
+                    onChange={(e) => setFormAuthorLink(e.target.value)}
+                    placeholder="https://…"
+                    className={inputCls}
+                  />
+                </Field>
+                <Field label="Event date">
+                  <input
+                    type="date" value={formEventDate}
+                    onChange={(e) => setFormEventDate(e.target.value)}
+                    className={inputCls}
+                  />
+                  <p className="mt-1 font-['Poppins',sans-serif] text-[11px] text-gray-400">
+                    For time-limited events — card is hidden after this date. Leave blank for evergreen actions.
+                  </p>
+                </Field>
 
-                {/* Section: Group affinity */}
-                <Section
-                  title="Who does this especially help?"
-                  hint="Pick any groups whose voice this action particularly amplifies. Optional — leave empty if it's broad."
-                >
+                <Field label="Who does this especially help?">
                   <GroupsDropdown
                     value={amplifiesGroups}
                     onToggle={(g) =>
@@ -540,113 +520,159 @@ export function AskFlowModal({
                     }
                     onClear={() => setAmplifiesGroups([])}
                   />
-                </Section>
+                </Field>
+                <Field label="Vetting info">
+                  <textarea
+                    rows={3} value={formVettingInfo}
+                    onChange={(e) => setFormVettingInfo(e.target.value)}
+                    placeholder="Phone numbers, sponsoring orgs, references, anything we can check…"
+                    className={`${inputCls} resize-none`}
+                  />
+                </Field>
+              </Section>
+            )}
 
-                {/* Section: Verification */}
-                <Section
-                  title="Help us verify"
-                  hint="So we can be sure this isn't a bad-faith effort, share contact info, links, or anything that helps confirm it's real."
+            {/* ── Step 3 (anonymous only): Create an account ──────────────── */}
+            {isAuthStep && (
+              <div className="text-center py-6">
+                <h3 className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-2xl mb-2">
+                  Almost there!
+                </h3>
+                <p className="font-['Poppins',sans-serif] text-sm text-gray-600 max-w-md mx-auto mb-6">
+                  Sign in to add your header image and submit your action. Everything you've filled in is saved.
+                </p>
+                <button
+                  type="button"
+                  onClick={onLoginRequired}
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-[#fd8e33] hover:bg-[#e07a28] text-white font-['Poppins',sans-serif] font-bold text-sm rounded-2xl transition-colors shadow-sm"
                 >
-                  <Field label="Vetting info">
-                    <textarea
-                      rows={3} value={formVettingInfo}
-                      onChange={(e) => setFormVettingInfo(e.target.value)}
-                      placeholder="Phone numbers, sponsoring orgs, references, anything we can check…"
-                      className={`${inputCls} resize-none`}
+                  Sign in or create account
+                </button>
+                <p className="font-['Poppins',sans-serif] text-[11px] text-gray-400 mt-4">
+                  Your action gets reviewed before it goes live.
+                </p>
+              </div>
+            )}
+
+            {/* ── Last step: Header image ──────────────────────────────────── */}
+            {isImageStep && (
+              <Section
+                title="Header Image"
+                hint="A great photo makes your action stand out. Upload one or paste a URL."
+              >
+                <Field label="Header image" required>
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
                     />
-                  </Field>
-                </Section>
-                </>
-                )}
-
-                {/* ── Step 4 (anonymous only): Create an account ────────── */}
-                {isAuthStep && (
-                  <div className="text-center py-6">
-                    <h3 className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-2xl mb-2">
-                      One more step!
-                    </h3>
-                    <p className="font-['Poppins',sans-serif] text-sm text-gray-600 max-w-md mx-auto mb-6">
-                      Sign in to add your header image and publish. Your form is saved —
-                      once you're signed in you'll land right on the image step.
-                    </p>
                     <button
                       type="button"
-                      onClick={onLoginRequired}
-                      className="inline-flex items-center gap-2 px-6 py-3 bg-[#fd8e33] hover:bg-[#e07a28] text-white font-['Poppins',sans-serif] font-bold text-sm rounded-2xl transition-colors shadow-sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-[#fd8e33] hover:bg-[#d96612] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-semibold text-xs rounded-lg transition-colors"
                     >
-                      Sign in or create account
+                      {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+                      {uploading ? "Uploading…" : "Upload from computer"}
                     </button>
-                    <p className="font-['Poppins',sans-serif] text-[11px] text-gray-400 mt-4">
-                      Your action gets reviewed before it goes live.
-                    </p>
+                    <span className="font-['Poppins',sans-serif] text-[11px] text-gray-400">or paste a URL ↓</span>
+                    <label className="ml-auto flex items-center gap-1.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox" checked={formImageContain}
+                        onChange={(e) => setFormImageContain(e.target.checked)}
+                        className="w-3.5 h-3.5 rounded accent-[#fd8e33]"
+                      />
+                      <span className="font-['Poppins',sans-serif] text-[11.5px] text-gray-500">
+                        Fit logo (don't crop)
+                      </span>
+                    </label>
                   </div>
-                )}
-
-                {formError && (
-                  <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3 font-['Poppins',sans-serif]">
-                    {formError}
-                  </p>
-                )}
-              </div>
-
-              {/* Sticky footer — wizard nav */}
-              <div className="border-t border-gray-100 px-6 py-4 bg-white">
-                {!canAdvance && !isAuthStep && (
-                  <p className="text-[12px] text-amber-600 font-['Poppins',sans-serif] mb-2 text-center">
-                    Fill {missingNow.join(", ")} to continue.
-                  </p>
-                )}
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setStep((s) => Math.max(0, s - 1))}
-                    disabled={step === 0 || createLoading}
-                    className="px-4 py-2.5 font-['Poppins',sans-serif] text-sm font-semibold text-gray-600 hover:text-[#23297e] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Back
-                  </button>
-                  <span className="ml-auto font-['Poppins',sans-serif] text-[11px] text-gray-400">
-                    Step {step + 1} of {totalSteps} · {STEP_TITLES[step]}
-                  </span>
-                  {/* Right action: Next / Post / nothing on auth step (sign-in button lives in the body) */}
-                  {isAuthStep ? null : !isLastStep ? (
-                    <button
-                      type="button"
-                      onClick={() => setStep((s) => Math.min(totalSteps - 1, s + 1))}
-                      disabled={!canAdvance}
-                      className="ml-3 px-5 py-2.5 bg-[#23297e] hover:bg-[#1a2060] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-['Poppins',sans-serif] font-bold text-sm rounded-xl transition-colors"
-                    >
-                      Next
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => { if (!isApproved) return; handleCreateAsk(); }}
-                      disabled={createLoading || !isApproved || missingForStep(0).length > 0 || missingForStep(1).length > 0 || missingForStep(imageStep).length > 0}
-                      className="ml-3 px-5 py-2.5 bg-[#fd8e33] hover:bg-[#e07a28] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-['Poppins',sans-serif] font-bold text-sm rounded-xl transition-colors flex items-center gap-2"
-                    >
-                      {createLoading ? (
-                        <><Loader2 size={14} className="animate-spin" /> Submitting…</>
-                      ) : !isApproved ? (
-                        <><Megaphone size={14} /> Pending approval</>
-                      ) : (
-                        <><Megaphone size={14} /> Submit for Review</>
-                      )}
-                    </button>
+                  <input
+                    type="url" value={formImageUrl} autoComplete="off"
+                    onChange={(e) => setFormImageUrl(e.target.value)}
+                    placeholder="https://… (paste any image URL)"
+                    className={inputCls}
+                  />
+                  {formImageUrl.trim() && (
+                    <div className="mt-2 relative h-24 rounded-xl overflow-hidden bg-gray-50 border border-gray-200">
+                      <img
+                        src={formImageUrl.trim()}
+                        alt="Header preview"
+                        className="w-full h-full object-cover"
+                        onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = "none"; }}
+                      />
+                    </div>
                   )}
-                </div>
-              </div>
-            </>
+                  {uploadError && (
+                    <p className="mt-1.5 font-['Poppins',sans-serif] text-[11px] text-red-500">{uploadError}</p>
+                  )}
+                </Field>
+              </Section>
+            )}
+
+            {formError && (
+              <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3 font-['Poppins',sans-serif]">
+                {formError}
+              </p>
+            )}
+          </div>
+
+          {/* ── Sticky footer — wizard nav ── */}
+          <div className="border-t border-gray-100 px-6 py-4 bg-white">
+            {!canAdvance && !isAuthStep && (
+              <p className="text-[12px] text-amber-600 font-['Poppins',sans-serif] mb-2 text-center">
+                Fill in {missingNow.join(", ")} to continue.
+              </p>
+            )}
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setStep((s) => Math.max(0, s - 1))}
+                disabled={step === 0 || createLoading}
+                className="px-4 py-2.5 font-['Poppins',sans-serif] text-sm font-semibold text-gray-600 hover:text-[#23297e] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                Back
+              </button>
+              <span className="ml-auto font-['Poppins',sans-serif] text-[11px] text-gray-400">
+                Step {step + 1} of {totalSteps} · {STEP_TITLES[step]}
+              </span>
+              {isAuthStep ? null : !isLastStep ? (
+                <button
+                  type="button"
+                  onClick={() => setStep((s) => Math.min(totalSteps - 1, s + 1))}
+                  disabled={!canAdvance}
+                  className="ml-3 px-5 py-2.5 bg-[#23297e] hover:bg-[#1a2060] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-['Poppins',sans-serif] font-bold text-sm rounded-xl transition-colors"
+                >
+                  Next
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => { if (!isApproved) return; handleCreateAsk(); }}
+                  disabled={createLoading || !isApproved || missingForStep(0).length > 0 || missingForStep(1).length > 0 || missingForStep(imageStep).length > 0}
+                  className="ml-3 px-5 py-2.5 bg-[#fd8e33] hover:bg-[#e07a28] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-['Poppins',sans-serif] font-bold text-sm rounded-xl transition-colors flex items-center gap-2"
+                >
+                  {createLoading ? (
+                    <><Loader2 size={14} className="animate-spin" /> Submitting…</>
+                  ) : !isApproved ? (
+                    <><Megaphone size={14} /> Pending approval</>
+                  ) : (
+                    <><Megaphone size={14} /> Submit for Review</>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        </>
       </div>
     </Overlay>
   );
 }
 
 // ─── Sub-components & helpers ──────────────────────────────────────────────────
-// Base shared between text inputs and selects so styling stays in lockstep.
-// The text-color class is appended per-context: text inputs always show their
-// content in dark; selects swap between dark (when a value is picked) and
-// grey-italic (when the placeholder option is selected).
 const inputBase =
   "w-full px-4 py-3 bg-white border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm focus:outline-none focus:ring-2 focus:ring-[#fd8e33]/30 focus:border-[#fd8e33] transition-colors";
 const inputCls = `${inputBase} text-gray-800 placeholder-gray-400 placeholder:italic`;
@@ -692,46 +718,6 @@ function Counter({ value, max }: { value: string; max: number }) {
     <p className="text-right text-[11px] text-gray-400 mt-1 font-['Poppins',sans-serif]">
       {value.length}/{max}
     </p>
-  );
-}
-
-function Toggle({
-  checked, onChange, label, sub, compact,
-}: {
-  checked: boolean;
-  onChange: (v: boolean) => void;
-  label: string;
-  sub?: string;
-  compact?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={() => onChange(!checked)}
-      className={`flex items-center gap-3 w-full text-left ${compact ? "" : "p-3 rounded-xl border border-gray-100 hover:border-gray-200"}`}
-    >
-      <span
-        className={`relative w-10 h-6 rounded-full transition-colors shrink-0 ${
-          checked ? "bg-[#fd8e33]" : "bg-gray-300"
-        }`}
-      >
-        <span
-          className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${
-            checked ? "translate-x-4" : ""
-          }`}
-        />
-      </span>
-      <span className="flex-1">
-        <span className="block font-['Poppins',sans-serif] font-semibold text-[13px] text-gray-800 leading-tight">
-          {label}
-        </span>
-        {sub && (
-          <span className="block font-['Poppins',sans-serif] text-[11.5px] text-gray-500 mt-0.5 leading-tight">
-            {sub}
-          </span>
-        )}
-      </span>
-    </button>
   );
 }
 

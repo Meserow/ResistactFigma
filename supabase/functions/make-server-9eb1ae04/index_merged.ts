@@ -1500,11 +1500,13 @@ app.post("/make-server-9eb1ae04/actions/create", async (c) => {
       return c.json({ error: "Your account must be approved before posting." }, 403);
     }
 
-    const { title, description, category, categoryColor, location, isOnline, spotsTotal, sponsor, link, vettingInfo, actionType, timeCommitment, quickAction, topImageUrl, imageContain, toneOverride, amplifiesGroups } =
+    const { title, description, category, categoryColor, location, isOnline, spotsTotal, sponsor, link, targetUrl: targetUrlField, authorName: reqAuthorName, authorRole: reqAuthorRole, authorLink, vettingInfo, actionType, timeCommitment, quickAction, topImageUrl, imageContain, toneOverride, amplifiesGroups } =
       await c.req.json<{
         title: string; description: string; category: string; categoryColor: string;
         location?: string; isOnline?: boolean; spotsTotal: number | "Unlimited";
-        sponsor?: string; link?: string; vettingInfo?: string; actionType?: string;
+        sponsor?: string; link?: string; targetUrl?: string;
+        authorName?: string; authorRole?: string; authorLink?: string;
+        vettingInfo?: string; actionType?: string;
         timeCommitment?: string; quickAction?: boolean;
         topImageUrl?: string | null; imageContain?: boolean;
         toneOverride?: { anger?: number; comedy?: number; subversion?: number; care?: number; hope?: number; energy?: number };
@@ -1534,12 +1536,13 @@ app.post("/make-server-9eb1ae04/actions/create", async (c) => {
       timeCommitment: timeCommitment || undefined,
       quickAction: quickAction === true ? true : undefined,
       sponsor: sponsor || undefined,
-      targetUrl: link || undefined,
+      targetUrl: targetUrlField || link || undefined,
+      authorLink: authorLink || undefined,
       vettingInfo: vettingInfo || undefined,
       boosts: 0,
       spotsTotal,
-      authorName: approval.name,
-      authorRole: "Citizen Activist",
+      authorName: reqAuthorName || approval.name,
+      authorRole: reqAuthorRole || "Citizen Activist",
       authorAvatarKey: null,
       topImageKey: null,
       topImageUrl: topImageUrl || null,
