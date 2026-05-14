@@ -61,6 +61,7 @@ interface PendingCard {
   categoryColor: string;
   authorName: string;
   authorRole: string;
+  authorLink?: string | null;
   topImageUrl?: string | null;
   topImageKey?: string | null;
   targetUrl?: string | null;
@@ -507,6 +508,13 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
                                   <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-50 border border-blue-100 rounded-md px-1.5 py-0.5 font-['Poppins',sans-serif]">
                                     <Calendar size={10} />
                                     {card.eventDate}
+                                  </span>
+                                )}
+                                {/* Warn when the action link is just the author's homepage — needs a real direct URL */}
+                                {card.targetUrl && card.authorLink && card.targetUrl === card.authorLink && (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold font-['Poppins',sans-serif] uppercase tracking-wider px-1.5 py-0.5 rounded-md text-amber-700 bg-amber-50 border border-amber-300" title="Action link is the same as the author homepage — needs a direct action URL">
+                                    <AlertTriangle size={9} />
+                                    LINK = HOMEPAGE
                                   </span>
                                 )}
                               </div>
