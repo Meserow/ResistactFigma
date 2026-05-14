@@ -125,6 +125,7 @@ export function AskFlowModal({
   const [formLocation,     setFormLocation]     = useState("");
   const [formSponsor,      setFormSponsor]      = useState("");
   const [formVettingInfo,  setFormVettingInfo]  = useState("");
+  const [formEventDate,    setFormEventDate]    = useState("");
   const [formImageUrl,     setFormImageUrl]     = useState("");
   const [formImageContain, setFormImageContain] = useState(false);
   const [involvement,      setInvolvement]      = useState<TimeBucket>("30min");
@@ -190,15 +191,17 @@ export function AskFlowModal({
   const selectedCat = CATEGORIES.find((c) => c.name === selectedCategory);
 
   // ── Step layout ──────────────────────────────────────────────────────────────
-  // Logged-in:  3 steps  (0 = The Action, 1 = Details, 2 = Tone & Optional)
-  // Logged-out: 4 steps  (same 3 + auth gate at the end)
-  const totalSteps = isLoggedIn ? 3 : 4;
+  // Logged-in:  4 steps  (0 = What's the Action, 1 = Details & Vibe, 2 = Optional, 3 = Header Image)
+  // Logged-out: 5 steps  (same 3 + auth gate, then Header Image last)
+  const imageStep = isLoggedIn ? 3 : 4;
+  const totalSteps = isLoggedIn ? 4 : 5;
   const isLastStep = step === totalSteps - 1;
   const isAuthStep = !isLoggedIn && step === 3;
+  const isImageStep = step === imageStep;
 
   const STEP_TITLES = isLoggedIn
-    ? ["The Action", "Details", "Tone & Optional"]
-    : ["The Action", "Details", "Tone & Optional", "Create an account"];
+    ? ["What's the Action?", "Details & Vibe", "Optional", "Header Image"]
+    : ["What's the Action?", "Details & Vibe", "Optional", "Create an Account", "Header Image"];
 
   // If the user signs in while on the auth step, totalSteps shrinks — drop back.
   useEffect(() => {
@@ -215,6 +218,7 @@ export function AskFlowModal({
       if (!formLink.trim())     m.push("Action URL");
     } else if (s === 1) {
       if (!formLocation)        m.push("Location");
+    } else if (s === imageStep) {
       if (!formImageUrl.trim()) m.push("Header image");
     }
     return m;
@@ -262,6 +266,7 @@ export function AskFlowModal({
             authorName:     formAuthorName.trim()   || undefined,
             authorRole:     formAuthorRole.trim()   || undefined,
             vettingInfo:    formVettingInfo.trim()  || undefined,
+            eventDate:      formEventDate.trim()    || undefined,
             spotsTotal:     "Unlimited",
             topImageUrl:    formImageUrl.trim()     || null,
             imageContain:   formImageContain,
@@ -330,7 +335,7 @@ export function AskFlowModal({
           {/* ── Body — scrollable ── */}
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
 
-            {/* ── Step 0: The Action ──────────────────────────────────────── */}
+            {/* ── Step 0: What's the Action? ──────────────────────────────── */}
             {step === 0 && (
               <Section
                 title="What's the Action?"
@@ -385,33 +390,43 @@ export function AskFlowModal({
                   />
                 </Field>
 
-                <Field label="Author / Org Website">
-                  <input
-                    type="url" value={formAuthorLink} autoComplete="off"
-                    onChange={(e) => setFormAuthorLink(e.target.value)}
-                    placeholder="https://… (optional — your org's homepage)"
-                    className={inputCls}
-                  />
-                </Field>
               </Section>
             )}
 
-            {/* ── Step 1: Details ─────────────────────────────────────────── */}
+            {/* ── Step 1: Details & Vibe ──────────────────────────────────── */}
             {step === 1 && (
-              <>
-                <Section
-                  title="Details"
-                  hint="Where and how much — plus a header image to grab attention."
-                >
-                  {/* Time commitment — ToneRangeSlider style (matches EditCardModal) */}
+              <Section
+                title="Details & Vibe"
+                hint="Where, how much time, and what energy — helps us match this to the right people."
+              >
+                <Field label="Location" required>
+                  <select
+                    value={formLocation}
+                    onChange={(e) => setFormLocation(e.target.value)}
+                    className={selectCls(formLocation)}
+                  >
+                    <option value="">— select —</option>
+                    {LOCATION_OPTIONS.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt === "From Home" ? "From Home (not online)" : opt}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+
+                {/* Tone & Time — unified section */}
+                <div className="rounded-2xl border border-gray-100 bg-gray-50/60 px-4 py-4 space-y-4">
+                  <p className="font-['Poppins',sans-serif] text-[13px] font-semibold text-[#23297e]">
+                    Tone & Time <span className="font-normal text-gray-400 text-[11px]">— defaults from your category, adjust if off</span>
+                  </p>
+
+                  {/* Time commitment */}
                   <div>
-                    <label className="block font-['Poppins',sans-serif] text-[12px] font-semibold text-gray-700 mb-1.5">
-                      Time commitment
-                    </label>
                     <div className="flex items-center mb-1.5">
                       <Clock size={14} strokeWidth={2} className="text-[#23297e] mr-1.5 shrink-0" />
-                      <span className="font-['Poppins',sans-serif] text-[12px] text-gray-500">
-                        <span className="font-medium text-[#fd8e33]">{tLevel.title}</span> — {tLevel.desc}
+                      <strong className="font-['Poppins',sans-serif] font-semibold text-xs text-[#23297e]">Time</strong>
+                      <span className="ml-1.5 font-['Poppins',sans-serif] text-[11px] text-gray-500">
+                        · <span className="font-medium text-[#fd8e33]">{tLevel.title}</span> — {tLevel.desc}
                       </span>
                     </div>
                     <ToneRangeSlider
@@ -421,114 +436,18 @@ export function AskFlowModal({
                     />
                   </div>
 
-                  <Field label="Location" required>
-                    <select
-                      value={formLocation}
-                      onChange={(e) => setFormLocation(e.target.value)}
-                      className={selectCls(formLocation)}
-                    >
-                      <option value="">— select —</option>
-                      {LOCATION_OPTIONS.map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt === "From Home" ? "From Home (not online actions)" : opt}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-
-                  <Field label="Header image" required>
-                    <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="hidden"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={uploading}
-                        className="flex items-center gap-1.5 px-3 py-2 bg-[#fd8e33] hover:bg-[#d96612] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-semibold text-xs rounded-lg transition-colors"
-                      >
-                        {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
-                        {uploading ? "Uploading…" : "Upload from computer"}
-                      </button>
-                      <span className="font-['Poppins',sans-serif] text-[11px] text-gray-400">or paste a URL ↓</span>
-                      <label className="ml-auto flex items-center gap-1.5 cursor-pointer select-none">
-                        <input
-                          type="checkbox" checked={formImageContain}
-                          onChange={(e) => setFormImageContain(e.target.checked)}
-                          className="w-3.5 h-3.5 rounded accent-[#fd8e33]"
-                        />
-                        <span className="font-['Poppins',sans-serif] text-[11.5px] text-gray-500">
-                          Fit logo (don't crop)
-                        </span>
-                      </label>
-                    </div>
-                    <input
-                      type="url" value={formImageUrl} autoComplete="off"
-                      onChange={(e) => setFormImageUrl(e.target.value)}
-                      placeholder="https://… (paste any image URL)"
-                      className={inputCls}
-                    />
-                    {formImageUrl.trim() && (
-                      <div className="mt-2 relative h-24 rounded-xl overflow-hidden bg-gray-50 border border-gray-200">
-                        <img
-                          src={formImageUrl.trim()}
-                          alt="Header preview"
-                          className="w-full h-full object-cover"
-                          onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = "none"; }}
-                        />
-                      </div>
-                    )}
-                    {uploadError && (
-                      <p className="mt-1.5 font-['Poppins',sans-serif] text-[11px] text-red-500">{uploadError}</p>
-                    )}
-                  </Field>
-                </Section>
-
-                <Section title="Author (optional)">
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field label="Name">
-                      <input
-                        type="text" value={formAuthorName} autoComplete="off"
-                        onChange={(e) => setFormAuthorName(e.target.value)}
-                        placeholder="Your name or org"
-                        className={inputCls}
-                      />
-                    </Field>
-                    <Field label="Role / Org">
-                      <input
-                        type="text" value={formAuthorRole} autoComplete="off"
-                        onChange={(e) => setFormAuthorRole(e.target.value)}
-                        placeholder="e.g. NAACP, Indivisible"
-                        className={inputCls}
-                      />
-                    </Field>
-                  </div>
-                </Section>
-              </>
-            )}
-
-            {/* ── Step 2: Tone & Optional ──────────────────────────────────── */}
-            {step === 2 && (
-              <>
-                <Section
-                  title="Tone"
-                  hint="Helps us match this action to people looking for the right vibe. Defaults come from your category — adjust if they're off."
-                >
-                  <div className="space-y-3.5">
+                  {/* Tone sliders — 2-col grid on wider screens */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
                     {TONE_FIELDS.map(({ key, label, Icon, stops }) => {
                       const stop = stops[tone[key]];
                       return (
                         <div key={key}>
                           <div className="flex items-center mb-1.5">
-                            <Icon size={15} strokeWidth={2} className="text-[#23297e] mr-1.5 shrink-0" />
-                            <strong className="font-['Poppins',sans-serif] font-semibold text-sm text-[#23297e]">
+                            <Icon size={14} strokeWidth={2} className="text-[#23297e] mr-1.5 shrink-0" />
+                            <strong className="font-['Poppins',sans-serif] font-semibold text-xs text-[#23297e]">
                               {label}
                             </strong>
-                            <span className="ml-2 font-['Poppins',sans-serif] text-xs text-gray-500 truncate">
+                            <span className="ml-1.5 font-['Poppins',sans-serif] text-[11px] text-gray-500 truncate">
                               · <span className="font-medium text-[#fd8e33]">{stop.label}</span> — {stop.desc}
                             </span>
                           </div>
@@ -543,50 +462,84 @@ export function AskFlowModal({
                       );
                     })}
                   </div>
-                </Section>
+                </div>
 
-                <Section title="Optional">
-                  <Field label="Sponsor">
+              </Section>
+            )}
+
+            {/* ── Step 2: Optional ────────────────────────────────────────── */}
+            {step === 2 && !isAuthStep && (
+              <Section
+                title="Optional"
+                hint="Skip this if you like — these fields help us vet and credit your action."
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Field label="Your name or org">
                     <input
-                      type="text" value={formSponsor} autoComplete="off"
-                      onChange={(e) => setFormSponsor(e.target.value)}
-                      placeholder="Organization or person sponsoring this action"
+                      type="text" value={formAuthorName} autoComplete="off"
+                      onChange={(e) => setFormAuthorName(e.target.value)}
+                      placeholder="e.g. NAACP, Indivisible"
                       className={inputCls}
                     />
                   </Field>
-
-                  <Field label="Who does this especially help?">
-                    <GroupsDropdown
-                      value={amplifiesGroups}
-                      onToggle={(g) =>
-                        setAmplifiesGroups((prev) =>
-                          prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]
-                        )
-                      }
-                      onClear={() => setAmplifiesGroups([])}
+                  <Field label="Role">
+                    <input
+                      type="text" value={formAuthorRole} autoComplete="off"
+                      onChange={(e) => setFormAuthorRole(e.target.value)}
+                      placeholder="e.g. Organizer, Chapter Lead"
+                      className={inputCls}
                     />
                   </Field>
+                </div>
+                <Field label="Your org's website">
+                  <input
+                    type="url" value={formAuthorLink} autoComplete="off"
+                    onChange={(e) => setFormAuthorLink(e.target.value)}
+                    placeholder="https://…"
+                    className={inputCls}
+                  />
+                </Field>
+                <Field label="Event date">
+                  <input
+                    type="date" value={formEventDate}
+                    onChange={(e) => setFormEventDate(e.target.value)}
+                    className={inputCls}
+                  />
+                  <p className="mt-1 font-['Poppins',sans-serif] text-[11px] text-gray-400">
+                    For time-limited events — card is hidden after this date. Leave blank for evergreen actions.
+                  </p>
+                </Field>
 
-                  <Field label="Vetting info">
-                    <textarea
-                      rows={3} value={formVettingInfo}
-                      onChange={(e) => setFormVettingInfo(e.target.value)}
-                      placeholder="Phone numbers, sponsoring orgs, references, anything we can check…"
-                      className={`${inputCls} resize-none`}
-                    />
-                  </Field>
-                </Section>
-              </>
+                <Field label="Who does this especially help?">
+                  <GroupsDropdown
+                    value={amplifiesGroups}
+                    onToggle={(g) =>
+                      setAmplifiesGroups((prev) =>
+                        prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]
+                      )
+                    }
+                    onClear={() => setAmplifiesGroups([])}
+                  />
+                </Field>
+                <Field label="Vetting info">
+                  <textarea
+                    rows={3} value={formVettingInfo}
+                    onChange={(e) => setFormVettingInfo(e.target.value)}
+                    placeholder="Phone numbers, sponsoring orgs, references, anything we can check…"
+                    className={`${inputCls} resize-none`}
+                  />
+                </Field>
+              </Section>
             )}
 
             {/* ── Step 3 (anonymous only): Create an account ──────────────── */}
             {isAuthStep && (
               <div className="text-center py-6">
                 <h3 className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-2xl mb-2">
-                  One more step!
+                  Almost there!
                 </h3>
                 <p className="font-['Poppins',sans-serif] text-sm text-gray-600 max-w-md mx-auto mb-6">
-                  Sign in to publish your action. Your form is saved — once you're in, just hit Submit.
+                  Sign in to add your header image and submit your action. Everything you've filled in is saved.
                 </p>
                 <button
                   type="button"
@@ -599,6 +552,65 @@ export function AskFlowModal({
                   Your action gets reviewed before it goes live.
                 </p>
               </div>
+            )}
+
+            {/* ── Last step: Header image ──────────────────────────────────── */}
+            {isImageStep && (
+              <Section
+                title="Header Image"
+                hint="A great photo makes your action stand out. Upload one or paste a URL."
+              >
+                <Field label="Header image" required>
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                      className="flex items-center gap-1.5 px-3 py-2 bg-[#fd8e33] hover:bg-[#d96612] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-semibold text-xs rounded-lg transition-colors"
+                    >
+                      {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+                      {uploading ? "Uploading…" : "Upload from computer"}
+                    </button>
+                    <span className="font-['Poppins',sans-serif] text-[11px] text-gray-400">or paste a URL ↓</span>
+                    <label className="ml-auto flex items-center gap-1.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox" checked={formImageContain}
+                        onChange={(e) => setFormImageContain(e.target.checked)}
+                        className="w-3.5 h-3.5 rounded accent-[#fd8e33]"
+                      />
+                      <span className="font-['Poppins',sans-serif] text-[11.5px] text-gray-500">
+                        Fit logo (don't crop)
+                      </span>
+                    </label>
+                  </div>
+                  <input
+                    type="url" value={formImageUrl} autoComplete="off"
+                    onChange={(e) => setFormImageUrl(e.target.value)}
+                    placeholder="https://… (paste any image URL)"
+                    className={inputCls}
+                  />
+                  {formImageUrl.trim() && (
+                    <div className="mt-2 relative h-24 rounded-xl overflow-hidden bg-gray-50 border border-gray-200">
+                      <img
+                        src={formImageUrl.trim()}
+                        alt="Header preview"
+                        className="w-full h-full object-cover"
+                        onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = "none"; }}
+                      />
+                    </div>
+                  )}
+                  {uploadError && (
+                    <p className="mt-1.5 font-['Poppins',sans-serif] text-[11px] text-red-500">{uploadError}</p>
+                  )}
+                </Field>
+              </Section>
             )}
 
             {formError && (
@@ -640,7 +652,7 @@ export function AskFlowModal({
                 <button
                   type="button"
                   onClick={() => { if (!isApproved) return; handleCreateAsk(); }}
-                  disabled={createLoading || !isApproved || missingForStep(0).length > 0 || missingForStep(1).length > 0}
+                  disabled={createLoading || !isApproved || missingForStep(0).length > 0 || missingForStep(1).length > 0 || missingForStep(imageStep).length > 0}
                   className="ml-3 px-5 py-2.5 bg-[#fd8e33] hover:bg-[#e07a28] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-['Poppins',sans-serif] font-bold text-sm rounded-xl transition-colors flex items-center gap-2"
                 >
                   {createLoading ? (
