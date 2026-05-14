@@ -1413,11 +1413,13 @@ app.post("/make-server-9eb1ae04/actions/create", async (c) => {
       return c.json({ error: "Your account must be approved before posting." }, 403);
     }
 
-    const { title, description, category, categoryColor, location, isOnline, spotsTotal, sponsor, link, vettingInfo, actionType, timeCommitment, quickAction, topImageUrl, imageContain, toneOverride, amplifiesGroups } =
+    const { title, description, category, categoryColor, location, isOnline, spotsTotal, sponsor, link, targetUrl: targetUrlField, authorName: reqAuthorName, authorRole: reqAuthorRole, authorLink, vettingInfo, actionType, timeCommitment, quickAction, topImageUrl, imageContain, toneOverride, amplifiesGroups } =
       await c.req.json<{
         title: string; description: string; category: string; categoryColor: string;
         location?: string; isOnline?: boolean; spotsTotal: number | "Unlimited";
-        sponsor?: string; link?: string; vettingInfo?: string; actionType?: string;
+        sponsor?: string; link?: string; targetUrl?: string;
+        authorName?: string; authorRole?: string; authorLink?: string;
+        vettingInfo?: string; actionType?: string;
         timeCommitment?: string; quickAction?: boolean;
         topImageUrl?: string | null; imageContain?: boolean;
         toneOverride?: { anger?: number; comedy?: number; subversion?: number; care?: number; hope?: number; energy?: number };
@@ -1447,12 +1449,13 @@ app.post("/make-server-9eb1ae04/actions/create", async (c) => {
       timeCommitment: timeCommitment || undefined,
       quickAction: quickAction === true ? true : undefined,
       sponsor: sponsor || undefined,
-      targetUrl: link || undefined,
+      targetUrl: targetUrlField || link || undefined,
+      authorLink: authorLink || undefined,
       vettingInfo: vettingInfo || undefined,
       boosts: 0,
       spotsTotal,
-      authorName: approval.name,
-      authorRole: "Citizen Activist",
+      authorName: reqAuthorName || approval.name,
+      authorRole: reqAuthorRole || "Citizen Activist",
       authorAvatarKey: null,
       topImageKey: null,
       topImageUrl: topImageUrl || null,
@@ -2128,6 +2131,162 @@ app.get("/make-server-9eb1ae04/admin/feedback", async (c) => {
     const ids = ((await kv.get("feedback:ids")) ?? []) as number[];
     const entries = await Promise.all(ids.map((id) => kv.get(`feedback:${id}`)));
     return c.json(entries.filter(Boolean).reverse());
+  } catch (err) {
+    return c.json({ error: `Failed: ${err}` }, 500);
+  }
+});
+
+// ─── URL health: probe every card's targetUrl, flag the broken ones ──────────
+// scan endpoint is cron-triggered (static token, same pattern as bulk-import);
+// viewer is admin JWT. Result blob lives at kv key `url-health:last-scan` so
+// follow-up calls overwrite the previous report rather than accumulating.
+type UrlHealthEntry = {
+  id: number;
+  store: "action" | "user-action";
+  title: string;
+  targetUrl: string;
+  status: number | null;
+  ok: boolean;
+  error?: string;
+  checkedAt: string;
+};
+
+async function probeUrl(url: string, timeoutMs: number): Promise<{ status: number | null; ok: boolean; error?: string }> {
+  const ua = "ResistActUrlHealthBot/1.0 (+https://resistact.org)";
+  const tryFetch = async (method: "HEAD" | "GET"): Promise<Response> => {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      return await fetch(url, {
+        method,
+        redirect: "follow",
+        signal: ctrl.signal,
+        headers: method === "GET"
+          ? { "User-Agent": ua, "Range": "bytes=0-0", "Accept": "*/*" }
+          : { "User-Agent": ua, "Accept": "*/*" },
+      });
+    } finally {
+      clearTimeout(t);
+    }
+  };
+
+  try {
+    let res = await tryFetch("HEAD");
+    // Many sites (Cloudflare, Facebook) return 403/405 for HEAD — fall back to a single-byte GET.
+    if (res.status === 403 || res.status === 405 || res.status === 501) {
+      res = await tryFetch("GET");
+    }
+    return { status: res.status, ok: res.status >= 200 && res.status < 400 };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { status: null, ok: false, error: msg.slice(0, 200) };
+  }
+}
+
+app.post("/make-server-9eb1ae04/admin/url-health/scan", async (c) => {
+  try {
+    // Static token (same scheme as bulk-import) so a scheduled remote agent can post.
+    const token = c.req.header("X-Admin-Import-Token");
+    const expected = Deno.env.get("ADMIN_IMPORT_TOKEN");
+    if (!expected) return c.json({ error: "ADMIN_IMPORT_TOKEN not configured on server" }, 500);
+    if (!token || token !== expected) return c.json({ error: "Forbidden" }, 403);
+
+    const body = await c.req.json<{ offset?: number; limit?: number; timeoutMs?: number; concurrency?: number }>().catch(() => ({}));
+    const offset = Math.max(0, Number(body.offset) || 0);
+    const limit = Math.min(1000, Math.max(1, Number(body.limit) || 250));
+    const timeoutMs = Math.min(15000, Math.max(1000, Number(body.timeoutMs) || 6000));
+    const concurrency = Math.min(32, Math.max(1, Number(body.concurrency) || 16));
+
+    // Gather every card that has a targetUrl, across both seed and user-submitted stores.
+    const targets: { id: number; store: "action" | "user-action"; title: string; targetUrl: string }[] = [];
+    for (const card of (await kv.getByPrefix("action:")) as any[]) {
+      if (card && typeof card === "object" && typeof card.id === "number" && typeof card.targetUrl === "string" && card.targetUrl.startsWith("http")) {
+        targets.push({ id: card.id, store: "action", title: card.title ?? "", targetUrl: card.targetUrl });
+      }
+    }
+    for (const card of (await kv.getByPrefix("user-action:")) as any[]) {
+      if (card && typeof card === "object" && typeof card.id === "number" && typeof card.targetUrl === "string" && card.targetUrl.startsWith("http")) {
+        targets.push({ id: card.id, store: "user-action", title: card.title ?? "", targetUrl: card.targetUrl });
+      }
+    }
+    targets.sort((a, b) => a.id - b.id);
+
+    const slice = targets.slice(offset, offset + limit);
+    const results: UrlHealthEntry[] = [];
+    const checkedAt = new Date().toISOString();
+
+    // Bounded concurrency: walk a shared queue with N workers.
+    let cursor = 0;
+    const worker = async () => {
+      while (true) {
+        const i = cursor++;
+        if (i >= slice.length) return;
+        const t = slice[i];
+        const r = await probeUrl(t.targetUrl, timeoutMs);
+        results.push({ id: t.id, store: t.store, title: t.title, targetUrl: t.targetUrl, status: r.status, ok: r.ok, error: r.error, checkedAt });
+      }
+    };
+    await Promise.all(Array.from({ length: concurrency }, () => worker()));
+
+    // Merge with the previous run so paginated scans build up one coherent report.
+    // Replace any entries with the same (store, id) — the latest check wins.
+    const prev = ((await kv.get("url-health:last-scan")) as any) ?? null;
+    const carryover: UrlHealthEntry[] = (offset > 0 && prev?.entries) ? prev.entries : [];
+    const seen = new Set(results.map((r) => `${r.store}:${r.id}`));
+    const merged = [...results, ...carryover.filter((e) => !seen.has(`${e.store}:${e.id}`))];
+
+    const broken = merged.filter((e) => !e.ok);
+    const summary = {
+      scannedAt: prev?.scannedAt && offset > 0 ? prev.scannedAt : checkedAt,
+      lastBatchAt: checkedAt,
+      totalCards: targets.length,
+      processedInBatch: slice.length,
+      brokenCount: broken.length,
+      okCount: merged.length - broken.length,
+      nextOffset: offset + slice.length < targets.length ? offset + slice.length : null,
+      entries: merged,
+    };
+    await kv.set("url-health:last-scan", summary);
+
+    console.log(`url-health: batch [${offset}, ${offset + slice.length}) of ${targets.length} — ${broken.length} broken across full report`);
+    return c.json({
+      scannedAt: summary.scannedAt,
+      lastBatchAt: summary.lastBatchAt,
+      totalCards: summary.totalCards,
+      processedInBatch: summary.processedInBatch,
+      brokenCount: summary.brokenCount,
+      okCount: summary.okCount,
+      nextOffset: summary.nextOffset,
+    });
+  } catch (err) {
+    console.log("url-health scan error:", err);
+    return c.json({ error: `URL health scan failed: ${err}` }, 500);
+  }
+});
+
+app.get("/make-server-9eb1ae04/admin/url-health", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const report = ((await kv.get("url-health:last-scan")) as any) ?? null;
+    if (!report) return c.json({ scannedAt: null, broken: [], okCount: 0, totalCards: 0 });
+
+    const onlyBroken = c.req.query("onlyBroken") !== "false";
+    const entries: UrlHealthEntry[] = report.entries ?? [];
+    const filtered = onlyBroken ? entries.filter((e) => !e.ok) : entries;
+    filtered.sort((a, b) => (a.status ?? 999) - (b.status ?? 999) || a.id - b.id);
+
+    return c.json({
+      scannedAt: report.scannedAt,
+      lastBatchAt: report.lastBatchAt,
+      totalCards: report.totalCards,
+      brokenCount: report.brokenCount,
+      okCount: report.okCount,
+      nextOffset: report.nextOffset,
+      cards: filtered,
+    });
   } catch (err) {
     return c.json({ error: `Failed: ${err}` }, 500);
   }
