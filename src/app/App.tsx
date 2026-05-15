@@ -217,6 +217,11 @@ export default function App() {
   const [askOpen, setAskOpen] = useState(false);
   const [matchOpen, setMatchOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [scrollNudgeDismissed, setScrollNudgeDismissed] = useState(
+    () => localStorage.getItem("resistact_nudge_dismissed") === "1"
+  );
+  const [scrollNudgeVisible, setScrollNudgeVisible] = useState(false);
+  const scrollNudgeFired = useRef(false);
   /** Active match prefs — when set, the feed re-ranks by `rankCards`. */
   const [matchPrefs, setMatchPrefs] = useState<Preferences | null>(null);
   const [editCardId, setEditCardId] = useState<number | null>(null);
@@ -480,15 +485,26 @@ export default function App() {
     Object.values(activeFilters).some((arr) => (arr ?? []).length > 0);
 
   // Distinct categories from currently-loaded cards, sorted alphabetically.
-  // Drives the Category pills in the navbar.
+  // Approved, non-expired cards — used to drive filter pills so only
+  // categories/locations that actually have visible cards appear.
+  const approvedCards = useMemo(() =>
+    cards.filter((c) => {
+      if (c.adminApproved === false) return false;
+      if (c.eventDate && c.eventDate < todayISO) return false;
+      return true;
+    }),
+  [cards, todayISO]);
+
+  // Drives the Category pills in the navbar — built from approved cards only
+  // so no empty-result pills appear.
   const dynamicCategories = useMemo(() => {
     const set = new Set<string>();
-    for (const c of cards) {
+    for (const c of approvedCards) {
       const cat = (c.category ?? "").trim();
       if (cat) set.add(cat);
     }
     return Array.from(set).sort();
-  }, [cards]);
+  }, [approvedCards]);
 
   // Distinct locations from currently-loaded cards, ordered to match the
   // canonical `LOCATION_OPTIONS` list used by Add-an-Action and Edit. "Online"
@@ -496,12 +512,31 @@ export default function App() {
   // of the literal location string).
   const dynamicLocations = useMemo(() => {
     const set = new Set<string>(["Remote"]);
-    for (const c of cards) {
+    for (const c of approvedCards) {
       const loc = locationToState(c.location);
       if (loc) set.add(loc);
     }
     return LOCATION_OPTIONS.filter((opt) => set.has(opt));
-  }, [cards]);
+  }, [approvedCards]);
+
+  // ── Scroll nudge — fires once after user scrolls past ~8 cards ──────────────
+  useEffect(() => {
+    if (scrollNudgeDismissed || matchPrefs !== null || activeTab !== "acts") return;
+    const onScroll = () => {
+      if (scrollNudgeFired.current) return;
+      if (window.scrollY > 1600) {
+        scrollNudgeFired.current = true;
+        setScrollNudgeVisible(true);
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [scrollNudgeDismissed, matchPrefs, activeTab]);
+
+  // Hide nudge if user sets match prefs
+  useEffect(() => {
+    if (matchPrefs !== null) setScrollNudgeVisible(false);
+  }, [matchPrefs]);
 
   // ── On mount: restore session + listen for OAuth redirects ──
   useEffect(() => {
@@ -1083,6 +1118,21 @@ export default function App() {
         ) : (
           /* ── Acts view ── */
           <>
+            {/* Unfiltered banner — nudges users to try the match tool */}
+            {!matchPrefs && !hasActiveFilters && activeTab === "acts" && synced && (
+              <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5">
+                <p className="font-['Poppins',sans-serif] text-sm text-gray-600">
+                  Showing all <strong className="text-[#23297e]">{displayedCards.length}</strong> actions — unfiltered.
+                </p>
+                <button
+                  onClick={() => setMatchOpen(true)}
+                  className="shrink-0 font-['Poppins',sans-serif] text-xs font-bold text-[#fd8e33] hover:text-[#e07a28] hover:underline transition-colors whitespace-nowrap"
+                >
+                  ✨ Find my match →
+                </button>
+              </div>
+            )}
+
             {/* Match-mode banner — visible when match prefs are filtering the feed */}
             {matchPrefs && (
               <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-[#fd8e33] bg-[#fd8e33]/5 px-4 py-2.5">
@@ -1168,6 +1218,34 @@ export default function App() {
         )}
         </ErrorBoundary>
       </main>
+
+      {/* Scroll nudge — sticky bottom bar after scrolling past ~8 cards */}
+      {scrollNudgeVisible && !scrollNudgeDismissed && (
+        <div className="fixed bottom-0 inset-x-0 z-40 flex items-center justify-between gap-3 bg-[#23297e] px-5 py-3 shadow-lg">
+          <p className="font-['Poppins',sans-serif] text-sm text-white/90">
+            Finding it hard to choose? <span className="font-semibold text-white">Let us match you in 30 seconds.</span>
+          </p>
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              onClick={() => { setScrollNudgeVisible(false); setMatchOpen(true); }}
+              className="px-4 py-1.5 bg-[#fd8e33] hover:bg-[#e07a28] text-white font-['Poppins',sans-serif] font-bold text-sm rounded-xl transition-colors whitespace-nowrap"
+            >
+              ✨ Find my match
+            </button>
+            <button
+              onClick={() => {
+                setScrollNudgeVisible(false);
+                setScrollNudgeDismissed(true);
+                localStorage.setItem("resistact_nudge_dismissed", "1");
+              }}
+              className="text-white/50 hover:text-white transition-colors"
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="mt-12 border-t border-gray-200 py-8 px-8 text-center">
