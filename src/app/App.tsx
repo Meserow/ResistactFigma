@@ -235,6 +235,9 @@ export default function App() {
   // ── Filters ──
   const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>({});
   const [activeTab, setActiveTab] = useState<"facts" | "acts" | "receipts">("acts");
+  const [smacksPendingVersion, setSmacksPendingVersion] = useState(0);
+  const [pendingActsVersion, setPendingActsVersion] = useState(0);
+  const [showPendingActsOnly, setShowPendingActsOnly] = useState(false);
   const [deepLinkId, setDeepLinkId] = useState<number | null>(() => {
     const param = new URLSearchParams(window.location.search).get("act");
     const id = param ? parseInt(param, 10) : NaN;
@@ -259,6 +262,7 @@ export default function App() {
     setActiveFilters({});
     setSearchQuery("");
     setQuickActionsOnly(false);
+    if (tab !== "acts") setShowPendingActsOnly(false);
   }
 
   // ── Apply filters client-side ──
@@ -859,6 +863,10 @@ export default function App() {
     return () => cancelAnimationFrame(frame);
   }, [deepLinkId, displayedCards, displayLimit]);
 
+  useEffect(() => {
+    if (pendingActsVersion > 0) setShowPendingActsOnly(true);
+  }, [pendingActsVersion]);
+
   // ── Load more ──
   const handleLoadMore = async () => {
     setLoadingMore(true);
@@ -1062,6 +1070,8 @@ export default function App() {
         onLoginClick={() => setAuthModalOpen(true)}
         onLogout={handleLogout}
         onAdminClick={() => setAdminPanelOpen(true)}
+        onPendingActsClick={() => { handleTabChange("acts"); setPendingActsVersion((v) => v + 1); }}
+        onPendingSmacksClick={() => { handleTabChange("receipts"); setSmacksPendingVersion((v) => v + 1); }}
         onInfoClick={() => setInfoOpen(true)}
         onActClick={() => setActOpen(true)}
         onBookmarksClick={() => setBookmarksOpen(true)}
@@ -1131,6 +1141,7 @@ export default function App() {
                 prev.map((r) => (r.id === id ? { ...r, adminApproved: true } : r))
               )
             }
+            pendingFilterVersion={smacksPendingVersion}
           />
         ) : activeTab === "facts" ? (
           /* ── Facts view ── */
@@ -1178,7 +1189,27 @@ export default function App() {
           })()
         ) : (
           /* ── Acts view ── */
+          (() => {
+            const visibleActsCards = (isAdminUser && showPendingActsOnly)
+              ? displayedCards.filter((c) => c.adminApproved === false)
+              : displayedCards;
+            return (
           <>
+            {/* Pending-only banner */}
+            {isAdminUser && showPendingActsOnly && (
+              <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-red-300 bg-red-50 px-4 py-2.5">
+                <p className="font-['Poppins',sans-serif] text-sm text-red-700">
+                  ⚠️ <strong>Pending approval only</strong> — showing {visibleActsCards.length} unapproved act{visibleActsCards.length !== 1 ? "s" : ""}.
+                </p>
+                <button
+                  onClick={() => setShowPendingActsOnly(false)}
+                  className="font-['Poppins',sans-serif] text-xs font-semibold text-red-600 hover:underline shrink-0"
+                >
+                  Show all
+                </button>
+              </div>
+            )}
+
             {/* Match-mode banner — visible when match prefs are filtering the feed */}
             {matchPrefs && (
               <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-[#fd8e33] bg-[#fd8e33]/5 px-4 py-2.5">
@@ -1210,7 +1241,7 @@ export default function App() {
             ) : (
             <>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
-              {(hasActiveFilters ? displayedCards : displayedCards.slice(0, displayLimit)).map((card) => (
+              {(hasActiveFilters || showPendingActsOnly ? visibleActsCards : visibleActsCards.slice(0, displayLimit)).map((card) => (
                 <div key={card.id} id={`card-${card.id}`}>
                 <ActionCard
                   card={card.isFeatured ? { ...card, featuredIllustration: <FeaturedIllustration /> } : card}
@@ -1264,6 +1295,8 @@ export default function App() {
               </div>
             )}
           </>
+            );
+          })()
         )}
         </ErrorBoundary>
       </main>
