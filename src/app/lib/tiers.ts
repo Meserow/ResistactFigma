@@ -61,7 +61,7 @@ export const TIERS: TierDef[] = [
   },
   {
     key: "inferno",  name: "Inferno",  min: 500, max: null, icon: "flame",
-    color: "#991B1B", iconColor: "#fca5a5", glowColor: "#EF4444",
+    color: "#991B1B", iconColor: "#fff",    glowColor: "#EF4444",
     tagline: "Legendary activist", animated: true,
   },
 ];

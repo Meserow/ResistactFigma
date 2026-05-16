@@ -1,4 +1,4 @@
-import { Flame, Sparkles } from "lucide-react";
+import { Flame, FlameKindling, Sparkles } from "lucide-react";
 import { getUserTier } from "../lib/tiers";
 import type { TierDef } from "../lib/tiers";
 
@@ -13,13 +13,49 @@ function TierIcon({
   size: number;
   className?: string;
 }) {
-  const props = {
-    size,
+  const baseProps = {
     "aria-hidden": true as const,
     color: tier.iconColor,
     strokeWidth: 2.5,
     className,
   };
+
+  // Wildfire — two overlapping flames
+  if (tier.key === "wildfire") {
+    const s = Math.max(6, Math.round(size * 0.75));
+    const ov = -Math.round(s * 0.36);
+    return (
+      <span className="inline-flex items-end">
+        <Flame size={s} strokeWidth={2.5} aria-hidden style={{ color: tier.iconColor, opacity: 0.65 }} className={className} />
+        <Flame size={s} strokeWidth={2.5} aria-hidden style={{ color: tier.iconColor, marginLeft: ov }} className={className} />
+      </span>
+    );
+  }
+
+  // Inferno — three overlapping flames
+  if (tier.key === "inferno") {
+    const s = Math.max(5, Math.round(size * 0.62));
+    const ov = -Math.round(s * 0.33);
+    return (
+      <span className="inline-flex items-end">
+        <Flame size={s} strokeWidth={2.5} aria-hidden style={{ color: tier.iconColor, opacity: 0.8 }} className={className} />
+        <Flame size={s} strokeWidth={2.5} aria-hidden style={{ color: tier.iconColor, marginLeft: ov }} className={className} />
+        <Flame size={s} strokeWidth={2.5} aria-hidden style={{ color: tier.iconColor, marginLeft: ov, opacity: 0.8 }} className={className} />
+      </span>
+    );
+  }
+
+  // Ember — kindling flame (just building up)
+  if (tier.key === "ember") {
+    return <FlameKindling size={size} {...baseProps} />;
+  }
+
+  // Blaze — solid filled flame (fully ablaze)
+  if (tier.key === "blaze") {
+    return <Flame size={size} {...baseProps} fill={tier.iconColor} strokeWidth={1.5} />;
+  }
+
+  const props = { size, ...baseProps };
   return tier.icon === "sparkles" ? <Sparkles {...props} /> : <Flame {...props} />;
 }
 

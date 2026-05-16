@@ -146,6 +146,34 @@ export const STATIC_SMACKS: ReceiptCard[] = [
     imageUrl: "/Smacks/iran.png",
     adminApproved: true,
   },
+  {
+    id: 5021,
+    title: "ResistAct",
+    tags: ["ResistAct"],
+    imageUrl: "/Smacks/ResistAct.png",
+    adminApproved: true,
+  },
+  {
+    id: 5022,
+    title: "Epstein",
+    tags: ["Trump", "MAGA", "Corruption"],
+    imageUrl: "/Smacks/epstein.png",
+    adminApproved: true,
+  },
+  {
+    id: 5023,
+    title: "Project 2025",
+    tags: ["Trump", "MAGA", "Fascism"],
+    imageUrl: "/Smacks/project2025.png",
+    adminApproved: true,
+  },
+  {
+    id: 5024,
+    title: "Voting Rights",
+    tags: ["Voting Rights"],
+    imageUrl: "/Smacks/votingrights.png",
+    adminApproved: true,
+  },
 ];
 
 export interface ReceiptCard {

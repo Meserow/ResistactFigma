@@ -1,9 +1,42 @@
-import { X, Flame, Sparkles } from "lucide-react";
+import { X, Flame, FlameKindling, Sparkles } from "lucide-react";
 import { TIERS, getUserTier } from "../lib/tiers";
 import type { TierDef } from "../lib/tiers";
 
 function TierIcon({ tier, size }: { tier: TierDef; size: number }) {
-  const props = { size, strokeWidth: 2.5, "aria-hidden": true as const, style: { color: tier.iconColor } };
+  const base = { strokeWidth: 2.5, "aria-hidden": true as const, style: { color: tier.iconColor } };
+
+  if (tier.key === "wildfire") {
+    const s = Math.max(6, Math.round(size * 0.75));
+    const ov = -Math.round(s * 0.36);
+    return (
+      <span className="inline-flex items-end">
+        <Flame size={s} strokeWidth={2.5} aria-hidden style={{ color: tier.iconColor, opacity: 0.65 }} />
+        <Flame size={s} strokeWidth={2.5} aria-hidden style={{ color: tier.iconColor, marginLeft: ov }} />
+      </span>
+    );
+  }
+
+  if (tier.key === "inferno") {
+    const s = Math.max(5, Math.round(size * 0.62));
+    const ov = -Math.round(s * 0.33);
+    return (
+      <span className="inline-flex items-end">
+        <Flame size={s} strokeWidth={2.5} aria-hidden style={{ color: tier.iconColor, opacity: 0.8 }} />
+        <Flame size={s} strokeWidth={2.5} aria-hidden style={{ color: tier.iconColor, marginLeft: ov }} />
+        <Flame size={s} strokeWidth={2.5} aria-hidden style={{ color: tier.iconColor, marginLeft: ov, opacity: 0.8 }} />
+      </span>
+    );
+  }
+
+  if (tier.key === "ember") {
+    return <FlameKindling size={size} {...base} />;
+  }
+
+  if (tier.key === "blaze") {
+    return <Flame size={size} {...base} fill={tier.iconColor} strokeWidth={1.5} />;
+  }
+
+  const props = { size, ...base };
   return tier.icon === "sparkles" ? <Sparkles {...props} /> : <Flame {...props} />;
 }
 
