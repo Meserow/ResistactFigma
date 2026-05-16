@@ -42,13 +42,6 @@ const STATIC_SMACKS: ReceiptCard[] = [
     adminApproved: true,
   },
   {
-    id: 5005,
-    title: "Smack",
-    tags: ["Trump", "MAGA"],
-    imageUrl: "/Smacks/668212708_10164309196296181_5751557662059572445_n.jpg",
-    adminApproved: true,
-  },
-  {
     id: 5006,
     title: "Trump Human Body",
     tags: ["Trump", "MAGA"],
@@ -102,6 +95,13 @@ const STATIC_SMACKS: ReceiptCard[] = [
     title: "Richer",
     tags: ["Trump", "MAGA"],
     imageUrl: "/Smacks/richer.png",
+    adminApproved: true,
+  },
+  {
+    id: 5014,
+    title: "Wealth",
+    tags: ["Trump", "MAGA"],
+    imageUrl: "/Smacks/wealth.png",
     adminApproved: true,
   },
 ];
