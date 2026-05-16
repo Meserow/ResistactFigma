@@ -425,24 +425,34 @@ export default function App() {
     // is more specific. We pass an empty completedIds so the matcher doesn't
     // drop completed cards — completedLast pushes them to the bottom instead.
     if (matchPrefs) {
+      // Admins always see pending cards — pull them out so the score threshold
+      // doesn't silently drop them, then append them after the ranked results.
+      const pendingForAdmin = isAdminUser ? filtered.filter((c) => c.adminApproved === false) : [];
+      const rankable = isAdminUser ? filtered.filter((c) => c.adminApproved !== false) : filtered;
+
       const userCtx: UserContext = { boostedIds: boostedCards };
-      const ranked = rankCards(filtered, matchPrefs, userCtx);
+      const ranked = rankCards(rankable, matchPrefs, userCtx);
       // Apply a score floor so only genuine matches surface. Score every card,
       // keep only those hitting ≥ 30% of the top card's score. This prevents
       // the "396 matches" problem where low-preference-overlap cards still pass
       // because the engagement floor alone keeps them above zero.
-      if (ranked.length > 0) {
-        const topScore = scoreCard(ranked[0], matchPrefs, userCtx);
-        const threshold = topScore * 0.30;
-        const matched = ranked.filter((c) => scoreCard(c, matchPrefs, userCtx) >= threshold);
+      if (ranked.length > 0 || pendingForAdmin.length > 0) {
+        const matched = ranked.length > 0
+          ? (() => {
+              const topScore = scoreCard(ranked[0], matchPrefs, userCtx);
+              const threshold = topScore * 0.30;
+              return ranked.filter((c) => scoreCard(c, matchPrefs, userCtx) >= threshold);
+            })()
+          : [];
+        const combined = [...matched, ...pendingForAdmin];
         // Honor explicit sort selection within the match-filtered set.
         if (sortBy === "az") {
-          return pinFirst(completedLast([...matched].sort((a, b) => a.title.localeCompare(b.title))));
+          return pinFirst(completedLast([...combined].sort((a, b) => a.title.localeCompare(b.title))));
         }
         if (sortBy === "newest") {
-          return pinFirst(completedLast([...matched].sort((a, b) => (b.id ?? 0) - (a.id ?? 0))));
+          return pinFirst(completedLast([...combined].sort((a, b) => (b.id ?? 0) - (a.id ?? 0))));
         }
-        return pinFirst(completedLast(matched));
+        return pinFirst(completedLast(combined));
       }
       return [];
     }
