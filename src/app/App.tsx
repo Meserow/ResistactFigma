@@ -18,7 +18,7 @@ import { LoggedInHero } from "./components/LoggedInHero";
 import { MatchMeModal } from "./components/MatchMeModal";
 import { ChangelogModal } from "./components/ChangelogModal";
 import { FeedbackModal } from "./components/FeedbackModal";
-import { SmacksPage, type ReceiptCard } from "./components/SmacksPage";
+import { SmacksPage, STATIC_SMACKS, type ReceiptCard } from "./components/SmacksPage";
 import { rankCards, score as scoreCard, loadPreferences, clearPreferences, applyMatcherConfig, fetchUserPreferences, pushUserPreferences, savePreferences, type Preferences, type UserContext } from "./lib/matcher";
 import svgPaths from "../imports/svg-77lgd1zdt6";
 import { projectId, publicAnonKey } from "/utils/supabase/info";
@@ -1071,6 +1071,7 @@ export default function App() {
         matchActive={matchPrefs !== null}
         onMatchClear={() => { setMatchPrefs(null); clearPreferences(); }}
         statsActsCount={displayedCards.length}
+        statsSmacksCount={receipts.length + STATIC_SMACKS.length}
         statsResistorsCount={statsUsersCount}
         statsCitiesCount={statsCitiesCount}
         statsSynced={synced}

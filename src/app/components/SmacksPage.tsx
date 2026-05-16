@@ -10,7 +10,7 @@ const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`
 
 // Static smack images from public/smacks/ — always shown regardless of API state.
 // Add entries here whenever you drop a new image into public/smacks/.
-const STATIC_SMACKS: ReceiptCard[] = [
+export const STATIC_SMACKS: ReceiptCard[] = [
   {
     id: 5001,
     title: "Impeach Trump Again",

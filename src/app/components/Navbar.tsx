@@ -34,6 +34,7 @@ interface NavbarProps {
   /** Clear active match filter. */
   onMatchClear?: () => void;
   statsActsCount?: number | null;
+  statsSmacksCount?: number | null;
   statsResistorsCount?: number | null;
   statsCitiesCount?: number | null;
   statsSynced?: boolean;
@@ -58,7 +59,7 @@ interface NavbarProps {
   onMatchClick?: () => void;
 }
 
-export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
+export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
   // Acts filters in render order: Location dropdown first, Category pills second.
   // Used for "Clear all" and the mobile filter row that shows just the names.
   const ACTS_FILTER_OPTIONS: Record<string, string[]> = {
@@ -753,13 +754,19 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full bg-[#fd8e33]" />
               <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
-                <strong className="text-[#23297e] font-bold">{statsSynced ? statsActsCount : "—"}</strong>{" "}resistance acts
+                <strong className="text-[#23297e] font-bold">{statsSynced ? statsActsCount : "—"}</strong>{" "}acts
               </span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full bg-[#127f05]" />
               <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
-                <strong className="text-[#127f05] font-bold">{FACT_CARDS.length}</strong>{" "}resistance facts
+                <strong className="text-[#127f05] font-bold">{FACT_CARDS.length}</strong>{" "}facts
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-[#23297e]" />
+              <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
+                <strong className="text-[#23297e] font-bold">{statsSmacksCount ?? "—"}</strong>{" "}smacks
               </span>
             </div>
           </div>
