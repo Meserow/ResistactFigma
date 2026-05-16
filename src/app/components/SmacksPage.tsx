@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import {
   X, Upload, Loader2, Share2, Copy, Check, Download,
-  ExternalLink, Plus, Tag, Flame, Search,
+  ExternalLink, Plus, Tag, Flame, Search, Trash2,
 } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
 import type { UserApproval } from "../lib/supabase";
@@ -10,7 +10,7 @@ const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`
 
 // Static smack images from public/smacks/ — always shown regardless of API state.
 // Add entries here whenever you drop a new image into public/smacks/.
-const STATIC_SMACKS: ReceiptCard[] = [
+export const STATIC_SMACKS: ReceiptCard[] = [
   {
     id: 5001,
     title: "Impeach Trump Again",
@@ -270,6 +270,33 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
     }
   }
 
+  // ── Admin: delete ───────────────────────────────────────────────────────────
+  // Static smacks (id ≥ 5000) can't be server-deleted, so we hide them locally.
+  const [deletedIds, setDeletedIds] = useState<Set<number>>(() => {
+    try {
+      const s = localStorage.getItem("resistact_smacks_deleted");
+      return s ? new Set<number>(JSON.parse(s)) : new Set<number>();
+    } catch { return new Set<number>(); }
+  });
+
+  async function handleDelete(id: number) {
+    const isStatic = id >= 5000;
+    if (!isStatic && accessToken) {
+      try {
+        await fetch(`${API}/admin/receipts/${id}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+      } catch { /* ignore */ }
+    }
+    setDeletedIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      try { localStorage.setItem("resistact_smacks_deleted", JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  }
+
   // ── Admin: approve ──────────────────────────────────────────────────────────
   async function handleApprove(id: number) {
     if (!accessToken) return;
@@ -327,6 +354,7 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
   const q = (localSearch || searchQuery).toLowerCase().trim();
   const filtered = receipts
     .filter((r) => {
+      if (deletedIds.has(r.id)) return false;
       if (!isAdmin && !r.adminApproved) return false;
       if (q) {
         return (
@@ -465,6 +493,7 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
             onShare={() => openShare(r)}
             onBoost={() => handleReceiptBoost(r.id)}
             onApprove={() => handleApprove(r.id)}
+            onDelete={() => handleDelete(r.id)}
           />
         ))}
       </div>
@@ -665,7 +694,7 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
 
 // ─── Receipt tile ──────────────────────────────────────────────────────────────
 function ReceiptTile({
-  receipt, isAdmin, boostCount, isBoosted, onShare, onBoost, onApprove,
+  receipt, isAdmin, boostCount, isBoosted, onShare, onBoost, onApprove, onDelete,
 }: {
   receipt: ReceiptCard;
   isAdmin: boolean;
@@ -674,6 +703,7 @@ function ReceiptTile({
   onShare: () => void;
   onBoost: () => void;
   onApprove: () => void;
+  onDelete: () => void;
 }) {
   return (
     <div className={`break-inside-avoid mb-4 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow bg-white group relative cursor-pointer ${!receipt.adminApproved && isAdmin ? "ring-2 ring-red-400" : ""}`}
@@ -685,14 +715,34 @@ function ReceiptTile({
           <span className="font-['Poppins',sans-serif] font-bold text-[11px] uppercase tracking-wider text-red-600">
             ⚠ Pending
           </span>
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onApprove(); }}
-            className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-green-600 hover:bg-green-700 text-white font-['Poppins',sans-serif] font-bold text-[10px] uppercase tracking-wide transition-colors"
-          >
-            Approve
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onApprove(); }}
+              className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-green-600 hover:bg-green-700 text-white font-['Poppins',sans-serif] font-bold text-[10px] uppercase tracking-wide transition-colors"
+            >
+              Approve
+            </button>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-red-600 hover:bg-red-700 text-white font-['Poppins',sans-serif] font-bold text-[10px] uppercase tracking-wide transition-colors"
+            >
+              Delete
+            </button>
+          </div>
         </div>
+      )}
+      {/* Admin delete button for approved cards — shown on hover */}
+      {receipt.adminApproved && isAdmin && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          className="absolute top-2 left-2 w-7 h-7 flex items-center justify-center rounded-full bg-white/90 backdrop-blur-sm text-gray-400 hover:text-red-600 hover:bg-white shadow-sm transition-colors opacity-0 group-hover:opacity-100 z-10"
+          title="Delete"
+        >
+          <Trash2 size={13} />
+        </button>
       )}
 
       {/* Image */}
