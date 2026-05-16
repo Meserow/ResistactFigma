@@ -451,6 +451,34 @@ const SEED_CARDS = [
   { id: 1298, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Tell Congress: Pass the John R. Lewis Voting Rights Advancement Act", description: "The JLVRAA restores federal oversight of states with discriminatory voting histories, protects ballot access for communities of color, and guarantees equal voting rights for every citizen. Reject the SAVE Act. Advance the JLVRAA. Voting rights are American rights — contact Congress now.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "NAACP", authorRole: "Civil Rights Organization", authorLink: "https://naacp.org/", targetUrl: "https://naacp.org/actions/tell-congress-protect-our-voting-rights", topImageUrl: "https://naacp.org/sites/default/files/styles/hero_desktop/public/images/iStock-1202146507.jpg.webp?itok=57dCxKlE", toneOverride: { anger: 2, comedy: 0, subversion: 0, hope: 2, energy: 1 }, adminApproved: false },
   { id: 1299, category: "NEWS STORY", categoryColor: "#3b4a73", actionType: "Online", title: "Share Your Story: How Federal Budget Cuts Are Hurting Your Family", description: "Congress is slashing Medicaid and SNAP while handing tax breaks to billionaires. The NAACP needs your story — how would losing healthcare, food assistance, or housing support affect you or someone you love? Personal testimonies shift congressional votes. Two minutes to submit.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "NAACP", authorRole: "Civil Rights Organization", authorLink: "https://naacp.org/", targetUrl: "https://support.naacp.org/a/budget-and-tax-stories", topImageUrl: "https://naacp.org/sites/default/files/styles/hero_desktop/public/images/GettyImages-844235780-cropped.jpg.webp", toneOverride: { anger: 2, comedy: 0, subversion: 0, hope: 1, energy: 0 }, firstTimerFriendly: true, adminApproved: false },
   { id: 1301, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Email Your Senator: Kill the 'Kill Nonprofits' Bill (H.R. 9495)", description: "H.R. 9495 lets the government strip tax-exempt status from any nonprofit it labels 'terrorist supporting' — meaning the NAACP, ACLU, Planned Parenthood, any org that criticizes the administration. This is the infrastructure for silencing civil society. Email your senator to stop it.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "NAACP", authorRole: "Civil Rights Organization", authorLink: "https://naacp.org/", targetUrl: "https://naacp.org/actions/oppose-hr-9495-protect-nonprofit-organizations", topImageUrl: "https://naacp.org/sites/default/files/styles/hero_desktop/public/images/pexels-life-matters-4613879-%281%29.jpg.webp?itok=G50qUJOv", toneOverride: { anger: 3, comedy: 0, subversion: 0, hope: 1, energy: 1 }, adminApproved: false },
+
+  // ── Dissent Pins resistance merch ─────────────────────────────────────────────
+  { id: 1302, category: "PERSONAL COMMITMENT", categoryColor: "#23297e", actionType: "Online", title: "Slap a 'No War Is Holy' Sticker on Your Car (or Laptop)", description: "Tired of hearing Trump claim divine favor for his wars? This UV-laminated bumper sticker (5.25″ × 3″) pushes back on the gospel of holy wars. Weather-resistant for indoor or outdoor use — sticker or car magnet. From Dissent Pins.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Dissent Pins", authorRole: "Resistance Merch", authorLink: "https://dissentpins.com/", targetUrl: "https://dissentpins.com/collections/best-sellers/products/no-war-is-holy-bumper-sticker", topImageUrl: "https://dissentpins.com/cdn/shop/files/NoWarIsHolyStickerMock-up_2000x2000.jpg?v=1776273173", toneOverride: { anger: 2, comedy: 1, subversion: 2, hope: 1, energy: 1 }, adminApproved: false },
+  { id: 1303, category: "FUNDING", categoryColor: "#127f05", actionType: "Online", title: "Buy a Fifth Amendment Sticker — 50% to Immigrant Rights Orgs", description: "The Fifth Amendment protects everyone in the U.S. — citizens and non-citizens alike. Show it. 50% of profits go directly to immigrant rights organizations doing legal defense and community education, including Hands Off NYC, Illinois Coalition for Immigrant Rights, and Portland Immigrant Rights Coalition. 8.3″ wide, UV-laminated.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Dissent Pins", authorRole: "Resistance Merch", authorLink: "https://dissentpins.com/", targetUrl: "https://dissentpins.com/collections/best-sellers/products/fifth-amendment-bumper-sticker", topImageUrl: "https://dissentpins.com/cdn/shop/files/FifthAmendmentBumperSticker_1500x1500.png?v=1752677646", toneOverride: { anger: 2, comedy: 0, subversion: 1, hope: 2, energy: 1 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1304, category: "FUNDING", categoryColor: "#127f05", actionType: "Online", title: "Buy an Abolish ICE Liberty Sticker — 50% to Immigrant Rights Orgs", description: "Show solidarity with neighbors under threat from ICE enforcement. 50% of profits fund five immigrant rights organizations doing legal defense and community education. UV-laminated sticker (6.5″ × 4.4″) or car magnet.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Dissent Pins", authorRole: "Resistance Merch", authorLink: "https://dissentpins.com/", targetUrl: "https://dissentpins.com/collections/best-sellers/products/abolish-ice-liberty-bumper-sticker-or-car-magnet", topImageUrl: "https://dissentpins.com/cdn/shop/files/AbolishICELibertycarmagnetonblue2000x2000_2000x2000.jpg?v=1766517162", toneOverride: { anger: 3, comedy: 0, subversion: 2, hope: 2, energy: 2 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1305, category: "FUNDING", categoryColor: "#127f05", actionType: "Online", title: "Buy a FCK ICE Tee — 100% to Immigrant Defense Funds", description: "Wear your resistance and fund it. 100% of profits go directly to Minnesota Immigrant Rapid Response Fund, Immigrant Law Center of Minnesota, and UNIDOSMN. Light blue, 100% cotton, sizes XS–4XL. Made with Vermont-based New Duds.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Dissent Pins", authorRole: "Resistance Merch", authorLink: "https://dissentpins.com/", targetUrl: "https://dissentpins.com/collections/best-sellers/products/fckice-tshirt", topImageUrl: "https://dissentpins.com/cdn/shop/files/FCKICEHoodieUGCJoinbrandsDanTinklerMar202612000x2000_1024x.jpg?v=1773673949", toneOverride: { anger: 3, comedy: 1, subversion: 2, hope: 2, energy: 2 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+];
+
+// ─── Seed receipts (The Smacks) ───────────────────────────────────────────────
+// IDs start at 5001 to avoid collisions with admin-created receipts.
+// Bump seed:receipts version key whenever you add/edit entries here.
+const SEED_RECEIPTS = [
+  {
+    id: 5001,
+    title: "Impeach Trump Again",
+    tags: ["Trump", "MAGA", "Fascism"],
+    imageUrl: "/Smacks/impeach.png",
+    caption: "He was impeached twice and should have been removed. Twice wasn't enough — the country deserves accountability. Share this. #ImpeachTrump #ResistAct",
+    adminApproved: true,
+  },
+  {
+    id: 5002,
+    title: "Rock the Vote",
+    tags: ["Voting Rights"],
+    imageUrl: "/Smacks/rock-the-vote.webp",
+    caption: "Your vote is your most powerful tool. Use it. Share it. Protect it. #RockTheVote #ResistAct",
+    adminApproved: true,
+  },
 ];
 
 // ─── Health check ─────────────────────────────────────────────────────────────
@@ -927,13 +955,13 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       console.log("Set boosts = 950 on action:1 (Spread the Word).");
     }
 
-    const orgsSeeded = await kv.get("seed:org-actions:v17");
+    const orgsSeeded = await kv.get("seed:org-actions:v18");
     if (!orgsSeeded) {
       // Mark the seed as done UP FRONT — if the request times out partway
       // through the 260-card loop, the next request still skips the loop
       // instead of dying again. The cards already written stay; missing ones
       // get filled in on the next version bump.
-      await kv.set("seed:org-actions:v17", true);
+      await kv.set("seed:org-actions:v18", true);
       let count = 0;
       for (const card of SEED_CARDS) {
         // Seed every card in SEED_CARDS (no longer skipping ids <1000).
@@ -1141,6 +1169,26 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       }
       await kv.set("cleanup:link-to-targeturl:v1", true);
       console.log(`link→targetUrl migration: fixed ${fixed} user-submitted cards.`);
+    }
+
+    // Seed The Smacks receipts. Bump the version key whenever SEED_RECEIPTS changes.
+    const receiptsSeeded = await kv.get("seed:receipts:v1");
+    if (!receiptsSeeded) {
+      await kv.set("seed:receipts:v1", true);
+      const existingIds = ((await kv.get("receipt:ids")) ?? []) as number[];
+      const idSet = new Set(existingIds);
+      const newIds = [...existingIds];
+      for (const r of SEED_RECEIPTS) {
+        const existing = (await kv.get(`receipt:${r.id}`)) as any;
+        const merged: any = { boosts: 0, createdAt: new Date().toISOString(), ...r };
+        if (existing && typeof existing === "object") {
+          if (typeof existing.boosts === "number") merged.boosts = existing.boosts;
+        }
+        await kv.set(`receipt:${r.id}`, merged);
+        if (!idSet.has(r.id)) { idSet.add(r.id); newIds.push(r.id); }
+      }
+      await kv.set("receipt:ids", newIds);
+      console.log(`Seeded ${SEED_RECEIPTS.length} receipts into The Smacks.`);
     }
 
     // Fetch ALL action:* cards from the KV store (real cards only after purge)
@@ -1433,7 +1481,7 @@ app.post("/make-server-9eb1ae04/actions/create", async (c) => {
     // Auto-increment ID, always staying above the max seed card ID (1301)
     // to avoid collisions between user-submitted cards and seed cards
     const currentIds = (await kv.get("user-action:ids") ?? []) as number[];
-    const nextId = Math.max(...currentIds, 1301) + 1;
+    const nextId = Math.max(...currentIds, 1305) + 1;
 
     const offTopic = looksOffTopic(title, description, category);
 
@@ -2289,6 +2337,177 @@ app.get("/make-server-9eb1ae04/admin/url-health", async (c) => {
     });
   } catch (err) {
     return c.json({ error: `Failed: ${err}` }, 500);
+  }
+});
+
+// ─── POST /receipts/:id/boost — toggle-boost a receipt (no auth required) ────
+app.post("/make-server-9eb1ae04/receipts/:id/boost", async (c) => {
+  try {
+    const id = Number(c.req.param("id"));
+    const { delta } = await c.req.json<{ delta: number }>();
+    const receipt = (await kv.get(`receipt:${id}`)) as any;
+    if (!receipt) return c.json({ error: `Receipt ${id} not found` }, 404);
+    receipt.boosts = Math.max(0, (receipt.boosts ?? 0) + (delta ?? 1));
+    await kv.set(`receipt:${id}`, receipt);
+    return c.json({ boosts: receipt.boosts });
+  } catch (err) {
+    return c.json({ error: `Boost failed: ${err}` }, 500);
+  }
+});
+
+// ─── GET /receipts — public list of approved receipts (admin sees all) ───────
+app.get("/make-server-9eb1ae04/receipts", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    let isAdmin = false;
+    if (token) {
+      const admin = await requireAdmin(token).catch(() => null);
+      isAdmin = !!admin;
+    }
+
+    const receiptIds = ((await kv.get("receipt:ids")) ?? []) as number[];
+    const receipts: any[] = [];
+    for (const id of receiptIds) {
+      const r = (await kv.get(`receipt:${id}`)) as any;
+      if (!r) continue;
+      if (!isAdmin && r.adminApproved !== true) continue;
+      receipts.push(r);
+    }
+    // Newest first
+    receipts.sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+    return c.json({ receipts });
+  } catch (err) {
+    return c.json({ error: `Failed to fetch receipts: ${err}` }, 500);
+  }
+});
+
+// ─── POST /receipts/submit — approved user submits a receipt for review ──────
+app.post("/make-server-9eb1ae04/receipts/submit", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    if (!token) return c.json({ error: "Unauthorized" }, 401);
+    const user = await getUser(token);
+    if (!user) return c.json({ error: "Invalid or expired token" }, 401);
+    const approval = await kv.get(`user:approval:${user.id}`) as any;
+    if (!approval || approval.status !== "approved") {
+      return c.json({ error: "Account not approved" }, 403);
+    }
+
+    const body = await c.req.json<{
+      title?: string;
+      caption?: string;
+      imageUrl: string;
+      sourceUrl?: string;
+      sourceLabel?: string;
+      tags?: string[];
+    }>();
+    if (!body.imageUrl) return c.json({ error: "imageUrl is required" }, 400);
+
+    const ids = ((await kv.get("receipt:ids")) ?? []) as number[];
+    const newId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
+    const receipt = {
+      id: newId,
+      title: body.title ?? "",
+      caption: body.caption ?? "",
+      imageUrl: body.imageUrl,
+      sourceUrl: body.sourceUrl ?? "",
+      sourceLabel: body.sourceLabel ?? "",
+      tags: body.tags ?? [],
+      adminApproved: false,
+      createdBy: user.id,
+      createdAt: new Date().toISOString(),
+    };
+    await kv.set(`receipt:${newId}`, receipt);
+    await kv.set("receipt:ids", [...ids, newId]);
+    console.log(`User ${approval.name} submitted receipt #${newId}: "${receipt.title}" (pending review)`);
+    return c.json({ receipt }, 201);
+  } catch (err) {
+    return c.json({ error: `Failed to submit receipt: ${err}` }, 500);
+  }
+});
+
+// ─── POST /admin/receipts/create — admin adds a receipt ──────────────────────
+app.post("/make-server-9eb1ae04/admin/receipts/create", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const body = await c.req.json<{
+      title?: string;
+      caption?: string;
+      imageUrl: string;
+      sourceUrl?: string;
+      sourceLabel?: string;
+      tags?: string[];
+    }>();
+
+    if (!body.imageUrl) return c.json({ error: "imageUrl is required" }, 400);
+
+    // Allocate a new ID
+    const ids = ((await kv.get("receipt:ids")) ?? []) as number[];
+    const newId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
+    const receipt = {
+      id: newId,
+      title: body.title ?? "",
+      caption: body.caption ?? "",
+      imageUrl: body.imageUrl,
+      sourceUrl: body.sourceUrl ?? "",
+      sourceLabel: body.sourceLabel ?? "",
+      tags: body.tags ?? [],
+      adminApproved: true,
+      createdBy: admin.user.id,
+      createdAt: new Date().toISOString(),
+    };
+    await kv.set(`receipt:${newId}`, receipt);
+    await kv.set("receipt:ids", [...ids, newId]);
+    console.log(`Admin ${admin.record.name} created receipt #${newId}: "${receipt.title}"`);
+    return c.json({ receipt }, 201);
+  } catch (err) {
+    return c.json({ error: `Failed to create receipt: ${err}` }, 500);
+  }
+});
+
+// ─── POST /admin/approve-receipt/:id — approve a pending receipt ──────────────
+app.post("/make-server-9eb1ae04/admin/approve-receipt/:id", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const id = Number(c.req.param("id"));
+    const receipt = (await kv.get(`receipt:${id}`)) as any;
+    if (!receipt) return c.json({ error: `Receipt ${id} not found` }, 404);
+
+    receipt.adminApproved = true;
+    receipt.approvedBy = admin.user.id;
+    receipt.approvedAt = new Date().toISOString();
+    await kv.set(`receipt:${id}`, receipt);
+    console.log(`Admin ${admin.record.name} approved receipt #${id}: "${receipt.title}"`);
+    return c.json({ receipt });
+  } catch (err) {
+    return c.json({ error: `Approval failed: ${err}` }, 500);
+  }
+});
+
+// ─── DELETE /admin/receipts/:id — delete a receipt ───────────────────────────
+app.delete("/make-server-9eb1ae04/admin/receipts/:id", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const id = Number(c.req.param("id"));
+    const receipt = await kv.get(`receipt:${id}`);
+    if (!receipt) return c.json({ error: `Receipt ${id} not found` }, 404);
+
+    await kv.del(`receipt:${id}`);
+    const ids = ((await kv.get("receipt:ids")) ?? []) as number[];
+    await kv.set("receipt:ids", ids.filter((x) => x !== id));
+    console.log(`Admin ${admin.record.name} deleted receipt #${id}`);
+    return c.json({ ok: true });
+  } catch (err) {
+    return c.json({ error: `Delete failed: ${err}` }, 500);
   }
 });
 

@@ -1,0 +1,960 @@
+import { useRef, useState } from "react";
+import {
+  X, Upload, Loader2, Share2, Copy, Check, Download,
+  ExternalLink, Plus, Tag, Flame, Search,
+} from "lucide-react";
+import { projectId } from "/utils/supabase/info";
+import type { UserApproval } from "../lib/supabase";
+
+const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
+
+// Static smack images from public/smacks/ — always shown regardless of API state.
+// Add entries here whenever you drop a new image into public/smacks/.
+const STATIC_SMACKS: ReceiptCard[] = [
+  {
+    id: 5001,
+    title: "Impeach Trump Again",
+    tags: ["Trump", "MAGA", "Fascism"],
+    imageUrl: "/Smacks/impeach.png",
+    caption: "He was impeached twice and should have been removed. Twice wasn't enough — the country deserves accountability. Share this. #ImpeachTrump #ResistAct",
+    adminApproved: true,
+  },
+  {
+    id: 5002,
+    title: "Rock the Vote",
+    tags: ["Voting Rights"],
+    imageUrl: "/Smacks/rock-the-vote.webp",
+    caption: "Your vote is your most powerful tool. Use it. Share it. Protect it. #RockTheVote #ResistAct",
+    adminApproved: true,
+  },
+  {
+    id: 5003,
+    title: "JD Vance",
+    tags: ["Trump", "MAGA"],
+    imageUrl: "/Smacks/vance.png",
+    adminApproved: true,
+  },
+  {
+    id: 5004,
+    title: "Presidents",
+    tags: ["Trump", "MAGA"],
+    imageUrl: "/Smacks/presidents.png",
+    adminApproved: true,
+  },
+  {
+    id: 5005,
+    title: "Smack",
+    tags: ["Trump", "MAGA"],
+    imageUrl: "/Smacks/668212708_10164309196296181_5751557662059572445_n.jpg",
+    adminApproved: true,
+  },
+  {
+    id: 5006,
+    title: "Trump Human Body",
+    tags: ["Trump", "MAGA"],
+    imageUrl: "/Smacks/trumphumanbody.png",
+    adminApproved: true,
+  },
+  {
+    id: 5007,
+    title: "Dem States",
+    tags: ["Trump", "MAGA"],
+    imageUrl: "/Smacks/demstates.png",
+    adminApproved: true,
+  },
+  {
+    id: 5008,
+    title: "No Conviction",
+    tags: ["Trump", "MAGA"],
+    imageUrl: "/Smacks/noconviction.png",
+    adminApproved: true,
+  },
+  {
+    id: 5009,
+    title: "Hillary Obama",
+    tags: ["Trump", "MAGA"],
+    imageUrl: "/Smacks/hillaryobama.png",
+    adminApproved: true,
+  },
+  {
+    id: 5010,
+    title: "Clarence Thomas",
+    tags: ["Trump", "MAGA", "Fascism"],
+    imageUrl: "/Smacks/thomas.png",
+    adminApproved: true,
+  },
+  {
+    id: 5011,
+    title: "2024 Votes",
+    tags: ["Trump", "MAGA"],
+    imageUrl: "/Smacks/2024votes.jpg",
+    adminApproved: true,
+  },
+  {
+    id: 5012,
+    title: "Land",
+    tags: ["Trump", "MAGA"],
+    imageUrl: "/Smacks/land.png",
+    adminApproved: true,
+  },
+  {
+    id: 5013,
+    title: "Richer",
+    tags: ["Trump", "MAGA"],
+    imageUrl: "/Smacks/richer.png",
+    adminApproved: true,
+  },
+];
+
+export interface ReceiptCard {
+  id: number;
+  title: string;
+  tags: string[];
+  imageUrl: string;
+  sourceUrl?: string;
+  sourceLabel?: string;
+  /** Pre-written tweet / caption ready to copy and post. */
+  caption?: string;
+  adminApproved: boolean;
+  boosts?: number;
+  createdAt?: string;
+}
+
+// Well-known tag taxonomy — drives the filter chips.
+const ALL_TAGS = [
+  "Economy", "Deficit & Debt", "Taxes", "Immigration",
+  "Voting Rights", "Healthcare", "Fox News", "Environment",
+  "Trump", "MAGA", "Fascism", "Hypocrisy",
+  "Social Security", "Education", "Gun Violence",
+  "Women's Rights", "LGBTQ+", "Labor",
+];
+
+interface SmacksPageProps {
+  receipts: ReceiptCard[];
+  searchQuery?: string;
+  accessToken: string | null;
+  approval: UserApproval | null;
+  onReceiptAdded?: (r: ReceiptCard) => void;
+  onReceiptApproved?: (id: number) => void;
+}
+
+export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToken, approval, onReceiptAdded, onReceiptApproved }: SmacksPageProps) {
+  const isAdmin = approval?.isAdmin === true;
+  const canSubmit = !!accessToken && (approval?.status === "approved");
+
+  // Merge static smacks with API receipts; API version wins on duplicate ID.
+  const apiIds = new Set(apiReceipts.map((r) => r.id));
+  const receipts = [...apiReceipts, ...STATIC_SMACKS.filter((r) => !apiIds.has(r.id))];
+
+  // ── Tag filter ──────────────────────────────────────────────────────────────
+  const [activeTags, setActiveTags] = useState<string[]>([]);
+  const toggleTag = (t: string) =>
+    setActiveTags((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]);
+
+  // ── Share modal ─────────────────────────────────────────────────────────────
+  const [shareReceipt, setShareReceipt] = useState<ReceiptCard | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [captionDraft, setCaptionDraft] = useState("");
+
+  function openShare(r: ReceiptCard) {
+    setShareReceipt(r);
+    setCaptionDraft(r.caption ?? "");
+    setCopied(false);
+  }
+  function closeShare() { setShareReceipt(null); }
+
+  const [copyImageState, setCopyImageState] = useState<"idle" | "copying" | "done">("idle");
+
+  async function handleCopyCaption() {
+    try {
+      await navigator.clipboard.writeText(captionDraft);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* ignore */ }
+  }
+
+  async function fetchImageBlob(url: string) {
+    const res = await fetch(url);
+    return res.blob();
+  }
+
+  async function handleNativeShare() {
+    if (!shareReceipt) return;
+    try {
+      const blob = await fetchImageBlob(shareReceipt.imageUrl);
+      const ext = blob.type.split("/")[1] || "jpg";
+      const file = new File(
+        [blob],
+        `${shareReceipt.title.replace(/[^a-z0-9]/gi, "-").toLowerCase()}.${ext}`,
+        { type: blob.type }
+      );
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], text: captionDraft });
+        return;
+      }
+    } catch { /* fall through */ }
+    // Fallback: share URL
+    const data: ShareData = {
+      title: shareReceipt.title,
+      text: captionDraft,
+      url: shareReceipt.sourceUrl ?? "https://resistact.org",
+    };
+    if (navigator.canShare?.(data)) navigator.share(data).catch(() => {});
+  }
+
+  async function handleCopyImage() {
+    if (!shareReceipt) return;
+    setCopyImageState("copying");
+    try {
+      const blob = await fetchImageBlob(shareReceipt.imageUrl);
+      await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+      setCopyImageState("done");
+      setTimeout(() => setCopyImageState("idle"), 2000);
+    } catch {
+      // Fallback: copy URL
+      await navigator.clipboard.writeText(shareReceipt.imageUrl).catch(() => {});
+      setCopyImageState("done");
+      setTimeout(() => setCopyImageState("idle"), 2000);
+    }
+  }
+
+  function twitterUrl(r: ReceiptCard) {
+    const text = encodeURIComponent((r.caption ?? r.title) + "\n\nresistact.org");
+    return `https://twitter.com/intent/tweet?text=${text}`;
+  }
+
+  async function handleFacebookShare(r: ReceiptCard) {
+    // Facebook's sharer only shares URLs/OG previews, not raw images.
+    // Download the image first so the user can upload it directly to their post.
+    await handleDownload(r);
+    window.open("https://www.facebook.com/", "_blank");
+  }
+
+  function pinterestUrl(r: ReceiptCard) {
+    const media = encodeURIComponent(window.location.origin + r.imageUrl);
+    const desc = encodeURIComponent(r.caption ?? r.title);
+    return `https://pinterest.com/pin/create/button/?media=${media}&description=${desc}`;
+  }
+
+  function redditUrl(r: ReceiptCard) {
+    const title = encodeURIComponent(r.title);
+    const url = encodeURIComponent(window.location.origin + r.imageUrl);
+    return `https://www.reddit.com/submit?url=${url}&title=${title}`;
+  }
+
+  function tumblrUrl(r: ReceiptCard) {
+    const source = encodeURIComponent(window.location.origin + r.imageUrl);
+    const caption = encodeURIComponent(r.caption ?? r.title);
+    return `https://www.tumblr.com/widgets/share/tool?posttype=photo&content=${source}&caption=${caption}`;
+  }
+
+  async function handleDownload(r: ReceiptCard) {
+    try {
+      const res = await fetch(r.imageUrl);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${r.title.replace(/[^a-z0-9]/gi, "-").toLowerCase()}.jpg`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      window.open(r.imageUrl, "_blank");
+    }
+  }
+
+  // ── Admin: approve ──────────────────────────────────────────────────────────
+  async function handleApprove(id: number) {
+    if (!accessToken) return;
+    try {
+      const res = await fetch(`${API}/admin/approve-receipt/${id}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (res.ok) onReceiptApproved?.(id);
+    } catch { /* ignore */ }
+  }
+
+  // ── Admin: add receipt modal ─────────────────────────────────────────────────
+  const [addOpen, setAddOpen] = useState(false);
+
+  // ── Boosts ──────────────────────────────────────────────────────────────────
+  const [boostedReceipts, setBoostedReceipts] = useState<Set<number>>(() => {
+    try {
+      const s = localStorage.getItem("resistact_receipt_boosted");
+      return s ? new Set<number>(JSON.parse(s)) : new Set<number>();
+    } catch { return new Set<number>(); }
+  });
+  // Local deltas for this session (applied on top of server-fetched r.boosts)
+  const [boostDeltas, setBoostDeltas] = useState<Record<number, number>>({});
+
+  function boostCountFor(r: ReceiptCard) {
+    return Math.max(0, (r.boosts ?? 0) + (boostDeltas[r.id] ?? 0));
+  }
+
+  function handleReceiptBoost(id: number) {
+    const alreadyBoosted = boostedReceipts.has(id);
+    const delta = alreadyBoosted ? -1 : 1;
+    setBoostedReceipts((prev) => {
+      const next = new Set(prev);
+      alreadyBoosted ? next.delete(id) : next.add(id);
+      try { localStorage.setItem("resistact_receipt_boosted", JSON.stringify([...next])); } catch {}
+      return next;
+    });
+    setBoostDeltas((prev) => ({ ...prev, [id]: (prev[id] ?? 0) + delta }));
+    // Fire-and-forget to server — no auth required
+    fetch(`${API}/receipts/${id}/boost`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ delta }),
+    }).catch(() => {});
+  }
+
+  // ── Sort ────────────────────────────────────────────────────────────────────
+  const [sortBy, setSortBy] = useState<"top" | "new">("top");
+
+  // ── Local search ─────────────────────────────────────────────────────────────
+  const [localSearch, setLocalSearch] = useState("");
+
+  // ── Filter + sort ────────────────────────────────────────────────────────────
+  const q = (localSearch || searchQuery).toLowerCase().trim();
+  const filtered = receipts
+    .filter((r) => {
+      if (!isAdmin && !r.adminApproved) return false;
+      if (q) {
+        return (
+          r.title.toLowerCase().includes(q) ||
+          r.tags.some((t) => t.toLowerCase().includes(q)) ||
+          r.caption?.toLowerCase().includes(q)
+        );
+      }
+      if (activeTags.length === 0) return true;
+      return activeTags.some((t) => r.tags.map((x) => x.toLowerCase()).includes(t.toLowerCase()));
+    })
+    .sort((a, b) =>
+      sortBy === "top"
+        ? boostCountFor(b) - boostCountFor(a)
+        : (b.createdAt ?? "").localeCompare(a.createdAt ?? "")
+    );
+
+  // Collect distinct tags from loaded receipts for the filter bar.
+  const availableTags = Array.from(
+    new Set(receipts.flatMap((r) => r.tags))
+  ).sort();
+
+  return (
+    <div className="min-h-screen">
+      {/* ── Search bar ── */}
+      <div className="relative mb-4">
+        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+        <input
+          type="text"
+          value={localSearch}
+          onChange={(e) => setLocalSearch(e.target.value)}
+          placeholder="Search The Smacks…"
+          className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white font-['Poppins',sans-serif] text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#fd8e33]/30 focus:border-[#fd8e33] transition-all"
+        />
+        {localSearch && (
+          <button
+            onClick={() => setLocalSearch("")}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          >
+            <X size={14} />
+          </button>
+        )}
+      </div>
+
+      {/* ── Top bar: sort toggle + filter chips ── */}
+      <div className="flex items-start gap-3 flex-wrap mb-6">
+        {/* Sort toggle */}
+        <div className="flex items-center gap-1 p-1 rounded-xl bg-gray-100 shrink-0 self-start">
+          <button
+            onClick={() => setSortBy("top")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-['Poppins',sans-serif] font-bold text-xs transition-all ${
+              sortBy === "top"
+                ? "bg-white text-[#fd8e33] shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            <Flame size={12} />
+            Top
+          </button>
+          <button
+            onClick={() => setSortBy("new")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-['Poppins',sans-serif] font-bold text-xs transition-all ${
+              sortBy === "new"
+                ? "bg-white text-[#23297e] shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            New
+          </button>
+        </div>
+
+        {/* Tag chips */}
+        <div className="flex items-center gap-2 flex-wrap flex-1">
+          {availableTags.map((tag) => (
+            <button
+              key={tag}
+              onClick={() => toggleTag(tag)}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-['Poppins',sans-serif] font-semibold transition-all border ${
+                activeTags.includes(tag)
+                  ? "bg-[#23297e] text-white border-[#23297e]"
+                  : "bg-white text-gray-600 border-gray-200 hover:border-[#23297e] hover:text-[#23297e]"
+              }`}
+            >
+              <Tag size={10} />
+              {tag}
+            </button>
+          ))}
+          {activeTags.length > 0 && (
+            <button
+              onClick={() => setActiveTags([])}
+              className="px-3 py-1.5 rounded-full text-xs font-['Poppins',sans-serif] text-gray-500 hover:text-gray-700 border border-dashed border-gray-300 hover:border-gray-400 transition-all"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
+        {/* Any approved user can submit */}
+        {canSubmit && (
+          <button
+            onClick={() => setAddOpen(true)}
+            className="shrink-0 flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#fd8e33] hover:bg-[#d96612] text-white font-['Poppins',sans-serif] font-bold text-xs transition-colors self-start"
+          >
+            <Plus size={13} />
+            {isAdmin ? "Add to The Smacks" : "Submit to The Smacks"}
+          </button>
+        )}
+      </div>
+
+      {/* ── Empty state ── */}
+      {filtered.length === 0 && (
+        <div className="text-center py-24">
+          <p className="font-['Poppins',sans-serif] text-gray-400 text-lg mb-2">
+            {receipts.length === 0 ? "Nothing in The Smacks yet." : "No results match that filter."}
+          </p>
+          {activeTags.length > 0 && (
+            <button
+              onClick={() => setActiveTags([])}
+              className="font-['Poppins',sans-serif] text-sm text-[#23297e] hover:underline"
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ── Image grid ── */}
+      <div className="columns-2 sm:columns-3 lg:columns-4 gap-4 space-y-4">
+        {filtered.map((r) => (
+          <ReceiptTile
+            key={r.id}
+            receipt={r}
+            isAdmin={isAdmin}
+            boostCount={boostCountFor(r)}
+            isBoosted={boostedReceipts.has(r.id)}
+            onShare={() => openShare(r)}
+            onBoost={() => handleReceiptBoost(r.id)}
+            onApprove={() => handleApprove(r.id)}
+          />
+        ))}
+      </div>
+
+      {/* ── Share modal ── */}
+      {shareReceipt && (
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={closeShare}
+        >
+          <div
+            className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center gap-3 px-5 pt-5 pb-3 shrink-0">
+              <Share2 size={18} className="text-[#23297e] shrink-0" />
+              <h2 className="flex-1 font-['Poppins',sans-serif] font-bold text-[#23297e] text-base leading-tight truncate">
+                {shareReceipt.title}
+              </h2>
+              <button
+                onClick={closeShare}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 shrink-0"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-5 pb-5 space-y-4">
+              {/* Image */}
+              <div className="rounded-2xl overflow-hidden bg-gray-50 border border-gray-100">
+                <img
+                  src={shareReceipt.imageUrl}
+                  alt={shareReceipt.title}
+                  className="w-full h-auto object-contain max-h-[50vh]"
+                />
+              </div>
+
+              {/* Tags */}
+              {shareReceipt.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {shareReceipt.tags.map((t) => (
+                    <span
+                      key={t}
+                      className="px-2.5 py-0.5 rounded-full bg-[#23297e]/10 text-[#23297e] font-['Poppins',sans-serif] text-[11px] font-semibold"
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Caption / tweet text */}
+              <div>
+                <label className="block font-['Poppins',sans-serif] text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                  Ready-to-post caption (edit before sharing)
+                </label>
+                <textarea
+                  rows={4}
+                  value={captionDraft}
+                  onChange={(e) => setCaptionDraft(e.target.value)}
+                  className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-[#fd8e33]/30 focus:border-[#fd8e33]"
+                />
+                <div className="flex items-center justify-between mt-1">
+                  <span className={`font-['Poppins',sans-serif] text-[11px] ${captionDraft.length > 280 ? "text-red-500" : "text-gray-400"}`}>
+                    {captionDraft.length}/280 chars for Twitter
+                  </span>
+                  <button
+                    onClick={handleCopyCaption}
+                    className="flex items-center gap-1 text-[11px] font-['Poppins',sans-serif] font-semibold text-[#23297e] hover:text-[#fd8e33] transition-colors"
+                  >
+                    {copied ? <Check size={12} className="text-green-600" /> : <Copy size={12} />}
+                    {copied ? "Copied!" : "Copy text"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Source */}
+              {(shareReceipt.sourceUrl || shareReceipt.sourceLabel) && (
+                <a
+                  href={shareReceipt.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 font-['Poppins',sans-serif] text-xs text-gray-500 hover:text-[#23297e] transition-colors"
+                >
+                  <ExternalLink size={11} />
+                  Source: {shareReceipt.sourceLabel ?? shareReceipt.sourceUrl}
+                </a>
+              )}
+
+              {/* Share buttons */}
+              <div className="grid grid-cols-2 gap-2.5">
+                {/* Native share with image file — mobile gets full share sheet */}
+                {typeof navigator !== "undefined" && "share" in navigator && (
+                  <button
+                    onClick={handleNativeShare}
+                    className="col-span-2 flex items-center justify-center gap-2 py-3 rounded-xl bg-[#23297e] hover:bg-[#1a2060] text-white font-['Poppins',sans-serif] font-bold text-sm transition-colors"
+                  >
+                    <Share2 size={15} />
+                    Share image via…
+                  </button>
+                )}
+
+                {/* Copy image to clipboard — paste directly into any platform */}
+                <button
+                  onClick={handleCopyImage}
+                  className="col-span-2 flex items-center justify-center gap-2 py-3 rounded-xl bg-[#fd8e33] hover:bg-[#d96612] text-white font-['Poppins',sans-serif] font-bold text-sm transition-colors"
+                >
+                  {copyImageState === "done" ? <Check size={15} className="text-white" /> : <Copy size={15} />}
+                  {copyImageState === "copying" ? "Copying…" : copyImageState === "done" ? "Image copied! Paste anywhere." : "Copy image to clipboard"}
+                </button>
+
+                {/* Twitter/X */}
+                <a
+                  href={twitterUrl(shareReceipt)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-black hover:bg-gray-900 text-white font-['Poppins',sans-serif] font-bold text-sm transition-colors"
+                >
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.836L1.254 2.25H8.08l4.258 5.63L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                  Post to X
+                </a>
+
+                {/* Facebook — downloads image then opens FB so user can upload it */}
+                <button
+                  onClick={() => handleFacebookShare(shareReceipt)}
+                  className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#1877f2] hover:bg-[#1464cc] text-white font-['Poppins',sans-serif] font-bold text-sm transition-colors"
+                >
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>
+                  Facebook ↓
+                </button>
+
+                {/* Pinterest — supports direct image URL */}
+                <a
+                  href={pinterestUrl(shareReceipt)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#e60023] hover:bg-[#c0001d] text-white font-['Poppins',sans-serif] font-bold text-sm transition-colors"
+                >
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
+                  Pinterest
+                </a>
+
+                {/* Reddit */}
+                <a
+                  href={redditUrl(shareReceipt)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#ff4500] hover:bg-[#d93a00] text-white font-['Poppins',sans-serif] font-bold text-sm transition-colors"
+                >
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/></svg>
+                  Reddit
+                </a>
+
+                {/* Tumblr */}
+                <a
+                  href={tumblrUrl(shareReceipt)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#35465c] hover:bg-[#2a3a4f] text-white font-['Poppins',sans-serif] font-bold text-sm transition-colors"
+                >
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M14.563 24c-5.093 0-7.031-3.756-7.031-6.411V9.747H5.116V6.648c3.63-1.313 4.512-4.596 4.71-6.469C9.84.051 9.941 0 9.999 0h3.517v6.114h4.801v3.633h-4.82v7.47c.016 1.001.375 2.371 2.228 2.371h.032c.401-.013 1.143-.142 1.502-.355l1.449 3.396c-.524.252-1.532.557-2.936.61H14.563z"/></svg>
+                  Tumblr
+                </a>
+
+                {/* Download */}
+                <button
+                  onClick={() => handleDownload(shareReceipt)}
+                  className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-['Poppins',sans-serif] font-bold text-sm transition-colors"
+                >
+                  <Download size={14} />
+                  Download
+                </button>
+              </div>
+
+              <p className="font-['Poppins',sans-serif] text-[11px] text-gray-400 text-center leading-relaxed">
+                📱 On mobile, "Share image via…" sends the image directly to Instagram, WhatsApp, and more.<br/>
+                📘 Facebook ↓ downloads the image and opens Facebook — click "Photo/Video" to upload it.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Admin: Add Receipt modal ── */}
+      {addOpen && (
+        <AddReceiptModal
+          accessToken={accessToken}
+          isAdmin={isAdmin}
+          allTags={ALL_TAGS}
+          onClose={() => setAddOpen(false)}
+          onAdded={(r) => { onReceiptAdded?.(r); setAddOpen(false); }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Receipt tile ──────────────────────────────────────────────────────────────
+function ReceiptTile({
+  receipt, isAdmin, boostCount, isBoosted, onShare, onBoost, onApprove,
+}: {
+  receipt: ReceiptCard;
+  isAdmin: boolean;
+  boostCount: number;
+  isBoosted: boolean;
+  onShare: () => void;
+  onBoost: () => void;
+  onApprove: () => void;
+}) {
+  return (
+    <div className={`break-inside-avoid mb-4 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow bg-white group relative cursor-pointer ${!receipt.adminApproved && isAdmin ? "ring-2 ring-red-400" : ""}`}
+      onClick={onShare}
+    >
+      {/* Pending banner */}
+      {!receipt.adminApproved && isAdmin && (
+        <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-red-50 border-b border-red-200">
+          <span className="font-['Poppins',sans-serif] font-bold text-[11px] uppercase tracking-wider text-red-600">
+            ⚠ Pending
+          </span>
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onApprove(); }}
+            className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-green-600 hover:bg-green-700 text-white font-['Poppins',sans-serif] font-bold text-[10px] uppercase tracking-wide transition-colors"
+          >
+            Approve
+          </button>
+        </div>
+      )}
+
+      {/* Image */}
+      <img
+        src={receipt.imageUrl}
+        alt={receipt.title}
+        className="w-full h-auto block"
+        loading="lazy"
+      />
+
+      {/* Overlay: title + share button — visible on hover */}
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
+        <p className="font-['Poppins',sans-serif] font-bold text-white text-xs leading-snug line-clamp-2 mb-2 pr-8">
+          {receipt.title}
+        </p>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onShare(); }}
+          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#fd8e33] hover:bg-[#d96612] text-white font-['Poppins',sans-serif] font-bold text-[11px] transition-colors"
+          title="Share this receipt"
+        >
+          <Share2 size={11} />
+          Share
+        </button>
+      </div>
+
+      {/* Always-visible share button (top-right corner) */}
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onShare(); }}
+        className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-full bg-white/90 backdrop-blur-sm text-gray-600 hover:text-[#fd8e33] hover:bg-white shadow-sm transition-colors"
+        title="Share"
+      >
+        <Share2 size={13} />
+      </button>
+
+      {/* Boost button (bottom-left) */}
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onBoost(); }}
+        title={isBoosted ? "Remove boost" : "Boost this receipt"}
+        className={`absolute bottom-2 left-2 flex items-center gap-1 px-2 py-1 rounded-full font-['Poppins',sans-serif] font-bold text-[11px] transition-all shadow-sm backdrop-blur-sm ${
+          isBoosted
+            ? "bg-[#fd8e33] text-white"
+            : "bg-white/90 text-gray-500 hover:text-[#fd8e33] hover:bg-white"
+        }`}
+      >
+        <Flame size={11} className={isBoosted ? "fill-white" : ""} />
+        {boostCount > 0 && <span>{boostCount}</span>}
+      </button>
+    </div>
+  );
+}
+
+// ─── Admin: Add Receipt modal ──────────────────────────────────────────────────
+function AddReceiptModal({
+  accessToken, isAdmin, allTags, onClose, onAdded,
+}: {
+  accessToken: string | null;
+  isAdmin: boolean;
+  allTags: string[];
+  onClose: () => void;
+  onAdded: (r: ReceiptCard) => void;
+}) {
+  const [title,       setTitle]       = useState("");
+  const [imageUrl,    setImageUrl]    = useState("");
+  const [caption,     setCaption]     = useState("");
+  const [sourceUrl,   setSourceUrl]   = useState("");
+  const [sourceLabel, setSourceLabel] = useState("");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [customTag,   setCustomTag]   = useState("");
+  const [uploading,   setUploading]   = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [saving,      setSaving]      = useState(false);
+  const [error,       setError]       = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { setUploadError("Image files only."); return; }
+    if (file.size > 10 * 1024 * 1024) { setUploadError("Max 10 MB."); return; }
+    setUploadError(null);
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`${API}/actions/upload-image`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) { setUploadError(data.error ?? "Upload failed."); return; }
+      setImageUrl(data.url);
+    } catch { setUploadError("Network error during upload."); }
+    finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  function toggleTag(t: string) {
+    setSelectedTags((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]);
+  }
+
+  function addCustomTag() {
+    const t = customTag.trim();
+    if (t && !selectedTags.includes(t)) setSelectedTags((prev) => [...prev, t]);
+    setCustomTag("");
+  }
+
+  async function handleSave() {
+    if (!title.trim() || !imageUrl.trim()) {
+      setError("Title and image are required."); return;
+    }
+    setError(null);
+    setSaving(true);
+    try {
+      const endpoint = isAdmin ? `${API}/admin/receipts/create` : `${API}/receipts/submit`;
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({
+          title: title.trim(),
+          imageUrl: imageUrl.trim(),
+          caption: caption.trim() || undefined,
+          sourceUrl: sourceUrl.trim() || undefined,
+          sourceLabel: sourceLabel.trim() || undefined,
+          tags: selectedTags,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error ?? "Failed to save."); return; }
+      onAdded(data.receipt as ReceiptCard);
+    } catch { setError("Network error."); }
+    finally { setSaving(false); }
+  }
+
+  const inputCls = "w-full px-3.5 py-2.5 border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#fd8e33]/30 focus:border-[#fd8e33] placeholder:text-gray-400 placeholder:italic";
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[92vh] flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="bg-[#23297e] px-5 py-4 flex items-center gap-3 shrink-0">
+          <Plus size={16} className="text-white shrink-0" />
+          <p className="flex-1 font-['Poppins',sans-serif] font-bold text-white text-base">
+            {isAdmin ? "Add to The Smacks" : "Submit to The Smacks"}
+          </p>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          {/* Title */}
+          <div>
+            <label className="block font-['Poppins',sans-serif] text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Title *</label>
+            <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Facts Fox Will Never Show You: Deficit by President" className={inputCls} />
+          </div>
+
+          {/* Image */}
+          <div>
+            <label className="block font-['Poppins',sans-serif] text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Image *</label>
+            <div className="flex items-center gap-2 mb-2">
+              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="flex items-center gap-1.5 px-3 py-2 bg-[#fd8e33] hover:bg-[#d96612] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-semibold text-xs rounded-lg transition-colors"
+              >
+                {uploading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+                {uploading ? "Uploading…" : "Upload image"}
+              </button>
+              <span className="font-['Poppins',sans-serif] text-[11px] text-gray-400">or paste URL ↓</span>
+            </div>
+            <input type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://…" className={inputCls} />
+            {imageUrl && (
+              <div className="mt-2 rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
+                <img src={imageUrl} alt="Preview" className="w-full h-auto max-h-48 object-contain" onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = "none"; }} />
+              </div>
+            )}
+            {uploadError && <p className="mt-1 text-[11px] text-red-500 font-['Poppins',sans-serif]">{uploadError}</p>}
+          </div>
+
+          {/* Caption */}
+          <div>
+            <label className="block font-['Poppins',sans-serif] text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Ready-to-post caption</label>
+            <textarea rows={3} value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Republicans claim to care about the deficit. The data says otherwise. Share this. 🧾 #ResistAct" className={`${inputCls} resize-none`} />
+            <p className={`text-right text-[11px] mt-0.5 font-['Poppins',sans-serif] ${caption.length > 280 ? "text-red-500" : "text-gray-400"}`}>{caption.length}/280</p>
+          </div>
+
+          {/* Source */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block font-['Poppins',sans-serif] text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Source URL</label>
+              <input type="url" value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} placeholder="https://…" className={inputCls} />
+            </div>
+            <div>
+              <label className="block font-['Poppins',sans-serif] text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Source label</label>
+              <input type="text" value={sourceLabel} onChange={(e) => setSourceLabel(e.target.value)} placeholder="CBO, Reuters…" className={inputCls} />
+            </div>
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label className="block font-['Poppins',sans-serif] text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">Tags</label>
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {allTags.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => toggleTag(t)}
+                  className={`px-2.5 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all border ${
+                    selectedTags.includes(t)
+                      ? "bg-[#23297e] text-white border-[#23297e]"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-[#23297e]"
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+            {/* Custom tag */}
+            <div className="flex gap-2">
+              <input
+                type="text" value={customTag}
+                onChange={(e) => setCustomTag(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomTag(); } }}
+                placeholder="Add a custom tag…"
+                className={`${inputCls} flex-1`}
+              />
+              <button type="button" onClick={addCustomTag} className="px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-['Poppins',sans-serif] text-sm font-semibold transition-colors">
+                Add
+              </button>
+            </div>
+          </div>
+
+          {!isAdmin && (
+            <p className="text-[11px] text-gray-500 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 font-['Poppins',sans-serif] leading-relaxed">
+              ℹ️ Your submission will be reviewed by a moderator before it goes live in The Smacks.
+            </p>
+          )}
+          {error && <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2 font-['Poppins',sans-serif]">{error}</p>}
+        </div>
+
+        {/* Footer */}
+        <div className="shrink-0 px-5 py-4 border-t border-gray-100 flex gap-3">
+          <button onClick={onClose} className="flex-1 py-2.5 border border-gray-200 rounded-xl font-['Poppins',sans-serif] font-semibold text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving || !title.trim() || !imageUrl.trim()}
+            className="flex-1 py-2.5 bg-[#23297e] hover:bg-[#1a2060] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-bold text-sm rounded-xl transition-colors flex items-center justify-center gap-2"
+          >
+            {saving ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
+            {saving ? "Saving…" : isAdmin ? "Save" : "Submit for Review"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

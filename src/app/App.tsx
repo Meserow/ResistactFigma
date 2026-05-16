@@ -18,6 +18,7 @@ import { LoggedInHero } from "./components/LoggedInHero";
 import { MatchMeModal } from "./components/MatchMeModal";
 import { ChangelogModal } from "./components/ChangelogModal";
 import { FeedbackModal } from "./components/FeedbackModal";
+import { SmacksPage, type ReceiptCard } from "./components/SmacksPage";
 import { rankCards, score as scoreCard, loadPreferences, clearPreferences, applyMatcherConfig, fetchUserPreferences, pushUserPreferences, savePreferences, type Preferences, type UserContext } from "./lib/matcher";
 import svgPaths from "../imports/svg-77lgd1zdt6";
 import { projectId, publicAnonKey } from "/utils/supabase/info";
@@ -128,9 +129,9 @@ function CardSkeleton() {
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
   // ── Card state ──
-  const [cards, setCards] = useState<ActionCardData[]>([]);
+  const [cards, setCards] = useState<ActionCardData[]>(STATIC_CARDS);
   const [synced, setSynced] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [serverTotal, setServerTotal] = useState(0);
   const [serverOffset, setServerOffset] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -233,7 +234,13 @@ export default function App() {
 
   // ── Filters ──
   const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>({});
-  const [activeTab, setActiveTab] = useState<"facts" | "acts">("acts");
+  const [activeTab, setActiveTab] = useState<"facts" | "acts" | "receipts">("acts");
+  const [deepLinkId, setDeepLinkId] = useState<number | null>(() => {
+    const param = new URLSearchParams(window.location.search).get("act");
+    const id = param ? parseInt(param, 10) : NaN;
+    return isNaN(id) ? null : id;
+  });
+  const [receipts, setReceipts] = useState<ReceiptCard[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   // useDeferredValue lets React keep the input responsive: keystrokes update
   // `searchQuery` synchronously (so the textbox shows them instantly), while
@@ -247,7 +254,7 @@ export default function App() {
     setActiveFilters((prev) => ({ ...prev, [filterName]: selected }));
   }
 
-  function handleTabChange(tab: "facts" | "acts") {
+  function handleTabChange(tab: "facts" | "acts" | "receipts") {
     setActiveTab(tab);
     setActiveFilters({});
     setSearchQuery("");
@@ -378,8 +385,8 @@ export default function App() {
     const gated = cards.filter((card) => {
       // Hide expired events from everyone
       if (card.eventDate && card.eventDate < todayISO) return false;
-      // Hide unapproved cards from everyone — use the admin panel to approve
-      if (card.adminApproved === false) return false;
+      // Hide unapproved cards from non-admins — admins see them with a PENDING badge
+      if (card.adminApproved === false && !isAdminUser) return false;
       // Completed cards stay in the feed but get sorted to the bottom (see
       // `completedLast` below) so users can still find things they've done
       // without them dominating the top.
@@ -428,6 +435,13 @@ export default function App() {
         const topScore = scoreCard(ranked[0], matchPrefs, userCtx);
         const threshold = topScore * 0.30;
         const matched = ranked.filter((c) => scoreCard(c, matchPrefs, userCtx) >= threshold);
+        // Honor explicit sort selection within the match-filtered set.
+        if (sortBy === "az") {
+          return pinFirst(completedLast([...matched].sort((a, b) => a.title.localeCompare(b.title))));
+        }
+        if (sortBy === "newest") {
+          return pinFirst(completedLast([...matched].sort((a, b) => (b.id ?? 0) - (a.id ?? 0))));
+        }
         return pinFirst(completedLast(matched));
       }
       return [];
@@ -689,6 +703,20 @@ export default function App() {
     syncCards();
   }, []);
 
+  // ── Load Receipts ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${API}/receipts`, { headers: HEADERS });
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        if (!cancelled) setReceipts(data.receipts ?? []);
+      } catch { /* non-critical */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   // ── Pull admin-tuned matcher config on mount so scoring uses the latest
   //    CATEGORY_TONE values without needing a redeploy. Falls through to the
   //    built-in defaults silently if the request fails. ─────────────────────
@@ -793,6 +821,33 @@ export default function App() {
     observer.observe(sentinel);
     return () => observer.disconnect();
   }, [displayLimit, displayedCards.length, hasActiveFilters, loadingMore, serverOffset, serverTotal]);
+
+  // ── Deep link: ?act=<cardId> ──
+  // Switch to The Acts tab and scroll the target card into view.
+  useEffect(() => {
+    if (deepLinkId === null) return;
+    setActiveTab("acts");
+    // Make sure the card is within the visible slice (increase limit if needed).
+    const idx = displayedCards.findIndex((c) => c.id === deepLinkId);
+    if (idx !== -1 && idx >= displayLimit) {
+      setDisplayLimit(idx + 1);
+    }
+    // Give React one frame to render the card, then scroll to it.
+    const frame = requestAnimationFrame(() => {
+      const el = document.getElementById(`card-${deepLinkId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.classList.add("ring-2", "ring-[#fd8e33]", "ring-offset-2");
+        setTimeout(() => el.classList.remove("ring-2", "ring-[#fd8e33]", "ring-offset-2"), 2500);
+        setDeepLinkId(null);
+        // Clean the param from the URL bar without triggering a reload.
+        const url = new URL(window.location.href);
+        url.searchParams.delete("act");
+        window.history.replaceState({}, "", url.toString());
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [deepLinkId, displayedCards, displayLimit]);
 
   // ── Load more ──
   const handleLoadMore = async () => {
@@ -959,6 +1014,22 @@ export default function App() {
     return false;
   }
 
+  // ── One-click approve from the main feed (admin only) ────────────────────────
+  async function handleApproveCard(id: number) {
+    if (!accessToken) return;
+    try {
+      const res = await fetch(`${API}/admin/approve-action/${id}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setCards((prev) => prev.map((c) => c.id === id ? { ...c, adminApproved: true, ...data.card } : c));
+    } catch (err) {
+      console.error("Approve card error:", err);
+    }
+  }
+
   // ── Handle card update from EditCardModal ──
   function handleCardSaved(updated: ActionCardData) {
     setCards((prev) =>
@@ -1036,7 +1107,21 @@ export default function App() {
 
       <main className="px-4 md:px-8 py-8">
         <ErrorBoundary>
-        {activeTab === "facts" ? (
+        {activeTab === "receipts" ? (
+          /* ── Receipts view ── */
+          <SmacksPage
+            receipts={receipts}
+            searchQuery={deferredSearchQuery}
+            accessToken={accessToken}
+            approval={approval}
+            onReceiptAdded={(r) => setReceipts((prev) => [...prev, r])}
+            onReceiptApproved={(id) =>
+              setReceipts((prev) =>
+                prev.map((r) => (r.id === id ? { ...r, adminApproved: true } : r))
+              )
+            }
+          />
+        ) : activeTab === "facts" ? (
           /* ── Facts view ── */
           (() => {
             const q = deferredSearchQuery.toLowerCase().trim();
@@ -1115,8 +1200,8 @@ export default function App() {
             <>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
               {(hasActiveFilters ? displayedCards : displayedCards.slice(0, displayLimit)).map((card) => (
+                <div key={card.id} id={`card-${card.id}`}>
                 <ActionCard
-                  key={card.id}
                   card={card.isFeatured ? { ...card, featuredIllustration: <FeaturedIllustration /> } : card}
                   onBoost={handleBoost}
                   onComplete={handleComplete}
@@ -1127,7 +1212,10 @@ export default function App() {
                   isCompleted={completedCards.has(card.id)}
                   isBookmarked={bookmarkedCards.has(card.id)}
                   canEdit={canEditCard(card)}
+                  isPending={isAdminUser && card.adminApproved === false}
+                  onApprove={isAdminUser ? handleApproveCard : undefined}
                 />
+                </div>
               ))}
             </div>
             </>
