@@ -104,6 +104,13 @@ const STATIC_SMACKS: ReceiptCard[] = [
     imageUrl: "/Smacks/wealth.png",
     adminApproved: true,
   },
+  {
+    id: 5015,
+    title: "Redistricting",
+    tags: ["Trump", "MAGA"],
+    imageUrl: "/Smacks/redistricting.png",
+    adminApproved: true,
+  },
 ];
 
 export interface ReceiptCard {
