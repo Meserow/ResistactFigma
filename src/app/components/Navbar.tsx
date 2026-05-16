@@ -2,8 +2,10 @@ import logoImg from "../../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import type { ReactNode } from "react";
 import { FACT_CARDS } from "../data/factCards";
-import { Bell, Bookmark, ChevronDown, Clock, Flame, Info, LogOut, MapPin, Menu, MessageCircle, Search, ShieldCheck, SlidersHorizontal, X, Zap } from "lucide-react";
+import { Bell, Bookmark, ChevronDown, Clock, Flame, Info, LogOut, MapPin, Menu, MessageCircle, Search, ShieldCheck, SlidersHorizontal, Sparkles, X, Zap } from "lucide-react";
 import type { UserApproval } from "../lib/supabase";
+import { TierProgress } from "./TierProgress";
+import { getUserTier } from "../lib/tiers";
 
 function ResistActLogo() {
   return (
@@ -59,9 +61,12 @@ interface NavbarProps {
   onMatchClick?: () => void;
   onPendingSmacksClick?: () => void;
   onPendingActsClick?: () => void;
+  pendingActsCount?: number;
+  pendingSmacksCount?: number;
+  onTierClick?: () => void;
 }
 
-export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick, onPendingSmacksClick, onPendingActsClick }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
+export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick, onPendingSmacksClick, onPendingActsClick, pendingActsCount, pendingSmacksCount, onTierClick }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
   // Acts filters in render order: Location dropdown first, Category pills second.
   // Used for "Clear all" and the mobile filter row that shows just the names.
   const ACTS_FILTER_OPTIONS: Record<string, string[]> = {
@@ -134,12 +139,6 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
-
-  // Sorted category breakdown — biggest categories first.
-  const completionEntries = useMemo(() => {
-    if (!myCompletions) return [];
-    return Object.entries(myCompletions.byCategory).sort((a, b) => b[1] - a[1]);
-  }, [myCompletions]);
 
   const isLoggedIn = !!approval;
   const isPending = approval?.status === "pending";
@@ -312,32 +311,49 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
 
               <div className="relative" ref={dropdownRef}>
                 <button
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  onClick={() => setDropdownOpen(o => !o)}
                   className="flex items-center gap-2.5 cursor-pointer hover:opacity-80 transition-opacity"
                 >
-                  <span className="relative">
-                    {approval?.avatar ? (
-                      <img src={approval.avatar} alt={approval.name} className="w-9 h-9 rounded-full object-cover ring-2 ring-gray-100" />
-                    ) : (
-                      <div className="w-9 h-9 rounded-full bg-[#23297e]/10 ring-2 ring-gray-100 flex items-center justify-center">
-                        <span className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-sm">
-                          {approval?.name?.charAt(0)?.toUpperCase() ?? "?"}
+                  {(() => {
+                    const tierInfo = myCompletions ? getUserTier(myCompletions.total) : null;
+                    const tier = tierInfo?.tier;
+                    return (
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className="relative">
+                          <div
+                            className="w-9 h-9 rounded-full ring-2 ring-gray-100 flex items-center justify-center"
+                            style={{ backgroundColor: tier?.color ?? "#fd8e33" }}
+                            aria-label={tier ? `${tier.name} tier` : undefined}
+                          >
+                            {tier?.icon === "sparkles"
+                              ? <Sparkles size={20} className="text-white" strokeWidth={2.5} aria-hidden="true" style={{ color: tier.iconColor }} />
+                              : <Flame    size={20} strokeWidth={2.5} aria-hidden="true" style={{ color: tier?.iconColor ?? "#fff" }} />
+                            }
+                          </div>
+                          {myCompletions && (
+                            <span
+                              title={`You've done ${myCompletions.total} action${myCompletions.total === 1 ? "" : "s"}`}
+                              aria-label={`You've done ${myCompletions.total} action${myCompletions.total === 1 ? "" : "s"} — click to see scoreboard`}
+                              className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white shadow ring-2 ring-white flex items-center justify-center font-['Poppins',sans-serif] font-bold text-[9px] leading-none pointer-events-none"
+                            >
+                              {myCompletions.total > 99 ? "99+" : myCompletions.total}
+                            </span>
+                          )}
                         </span>
+                        {tier && (
+                          <span
+                            className="font-['Poppins',sans-serif] font-semibold text-[9px] leading-none tracking-wide"
+                            style={{ color: tier.color }}
+                          >
+                            {tier.name}
+                          </span>
+                        )}
                       </div>
-                    )}
-                    {myCompletions && (
-                      <span
-                        title={`You've done ${myCompletions.total} action${myCompletions.total === 1 ? "" : "s"}`}
-                        aria-label={`You've done ${myCompletions.total} action${myCompletions.total === 1 ? "" : "s"} — click to see scoreboard`}
-                        className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-[#fd8e33] text-white shadow ring-2 ring-white flex items-center justify-center font-['Poppins',sans-serif] font-bold text-[10px] transition-colors leading-none pointer-events-none"
-                      >
-                        {myCompletions.total > 99 ? "99+" : myCompletions.total}
-                      </span>
-                    )}
-                  </span>
+                    );
+                  })()}
                   <div className="hidden lg:block text-left">
                     <p className="font-['Poppins',sans-serif] font-semibold text-[#3b3b3b] text-sm leading-tight">{approval?.name}</p>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
                       {isPending ? (
                         <span className="font-['Poppins',sans-serif] text-amber-500 text-xs flex items-center gap-0.5">
                           <Clock size={10} />Pending approval
@@ -357,31 +373,16 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                       <p className="font-['Poppins',sans-serif] text-gray-400 text-xs truncate">{approval?.email}</p>
                     </div>
                     {myCompletions && (
-                      <div className="px-4 py-2.5 border-b border-gray-50">
-                        <p className="font-['Poppins',sans-serif] text-[11px] uppercase tracking-wider text-gray-400 font-semibold">
-                          Your scoreboard
-                        </p>
-                        <p className="font-['Poppins',sans-serif] font-bold text-gray-900 text-sm mt-0.5">
-                          {myCompletions.total} action{myCompletions.total === 1 ? "" : "s"} done
-                        </p>
-                        {completionEntries.length === 0 ? (
-                          <p className="font-['Poppins',sans-serif] text-[12px] text-gray-500 mt-1">
-                            Click "✓ I did this" on any card to start your streak.
-                          </p>
-                        ) : (
-                          <div className="max-h-48 overflow-y-auto mt-1.5 -mx-1">
-                            {completionEntries.map(([cat, n]) => (
-                              <div
-                                key={cat}
-                                className="flex items-center justify-between px-1 py-0.5 font-['Poppins',sans-serif] text-[12px]"
-                              >
-                                <span className="text-gray-700 font-medium">{cat}</span>
-                                <span className="text-[#fd8e33] font-bold tabular-nums">{n}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                      <TierProgress actionCount={myCompletions.total} />
+                    )}
+                    {myCompletions && onTierClick && (
+                      <button
+                        onClick={() => { setDropdownOpen(false); onTierClick(); }}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-['Poppins',sans-serif] font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                      >
+                        <Flame size={15} />
+                        My Tier
+                      </button>
                     )}
                     <button
                       onClick={() => { setDropdownOpen(false); onBookmarksClick?.(); }}
@@ -409,6 +410,11 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                       >
                         <ShieldCheck size={15} />
                         Pending Acts
+                        {!!pendingActsCount && (
+                          <span className="ml-auto bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center">
+                            {pendingActsCount > 99 ? "99+" : pendingActsCount}
+                          </span>
+                        )}
                       </button>
                     )}
                     {isAdmin && (
@@ -418,6 +424,11 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                       >
                         <ShieldCheck size={15} />
                         Pending Smacks
+                        {!!pendingSmacksCount && (
+                          <span className="ml-auto bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center">
+                            {pendingSmacksCount > 99 ? "99+" : pendingSmacksCount}
+                          </span>
+                        )}
                       </button>
                     )}
                     {isAdmin && (

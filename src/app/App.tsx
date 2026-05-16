@@ -17,6 +17,7 @@ import { HomeHero } from "./components/HomeHero";
 import { LoggedInHero } from "./components/LoggedInHero";
 import { MatchMeModal } from "./components/MatchMeModal";
 import { ChangelogModal } from "./components/ChangelogModal";
+import { TierModal } from "./components/TierModal";
 import { FeedbackModal } from "./components/FeedbackModal";
 import { SmacksPage, STATIC_SMACKS, type ReceiptCard } from "./components/SmacksPage";
 import { rankCards, score as scoreCard, loadPreferences, clearPreferences, applyMatcherConfig, fetchUserPreferences, pushUserPreferences, savePreferences, type Preferences, type UserContext } from "./lib/matcher";
@@ -215,6 +216,7 @@ export default function App() {
   const [infoOpen, setInfoOpen] = useState(false);
   const [actOpen, setActOpen] = useState(false);
   const [changelogOpen, setChangelogOpen] = useState(false);
+  const [tierModalOpen, setTierModalOpen] = useState(false);
   const [askOpen, setAskOpen] = useState(false);
   const [matchOpen, setMatchOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -383,6 +385,8 @@ export default function App() {
   // Today's date as ISO string (YYYY-MM-DD) for expiry + sort comparisons.
   const todayISO = new Date().toISOString().slice(0, 10);
   const isAdminUser = approval?.isAdmin === true;
+  const pendingActsCount   = isAdminUser ? cards.filter((c) => (c as any).adminApproved === false).length : 0;
+  const pendingSmacksCount = isAdminUser ? receipts.filter((r) => (r as any).adminApproved === false).length : 0;
 
   const displayedCards = (() => {
     // ── Global gate: expiry + approval + already-done ────────────────────────
@@ -1072,12 +1076,15 @@ export default function App() {
         onAdminClick={() => setAdminPanelOpen(true)}
         onPendingActsClick={() => { handleTabChange("acts"); setPendingActsVersion((v) => v + 1); }}
         onPendingSmacksClick={() => { handleTabChange("receipts"); setSmacksPendingVersion((v) => v + 1); }}
+        pendingActsCount={pendingActsCount}
+        pendingSmacksCount={pendingSmacksCount}
         onInfoClick={() => setInfoOpen(true)}
         onActClick={() => setActOpen(true)}
         onBookmarksClick={() => setBookmarksOpen(true)}
         bookmarkCount={bookmarkedCards.size}
         onFeedbackClick={() => setFeedbackOpen(true)}
         onMatchClick={() => setMatchOpen(true)}
+        onTierClick={() => setTierModalOpen(true)}
         matchActive={matchPrefs !== null}
         onMatchClear={() => { setMatchPrefs(null); clearPreferences(); }}
         statsActsCount={displayedCards.length}
@@ -1444,6 +1451,7 @@ export default function App() {
             v{__APP_VERSION__}
           </button>
           {changelogOpen && <ChangelogModal onClose={() => setChangelogOpen(false)} />}
+          {tierModalOpen && <TierModal actionCount={myCompletions?.total ?? null} byCategory={myCompletions?.byCategory} onClose={() => setTierModalOpen(false)} />}
         </>
       )}
     </div>
