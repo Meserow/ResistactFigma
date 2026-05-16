@@ -406,7 +406,7 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
           {/* Mode switcher — Cards first */}
           <div className="px-5 flex gap-1 border-b border-gray-100 shrink-0">
             {([
-              { key: "cards" as PanelMode, icon: <FileText size={13} />, label: `Cards${pendingCardsCount > 0 ? ` (${pendingCardsCount})` : ""}` },
+              { key: "cards" as PanelMode, icon: <FileText size={13} />, label: `Cards${!cardsLoading && pendingCardsCount > 0 ? ` (${pendingCardsCount})` : ""}` },
               { key: "nourl" as PanelMode, icon: <Link2 size={13} />, label: `No URL${noUrlCards.length > 0 ? ` (${noUrlCards.length})` : ""}` },
               { key: "users" as PanelMode, icon: <Users size={13} />, label: "Users" },
               { key: "matcher" as PanelMode, icon: <Sliders size={13} />, label: "Matcher" },
@@ -430,9 +430,11 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
             <>
               <div className="px-5 py-3 border-b border-gray-100 shrink-0">
                 <p className="font-['Poppins',sans-serif] text-xs text-gray-500">
-                  {pendingCards.length === 0 && !cardsLoading
-                    ? "No cards awaiting approval."
-                    : `${pendingCards.length} card${pendingCards.length !== 1 ? "s" : ""} awaiting review`}
+                  {cardsLoading
+                    ? "Loading…"
+                    : pendingCards.length === 0
+                      ? "No cards awaiting approval."
+                      : `${pendingCards.length} card${pendingCards.length !== 1 ? "s" : ""} awaiting review`}
                 </p>
               </div>
 
