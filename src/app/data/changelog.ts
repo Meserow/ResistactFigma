@@ -16,6 +16,69 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.5.0",
+    date: "2026-05-16",
+    title: "The Smacks, gamification tiers, revamped Add an Action, and a wave of polish",
+    sections: [
+      {
+        heading: "The Smacks — new tab",
+        items: [
+          "Brand-new “The Smacks” tab: a library of shareable political images you can post directly to Instagram, Threads, Bluesky, Twitter, and more.",
+          "Share buttons added for Instagram, Threads, and Bluesky across the platform.",
+          "Card grid layout redesigned for a cleaner, more visual feel.",
+          "Admin tools: approve, delete, and review pending smacks from the admin panel.",
+          "Smack count shown in the Navbar stats bar alongside acts and facts counts.",
+        ],
+      },
+      {
+        heading: "Resistance Tiers — gamification",
+        items: [
+          "Your avatar is now a flame icon that reflects your tier level — Spark, Ember, Flame, Blaze, Wildfire, or Inferno.",
+          "Six tiers based on total actions completed: 0–4 (Spark) through 500+ (Inferno), with escalating colors from yellow to deep red.",
+          "Tier progress bar and next-tier countdown visible in your dropdown menu.",
+          "Tap “My Tier” in your profile dropdown to see the full tier ladder.",
+          "Action count displayed in a red badge on your avatar.",
+        ],
+      },
+      {
+        heading: "Add an Action — revamped",
+        items: [
+          "Restructured into a cleaner 4-step flow: category → details → image & URL → author & tone.",
+          "Author name and role now have their own dedicated step.",
+          "URL health scanning: submission flags broken or redirecting links automatically.",
+          "Any signed-in user can now upload a header image directly from their computer.",
+          "Header image upload moved after the sign-in step so uploads always have an authenticated session.",
+        ],
+      },
+      {
+        heading: "Matching & feed",
+        items: [
+          "Pending cards are now shown to admins in Match Me results even when they fall below the score threshold — so new cards get reviewed in context.",
+          "Carousel now always fills to 12 matches with a secondary fallback when preferences are very narrow.",
+        ],
+      },
+      {
+        heading: "Admin panel",
+        items: [
+          "Pending card count in the Cards tab no longer flickers through intermediate numbers while loading — count appears only when fully loaded.",
+          "Image lightbox added to the Edit Card modal — click the header image preview to see it full-size.",
+          "Warning badge added to pending cards where the author URL appears to be a homepage rather than a direct action link.",
+          "Scoreboard in the user dropdown is now collapsed by default — click to expand.",
+        ],
+      },
+      {
+        heading: "Polish & fixes",
+        items: [
+          "Card buttons renamed from 'Take this action' to 'I want to ResistAct!'",
+          "Tone sliders now show 4 labeled stops with plain-English descriptions (None / Low / Bold / High) instead of unlabeled notches.",
+          "Match Settings accessible from the navbar and hero area — no need to re-open the full Match Me flow.",
+          "InfoModal no longer overflows on small screens.",
+          "Autocomplete disabled on form inputs to prevent browser autofill interfering with card fields.",
+        ],
+      },
+    ],
+  },
+  {
     version: "0.4.0",
     date: "2026-05-12",
     title: "Smarter matching, location rename, modal polish, and UI fixes",

@@ -1,5 +1,7 @@
-import { X, Zap, Shield, Users, Flame } from "lucide-react";
+import { X, Zap, Shield, Users, Flame, BookOpen } from "lucide-react";
 import logoImg from "../../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
+import { TIERS } from "../lib/tiers";
+import { TierIcon } from "./TierBadge";
 
 interface InfoModalProps {
   onClose: () => void;
@@ -79,16 +81,67 @@ export function InfoModal({ onClose }: InfoModalProps) {
                   <p className="font-['Poppins',sans-serif] text-gray-600 text-[12.5px] leading-relaxed">It's a tool for you. Let's build the community and momentum we need rolling into the midterms. At the very least — we will show how united we are.</p>
                 </div>
               </div>
+
+              <div className="flex gap-3 items-start">
+                <div className="shrink-0 w-7 h-7 rounded-lg bg-sky-50 flex items-center justify-center mt-0.5">
+                  <BookOpen size={14} strokeWidth={2.5} className="text-sky-500" />
+                </div>
+                <div>
+                  <p className="font-['Poppins',sans-serif] font-semibold text-[#23297e] text-[13px] leading-tight mb-0.5">Read the facts. Share the smacks.</p>
+                  <p className="font-['Poppins',sans-serif] text-gray-600 text-[12.5px] leading-relaxed">RA Facts surfaces daily political truths you can cite and share. The Smacks are ready-made political images you can post straight to Instagram, Threads, Bluesky, or Twitter — because sometimes a picture says everything.</p>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Right — photo, takes the remaining width */}
-          <div className="sm:w-1/2 h-48 sm:h-auto sm:min-h-[420px] overflow-hidden">
-            <img
-              src="/trump-kroger.jpg"
-              alt="Group of people in Baby Trump inflatable costumes walking out of a Kroger grocery store"
-              className="w-full h-full object-cover object-center"
-            />
+          {/* Right — tier ladder above the Kroger photo */}
+          <div className="sm:w-1/2 flex flex-col overflow-hidden rounded-b-2xl sm:rounded-r-2xl sm:rounded-bl-none">
+
+            {/* Tier gamification */}
+            <div className="bg-[#23297e]/[0.04] px-5 pt-5 pb-4 border-b border-[#23297e]/10 shrink-0">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Flame size={12} strokeWidth={2.5} className="text-[#fd8e33]" />
+                <p className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-[11px] uppercase tracking-widest">
+                  Earn your resistance tier
+                </p>
+              </div>
+              <p className="font-['Poppins',sans-serif] text-gray-500 text-[11px] leading-relaxed mb-3">
+                Every action you complete levels up your rank — from first spark to full Inferno.
+              </p>
+              <div className="space-y-[7px]">
+                {TIERS.map((t) => (
+                  <div key={t.key} className="flex items-center gap-2">
+                    <div
+                      className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: t.color }}
+                    >
+                      <TierIcon tier={t} size={10} />
+                    </div>
+                    <span
+                      className="font-['Poppins',sans-serif] font-bold text-[11px] w-[52px] shrink-0"
+                      style={{ color: t.color }}
+                    >
+                      {t.name}
+                    </span>
+                    <span className="font-['Poppins',sans-serif] text-gray-400 text-[10px] flex-1 truncate">
+                      {t.tagline}
+                    </span>
+                    <span className="font-['Poppins',sans-serif] text-gray-300 text-[10px] shrink-0 tabular-nums">
+                      {t.max !== null ? `${t.min}–${t.max}` : `${t.min}+`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Photo — object-bottom so legs are visible */}
+            <div className="flex-1 overflow-hidden min-h-[160px] sm:min-h-0">
+              <img
+                src="/trump-kroger.jpg"
+                alt="Group of people in Baby Trump inflatable costumes walking out of a Kroger grocery store"
+                className="w-full h-full object-cover object-bottom"
+              />
+            </div>
           </div>
         </div>
       </div>
