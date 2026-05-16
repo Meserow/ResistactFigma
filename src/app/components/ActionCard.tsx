@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from "react";
-import { Bookmark, BookmarkCheck, Flame, Globe, MapPin, Pencil, Share2 } from "lucide-react";
+import { Bookmark, BookmarkCheck, CheckCircle2, Flame, Globe, MapPin, Pencil, Share2 } from "lucide-react";
 import { ShareModal } from "./ShareModal";
 import { SpreadTheWordModal } from "./SpreadTheWordModal";
 import { CardDetailsModal } from "./CardDetailsModal";
@@ -87,16 +87,20 @@ interface ActionCardProps {
   onShare?: (id: number) => void;
   onBookmark?: (id: number) => void;
   onEdit?: (id: number) => void;
+  onApprove?: (id: number) => void;
   isBoosted?: boolean;
   isCompleted?: boolean;
   isBookmarked?: boolean;
   canEdit?: boolean;
+  /** When true (admin-only), renders a red PENDING APPROVAL banner with a
+   * one-click approve button at the top of the card. */
+  isPending?: boolean;
   /** Smaller image + tighter padding + 2-line description. Used inside the
    * Match Me sample preview so cards read as previews, not as the main event. */
   compact?: boolean;
 }
 
-function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdit, isBoosted, isCompleted, isBookmarked, canEdit, compact = false }: ActionCardProps) {
+function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdit, onApprove, isBoosted, isCompleted, isBookmarked, canEdit, isPending, compact = false }: ActionCardProps) {
   const [shareOpen, setShareOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
@@ -287,7 +291,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
         {shareOpen && (
           card.pinToTop
             ? <SpreadTheWordModal onClose={() => setShareOpen(false)} />
-            : <ShareModal title={card.title} description={card.description} onClose={() => setShareOpen(false)} />
+            : <ShareModal cardId={card.id} title={card.title} description={card.description} onClose={() => setShareOpen(false)} />
         )}
         {detailsOpen && (
           <CardDetailsModal
@@ -303,7 +307,23 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
   /* ── Standard card ────────────────────────────────────── */
   return (
     <>
-      <div className="bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full hover:shadow-lg transition-shadow">
+      <div className={`bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full hover:shadow-lg transition-shadow ${isPending ? "ring-2 ring-red-400" : ""}`}>
+        {/* ── Admin: pending approval banner ── */}
+        {isPending && !compact && (
+          <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-red-50 border-b border-red-200 shrink-0">
+            <span className="font-['Poppins',sans-serif] font-bold text-[11px] uppercase tracking-wider text-red-600">
+              ⚠ Pending approval
+            </span>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onApprove?.(card.id); }}
+              className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-green-600 hover:bg-green-700 text-white font-['Poppins',sans-serif] font-bold text-[10px] uppercase tracking-wide transition-colors shrink-0"
+            >
+              <CheckCircle2 size={11} />
+              Approve
+            </button>
+          </div>
+        )}
         {/* Top image */}
         {showTopImage ? (
           <div className={`relative ${compact ? "h-[70px]" : "h-[160px]"} shrink-0 ${card.imageContain ? "bg-gray-50" : ""}`}>
@@ -473,7 +493,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
         </div>
       </div>
       {shareOpen && (
-        <ShareModal title={card.title} description={card.description} onClose={() => setShareOpen(false)} />
+        <ShareModal cardId={card.id} title={card.title} description={card.description} onClose={() => setShareOpen(false)} />
       )}
       {detailsOpen && (
         <CardDetailsModal card={card} onClose={() => setDetailsOpen(false)} />

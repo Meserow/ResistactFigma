@@ -43,8 +43,8 @@ interface NavbarProps {
   onFilterChange: (filterName: string, selected: string[]) => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
-  activeTab: "facts" | "acts";
-  onTabChange: (tab: "facts" | "acts") => void;
+  activeTab: "facts" | "acts" | "receipts";
+  onTabChange: (tab: "facts" | "acts" | "receipts") => void;
   /** Render between the top bar and the filter row (e.g. the homepage hero). */
   heroSlot?: ReactNode;
   /** Quick-actions toggle: when true, only show 5–10 min "quick win" cards. */
@@ -58,7 +58,7 @@ interface NavbarProps {
   onMatchClick?: () => void;
 }
 
-export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick }: NavbarProps) {
+export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
   // Acts filters in render order: Location dropdown first, Category pills second.
   // Used for "Clear all" and the mobile filter row that shows just the names.
   const ACTS_FILTER_OPTIONS: Record<string, string[]> = {
@@ -251,11 +251,11 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
           </div>
         </div>
 
-        {/* ── Tab switcher: The Facts / The Acts ── */}
-        <div className="hidden sm:flex items-center shrink-0 bg-gray-100 rounded-2xl p-1.5 gap-1">
+        {/* ── Tab switcher: The Acts / The Facts / The Smacks ── */}
+        <div className="hidden md:flex items-center shrink-0 bg-gray-100 rounded-2xl p-1.5 gap-1">
           <button
             onClick={() => onTabChange("acts")}
-            className={`px-5 py-3 rounded-xl font-['Poppins',sans-serif] font-bold text-base transition-all whitespace-nowrap ${
+            className={`px-4 py-2.5 rounded-xl font-['Poppins',sans-serif] font-bold text-sm transition-all whitespace-nowrap ${
               activeTab === "acts"
                 ? "bg-white text-[#fd8e33] shadow-sm"
                 : "text-gray-500 hover:text-gray-700"
@@ -265,13 +265,23 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
           </button>
           <button
             onClick={() => onTabChange("facts")}
-            className={`px-5 py-3 rounded-xl font-['Poppins',sans-serif] font-bold text-base transition-all whitespace-nowrap ${
+            className={`px-4 py-2.5 rounded-xl font-['Poppins',sans-serif] font-bold text-sm transition-all whitespace-nowrap ${
               activeTab === "facts"
                 ? "bg-white text-[#fd8e33] shadow-sm"
                 : "text-gray-500 hover:text-gray-700"
             }`}
           >
             The Facts
+          </button>
+          <button
+            onClick={() => onTabChange("receipts")}
+            className={`px-4 py-2.5 rounded-xl font-['Poppins',sans-serif] font-bold text-sm transition-all whitespace-nowrap ${
+              activeTab === "receipts"
+                ? "bg-white text-[#fd8e33] shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            The Smacks
           </button>
         </div>
 
@@ -284,7 +294,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder={activeTab === "facts" ? "Search facts by topic or claim…" : "Search Resistance Acts…"}
+              placeholder={activeTab === "facts" ? "Search facts by topic or claim…" : activeTab === "receipts" ? "Search The Smacks…" : "Search Resistance Acts…"}
               className="w-full pl-11 pr-4 py-2.5 bg-white border border-gray-300 rounded-xl font-['Poppins',sans-serif] text-base text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#23297e] focus:border-transparent"
             />
           </div>
@@ -763,7 +773,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
           <div className="flex items-center bg-gray-200 rounded-xl p-1 gap-0.5">
             <button
               onClick={() => onTabChange("acts")}
-              className={`flex-1 py-2 rounded-lg font-['Poppins',sans-serif] font-bold text-sm transition-all ${
+              className={`flex-1 py-2 rounded-lg font-['Poppins',sans-serif] font-bold text-xs transition-all ${
                 activeTab === "acts" ? "bg-white text-[#fd8e33] shadow-sm" : "text-gray-500"
               }`}
             >
@@ -771,11 +781,19 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
             </button>
             <button
               onClick={() => onTabChange("facts")}
-              className={`flex-1 py-2 rounded-lg font-['Poppins',sans-serif] font-bold text-sm transition-all ${
+              className={`flex-1 py-2 rounded-lg font-['Poppins',sans-serif] font-bold text-xs transition-all ${
                 activeTab === "facts" ? "bg-white text-[#fd8e33] shadow-sm" : "text-gray-500"
               }`}
             >
               The Facts
+            </button>
+            <button
+              onClick={() => onTabChange("receipts")}
+              className={`flex-1 py-2 rounded-lg font-['Poppins',sans-serif] font-bold text-xs transition-all ${
+                activeTab === "receipts" ? "bg-white text-[#fd8e33] shadow-sm" : "text-gray-500"
+              }`}
+            >
+              The Smacks
             </button>
           </div>
         </div>

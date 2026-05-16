@@ -90,6 +90,7 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [postRegState, setPostRegState] = useState<"verify-email" | "pending" | "approved" | null>(null);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [pendingSignUp, setPendingSignUp] = useState(false);
   const [captchaKey, setCaptchaKey] = useState(0);
 
   const resetCaptcha = () => { setCaptchaToken(null); setCaptchaKey(k => k + 1); };
@@ -140,8 +141,16 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
 
       const isCredErr = signInErr.message.toLowerCase().includes("invalid login credentials");
 
-      // Credentials wrong AND name provided → attempt sign-up
+      // Credentials wrong AND name provided → sign-up, but require a deliberate
+      // second submit so autofill or typos don't silently trigger account creation.
       if (isCredErr && name.trim()) {
+        if (!pendingSignUp) {
+          setPendingSignUp(true);
+          setError("Incorrect password. If you're new here, click Continue again to create your account.");
+          resetCaptcha();
+          return;
+        }
+        // Second submit — user confirmed they want to sign up.
         if (password.length < 6) { setError("Password must be at least 6 characters."); resetCaptcha(); return; }
         const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
           email,
@@ -153,6 +162,7 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
           },
         });
         if (signUpErr) { setError(signUpErr.message); resetCaptcha(); return; }
+        setPendingSignUp(false);
         if (signUpData.session) {
           onClose();
         } else {
@@ -316,7 +326,7 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
       {/* Header */}
       <div className="mb-5">
         <div className="flex items-center gap-2 mb-1">
-          <Zap size={20} className="text-[#fd8e33]" strokeWidth={2.5} />
+          <Flame size={20} className="text-[#fd8e33]" strokeWidth={2.5} />
           <h2 className="font-['Poppins',sans-serif] font-bold text-gray-900 text-[22px] leading-tight">
             Join the Resistance
           </h2>
@@ -338,7 +348,7 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
           <input
             type="text"
             value={name}
-            onChange={e => setName(e.target.value)}
+            onChange={e => { setName(e.target.value); setPendingSignUp(false); }}
             placeholder="Jane Doe"
             className="w-full px-4 py-2.5 border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#fd8e33]/30 focus:border-[#fd8e33] transition-colors"
           />
@@ -353,7 +363,7 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
             <input
               type={showPass ? "text" : "password"}
               value={password}
-              onChange={e => setPassword(e.target.value)}
+              onChange={e => { setPassword(e.target.value); setPendingSignUp(false); }}
               required
               autoFocus
               placeholder="••••••••"
@@ -361,7 +371,8 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
             />
             <button
               type="button"
-              onClick={() => setShowPass(!showPass)}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setShowPass((v) => !v)}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
             >
               {showPass ? <EyeOff size={16} /> : <Eye size={16} />}

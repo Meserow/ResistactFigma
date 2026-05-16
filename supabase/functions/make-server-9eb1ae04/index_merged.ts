@@ -538,6 +538,12 @@ const SEED_CARDS = [
   { id: 1298, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Tell Congress: Pass the John R. Lewis Voting Rights Advancement Act", description: "The JLVRAA restores federal oversight of states with discriminatory voting histories, protects ballot access for communities of color, and guarantees equal voting rights for every citizen. Reject the SAVE Act. Advance the JLVRAA. Voting rights are American rights — contact Congress now.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "NAACP", authorRole: "Civil Rights Organization", authorLink: "https://naacp.org/", targetUrl: "https://naacp.org/actions/tell-congress-protect-our-voting-rights", topImageUrl: "https://naacp.org/sites/default/files/styles/hero_desktop/public/images/iStock-1202146507.jpg.webp?itok=57dCxKlE", toneOverride: { anger: 2, comedy: 0, subversion: 0, hope: 2, energy: 1 }, adminApproved: false },
   { id: 1299, category: "NEWS STORY", categoryColor: "#3b4a73", actionType: "Online", title: "Share Your Story: How Federal Budget Cuts Are Hurting Your Family", description: "Congress is slashing Medicaid and SNAP while handing tax breaks to billionaires. The NAACP needs your story — how would losing healthcare, food assistance, or housing support affect you or someone you love? Personal testimonies shift congressional votes. Two minutes to submit.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "NAACP", authorRole: "Civil Rights Organization", authorLink: "https://naacp.org/", targetUrl: "https://support.naacp.org/a/budget-and-tax-stories", topImageUrl: "https://naacp.org/sites/default/files/styles/hero_desktop/public/images/GettyImages-844235780-cropped.jpg.webp", toneOverride: { anger: 2, comedy: 0, subversion: 0, hope: 1, energy: 0 }, firstTimerFriendly: true, adminApproved: false },
   { id: 1301, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Email Your Senator: Kill the 'Kill Nonprofits' Bill (H.R. 9495)", description: "H.R. 9495 lets the government strip tax-exempt status from any nonprofit it labels 'terrorist supporting' — meaning the NAACP, ACLU, Planned Parenthood, any org that criticizes the administration. This is the infrastructure for silencing civil society. Email your senator to stop it.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "NAACP", authorRole: "Civil Rights Organization", authorLink: "https://naacp.org/", targetUrl: "https://naacp.org/actions/oppose-hr-9495-protect-nonprofit-organizations", topImageUrl: "https://naacp.org/sites/default/files/styles/hero_desktop/public/images/pexels-life-matters-4613879-%281%29.jpg.webp?itok=G50qUJOv", toneOverride: { anger: 3, comedy: 0, subversion: 0, hope: 1, energy: 1 }, adminApproved: false },
+
+  // ── Dissent Pins resistance merch ─────────────────────────────────────────────
+  { id: 1302, category: "PERSONAL COMMITMENT", categoryColor: "#23297e", actionType: "Online", title: "Slap a 'No War Is Holy' Sticker on Your Car (or Laptop)", description: "Tired of hearing Trump claim divine favor for his wars? This UV-laminated bumper sticker (5.25″ × 3″) pushes back on the gospel of holy wars. Weather-resistant for indoor or outdoor use — sticker or car magnet. From Dissent Pins.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Dissent Pins", authorRole: "Resistance Merch", authorLink: "https://dissentpins.com/", targetUrl: "https://dissentpins.com/collections/best-sellers/products/no-war-is-holy-bumper-sticker", topImageUrl: "https://dissentpins.com/cdn/shop/files/NoWarIsHolyStickerMock-up_2000x2000.jpg?v=1776273173", toneOverride: { anger: 2, comedy: 1, subversion: 2, hope: 1, energy: 1 }, adminApproved: false },
+  { id: 1303, category: "FUNDING", categoryColor: "#127f05", actionType: "Online", title: "Buy a Fifth Amendment Sticker — 50% to Immigrant Rights Orgs", description: "The Fifth Amendment protects everyone in the U.S. — citizens and non-citizens alike. Show it. 50% of profits go directly to immigrant rights organizations doing legal defense and community education, including Hands Off NYC, Illinois Coalition for Immigrant Rights, and Portland Immigrant Rights Coalition. 8.3″ wide, UV-laminated.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Dissent Pins", authorRole: "Resistance Merch", authorLink: "https://dissentpins.com/", targetUrl: "https://dissentpins.com/collections/best-sellers/products/fifth-amendment-bumper-sticker", topImageUrl: "https://dissentpins.com/cdn/shop/files/FifthAmendmentBumperSticker_1500x1500.png?v=1752677646", toneOverride: { anger: 2, comedy: 0, subversion: 1, hope: 2, energy: 1 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1304, category: "FUNDING", categoryColor: "#127f05", actionType: "Online", title: "Buy an Abolish ICE Liberty Sticker — 50% to Immigrant Rights Orgs", description: "Show solidarity with neighbors under threat from ICE enforcement. 50% of profits fund five immigrant rights organizations doing legal defense and community education. UV-laminated sticker (6.5″ × 4.4″) or car magnet.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Dissent Pins", authorRole: "Resistance Merch", authorLink: "https://dissentpins.com/", targetUrl: "https://dissentpins.com/collections/best-sellers/products/abolish-ice-liberty-bumper-sticker-or-car-magnet", topImageUrl: "https://dissentpins.com/cdn/shop/files/AbolishICELibertycarmagnetonblue2000x2000_2000x2000.jpg?v=1766517162", toneOverride: { anger: 3, comedy: 0, subversion: 2, hope: 2, energy: 2 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1305, category: "FUNDING", categoryColor: "#127f05", actionType: "Online", title: "Buy a FCK ICE Tee — 100% to Immigrant Defense Funds", description: "Wear your resistance and fund it. 100% of profits go directly to Minnesota Immigrant Rapid Response Fund, Immigrant Law Center of Minnesota, and UNIDOSMN. Light blue, 100% cotton, sizes XS–4XL. Made with Vermont-based New Duds.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Dissent Pins", authorRole: "Resistance Merch", authorLink: "https://dissentpins.com/", targetUrl: "https://dissentpins.com/collections/best-sellers/products/fckice-tshirt", topImageUrl: "https://dissentpins.com/cdn/shop/files/FCKICEHoodieUGCJoinbrandsDanTinklerMar202612000x2000_1024x.jpg?v=1773673949", toneOverride: { anger: 3, comedy: 1, subversion: 2, hope: 2, energy: 2 }, amplifiesGroups: ["immigrant"], adminApproved: false },
 ];
 
 // ─── Health check ─────────────────────────────────────────────────────────────
@@ -1014,13 +1020,13 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       console.log("Set boosts = 950 on action:1 (Spread the Word).");
     }
 
-    const orgsSeeded = await kv.get("seed:org-actions:v17");
+    const orgsSeeded = await kv.get("seed:org-actions:v18");
     if (!orgsSeeded) {
       // Mark the seed as done UP FRONT — if the request times out partway
       // through the 260-card loop, the next request still skips the loop
       // instead of dying again. The cards already written stay; missing ones
       // get filled in on the next version bump.
-      await kv.set("seed:org-actions:v17", true);
+      await kv.set("seed:org-actions:v18", true);
       let count = 0;
       for (const card of SEED_CARDS) {
         // Seed every card in SEED_CARDS (no longer skipping ids <1000).
@@ -1520,7 +1526,7 @@ app.post("/make-server-9eb1ae04/actions/create", async (c) => {
     // Auto-increment ID, always staying above the max seed card ID (1301)
     // to avoid collisions between user-submitted cards and seed cards
     const currentIds = (await kv.get("user-action:ids") ?? []) as number[];
-    const nextId = Math.max(...currentIds, 1301) + 1;
+    const nextId = Math.max(...currentIds, 1305) + 1;
 
     const offTopic = looksOffTopic(title, description, category);
 
@@ -2220,6 +2226,333 @@ app.get("/make-server-9eb1ae04/admin/feedback", async (c) => {
     return c.json(entries.filter(Boolean).reverse());
   } catch (err) {
     return c.json({ error: `Failed: ${err}` }, 500);
+  }
+});
+
+// ─── URL health: probe every card's targetUrl, flag the broken ones ──────────
+// scan endpoint is cron-triggered (static token, same pattern as bulk-import);
+// viewer is admin JWT. Result blob lives at kv key `url-health:last-scan` so
+// follow-up calls overwrite the previous report rather than accumulating.
+type UrlHealthEntry = {
+  id: number;
+  store: "action" | "user-action";
+  title: string;
+  targetUrl: string;
+  status: number | null;
+  ok: boolean;
+  error?: string;
+  checkedAt: string;
+};
+
+async function probeUrl(url: string, timeoutMs: number): Promise<{ status: number | null; ok: boolean; error?: string }> {
+  const ua = "ResistActUrlHealthBot/1.0 (+https://resistact.org)";
+  const tryFetch = async (method: "HEAD" | "GET"): Promise<Response> => {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      return await fetch(url, {
+        method,
+        redirect: "follow",
+        signal: ctrl.signal,
+        headers: method === "GET"
+          ? { "User-Agent": ua, "Range": "bytes=0-0", "Accept": "*/*" }
+          : { "User-Agent": ua, "Accept": "*/*" },
+      });
+    } finally {
+      clearTimeout(t);
+    }
+  };
+
+  try {
+    let res = await tryFetch("HEAD");
+    // Many sites (Cloudflare, Facebook) return 403/405 for HEAD — fall back to a single-byte GET.
+    if (res.status === 403 || res.status === 405 || res.status === 501) {
+      res = await tryFetch("GET");
+    }
+    return { status: res.status, ok: res.status >= 200 && res.status < 400 };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { status: null, ok: false, error: msg.slice(0, 200) };
+  }
+}
+
+app.post("/make-server-9eb1ae04/admin/url-health/scan", async (c) => {
+  try {
+    // Static token (same scheme as bulk-import) so a scheduled remote agent can post.
+    const token = c.req.header("X-Admin-Import-Token");
+    const expected = Deno.env.get("ADMIN_IMPORT_TOKEN");
+    if (!expected) return c.json({ error: "ADMIN_IMPORT_TOKEN not configured on server" }, 500);
+    if (!token || token !== expected) return c.json({ error: "Forbidden" }, 403);
+
+    const body = await c.req.json<{ offset?: number; limit?: number; timeoutMs?: number; concurrency?: number }>().catch(() => ({}));
+    const offset = Math.max(0, Number(body.offset) || 0);
+    const limit = Math.min(1000, Math.max(1, Number(body.limit) || 250));
+    const timeoutMs = Math.min(15000, Math.max(1000, Number(body.timeoutMs) || 6000));
+    const concurrency = Math.min(32, Math.max(1, Number(body.concurrency) || 16));
+
+    // Gather every card that has a targetUrl, across both seed and user-submitted stores.
+    const targets: { id: number; store: "action" | "user-action"; title: string; targetUrl: string }[] = [];
+    for (const card of (await kv.getByPrefix("action:")) as any[]) {
+      if (card && typeof card === "object" && typeof card.id === "number" && typeof card.targetUrl === "string" && card.targetUrl.startsWith("http")) {
+        targets.push({ id: card.id, store: "action", title: card.title ?? "", targetUrl: card.targetUrl });
+      }
+    }
+    for (const card of (await kv.getByPrefix("user-action:")) as any[]) {
+      if (card && typeof card === "object" && typeof card.id === "number" && typeof card.targetUrl === "string" && card.targetUrl.startsWith("http")) {
+        targets.push({ id: card.id, store: "user-action", title: card.title ?? "", targetUrl: card.targetUrl });
+      }
+    }
+    targets.sort((a, b) => a.id - b.id);
+
+    const slice = targets.slice(offset, offset + limit);
+    const results: UrlHealthEntry[] = [];
+    const checkedAt = new Date().toISOString();
+
+    // Bounded concurrency: walk a shared queue with N workers.
+    let cursor = 0;
+    const worker = async () => {
+      while (true) {
+        const i = cursor++;
+        if (i >= slice.length) return;
+        const t = slice[i];
+        const r = await probeUrl(t.targetUrl, timeoutMs);
+        results.push({ id: t.id, store: t.store, title: t.title, targetUrl: t.targetUrl, status: r.status, ok: r.ok, error: r.error, checkedAt });
+      }
+    };
+    await Promise.all(Array.from({ length: concurrency }, () => worker()));
+
+    // Merge with the previous run so paginated scans build up one coherent report.
+    // Replace any entries with the same (store, id) — the latest check wins.
+    const prev = ((await kv.get("url-health:last-scan")) as any) ?? null;
+    const carryover: UrlHealthEntry[] = (offset > 0 && prev?.entries) ? prev.entries : [];
+    const seen = new Set(results.map((r) => `${r.store}:${r.id}`));
+    const merged = [...results, ...carryover.filter((e) => !seen.has(`${e.store}:${e.id}`))];
+
+    const broken = merged.filter((e) => !e.ok);
+    const summary = {
+      scannedAt: prev?.scannedAt && offset > 0 ? prev.scannedAt : checkedAt,
+      lastBatchAt: checkedAt,
+      totalCards: targets.length,
+      processedInBatch: slice.length,
+      brokenCount: broken.length,
+      okCount: merged.length - broken.length,
+      nextOffset: offset + slice.length < targets.length ? offset + slice.length : null,
+      entries: merged,
+    };
+    await kv.set("url-health:last-scan", summary);
+
+    console.log(`url-health: batch [${offset}, ${offset + slice.length}) of ${targets.length} — ${broken.length} broken across full report`);
+    return c.json({
+      scannedAt: summary.scannedAt,
+      lastBatchAt: summary.lastBatchAt,
+      totalCards: summary.totalCards,
+      processedInBatch: summary.processedInBatch,
+      brokenCount: summary.brokenCount,
+      okCount: summary.okCount,
+      nextOffset: summary.nextOffset,
+    });
+  } catch (err) {
+    console.log("url-health scan error:", err);
+    return c.json({ error: `URL health scan failed: ${err}` }, 500);
+  }
+});
+
+app.get("/make-server-9eb1ae04/admin/url-health", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const report = ((await kv.get("url-health:last-scan")) as any) ?? null;
+    if (!report) return c.json({ scannedAt: null, broken: [], okCount: 0, totalCards: 0 });
+
+    const onlyBroken = c.req.query("onlyBroken") !== "false";
+    const entries: UrlHealthEntry[] = report.entries ?? [];
+    const filtered = onlyBroken ? entries.filter((e) => !e.ok) : entries;
+    filtered.sort((a, b) => (a.status ?? 999) - (b.status ?? 999) || a.id - b.id);
+
+    return c.json({
+      scannedAt: report.scannedAt,
+      lastBatchAt: report.lastBatchAt,
+      totalCards: report.totalCards,
+      brokenCount: report.brokenCount,
+      okCount: report.okCount,
+      nextOffset: report.nextOffset,
+      cards: filtered,
+    });
+  } catch (err) {
+    return c.json({ error: `Failed: ${err}` }, 500);
+  }
+});
+
+// ─── POST /receipts/:id/boost — toggle-boost a receipt (no auth required) ────
+app.post("/make-server-9eb1ae04/receipts/:id/boost", async (c) => {
+  try {
+    const id = Number(c.req.param("id"));
+    const { delta } = await c.req.json<{ delta: number }>();
+    const receipt = (await kv.get(`receipt:${id}`)) as any;
+    if (!receipt) return c.json({ error: `Receipt ${id} not found` }, 404);
+    receipt.boosts = Math.max(0, (receipt.boosts ?? 0) + (delta ?? 1));
+    await kv.set(`receipt:${id}`, receipt);
+    return c.json({ boosts: receipt.boosts });
+  } catch (err) {
+    return c.json({ error: `Boost failed: ${err}` }, 500);
+  }
+});
+
+// ─── GET /receipts — public list of approved receipts (admin sees all) ───────
+app.get("/make-server-9eb1ae04/receipts", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    let isAdmin = false;
+    if (token) {
+      const admin = await requireAdmin(token).catch(() => null);
+      isAdmin = !!admin;
+    }
+
+    const receiptIds = ((await kv.get("receipt:ids")) ?? []) as number[];
+    const receipts: any[] = [];
+    for (const id of receiptIds) {
+      const r = (await kv.get(`receipt:${id}`)) as any;
+      if (!r) continue;
+      if (!isAdmin && r.adminApproved !== true) continue;
+      receipts.push(r);
+    }
+    // Newest first
+    receipts.sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+    return c.json({ receipts });
+  } catch (err) {
+    return c.json({ error: `Failed to fetch receipts: ${err}` }, 500);
+  }
+});
+
+// ─── POST /receipts/submit — approved user submits a receipt for review ──────
+app.post("/make-server-9eb1ae04/receipts/submit", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    if (!token) return c.json({ error: "Unauthorized" }, 401);
+    const user = await getUser(token);
+    if (!user) return c.json({ error: "Invalid or expired token" }, 401);
+    const approval = await kv.get(`user:approval:${user.id}`) as any;
+    if (!approval || approval.status !== "approved") {
+      return c.json({ error: "Account not approved" }, 403);
+    }
+
+    const body = await c.req.json<{
+      title?: string;
+      caption?: string;
+      imageUrl: string;
+      sourceUrl?: string;
+      sourceLabel?: string;
+      tags?: string[];
+    }>();
+    if (!body.imageUrl) return c.json({ error: "imageUrl is required" }, 400);
+
+    const ids = ((await kv.get("receipt:ids")) ?? []) as number[];
+    const newId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
+    const receipt = {
+      id: newId,
+      title: body.title ?? "",
+      caption: body.caption ?? "",
+      imageUrl: body.imageUrl,
+      sourceUrl: body.sourceUrl ?? "",
+      sourceLabel: body.sourceLabel ?? "",
+      tags: body.tags ?? [],
+      adminApproved: false,
+      createdBy: user.id,
+      createdAt: new Date().toISOString(),
+    };
+    await kv.set(`receipt:${newId}`, receipt);
+    await kv.set("receipt:ids", [...ids, newId]);
+    console.log(`User ${approval.name} submitted receipt #${newId}: "${receipt.title}" (pending review)`);
+    return c.json({ receipt }, 201);
+  } catch (err) {
+    return c.json({ error: `Failed to submit receipt: ${err}` }, 500);
+  }
+});
+
+// ─── POST /admin/receipts/create — admin adds a receipt ──────────────────────
+app.post("/make-server-9eb1ae04/admin/receipts/create", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const body = await c.req.json<{
+      title?: string;
+      caption?: string;
+      imageUrl: string;
+      sourceUrl?: string;
+      sourceLabel?: string;
+      tags?: string[];
+    }>();
+
+    if (!body.imageUrl) return c.json({ error: "imageUrl is required" }, 400);
+
+    // Allocate a new ID
+    const ids = ((await kv.get("receipt:ids")) ?? []) as number[];
+    const newId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
+    const receipt = {
+      id: newId,
+      title: body.title ?? "",
+      caption: body.caption ?? "",
+      imageUrl: body.imageUrl,
+      sourceUrl: body.sourceUrl ?? "",
+      sourceLabel: body.sourceLabel ?? "",
+      tags: body.tags ?? [],
+      adminApproved: true,
+      createdBy: admin.user.id,
+      createdAt: new Date().toISOString(),
+    };
+    await kv.set(`receipt:${newId}`, receipt);
+    await kv.set("receipt:ids", [...ids, newId]);
+    console.log(`Admin ${admin.record.name} created receipt #${newId}: "${receipt.title}"`);
+    return c.json({ receipt }, 201);
+  } catch (err) {
+    return c.json({ error: `Failed to create receipt: ${err}` }, 500);
+  }
+});
+
+// ─── POST /admin/approve-receipt/:id — approve a pending receipt ──────────────
+app.post("/make-server-9eb1ae04/admin/approve-receipt/:id", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const id = Number(c.req.param("id"));
+    const receipt = (await kv.get(`receipt:${id}`)) as any;
+    if (!receipt) return c.json({ error: `Receipt ${id} not found` }, 404);
+
+    receipt.adminApproved = true;
+    receipt.approvedBy = admin.user.id;
+    receipt.approvedAt = new Date().toISOString();
+    await kv.set(`receipt:${id}`, receipt);
+    console.log(`Admin ${admin.record.name} approved receipt #${id}: "${receipt.title}"`);
+    return c.json({ receipt });
+  } catch (err) {
+    return c.json({ error: `Approval failed: ${err}` }, 500);
+  }
+});
+
+// ─── DELETE /admin/receipts/:id — delete a receipt ───────────────────────────
+app.delete("/make-server-9eb1ae04/admin/receipts/:id", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const id = Number(c.req.param("id"));
+    const receipt = await kv.get(`receipt:${id}`);
+    if (!receipt) return c.json({ error: `Receipt ${id} not found` }, 404);
+
+    await kv.del(`receipt:${id}`);
+    const ids = ((await kv.get("receipt:ids")) ?? []) as number[];
+    await kv.set("receipt:ids", ids.filter((x) => x !== id));
+    console.log(`Admin ${admin.record.name} deleted receipt #${id}`);
+    return c.json({ ok: true });
+  } catch (err) {
+    return c.json({ error: `Delete failed: ${err}` }, 500);
   }
 });
 
