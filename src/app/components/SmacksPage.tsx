@@ -174,6 +174,13 @@ export const STATIC_SMACKS: ReceiptCard[] = [
     imageUrl: "/Smacks/votingrights.png",
     adminApproved: true,
   },
+  {
+    id: 5025,
+    title: "Epstein Redactions",
+    tags: ["Trump", "MAGA", "Corruption"],
+    imageUrl: "/Smacks/epsteinredactions.png",
+    adminApproved: true,
+  },
 ];
 
 export interface ReceiptCard {

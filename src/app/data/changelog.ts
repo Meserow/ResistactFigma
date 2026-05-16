@@ -16,6 +16,46 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.6.0",
+    date: "2026-05-16",
+    title: "How It Works overhaul, tier icon upgrades, scoreboard in My Tier, and four new Smacks",
+    sections: [
+      {
+        heading: "How Does ResistAct Work — redesigned",
+        items: [
+          "Intro paragraph rewritten to be shorter and more direct.",
+          "Each bullet now runs inline — the bold title flows straight into the body copy without a line break.",
+          "Added a fifth bullet: 'Read The Facts. Share The Smacks.' explaining both tabs to new visitors.",
+          "Left-side icons now use a gradient of blues (lightest to darkest navy) plus ResistAct orange for the final item, all with white icons.",
+          "Right panel shows the full Kroger photo with the tier ladder as a frosted-glass overlay across the lower portion of the image.",
+          "Tier ladder text contrast improved: Spark name lightened for readability on white, taglines and range numbers darkened.",
+        ],
+      },
+      {
+        heading: "Tier icon upgrades",
+        items: [
+          "Ember now uses the FlameKindling icon (flame with logs) to distinguish it from plain Flame.",
+          "Blaze now uses a solid filled flame, visually heavier than the Ember and Flame outline icons.",
+          "Wildfire shows two overlapping flames; Inferno shows three — outer flames at 80% opacity so the cluster reads as a group.",
+          "Inferno icon color fixed to pure white (was a faint pink that was hard to see on the dark maroon background).",
+        ],
+      },
+      {
+        heading: "Scoreboard moved into My Tier",
+        items: [
+          "Per-category action breakdown ('Your scoreboard') removed from the profile dropdown and moved inside the My Tier modal.",
+          "Profile dropdown is now cleaner — tier progress mini-bar leads directly to the My Tier button.",
+        ],
+      },
+      {
+        heading: "New Smacks",
+        items: [
+          "Four previously missing images now wired up: ResistAct, Epstein, Project 2025, and Voting Rights.",
+        ],
+      },
+    ],
+  },
+  {
     version: "0.5.0",
     date: "2026-05-16",
     title: "The Smacks, gamification tiers, revamped Add an Action, and a wave of polish",
