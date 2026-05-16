@@ -111,6 +111,27 @@ export const STATIC_SMACKS: ReceiptCard[] = [
     imageUrl: "/Smacks/redistricting.png",
     adminApproved: true,
   },
+  {
+    id: 5016,
+    title: "Timeline",
+    tags: ["Trump", "MAGA"],
+    imageUrl: "/Smacks/timeline.png",
+    adminApproved: true,
+  },
+  {
+    id: 5017,
+    title: "Billionaires",
+    tags: ["Trump", "MAGA"],
+    imageUrl: "/Smacks/billionaires.png",
+    adminApproved: true,
+  },
+  {
+    id: 5018,
+    title: "Corruption",
+    tags: ["Trump", "MAGA"],
+    imageUrl: "/Smacks/corruption.png",
+    adminApproved: true,
+  },
 ];
 
 export interface ReceiptCard {
@@ -231,10 +252,23 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
   }
 
   async function handleFacebookShare(r: ReceiptCard) {
-    // Facebook's sharer only shares URLs/OG previews, not raw images.
-    // Download the image first so the user can upload it directly to their post.
     await handleDownload(r);
     window.open("https://www.facebook.com/", "_blank");
+  }
+
+  async function handleInstagramShare(r: ReceiptCard) {
+    await handleDownload(r);
+    window.open("https://www.instagram.com/", "_blank");
+  }
+
+  function threadsUrl(r: ReceiptCard) {
+    const text = encodeURIComponent((r.caption ?? r.title) + "\n\nresistact.org");
+    return `https://www.threads.net/intent/post?text=${text}`;
+  }
+
+  function blueskyUrl(r: ReceiptCard) {
+    const text = encodeURIComponent((r.caption ?? r.title) + "\n\nresistact.org");
+    return `https://bsky.app/intent/compose?text=${text}`;
   }
 
   function pinterestUrl(r: ReceiptCard) {
@@ -481,8 +515,8 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
         </div>
       )}
 
-      {/* ── Image grid ── */}
-      <div className="columns-2 sm:columns-3 lg:columns-4 gap-4 space-y-4">
+      {/* ── Card grid ── */}
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-4">
         {filtered.map((r) => (
           <ReceiptTile
             key={r.id}
@@ -606,27 +640,47 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
                   {copyImageState === "copying" ? "Copying…" : copyImageState === "done" ? "Image copied! Paste anywhere." : "Copy image to clipboard"}
                 </button>
 
-                {/* Twitter/X */}
-                <a
-                  href={twitterUrl(shareReceipt)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-black hover:bg-gray-900 text-white font-['Poppins',sans-serif] font-bold text-sm transition-colors"
-                >
-                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.836L1.254 2.25H8.08l4.258 5.63L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
-                  Post to X
-                </a>
-
-                {/* Facebook — downloads image then opens FB so user can upload it */}
+                {/* Facebook — spot 1: downloads image then opens FB */}
                 <button
                   onClick={() => handleFacebookShare(shareReceipt)}
                   className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#1877f2] hover:bg-[#1464cc] text-white font-['Poppins',sans-serif] font-bold text-sm transition-colors"
                 >
                   <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>
-                  Facebook ↓
+                  Facebook
                 </button>
 
-                {/* Pinterest — supports direct image URL */}
+                {/* Threads — spot 2 */}
+                <a
+                  href={threadsUrl(shareReceipt)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-black hover:bg-gray-900 text-white font-['Poppins',sans-serif] font-bold text-sm transition-colors"
+                >
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.589 12c.027 3.086.718 5.496 2.057 7.164 1.43 1.783 3.631 2.698 6.54 2.717 2.623-.02 4.358-.631 5.8-2.045 1.647-1.613 1.618-3.593 1.09-4.798-.31-.71-.873-1.3-1.634-1.75-.192 1.352-.622 2.446-1.284 3.272-.886 1.102-2.14 1.704-3.73 1.79-1.202.065-2.361-.218-3.259-.801-1.063-.689-1.685-1.74-1.752-2.964-.065-1.19.408-2.285 1.33-3.082.88-.76 2.119-1.207 3.583-1.291a13.853 13.853 0 0 1 3.02.142c-.126-.742-.375-1.332-.75-1.757-.513-.586-1.308-.883-2.397-.893h-.089c-.83 0-1.955.226-2.657 1.29l-1.736-1.194c.897-1.378 2.426-2.132 4.413-2.13h.11c3.53.033 5.552 2.075 5.807 5.786.137.064.272.132.404.204 1.323.744 2.278 1.799 2.768 3.056.743 1.981.735 5.203-1.951 7.812-1.692 1.66-3.704 2.518-6.435 2.519z"/></svg>
+                  Threads
+                </a>
+
+                {/* Bluesky — spot 3 */}
+                <a
+                  href={blueskyUrl(shareReceipt)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#0085ff] hover:bg-[#006fdb] text-white font-['Poppins',sans-serif] font-bold text-sm transition-colors"
+                >
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.624 6.479.815 2.736 3.713 3.66 6.383 3.364.136-.02.275-.039.415-.056-.138.022-.276.04-.415.056-3.912.58-7.387 2.005-2.83 7.078 5.013 5.19 6.87-1.113 7.823-4.308.953 3.195 2.05 9.271 7.733 4.308 4.267-4.308 1.172-6.498-2.74-7.078a8.741 8.741 0 0 1-.415-.056c.14.017.279.036.415.056 2.67.297 5.568-.628 6.383-3.364.246-.828.624-5.79.624-6.478 0-.69-.139-1.861-.902-2.206-.659-.298-1.664-.62-4.3 1.24C16.046 4.748 13.087 8.687 12 10.8z"/></svg>
+                  Bluesky
+                </a>
+
+                {/* Instagram — spot 4: downloads image then opens Instagram */}
+                <button
+                  onClick={() => handleInstagramShare(shareReceipt)}
+                  className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#e1306c] hover:bg-[#c0275d] text-white font-['Poppins',sans-serif] font-bold text-sm transition-colors"
+                >
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                  Instagram
+                </button>
+
+                {/* Pinterest — spot 5 */}
                 <a
                   href={pinterestUrl(shareReceipt)}
                   target="_blank"
@@ -637,7 +691,7 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
                   Pinterest
                 </a>
 
-                {/* Reddit */}
+                {/* Reddit — spot 6 */}
                 <a
                   href={redditUrl(shareReceipt)}
                   target="_blank"
@@ -648,7 +702,7 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
                   Reddit
                 </a>
 
-                {/* Tumblr */}
+                {/* Tumblr — spot 7 */}
                 <a
                   href={tumblrUrl(shareReceipt)}
                   target="_blank"
@@ -659,19 +713,30 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
                   Tumblr
                 </a>
 
+                {/* Post to X — spot 8 */}
+                <a
+                  href={twitterUrl(shareReceipt)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-black hover:bg-gray-900 text-white font-['Poppins',sans-serif] font-bold text-sm transition-colors"
+                >
+                  <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.836L1.254 2.25H8.08l4.258 5.63L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+                  Post to X
+                </a>
+
                 {/* Download */}
                 <button
                   onClick={() => handleDownload(shareReceipt)}
-                  className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-['Poppins',sans-serif] font-bold text-sm transition-colors"
+                  className="col-span-2 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-['Poppins',sans-serif] font-bold text-sm transition-colors"
                 >
                   <Download size={14} />
-                  Download
+                  Download image
                 </button>
               </div>
 
               <p className="font-['Poppins',sans-serif] text-[11px] text-gray-400 text-center leading-relaxed">
                 📱 On mobile, "Share image via…" sends the image directly to Instagram, WhatsApp, and more.<br/>
-                📘 Facebook ↓ downloads the image and opens Facebook — click "Photo/Video" to upload it.
+                📘 Facebook and Instagram download the image first — then upload it in the app.
               </p>
             </div>
           </div>
@@ -706,26 +771,26 @@ function ReceiptTile({
   onDelete: () => void;
 }) {
   return (
-    <div className={`break-inside-avoid mb-4 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow bg-white group relative cursor-pointer ${!receipt.adminApproved && isAdmin ? "ring-2 ring-red-400" : ""}`}
-      onClick={onShare}
+    <div
+      className={`rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all bg-white flex flex-col ${!receipt.adminApproved && isAdmin ? "ring-2 ring-red-400" : ""}`}
     >
       {/* Pending banner */}
       {!receipt.adminApproved && isAdmin && (
-        <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-red-50 border-b border-red-200">
+        <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-red-50 border-b border-red-200 shrink-0">
           <span className="font-['Poppins',sans-serif] font-bold text-[11px] uppercase tracking-wider text-red-600">
             ⚠ Pending
           </span>
           <div className="flex items-center gap-1.5">
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); onApprove(); }}
+              onClick={onApprove}
               className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-green-600 hover:bg-green-700 text-white font-['Poppins',sans-serif] font-bold text-[10px] uppercase tracking-wide transition-colors"
             >
               Approve
             </button>
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              onClick={onDelete}
               className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-red-600 hover:bg-red-700 text-white font-['Poppins',sans-serif] font-bold text-[10px] uppercase tracking-wide transition-colors"
             >
               Delete
@@ -733,66 +798,86 @@ function ReceiptTile({
           </div>
         </div>
       )}
-      {/* Admin delete button for approved cards — shown on hover */}
-      {receipt.adminApproved && isAdmin && (
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          className="absolute top-2 left-2 w-7 h-7 flex items-center justify-center rounded-full bg-white/90 backdrop-blur-sm text-gray-400 hover:text-red-600 hover:bg-white shadow-sm transition-colors opacity-0 group-hover:opacity-100 z-10"
-          title="Delete"
-        >
-          <Trash2 size={13} />
-        </button>
-      )}
 
-      {/* Image */}
-      <img
-        src={receipt.imageUrl}
-        alt={receipt.title}
-        className="w-full h-auto block"
-        loading="lazy"
-      />
+      {/* Thumbnail — click to open share modal */}
+      <button
+        type="button"
+        onClick={onShare}
+        className="relative block w-full h-[200px] overflow-hidden bg-gray-100 group shrink-0 text-left"
+      >
+        <img
+          src={receipt.imageUrl}
+          alt={receipt.title}
+          className="w-full h-full object-cover object-top transition-transform duration-300 group-hover:scale-[1.03]"
+          loading="lazy"
+        />
+        {/* Hover overlay */}
+        <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/90 font-['Poppins',sans-serif] font-bold text-xs text-[#23297e]">
+            <Share2 size={12} />
+            Share this
+          </span>
+        </div>
+        {/* Admin delete */}
+        {receipt.adminApproved && isAdmin && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onDelete(); }}
+            className="absolute top-2 left-2 w-7 h-7 flex items-center justify-center rounded-full bg-white/90 text-gray-400 hover:text-red-600 hover:bg-white shadow-sm transition-colors"
+            title="Delete"
+          >
+            <Trash2 size={13} />
+          </button>
+        )}
+      </button>
 
-      {/* Overlay: title + share button — visible on hover */}
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
-        <p className="font-['Poppins',sans-serif] font-bold text-white text-xs leading-snug line-clamp-2 mb-2 pr-8">
+      {/* Card body */}
+      <div className="px-4 pt-3 pb-4 flex flex-col flex-1">
+        {/* Tags */}
+        {receipt.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-2">
+            {receipt.tags.map((t) => (
+              <span
+                key={t}
+                className="px-2 py-0.5 rounded-full bg-[#23297e]/10 text-[#23297e] font-['Poppins',sans-serif] text-[10px] font-semibold"
+              >
+                {t}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Title */}
+        <p className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-sm leading-snug mb-3 flex-1">
           {receipt.title}
         </p>
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onShare(); }}
-          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#fd8e33] hover:bg-[#d96612] text-white font-['Poppins',sans-serif] font-bold text-[11px] transition-colors"
-          title="Share this receipt"
-        >
-          <Share2 size={11} />
-          Share
-        </button>
+
+        {/* Footer: boost + share */}
+        <div className="flex items-center justify-between gap-2 mt-auto">
+          <button
+            type="button"
+            onClick={onBoost}
+            title={isBoosted ? "Remove boost" : "Boost"}
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full font-['Poppins',sans-serif] font-bold text-xs transition-all ${
+              isBoosted
+                ? "bg-[#fd8e33] text-white"
+                : "bg-gray-100 text-gray-500 hover:text-[#fd8e33] hover:bg-orange-50"
+            }`}
+          >
+            <Flame size={12} className={isBoosted ? "fill-white" : ""} />
+            {boostCount > 0 ? boostCount : "Boost"}
+          </button>
+
+          <button
+            type="button"
+            onClick={onShare}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#23297e] hover:bg-[#1a2060] text-white font-['Poppins',sans-serif] font-bold text-xs transition-colors"
+          >
+            <Share2 size={12} />
+            Share
+          </button>
+        </div>
       </div>
-
-      {/* Always-visible share button (top-right corner) */}
-      <button
-        type="button"
-        onClick={(e) => { e.stopPropagation(); onShare(); }}
-        className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-full bg-white/90 backdrop-blur-sm text-gray-600 hover:text-[#fd8e33] hover:bg-white shadow-sm transition-colors"
-        title="Share"
-      >
-        <Share2 size={13} />
-      </button>
-
-      {/* Boost button (bottom-left) */}
-      <button
-        type="button"
-        onClick={(e) => { e.stopPropagation(); onBoost(); }}
-        title={isBoosted ? "Remove boost" : "Boost this receipt"}
-        className={`absolute bottom-2 left-2 flex items-center gap-1 px-2 py-1 rounded-full font-['Poppins',sans-serif] font-bold text-[11px] transition-all shadow-sm backdrop-blur-sm ${
-          isBoosted
-            ? "bg-[#fd8e33] text-white"
-            : "bg-white/90 text-gray-500 hover:text-[#fd8e33] hover:bg-white"
-        }`}
-      >
-        <Flame size={11} className={isBoosted ? "fill-white" : ""} />
-        {boostCount > 0 && <span>{boostCount}</span>}
-      </button>
     </div>
   );
 }
