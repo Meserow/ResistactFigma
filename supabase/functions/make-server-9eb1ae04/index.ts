@@ -1180,6 +1180,27 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       console.log(`link→targetUrl migration: fixed ${fixed} user-submitted cards.`);
     }
 
+    // One-time: any card with no image (no topImageUrl, no topImageKey, no
+    // topImage) gets adminApproved:false so it lands in the admin review queue
+    // instead of leaking to anon users. The create endpoint requires an image
+    // up front; this migration cleans up cards admitted before that rule.
+    const noImageReviewDone = await kv.get("migration:no-image-review:v1");
+    if (!noImageReviewDone) {
+      let demoted = 0;
+      for (const prefix of ["action:", "user-action:"]) {
+        for (const c of (await kv.getByPrefix(prefix)) as any[]) {
+          if (!c || typeof c !== "object" || typeof c.id !== "number") continue;
+          const hasImage = Boolean(c.topImageUrl) || Boolean(c.topImageKey) || Boolean(c.topImage);
+          if (hasImage) continue;
+          if (c.adminApproved === false) continue; // already in the review queue
+          await kv.set(`${prefix}${c.id}`, { ...c, adminApproved: false });
+          demoted++;
+        }
+      }
+      await kv.set("migration:no-image-review:v1", true);
+      console.log(`No-image review migration: demoted ${demoted} cards to adminApproved=false.`);
+    }
+
     // One-time: bulk-mark PETITION cards as "5–10 minutes" and strip any
     // `quickAction: true` so the matcher classifies them as the new `10min`
     // bucket (not `5min` via the quickAction shortcut). Touches both `action:*`
@@ -1220,6 +1241,78 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       }
       await kv.set("receipt:ids", newIds);
       console.log(`Seeded ${SEED_RECEIPTS.length} receipts into The Smacks.`);
+    }
+
+    // One-time: add three Common Cause actions as approved user-action cards.
+    const commonCauseDone = await kv.get("migration:common-cause-actions:v1");
+    if (!commonCauseDone) {
+      const currentIds = ((await kv.get("user-action:ids")) ?? []) as number[];
+      const base = Math.max(...(currentIds.length ? currentIds : [1305]), 1305);
+      const now = new Date().toISOString();
+      const newCards = [
+        {
+          id: base + 1,
+          category: "PETITION",
+          categoryColor: "#05737f",
+          actionType: "Online",
+          isOnline: true,
+          timeCommitment: "5–10 minutes",
+          title: "Reject Trump’s “War First, People Last” budget",
+          description: "Trump’s $1.5 trillion budget slashes food assistance, healthcare, and education while boosting Pentagon spending. Tell Congress to reject it.",
+          spotsTotal: "Unlimited",
+          boosts: 0,
+          authorName: "Common Cause",
+          authorRole: "Movement Organization",
+          targetUrl: "https://www.commoncause.org/actions/reject-trumps-1-5-trillion-war-first-people-last-budget/",
+          topImageKey: "org_common-cause",
+          adminApproved: true,
+          createdAt: now,
+        },
+        {
+          id: base + 2,
+          category: "PETITION",
+          categoryColor: "#05737f",
+          actionType: "Online",
+          isOnline: true,
+          timeCommitment: "5–10 minutes",
+          title: "Reject funding for ICE and Trump’s ballroom",
+          description: "Congress is being asked to fund mass deportations and Trump’s private ballroom in the same bill. Tell your reps to vote no.",
+          spotsTotal: "Unlimited",
+          boosts: 0,
+          authorName: "Common Cause",
+          authorRole: "Movement Organization",
+          targetUrl: "https://www.commoncause.org/actions/reject-funding-for-ice-and-trumps-ballroom/",
+          topImageKey: "org_common-cause",
+          adminApproved: true,
+          createdAt: now,
+        },
+        {
+          id: base + 3,
+          category: "PETITION",
+          categoryColor: "#05737f",
+          actionType: "Online",
+          isOnline: true,
+          timeCommitment: "5–10 minutes",
+          title: "Tell Congress: block Trump’s mail voting executive order",
+          description: "Trump’s executive order targets mail voting — a cornerstone of election access. Urge Congress to push back before this takes effect.",
+          spotsTotal: "Unlimited",
+          boosts: 0,
+          authorName: "Common Cause",
+          authorRole: "Movement Organization",
+          targetUrl: "https://www.commoncause.org/actions/tell-congress-block-trumps-mail-voting-eo/",
+          topImageKey: "org_common-cause",
+          adminApproved: true,
+          createdAt: now,
+          amplifiesGroups: ["voter"],
+        },
+      ];
+      const updatedIds = [...currentIds, ...newCards.map((c) => c.id)];
+      for (const card of newCards) {
+        await kv.set(`user-action:${card.id}`, card);
+      }
+      await kv.set("user-action:ids", updatedIds);
+      await kv.set("migration:common-cause-actions:v1", true);
+      console.log(`Added ${newCards.length} Common Cause action cards (ids ${base + 1}–${base + 3}).`);
     }
 
     // Fetch ALL action:* cards from the KV store (real cards only after purge)
@@ -1808,6 +1901,14 @@ app.post("/make-server-9eb1ae04/admin/approve-action/:id", async (c) => {
       card = await kv.get(cardKey) as any;
     }
     if (!card) return c.json({ error: `Card ${id} not found` }, 404);
+
+    // Hard rule: a card cannot be approved without an image. Imageless cards
+    // render as half-blank tiles in the public feed and look broken — admins
+    // must upload one before they can flip approval on.
+    const hasImage = Boolean(card.topImageUrl) || Boolean(card.topImageKey) || Boolean(card.topImage);
+    if (!hasImage) {
+      return c.json({ error: "Card has no image. Upload a header image before approving." }, 400);
+    }
 
     card.adminApproved = true;
     card.approvedBy = admin.user.id;

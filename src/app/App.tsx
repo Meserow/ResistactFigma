@@ -103,6 +103,50 @@ function FeaturedIllustration() {
   );
 }
 
+// ─── Cards localStorage cache ─────────────────────────────────────────────────
+// First-paint optimization: stash the first page of /actions in localStorage so
+// returning visitors see ~100 real cards immediately instead of waiting for the
+// edge function to cold-start, run migrations, and prefix-scan KV. We cache the
+// raw ServerCard array (not the resolved one) so image keys re-resolve through
+// the *current* bundle's IMAGE_MAP — avoids stale hashed URLs after a deploy.
+const CARDS_CACHE_KEY = "resistact:cards-cache:v1";
+const CARDS_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h — fresh enough; sync overrides anyway
+
+interface CardsCachePayload {
+  savedAt: number;
+  total: number;
+  rawCards: ServerCard[];
+}
+
+function readCardsCache(): { cards: ActionCardData[]; total: number } | null {
+  try {
+    if (typeof localStorage === "undefined") return null;
+    const raw = localStorage.getItem(CARDS_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CardsCachePayload;
+    if (!parsed?.savedAt || Date.now() - parsed.savedAt > CARDS_CACHE_TTL_MS) return null;
+    if (!Array.isArray(parsed.rawCards) || parsed.rawCards.length === 0) return null;
+    return {
+      cards: parsed.rawCards.map(resolveCard),
+      total: parsed.total ?? parsed.rawCards.length,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeCardsCache(rawCards: ServerCard[], total: number) {
+  try {
+    if (typeof localStorage === "undefined") return;
+    localStorage.setItem(
+      CARDS_CACHE_KEY,
+      JSON.stringify({ savedAt: Date.now(), total, rawCards } satisfies CardsCachePayload),
+    );
+  } catch {
+    // Quota exceeded, private browsing, etc. — silently no-op.
+  }
+}
+
 // ─── Skeleton card ────────────────────────────────────────────────────────────
 function CardSkeleton() {
   return (
@@ -130,11 +174,19 @@ function CardSkeleton() {
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
   // ── Card state ──
-  const [cards, setCards] = useState<ActionCardData[]>(STATIC_CARDS);
+  // Hydrate from localStorage cache when fresh so repeat visitors skip the
+  // edge-function round-trip and see ~100 cards on first paint. Falls back
+  // to STATIC_CARDS (1 card) on first visit; a fresh sync runs in the
+  // background either way to reconcile boosts, new cards, and admin edits.
+  const cardsCacheHit = readCardsCache();
+  const [cards, setCards] = useState<ActionCardData[]>(cardsCacheHit?.cards ?? STATIC_CARDS);
   const [synced, setSynced] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [serverTotal, setServerTotal] = useState(0);
-  const [serverOffset, setServerOffset] = useState(0);
+  // Render skeleton grid only when we have nothing meaningful to show yet.
+  // With a cache hit we skip skeletons entirely — the cached cards are good
+  // enough until the live sync replaces them milliseconds later.
+  const [loading, setLoading] = useState(!cardsCacheHit);
+  const [serverTotal, setServerTotal] = useState(cardsCacheHit?.total ?? 0);
+  const [serverOffset, setServerOffset] = useState(cardsCacheHit?.cards.length ?? 0);
   const [loadingMore, setLoadingMore] = useState(false);
   // How many cards to actually render in the DOM. Kept small to avoid
   // Safari/mobile memory crashes when hundreds of image-bearing cards are
@@ -694,6 +746,8 @@ export default function App() {
         setServerOffset(all.length);
         setSynced(true);
         setLoading(false);
+        // Cache the raw first page so the next visit hydrates instantly.
+        writeCardsCache(firstBatch, total);
 
         // Drain the rest in the background — small payload, keeps the
         // category filter list and search complete for power users.
