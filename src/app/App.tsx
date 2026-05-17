@@ -1243,6 +1243,15 @@ export default function App() {
             });
             return (
               <>
+                {/* ── Facts hero panel ── */}
+                <div className="mb-5 rounded-2xl border border-[#23297e]/15 bg-gradient-to-br from-[#23297e]/5 via-white to-[#fd8e33]/5 px-4 py-3.5 sm:px-5 sm:py-4">
+                  <p className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-sm sm:text-base mb-1.5 flex items-center gap-1.5">
+                    <span aria-hidden="true">🧠</span> What's a Fact?
+                  </p>
+                  <p className="font-['Poppins',sans-serif] text-xs sm:text-sm text-gray-700 leading-snug">
+                    MAGA spreads lies faster than you can look them up. <strong className="text-[#23297e]">The Facts</strong> gives you pre-loaded rebuttals — the claim, the truth, and a question to ask back that puts them on defense. <span className="text-[#fd8e33] font-semibold">Read one. Use it. Win the argument.</span>
+                  </p>
+                </div>
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-5">
                   {filteredFacts.map((fc) => (
                     <FactCard

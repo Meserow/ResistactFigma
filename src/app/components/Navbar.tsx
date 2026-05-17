@@ -6,6 +6,7 @@ import { Bell, Bookmark, ChevronDown, Clock, Flame, Info, LogOut, MapPin, Menu, 
 import type { UserApproval } from "../lib/supabase";
 import { TierProgress } from "./TierProgress";
 import { getUserTier } from "../lib/tiers";
+import { UserAvatar } from "./UserAvatar";
 
 function ResistActLogo() {
   return (
@@ -334,7 +335,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                             <span
                               title={`You've done ${myCompletions.total} action${myCompletions.total === 1 ? "" : "s"}`}
                               aria-label={`You've done ${myCompletions.total} action${myCompletions.total === 1 ? "" : "s"} — click to see scoreboard`}
-                              className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white shadow ring-2 ring-white flex items-center justify-center font-['Poppins',sans-serif] font-bold text-[9px] leading-none pointer-events-none"
+                              className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#23297e] text-white shadow ring-2 ring-white flex items-center justify-center font-['Poppins',sans-serif] font-bold text-[9px] leading-none pointer-events-none"
                             >
                               {myCompletions.total > 99 ? "99+" : myCompletions.total}
                             </span>
@@ -343,7 +344,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                         {tier && (
                           <span
                             className="font-['Poppins',sans-serif] font-semibold text-[9px] leading-none tracking-wide"
-                            style={{ color: tier.color }}
+                            style={{ color: tier.labelColor }}
                           >
                             {tier.name}
                           </span>
@@ -381,7 +382,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                         className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-['Poppins',sans-serif] font-medium text-gray-600 hover:bg-gray-50 transition-colors"
                       >
                         <Flame size={15} />
-                        My Tier
+                        My Tier Dashboard
                       </button>
                     )}
                     <button
@@ -406,7 +407,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                     {isAdmin && (
                       <button
                         onClick={() => { setDropdownOpen(false); onPendingActsClick?.(); }}
-                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-['Poppins',sans-serif] font-medium text-red-600 hover:bg-red-50 transition-colors"
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-['Poppins',sans-serif] font-medium text-gray-600 hover:bg-gray-50 transition-colors"
                       >
                         <ShieldCheck size={15} />
                         Pending Acts
@@ -420,7 +421,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                     {isAdmin && (
                       <button
                         onClick={() => { setDropdownOpen(false); onPendingSmacksClick?.(); }}
-                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-['Poppins',sans-serif] font-medium text-red-600 hover:bg-red-50 transition-colors"
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-['Poppins',sans-serif] font-medium text-gray-600 hover:bg-gray-50 transition-colors"
                       >
                         <ShieldCheck size={15} />
                         Pending Smacks
@@ -932,13 +933,11 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
           {isLoggedIn ? (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                {approval?.avatar ? (
-                  <img src={approval.avatar} alt={approval.name} className="w-10 h-10 rounded-full object-cover" />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-[#23297e]/10 flex items-center justify-center">
-                    <span className="font-bold text-[#23297e]">{approval?.name?.charAt(0)?.toUpperCase()}</span>
-                  </div>
-                )}
+                <UserAvatar
+                  name={approval?.name ?? ""}
+                  avatar={approval?.avatar}
+                  className=""
+                />
                 <div>
                   <p className="font-['Poppins',sans-serif] font-semibold text-base">{approval?.name}</p>
                   <p className="font-['Poppins',sans-serif] text-gray-400 text-sm">{approval?.email}</p>

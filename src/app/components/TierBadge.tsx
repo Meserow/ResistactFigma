@@ -120,7 +120,7 @@ export function TierChip({ actionCount }: TierChipProps) {
   return (
     <span
       className="inline-flex items-center gap-0.5 font-['Poppins',sans-serif] font-semibold"
-      style={{ color: tier.color }}
+      style={{ color: tier.labelColor }}
       aria-label={`Tier: ${tier.name}`}
     >
       <TierIcon tier={tier} size={10} />

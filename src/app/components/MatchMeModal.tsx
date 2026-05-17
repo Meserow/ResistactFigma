@@ -250,6 +250,7 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJo
     for (const c of ranked) {
       if (picked.length >= TARGET) break;
       if (spreadCard && c.id === spreadCard.id) continue;
+      if (isCompleted(c.id)) continue;
       const img = (c.topImage ?? "").trim();
       if (img && seenImages.has(img)) continue;
       // Quota check — skip if this bucket is already full.
@@ -265,6 +266,7 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJo
       for (const c of ranked) {
         if (picked.length >= TARGET) break;
         if (pickedIds.has(c.id)) continue;
+        if (isCompleted(c.id)) continue;
         addCard(c);
       }
     }
@@ -282,6 +284,7 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJo
       for (const c of relaxedRanked) {
         if (picked.length >= TARGET) break;
         if (pickedIds.has(c.id)) continue;
+        if (isCompleted(c.id)) continue;
         addCard(c);
       }
     }
