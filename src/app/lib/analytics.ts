@@ -23,7 +23,14 @@
 // Vite's env-injection transform looks for that specific pattern and
 // substitutes at request time. Optional chaining (`import.meta?.env?.`) or
 // any wrapping defeats the substitution and ships the literal source.
-const MEASUREMENT_ID: string = import.meta.env.VITE_GA_MEASUREMENT_ID ?? "";
+//
+// The fallback (`||`) is the production-tracked Measurement ID. GA4 IDs are
+// public anyway — Google embeds them in every page that loads gtag, so
+// there's no leak in committing this. The env var still wins when set
+// (handy for separate staging IDs later) but production no longer depends
+// on the build environment having .env configured.
+const MEASUREMENT_ID: string =
+  (import.meta.env.VITE_GA_MEASUREMENT_ID || "G-7QS8YBZZXY") as string;
 
 let loaded = false;
 let logged = false; // log the on/off state exactly once
