@@ -257,7 +257,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
         <div className="hidden md:flex items-center shrink-0 bg-gray-100 rounded-2xl p-1.5 gap-1">
           <button
             onClick={() => onTabChange("acts")}
-            className={`px-4 py-2.5 rounded-xl font-['Poppins',sans-serif] font-bold text-sm transition-all whitespace-nowrap ${
+            className={`px-3 py-2.5 rounded-xl font-['Poppins',sans-serif] font-bold text-sm transition-all whitespace-nowrap ${
               activeTab === "acts"
                 ? "bg-white text-[#fd8e33] shadow-sm"
                 : "text-gray-500 hover:text-gray-700"
@@ -267,7 +267,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
           </button>
           <button
             onClick={() => onTabChange("facts")}
-            className={`px-4 py-2.5 rounded-xl font-['Poppins',sans-serif] font-bold text-sm transition-all whitespace-nowrap ${
+            className={`px-3 py-2.5 rounded-xl font-['Poppins',sans-serif] font-bold text-sm transition-all whitespace-nowrap ${
               activeTab === "facts"
                 ? "bg-white text-[#fd8e33] shadow-sm"
                 : "text-gray-500 hover:text-gray-700"
@@ -277,7 +277,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
           </button>
           <button
             onClick={() => onTabChange("receipts")}
-            className={`px-4 py-2.5 rounded-xl font-['Poppins',sans-serif] font-bold text-sm transition-all whitespace-nowrap ${
+            className={`px-3 py-2.5 rounded-xl font-['Poppins',sans-serif] font-bold text-sm transition-all whitespace-nowrap ${
               activeTab === "receipts"
                 ? "bg-white text-[#fd8e33] shadow-sm"
                 : "text-gray-500 hover:text-gray-700"
@@ -508,9 +508,14 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
         style={{ top: topBarHeight }}
         ref={filterBarRef}
       >
-        {/* LEFT GROUP — takes all available space; pills inside adapt via ResizeObserver */}
+        {/* LEFT GROUP — takes all available space; pills inside adapt via ResizeObserver.
+            On the Smacks tab there are no Location/Category filters; the page leads with
+            an intro instead. The left group still gets a flex-1 spacer so the right group
+            (Sort + counts) stays anchored to the right. */}
         <div className="flex-1 min-w-0 flex items-center gap-1">
-        <span className="font-['Poppins',sans-serif] text-gray-400 text-[10px] uppercase tracking-widest font-semibold shrink-0 mr-1">Filter by</span>
+        {activeTab !== "receipts" && (
+          <span className="font-['Poppins',sans-serif] text-gray-400 text-[10px] uppercase tracking-widest font-semibold shrink-0 mr-1">Filter by</span>
+        )}
 
         {/* Quick-actions toggle (Acts tab only) */}
         {activeTab === "acts" && onQuickActionsChange && (
@@ -531,7 +536,11 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
           </button>
         )}
 
-        {activeTab === "facts" ? (
+        {activeTab === "receipts" ? (
+          /* ── Smacks: no filters in the navbar. The SmacksPage shows its own
+                tag chips + sort toggle, and the intro lives inline above. */
+          null
+        ) : activeTab === "facts" ? (
           /* ── Facts: top-N category pills + "More" dropdown ───────────── */
           <div ref={factsPillsRef} className="flex-1 min-w-0 flex items-center gap-1">
             <div className="flex-1 min-w-0 flex items-center gap-1 overflow-hidden">

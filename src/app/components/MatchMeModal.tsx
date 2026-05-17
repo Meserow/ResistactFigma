@@ -552,7 +552,7 @@ function StepToneAndPreview({
                 <ToneRangeSlider
                   value={tIdx}
                   onChange={(v) => onPrefsChange((p) => ({ ...p, time: TIME_LEVELS[v].key }))}
-                  max={5}
+                  max={6}
                 />
                 <span className="absolute left-0 w-16 text-right top-1/2 -translate-y-1/2 font-['Poppins',sans-serif] text-[9px] text-gray-400 pointer-events-none">
                   Quick wins
@@ -742,13 +742,14 @@ function StepToneAndPreview({
   );
 }
 
-// All 6 TimeBucket values mapped to friendly slider stops.
+// All 7 TimeBucket values mapped to friendly slider stops.
 const TIME_LEVELS: { key: TimeBucket; title: string; desc: string }[] = [
   { key: "5min",     title: "Quick wins",    desc: "Under 5 min" },
-  { key: "30min",    title: "Light touch",   desc: "~30 min / month" },
-  { key: "1hr",      title: "Some effort",   desc: "~1 hr / month" },
+  { key: "10min",    title: "A few minutes", desc: "5–10 min" },
+  { key: "30min",    title: "Light touch",   desc: "~30 min" },
+  { key: "1hr",      title: "Some effort",   desc: "~1 hr" },
   { key: "fewHours", title: "Regular",       desc: "Few hrs / week" },
-  { key: "fullDay",  title: "Committed",     desc: "~1 day / month" },
+  { key: "fullDay",  title: "Committed",     desc: "~1 day" },
   { key: "ongoing",  title: "All in",        desc: "Ongoing organizing" },
 ];
 

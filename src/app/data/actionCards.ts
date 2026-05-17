@@ -1,16 +1,13 @@
 import { ActionCardData } from "../components/ActionCard";
 
-import imgImage3   from "../../assets/2122e5681fca2a67fa8c21ce938335204646f5f3.png";
-import imgImage4   from "../../assets/81cfc6786bc36ca734bbdefbda22c4ed8f215998.png";
-import imgImage5   from "../../assets/83f5ff48d560ab0e0bf359f87c6066ed854f2614.jpg";
-import imgImage6   from "../../assets/672f9df1a029464f302dfcd18d0af1213faee70d.jpg";
-import imgImage13  from "../../assets/cfca6ec0f7d46bd37209105f50f378c7291dd60e.jpg";
-import imgImage20  from "../../assets/3fc52741865fd1c68c6b1fa7e0dd59c90346bd31.jpg";
 import imgImage34  from "../../assets/f757504534bf51b4afc042b9ec12280b63be51da.png";
 
 // Pre-built figma asset map for the original hand-curated cards.
+// Only `imgImage34` remains — Ellen's avatar on the pinned ResistAct intro
+// card (SEED_CARDS id=1). The other figma demo images were removed when
+// STATIC_CARDS was trimmed to a single fallback row.
 export const FIGMA_IMAGE_MAP: Record<string, string> = {
-  imgImage3, imgImage4, imgImage5, imgImage6, imgImage13, imgImage20, imgImage34,
+  imgImage34,
 };
 
 // Bulk-import every logo in src/assets/orgs/ as `org_<slug>` keys, where the
@@ -34,9 +31,8 @@ export const IMAGE_MAP: Record<string, string> = {
 
 // ─── Static fallback cards ────────────────────────────────────────────────────
 // Shown on first paint only if the /actions API fails; replaced by live data.
+// Cards 1, 3, 13 removed — the live KV store now owns the pinned intro and
+// the rest of the catalog.
 export const STATIC_CARDS: ActionCardData[] = [
-  { id: 1, isFeatured: true, category: "BOOST", categoryColor: "#8a00e6", title: "Spread the Word about ResistAct", description: "Resistance grows one share at a time — but only if you actually share. Pick a friend who's been doomscrolling and send this their way. If everyone here invites two friends, ResistAct doubles by Tuesday. That's how movements actually scale — not virally, but two-by-two, through people who trust each other.", boosts: 3020, spotsTotal: "Unlimited", authorName: "Ellen Meserow", authorRole: "ResistAct Founder", authorAvatar: imgImage34 },
-  { id: 3, category: "FLASH MOB", categoryColor: "#ff00d5", title: "Join us in forming human RESIST", description: "The immigrant and refugee community has received direct threats about deportations and immigration raids. Our community is forming a human 'RESIST' sign visible from above — join us!", location: "Boston, MA", boosts: 50, spotsTotal: 200, authorName: "Meg Jones", authorRole: "Franklin High School", topImage: imgImage6, authorAvatar: imgImage4 },
   { id: 5, isFeatured: true, category: "BOOST", categoryColor: "#8a00e6", title: "Spread the Word about ResistAct", description: "Resistance grows one share at a time — but only if you actually share. Pick a friend who's been doomscrolling and send this their way. If everyone here invites two friends, ResistAct doubles by Tuesday. That's how movements actually scale — not virally, but two-by-two, through people who trust each other.", boosts: 2, spotsTotal: "Unlimited", authorName: "Ellen Meserow", authorRole: "ResistAct Founder", topImage: "https://zkihnylrvdofdbnhmmoq.supabase.co/storage/v1/object/public/action-images/f3bf307d-7a4b-4a1b-b281-4523f525f45f.jpg", authorAvatar: imgImage34 },
-  { id: 13, category: "TRAINING", categoryColor: "#126d89", title: "Online ICE Rapid Response", description: "The immigrant and refugee community has received direct threats about deportations and immigration raids. Our community has set up a rapid response network — join us.", location: "Austin, TX", boosts: 0, spotsTotal: 10, authorName: "Adam Jordan", authorRole: "Catholic Legal Immigration Network", authorLink: "https://www.cliniclegal.org/", topImage: imgImage5, authorAvatar: imgImage3 },
 ];

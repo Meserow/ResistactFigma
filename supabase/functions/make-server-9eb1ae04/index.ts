@@ -1180,6 +1180,28 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       console.log(`link→targetUrl migration: fixed ${fixed} user-submitted cards.`);
     }
 
+    // One-time: bulk-mark PETITION cards as "5–10 minutes" and strip any
+    // `quickAction: true` so the matcher classifies them as the new `10min`
+    // bucket (not `5min` via the quickAction shortcut). Touches both `action:*`
+    // (org seeds) and `user-action:*` (admin-added / user-submitted).
+    const petitions10minDone = await kv.get("migration:petitions-10min:v1");
+    if (!petitions10minDone) {
+      let updated = 0;
+      for (const prefix of ["action:", "user-action:"]) {
+        for (const c of (await kv.getByPrefix(prefix)) as any[]) {
+          if (!c || typeof c !== "object" || typeof c.id !== "number") continue;
+          const cat = String(c.category ?? "").toUpperCase();
+          if (cat !== "PETITION") continue;
+          const next: any = { ...c, timeCommitment: "5–10 minutes" };
+          if (next.quickAction === true) delete next.quickAction;
+          await kv.set(`${prefix}${c.id}`, next);
+          updated++;
+        }
+      }
+      await kv.set("migration:petitions-10min:v1", true);
+      console.log(`Petitions 10-min migration: updated ${updated} cards.`);
+    }
+
     // Seed The Smacks receipts. Bump the version key whenever SEED_RECEIPTS changes.
     const receiptsSeeded = await kv.get("seed:receipts:v1");
     if (!receiptsSeeded) {
