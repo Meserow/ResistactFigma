@@ -18,15 +18,24 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     version: "0.7.0",
     date: "2026-05-16",
-    title: "Faster loading, Push-back-on-Facts, Smacks intro, RAC + Etsy cards, and a 5–10 min time stop",
+    title: "Admin user dashboards, full-screen fireworks on \"I did this\", Push-back-on-Facts, faster loading, and a 5–10 min time stop",
     sections: [
+      {
+        heading: "Admin: see active users + their tier + recent activity",
+        items: [
+          "Users tab in the Admin Panel now defaults to a new \"Active\" filter showing anyone who's marked an action done in the last 30 days, sorted by most-recently-active first.",
+          "Every user row gains a color-coded tier chip (Spark / Ember / Flame / Blaze / Wildfire / Inferno), total action count, and \"active 3d ago\" relative timestamp inline — no click required to spot your power users vs. lapsed accounts.",
+          "Click any user row to open a per-user dashboard drawer: their tier badge with a progress bar to the next tier, a by-category breakdown chip cloud (BOYCOTT 3 / PETITION 7 / etc.), and a reverse-chronological timeline of their last 50 completed actions with titles and direct links.",
+          "Backed by a new admin-only endpoint that batch-aggregates completion records — no per-row round-trips on the list view.",
+        ],
+      },
       {
         heading: "Fireworks when you hit \"I did this\"",
         items: [
-          "Every fresh action completion triggers a viewport-wide fireworks explosion — six burst origins, 80 confetti pieces, and three expanding shockwave rings that bleed past the modal edges.",
-          "Tier-up moments (Spark → Ember, Ember → Flame, etc.) get an entirely different, dramatically bigger show: three full waves of bursts over ~5 seconds (14 origins, 450+ particles), 450 confetti pieces including star shapes, nine shockwave rings in two volleys, three rapid full-screen color pulses in the new tier's color, and particles fly nearly twice as far. Lasts 5+ seconds — unmistakably different from a regular completion.",
+          "Every fresh action completion triggers a viewport-wide fireworks display that bleeds well past the modal edges: vertical rocket-trail launch streaks rise from below before each explosion, six burst origins scattered across the screen fire ~360 particles total with gravity-arc keyframes (peak → hang → drift down), every particle carries a 4-layer luminous glow, and ~18% of particles are sparklers that twinkle on/off as they fall. Plus a 130-piece confetti storm raining from above.",
+          "Tier-up moments (Spark → Ember, Ember → Flame, etc.) get a dramatically bigger show: three waves of bursts across 14 origins (~700+ particles), 200-piece confetti storm, full-screen radial flash in the new tier's color, and particles fly nearly twice as far. Unmistakably different from a regular completion.",
           "Distance to the next tier is framed in human time: \"1 more,\" \"one a day this week,\" \"about a month at one a day\" — instead of just a raw number.",
-          "Un-doing a completion does NOT retrigger fireworks. Esc / backdrop / Close button all dismiss earlier.",
+          "Modal background is now fully opaque (earlier draft had a see-through gradient that competed with the action grid behind). Un-doing a completion does NOT retrigger fireworks. Esc / backdrop / Close button all dismiss earlier.",
         ],
       },
       {
@@ -73,6 +82,13 @@ export const CHANGELOG: ChangelogEntry[] = [
           "7 new email-campaign cards from the Religious Action Center of Reform Judaism: Environmental Justice for All Act, FAMILY Act paid leave, gun-violence package, hate-crime reporting (IRPHA), West Bank Violence Prevention Act, state LGBTQ+ protections, and H.R. 40 reparations commission.",
           "4 new indie Etsy anti-Trump merch cards under Irreverence: a \"Big Beautiful Obituary\" tee (TeeTaniumCo), a \"When It Happens\" wine label (UncorkedLabels), a \"President and Dumb Should Be Different People\" tee (TeeGeekBoutique), and a \"Go Back, We Screwed Up\" evolution tee (PrintfulApparelUS).",
           "22 local and regional action cards: Indivisible chapter protests, Know Your Rights canvasses, ICE rapid-response signups, crafting parties, and frontline-org donate links — spanning Washington, California, New York, Illinois, Delaware, Maryland, Florida, and DC. All pending admin image review before going public.",
+        ],
+      },
+      {
+        heading: "XSS guard on card URLs",
+        items: [
+          "The create / edit / approve endpoints now reject `targetUrl`, `authorLink`, and `topImageUrl` values whose scheme isn't in the http / https / mailto / sms / tel allowlist. Closes a stored-XSS path where a `javascript:` URL on the action link could have executed in a user's browser after admin approval.",
+          "Text fields (title, description, author name, etc.) were already safe — they render through React JSX which auto-escapes every special character. A QA tester's `<script>...</script>` paste was harmless on display, but the test surfaced the URL-field gap that's now closed.",
         ],
       },
       {

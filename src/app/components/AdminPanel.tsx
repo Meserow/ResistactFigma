@@ -2,12 +2,26 @@ import { useState, useEffect, useRef } from "react";
 import { X, CheckCircle2, XCircle, Clock, Users, ShieldCheck, Loader2, RefreshCw, FileText, Trash2, Calendar, ExternalLink, ImageIcon, Upload, ZoomIn, AlertTriangle, Sliders, RotateCcw, Save, Eye, Flame, Laugh, VenetianMask, Heart, Sunrise, Zap, Link2, Pencil } from "lucide-react";
 import { CardDetailsModal } from "./CardDetailsModal";
 import { EditCardModal } from "./EditCardModal";
+import { AdminUserDetail } from "./AdminUserDetail";
 import type { ActionCardData } from "./ActionCard";
 import type { LucideIcon } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
 import type { UserApproval } from "../lib/supabase";
 import { DEFAULT_CATEGORY_TONE, applyMatcherConfig, type Tone } from "../lib/matcher";
 import { ToneRangeSlider } from "./ToneSlider";
+import { getUserTier } from "../lib/tiers";
+
+/** Friendly relative time string like "3 days ago" or "just now". */
+function formatRelative(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  if (diffMs < 0)                       return "just now";
+  if (diffMs < 60_000)                  return "just now";
+  if (diffMs < 3600_000)                return `${Math.floor(diffMs / 60_000)}m ago`;
+  if (diffMs < 86_400_000)              return `${Math.floor(diffMs / 3600_000)}h ago`;
+  if (diffMs < 7 * 86_400_000)          return `${Math.floor(diffMs / 86_400_000)}d ago`;
+  if (diffMs < 30 * 86_400_000)         return `${Math.floor(diffMs / (7 * 86_400_000))}w ago`;
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
 
@@ -17,7 +31,7 @@ interface AdminPanelProps {
   imageMap?: Record<string, string>;
 }
 
-type TabFilter = "pending" | "approved" | "rejected" | "all";
+type TabFilter = "active" | "pending" | "approved" | "rejected" | "all";
 type PanelMode = "cards" | "users" | "nourl" | "matcher";
 
 const TONE_DIMS: { key: keyof Tone; label: string; Icon: LucideIcon; stops: { label: string; desc: string }[] }[] = [
@@ -207,7 +221,9 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
   const [users, setUsers] = useState<UserApproval[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<TabFilter>("pending");
+  const [tab, setTab] = useState<TabFilter>("active");
+  /** Per-user detail drawer: the userId whose dashboard is open (or null). */
+  const [detailUserId, setDetailUserId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   // ── Cards state ──────────────────────────────────────────────────────────────
@@ -355,15 +371,25 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
   // an AI-side signal (set via /admin/flag-off-topic), and admins act on it
   // by Approve or Delete instead. Endpoints stay live for that automation.
 
-  const filtered = users.filter((u) => tab === "all" || u.status === tab);
-  const pendingCount = users.filter((u) => u.status === "pending").length;
+  // "Active" = anyone who has marked at least one action done in the last 30
+  // days. Excludes never-active users (totalActions = 0) and stale accounts.
+  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+  const activeCutoff = new Date(Date.now() - THIRTY_DAYS_MS).toISOString();
+  const filtered = users.filter((u) => {
+    if (tab === "all") return true;
+    if (tab === "active") return Boolean(u.lastActiveAt && u.lastActiveAt > activeCutoff);
+    return u.status === tab;
+  });
+  const pendingCount  = users.filter((u) => u.status === "pending").length;
+  const activeCount   = users.filter((u) => u.lastActiveAt && u.lastActiveAt > activeCutoff).length;
   const pendingCardsCount = pendingCards.length;
 
   const TAB_ITEMS: { key: TabFilter; label: string }[] = [
-    { key: "pending", label: `Pending${pendingCount > 0 ? ` (${pendingCount})` : ""}` },
+    { key: "active",   label: `Active${activeCount > 0 ? ` (${activeCount})` : ""}` },
+    { key: "pending",  label: `Pending${pendingCount > 0 ? ` (${pendingCount})` : ""}` },
     { key: "approved", label: "Approved" },
     { key: "rejected", label: "Rejected" },
-    { key: "all", label: "All" },
+    { key: "all",      label: "All" },
   ];
 
   return (
@@ -724,16 +750,26 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
                 ) : filtered.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-40 gap-2">
                     <Users size={28} className="text-gray-200" />
-                    <p className="font-['Poppins',sans-serif] text-sm text-gray-400">No {tab === "all" ? "" : tab} users</p>
+                    <p className="font-['Poppins',sans-serif] text-sm text-gray-400">
+                    {tab === "active" ? "No users active in the last 30 days." : `No ${tab === "all" ? "" : tab} users`}
+                  </p>
                   </div>
                 ) : (
                   <ul className="divide-y divide-gray-50">
                     {filtered.map((user) => {
                       const status = STATUS_CONFIG[user.status] ?? STATUS_CONFIG.pending;
                       const isActing = actionLoading?.startsWith(user.userId);
+                      const total = user.totalActions ?? 0;
+                      const tier = getUserTier(total).tier;
                       return (
                         <li key={user.userId} className="px-5 py-4 hover:bg-gray-50/60 transition-colors">
-                          <div className="flex items-start gap-3">
+                          {/* Row clickable area — opens the detail drawer */}
+                          <button
+                            type="button"
+                            onClick={() => setDetailUserId(user.userId)}
+                            className="w-full text-left flex items-start gap-3 group"
+                            aria-label={`Open dashboard for ${user.name}`}
+                          >
                             {/* Avatar */}
                             <div className="shrink-0">
                               {user.avatar ? (
@@ -750,7 +786,7 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
                             {/* Info */}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <p className="font-['Poppins',sans-serif] font-semibold text-gray-900 text-sm truncate">{user.name}</p>
+                                <p className="font-['Poppins',sans-serif] font-semibold text-gray-900 text-sm truncate group-hover:underline">{user.name}</p>
                                 {user.isAdmin && (
                                   <span className="text-[10px] font-bold bg-[#23297e] text-white rounded-md px-1.5 py-0.5 font-['Poppins',sans-serif]">ADMIN</span>
                                 )}
@@ -758,19 +794,37 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
                                   {status.icon}
                                   {status.label}
                                 </span>
+                                {/* Tier chip — color-coded to the user's current tier. */}
+                                <span
+                                  className="inline-flex items-center gap-1 text-[10px] font-bold rounded-md px-1.5 py-0.5 font-['Poppins',sans-serif] uppercase tracking-wider"
+                                  style={{ background: `${tier.color}22`, color: tier.color }}
+                                  title={tier.tagline}
+                                >
+                                  {tier.name}
+                                </span>
                               </div>
                               <p className="font-['Poppins',sans-serif] text-xs text-gray-400 truncate mt-0.5">{user.email}</p>
-                              <div className="flex items-center gap-2 mt-1">
+                              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                <span className="font-['Poppins',sans-serif] text-[10px] font-semibold text-gray-600">
+                                  {total} action{total === 1 ? "" : "s"}
+                                </span>
+                                <span className="text-gray-200">·</span>
+                                <span className="font-['Poppins',sans-serif] text-[10px] text-gray-400">
+                                  {user.lastActiveAt
+                                    ? `active ${formatRelative(user.lastActiveAt)}`
+                                    : "never active"}
+                                </span>
+                                <span className="text-gray-200">·</span>
                                 <span className="font-['Poppins',sans-serif] text-[10px] text-gray-400">
                                   via {PROVIDER_LABELS[user.provider] ?? user.provider}
                                 </span>
                                 <span className="text-gray-200">·</span>
                                 <span className="font-['Poppins',sans-serif] text-[10px] text-gray-400">
-                                  {new Date(user.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                                  joined {new Date(user.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                                 </span>
                               </div>
                             </div>
-                          </div>
+                          </button>
 
                           {/* Action buttons — only show for non-admin pending/rejected users */}
                           {!user.isAdmin && user.status !== "approved" && (
@@ -869,6 +923,15 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
             setPendingCards((prev) => prev.filter((c) => c.id !== id));
             setEditingCard(null);
           }}
+        />
+      )}
+
+      {/* Per-user detail drawer — tier, breakdown, recent activity */}
+      {detailUserId && (
+        <AdminUserDetail
+          userId={detailUserId}
+          accessToken={accessToken}
+          onClose={() => setDetailUserId(null)}
         />
       )}
     </>

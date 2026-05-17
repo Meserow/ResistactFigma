@@ -214,9 +214,11 @@ interface SmacksPageProps {
   onReceiptAdded?: (r: ReceiptCard) => void;
   onReceiptApproved?: (id: number) => void;
   pendingFilterVersion?: number;
+  onComplete?: (id: number) => void;
+  completedSmackIds?: Set<number>;
 }
 
-export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToken, approval, onReceiptAdded, onReceiptApproved, pendingFilterVersion }: SmacksPageProps) {
+export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToken, approval, onReceiptAdded, onReceiptApproved, pendingFilterVersion, onComplete, completedSmackIds }: SmacksPageProps) {
   const isAdmin = approval?.isAdmin === true;
   const canSubmit = !!accessToken && (approval?.status === "approved");
 
@@ -595,10 +597,12 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
             isAdmin={isAdmin}
             boostCount={boostCountFor(r)}
             isBoosted={boostedReceipts.has(r.id)}
+            isDone={completedSmackIds?.has(r.id) ?? false}
             onShare={() => openShare(r)}
             onBoost={() => handleReceiptBoost(r.id)}
             onApprove={() => handleApprove(r.id)}
             onDelete={() => handleDelete(r.id)}
+            onComplete={() => onComplete?.(r.id)}
           />
         ))}
       </div>
@@ -871,16 +875,18 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
 
 // ─── Receipt tile ──────────────────────────────────────────────────────────────
 function ReceiptTile({
-  receipt, isAdmin, boostCount, isBoosted, onShare, onBoost, onApprove, onDelete,
+  receipt, isAdmin, boostCount, isBoosted, isDone, onShare, onBoost, onApprove, onDelete, onComplete,
 }: {
   receipt: ReceiptCard;
   isAdmin: boolean;
   boostCount: number;
   isBoosted: boolean;
+  isDone: boolean;
   onShare: () => void;
   onBoost: () => void;
   onApprove: () => void;
   onDelete: () => void;
+  onComplete: () => void;
 }) {
   return (
     <div
@@ -987,6 +993,21 @@ function ReceiptTile({
           >
             <Share2 size={12} />
             Share
+          </button>
+
+          {/* DONE button — marks as shared/completed, triggers fireworks */}
+          <button
+            type="button"
+            onClick={onComplete}
+            title={isDone ? "Marked as shared" : "Mark as shared"}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-xl font-['Poppins',sans-serif] font-bold text-xs transition-all ${
+              isDone
+                ? "bg-green-600 text-white"
+                : "bg-gray-100 text-gray-500 hover:bg-green-50 hover:text-green-700"
+            }`}
+          >
+            <Check size={12} strokeWidth={3} />
+            {isDone ? "DONE!" : "I shared it"}
           </button>
         </div>
       </div>

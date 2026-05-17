@@ -674,8 +674,47 @@ app.get("/make-server-9eb1ae04/admin/users", async (c) => {
 
     const users = await kv.getByPrefix("user:approval:");
     const list = (users as any[]).filter((u) => u && typeof u === "object" && u.userId);
-    list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    return c.json({ users: list });
+
+    // One direct table scan over the complete:* prefix avoids N round-trips
+    // and exposes the key (the kv helper hides it). Build per-user totals
+    // and the most-recent completedAt so the admin list can show a tier chip
+    // + "active 3 days ago" inline without a follow-up request.
+    const sb = adminClient();
+    const { data: completionRows } = await sb
+      .from("kv_store_9eb1ae04")
+      .select("key, value")
+      .like("key", "complete:%");
+
+    const totalByUser:      Record<string, number> = {};
+    const lastActiveByUser: Record<string, string> = {};
+    for (const row of completionRows ?? []) {
+      // Key format: `complete:{userId}:{actionId}`
+      const parts = String(row.key).split(":");
+      if (parts.length < 3) continue;
+      const uid = parts[1];
+      totalByUser[uid] = (totalByUser[uid] ?? 0) + 1;
+      const t = row.value?.completedAt;
+      if (t && (!lastActiveByUser[uid] || String(t).localeCompare(lastActiveByUser[uid]) > 0)) {
+        lastActiveByUser[uid] = String(t);
+      }
+    }
+
+    const enriched = list.map((u) => ({
+      ...u,
+      totalActions: totalByUser[u.userId] ?? 0,
+      lastActiveAt: lastActiveByUser[u.userId] ?? null,
+    }));
+
+    // Sort by last-active DESC by default; users with no activity fall to the
+    // bottom but stay in original signup order.
+    enriched.sort((a, b) => {
+      if (a.lastActiveAt && b.lastActiveAt) return b.lastActiveAt.localeCompare(a.lastActiveAt);
+      if (a.lastActiveAt) return -1;
+      if (b.lastActiveAt) return 1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+    return c.json({ users: enriched });
   } catch (err) {
     console.log("Admin users error:", err);
     return c.json({ error: `Failed to list users: ${err}` }, 500);
@@ -1865,6 +1904,44 @@ app.post("/make-server-9eb1ae04/notifications", async (c) => {
 // clearly off-topic for an anti-Trump / MAGA-resistance site.
 // Logic: award points for resistance signals, penalise for red-flag signals.
 // If red flags outweigh resistance signals by enough, flag as not-on-topic.
+// ─── URL safety validator ────────────────────────────────────────────────────
+// Public-feed cards expose targetUrl / authorLink / topImageUrl through
+// <a href> and <img src>. React auto-escapes text content, but it CANNOT
+// neutralize an `href="javascript:..."` — clicking the link would run the
+// payload as the victim's browser. We reject any non-http(s)/mailto scheme
+// on submission, edit, AND admin approval so dirty data can't slip through
+// any path.
+//
+// Returns { ok: true } for empty / null / undefined (URLs are optional);
+// returns { ok: false, reason } for any URL with a disallowed scheme.
+function validateSubmittedUrl(value: unknown, field: string): { ok: true } | { ok: false; reason: string } {
+  if (value == null) return { ok: true };
+  const raw = String(value).trim();
+  if (raw === "") return { ok: true };
+
+  // Allow protocol-relative (//host/path) — browsers infer http(s) at runtime.
+  if (raw.startsWith("//")) return { ok: true };
+  // Allow site-relative paths.
+  if (raw.startsWith("/") || raw.startsWith("./") || raw.startsWith("../")) return { ok: true };
+
+  // Anything with a scheme prefix must match the allowlist. Note: scheme
+  // matching is case-insensitive AND tolerates whitespace + tab control
+  // chars between letters ("java\tscript:") because some browsers do too.
+  const schemeMatch = raw.match(/^\s*([a-zA-Z][a-zA-Z0-9+.\-]*)\s*:/);
+  if (schemeMatch) {
+    const scheme = schemeMatch[1].toLowerCase();
+    const ALLOWED = new Set(["http", "https", "mailto", "sms", "tel"]);
+    if (!ALLOWED.has(scheme)) {
+      return { ok: false, reason: `${field}: \"${scheme}:\" URLs are not allowed.` };
+    }
+    return { ok: true };
+  }
+
+  // No scheme + not a relative path → treat as bare host (e.g. "example.com").
+  // Browsers will follow it as http://example.com, which is safe.
+  return { ok: true };
+}
+
 function looksOffTopic(title: string, description: string, category: string): boolean {
   const text = `${title} ${description} ${category}`.toLowerCase();
 
@@ -1936,6 +2013,18 @@ app.post("/make-server-9eb1ae04/actions/create", async (c) => {
 
     if (!title || !description || !category) {
       return c.json({ error: "title, description and category are required" }, 400);
+    }
+
+    // URL safety — block javascript:/data:/file:/vbscript: schemes on any
+    // user-facing link or image. React doesn't escape `href=` or `src=`, so
+    // these are the only XSS vector once admins approve a card.
+    for (const [field, value] of [
+      ["targetUrl", targetUrlField ?? link],
+      ["authorLink", authorLink],
+      ["topImageUrl", topImageUrl],
+    ] as Array<[string, unknown]>) {
+      const check = validateSubmittedUrl(value, field);
+      if (!check.ok) return c.json({ error: check.reason }, 400);
     }
 
     // Auto-increment ID, always staying above the max seed card ID (1301)
@@ -2061,6 +2150,69 @@ app.get("/make-server-9eb1ae04/me/completions", async (c) => {
   }
 });
 
+// ─── ADMIN: GET /admin/users/:id/activity — full activity dashboard ────────
+// Returns the same shape as /me/completions (total, byCategory, completedIds)
+// plus the user's approval record AND a reverse-chronological list of their
+// last N completions enriched with the action title. The client computes the
+// tier from `total` via getUserTier() — keeps the math in one place.
+app.get("/make-server-9eb1ae04/admin/users/:id/activity", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const targetId = c.req.param("id");
+    const approval = await kv.get(`user:approval:${targetId}`) as any;
+    if (!approval) return c.json({ error: "User not found" }, 404);
+
+    const records = ((await kv.getByPrefix(`complete:${targetId}:`)) ?? []) as any[];
+
+    // Aggregate the counts.
+    const byCategory: Record<string, number> = {};
+    const completedIds: number[] = [];
+    for (const r of records) {
+      if (!r) continue;
+      const cat = (r.category ?? "OTHER").toString().toUpperCase();
+      byCategory[cat] = (byCategory[cat] ?? 0) + 1;
+      if (typeof r.actionId === "number") completedIds.push(r.actionId);
+    }
+
+    // Build the recent-activity timeline (last 50). Resolve action titles by
+    // doing a single batch fetch — most cards live under `action:*` but a
+    // handful are user-submitted under `user-action:*`, so try both.
+    const sorted = [...records]
+      .filter((r) => r?.completedAt)
+      .sort((a, b) => String(b.completedAt).localeCompare(String(a.completedAt)))
+      .slice(0, 50);
+
+    const timeline = await Promise.all(sorted.map(async (r) => {
+      let card = await kv.get(`action:${r.actionId}`) as any;
+      if (!card) card = await kv.get(`user-action:${r.actionId}`) as any;
+      return {
+        actionId: r.actionId,
+        category: r.category ?? "OTHER",
+        completedAt: r.completedAt,
+        title: card?.title ?? `Action #${r.actionId}`,
+        targetUrl: card?.targetUrl ?? null,
+      };
+    }));
+
+    const lastActiveAt = sorted[0]?.completedAt ?? null;
+
+    return c.json({
+      user: approval,
+      total: records.length,
+      byCategory,
+      completedIds,
+      lastActiveAt,
+      timeline,
+    });
+  } catch (err) {
+    console.log("Admin user activity error:", err);
+    return c.json({ error: `Failed: ${err}` }, 500);
+  }
+});
+
 // ─── GET /me/boosts — card IDs this user has boosted ─────────────────────────
 app.get("/make-server-9eb1ae04/me/boosts", async (c) => {
   try {
@@ -2160,6 +2312,16 @@ app.put("/make-server-9eb1ae04/actions/:id", async (c) => {
 
     const body = await c.req.json();
 
+    // URL safety on edit too — admins are usually trustworthy but the QA
+    // probe showed this is exactly the kind of field a careless paste could
+    // poison. Validate every URL-bearing field present in the body.
+    for (const field of ["targetUrl", "authorLink", "topImageUrl"]) {
+      if (body[field] !== undefined) {
+        const check = validateSubmittedUrl(body[field], field);
+        if (!check.ok) return c.json({ error: check.reason }, 400);
+      }
+    }
+
     // Strip immutable fields. Admins can additionally set `boosts` directly
     // (used for moderation / corrections); non-admins cannot.
     const { id: _id, createdBy: _createdBy, createdAt: _createdAt,
@@ -2244,6 +2406,14 @@ app.post("/make-server-9eb1ae04/admin/approve-action/:id", async (c) => {
     const hasImage = Boolean(card.topImageUrl) || Boolean(card.topImageKey) || Boolean(card.topImage);
     if (!hasImage) {
       return c.json({ error: "Card has no image. Upload a header image before approving." }, 400);
+    }
+
+    // Defense-in-depth: even if dirty URLs slipped past create-time validation
+    // (older records pre-dating that guard), block them here at the last gate
+    // before the card goes public.
+    for (const field of ["targetUrl", "authorLink", "topImageUrl"]) {
+      const check = validateSubmittedUrl(card[field], field);
+      if (!check.ok) return c.json({ error: `${check.reason} Edit the card to fix it before approving.` }, 400);
     }
 
     card.adminApproved = true;

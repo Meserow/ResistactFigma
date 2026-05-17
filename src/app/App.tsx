@@ -1221,6 +1221,8 @@ export default function App() {
               )
             }
             pendingFilterVersion={smacksPendingVersion}
+            onComplete={handleComplete}
+            completedSmackIds={completedCards}
           />
         ) : activeTab === "facts" ? (
           /* ── Facts view ── */
