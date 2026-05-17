@@ -6,7 +6,14 @@ import { promises as fs } from "fs";
 import path from "path";
 import { glob } from "glob";
 
-const ROOTS = ["public/*.jpg", "public/*.png", "public/facts/*.jpg", "public/facts/*.png"];
+const ROOTS = [
+  "public/*.jpg", "public/*.png",
+  "public/facts/*.jpg", "public/facts/*.png",
+  // Smacks meme PNGs — these are the heaviest files in the repo (1.5–3MB
+  // each). WebP at quality 82 typically drops them to 150–400KB without
+  // visible quality loss.
+  "public/Smacks/*.png", "public/Smacks/*.jpg",
+];
 const MIN_BYTES = 0;
 const QUALITY = 82;
 

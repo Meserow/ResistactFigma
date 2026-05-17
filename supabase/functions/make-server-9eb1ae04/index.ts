@@ -2181,8 +2181,10 @@ app.get("/make-server-9eb1ae04/stats", async (c) => {
     const users = await kv.getByPrefix("user:approval:");
     const usersCount = (users as any[]).filter((u) => u && typeof u === "object" && u.userId).length;
 
+    const siteUpdating = (await kv.get("system:site-updating")) === true;
+
     console.log(`Stats: ${allCards.length} acts, ${citiesCount} cities, ${usersCount} users`);
-    return c.json({ citiesCount, usersCount, actsCount: allCards.length });
+    return c.json({ citiesCount, usersCount, actsCount: allCards.length, siteUpdating });
   } catch (err) {
     console.log("Stats error:", err);
     return c.json({ error: `Failed to fetch stats: ${err}` }, 500);
@@ -3551,6 +3553,23 @@ app.post("/make-server-9eb1ae04/admin/approve-receipt/:id", async (c) => {
     return c.json({ receipt });
   } catch (err) {
     return c.json({ error: `Approval failed: ${err}` }, 500);
+  }
+});
+
+// ─── POST /admin/site-updating — toggle the "site updating" banner ────────────
+app.post("/make-server-9eb1ae04/admin/site-updating", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const body = await c.req.json().catch(() => ({}));
+    const enabled = body.enabled === true;
+    await kv.set("system:site-updating", enabled);
+    console.log(`Admin ${admin.record.name} set site-updating = ${enabled}`);
+    return c.json({ siteUpdating: enabled });
+  } catch (err) {
+    return c.json({ error: `Toggle failed: ${err}` }, 500);
   }
 });
 

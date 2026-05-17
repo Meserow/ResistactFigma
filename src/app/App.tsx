@@ -21,7 +21,7 @@ import { TierModal } from "./components/TierModal";
 import { CelebrationModal } from "./components/CelebrationModal";
 import { FeedbackModal } from "./components/FeedbackModal";
 import { SmacksPage, STATIC_SMACKS, type ReceiptCard } from "./components/SmacksPage";
-import { rankCards, score as scoreCard, loadPreferences, clearPreferences, applyMatcherConfig, fetchUserPreferences, pushUserPreferences, savePreferences, type Preferences, type UserContext } from "./lib/matcher";
+import { rankCards, score as scoreCard, loadPreferences, clearPreferences, applyMatcherConfig, fetchUserPreferences, pushUserPreferences, savePreferences, timeBucketFor, type Preferences, type UserContext } from "./lib/matcher";
 import svgPaths from "../imports/svg-77lgd1zdt6";
 import { projectId, publicAnonKey } from "/utils/supabase/info";
 import { supabase } from "./lib/supabase";
@@ -290,6 +290,7 @@ export default function App() {
   // ── Live stats from server ──
   const [statsCitiesCount, setStatsCitiesCount] = useState<number | null>(null);
   const [statsUsersCount, setStatsUsersCount] = useState<number | null>(null);
+  const [siteUpdating, setSiteUpdating] = useState(false);
 
   // ── Filters ──
   const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>({});
@@ -493,7 +494,14 @@ export default function App() {
       // Admins always see pending cards — pull them out so the score threshold
       // doesn't silently drop them, then append them after the ranked results.
       const pendingForAdmin = isAdminUser ? filtered.filter((c) => c.adminApproved === false) : [];
-      const rankable = isAdminUser ? filtered.filter((c) => c.adminApproved !== false) : filtered;
+      let rankable = isAdminUser ? filtered.filter((c) => c.adminApproved !== false) : filtered;
+
+      // "Quick wins — Under 5 min" is the only slider position with a hard cap
+      // (the others are ranges like "5–10 min" / "~30 min"). Filter to the
+      // 5-min bucket so longer cards can't slip past the soft score threshold.
+      if (matchPrefs.time === "5min") {
+        rankable = rankable.filter((c) => timeBucketFor(c) === "5min");
+      }
 
       const userCtx: UserContext = { boostedIds: boostedCards };
       const ranked = rankCards(rankable, matchPrefs, userCtx);
@@ -825,6 +833,7 @@ export default function App() {
         const data = await res.json();
         if (typeof data.citiesCount === "number") setStatsCitiesCount(data.citiesCount);
         if (typeof data.usersCount === "number") setStatsUsersCount(data.usersCount);
+        if (typeof data.siteUpdating === "boolean") setSiteUpdating(data.siteUpdating);
       } catch (err) {
         console.error("Network error fetching stats:", err);
       }
@@ -1128,6 +1137,21 @@ export default function App() {
     }
   }
 
+  // ── Toggle site-updating banner (admin only) ─────────────────────────────────
+  async function handleToggleSiteUpdating(enabled: boolean) {
+    if (!accessToken) return;
+    try {
+      await fetch(`${API}/admin/site-updating`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled }),
+      });
+      setSiteUpdating(enabled);
+    } catch (err) {
+      console.error("Toggle site-updating failed:", err);
+    }
+  }
+
   // ── Approve all pending acts at once (admin only) ────────────────────────────
   // Pass an explicit list of IDs to approve only the currently-visible filtered set.
   async function handleApproveAll(ids: number[]) {
@@ -1170,6 +1194,8 @@ export default function App() {
         onFeedbackClick={() => setFeedbackOpen(true)}
         onMatchClick={() => setMatchOpen(true)}
         onTierClick={() => setTierModalOpen(true)}
+        siteUpdating={siteUpdating}
+        onToggleSiteUpdating={handleToggleSiteUpdating}
         matchActive={matchPrefs !== null}
         onMatchClear={() => { setMatchPrefs(null); clearPreferences(); }}
         statsActsCount={displayedCards.length}
@@ -1217,6 +1243,15 @@ export default function App() {
             : null
         }
       />
+
+      {/* Site-updating banner */}
+      {siteUpdating && (
+        <div className="w-full bg-[#23297e] text-white text-center px-4 py-3 font-['Poppins',sans-serif] font-bold text-sm flex items-center justify-center gap-2">
+          <span>🔧</span>
+          <span>SITE UPDATING — PLEASE BE PATIENT (2 minutes!)</span>
+          <span>🔧</span>
+        </div>
+      )}
 
       <main className="px-4 md:px-8 py-8">
         <ErrorBoundary>
