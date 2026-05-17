@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   X, Upload, Loader2, Share2, Copy, Check, Download,
-  ExternalLink, Plus, Tag, Flame, Search, Trash2,
+  ExternalLink, Plus, Tag, Flame, Trash2,
 } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
 import type { UserApproval } from "../lib/supabase";
@@ -172,6 +172,13 @@ export const STATIC_SMACKS: ReceiptCard[] = [
     title: "Voting Rights",
     tags: ["Voting Rights"],
     imageUrl: "/Smacks/votingrights.png",
+    adminApproved: true,
+  },
+  {
+    id: 5025,
+    title: "Epstein Redactions",
+    tags: ["Trump", "MAGA", "Corruption"],
+    imageUrl: "/Smacks/epsteinredactions.png",
     adminApproved: true,
   },
 ];
@@ -429,10 +436,11 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
   }, [pendingFilterVersion]);
 
   // ── Local search ─────────────────────────────────────────────────────────────
-  const [localSearch, setLocalSearch] = useState("");
+  // Search now lives in the top navbar only; the lower search bar was removed
+  // so this page can lead with an intro paragraph instead of a duplicate input.
 
   // ── Filter + sort ────────────────────────────────────────────────────────────
-  const q = (localSearch || searchQuery).toLowerCase().trim();
+  const q = searchQuery.toLowerCase().trim();
   const filtered = receipts
     .filter((r) => {
       if (deletedIds.has(r.id)) return false;
@@ -461,24 +469,14 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
 
   return (
     <div className="min-h-screen">
-      {/* ── Search bar ── */}
-      <div className="relative mb-4">
-        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-        <input
-          type="text"
-          value={localSearch}
-          onChange={(e) => setLocalSearch(e.target.value)}
-          placeholder="Search The Smacks…"
-          className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white font-['Poppins',sans-serif] text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#fd8e33]/30 focus:border-[#fd8e33] transition-all"
-        />
-        {localSearch && (
-          <button
-            onClick={() => setLocalSearch("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-          >
-            <X size={14} />
-          </button>
-        )}
+      {/* ── Intro: what is a Smack? ── */}
+      <div className="mb-5 rounded-2xl border border-[#23297e]/15 bg-gradient-to-br from-[#fd8e33]/5 via-white to-[#23297e]/5 px-4 py-3.5 sm:px-5 sm:py-4">
+        <p className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-sm sm:text-base mb-1.5 flex items-center gap-1.5">
+          <span aria-hidden="true">💥</span> What's a Smack?
+        </p>
+        <p className="font-['Poppins',sans-serif] text-xs sm:text-sm text-gray-700 leading-snug">
+          The president is a cartoon villain. So is the Supreme Court. So is half of Congress. You don't fight a cartoon with a footnoted essay — you fight it with a meme that lands in two seconds. <strong className="text-[#23297e]">Smacks</strong> are shareable images that meet their grift, corruption, and stupidity with the simplicity those deserve. <span className="text-[#fd8e33] font-semibold">Save it. Post it. Move on.</span>
+        </p>
       </div>
 
       {/* ── Top bar: sort toggle + filter chips ── */}

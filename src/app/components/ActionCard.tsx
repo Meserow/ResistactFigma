@@ -132,7 +132,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
         }`}
       >
         {isCompleted && <span aria-hidden>✓</span>}
-        <span>{isCompleted ? "Did it!" : "I did this"}</span>
+        <span>{isCompleted ? "DONE!" : "I did this"}</span>
         {(() => {
           const n = Math.max(completionsCount, isCompleted ? 1 : 0);
           return n > 0 ? <span className="opacity-80">· {n.toLocaleString()}</span> : null;

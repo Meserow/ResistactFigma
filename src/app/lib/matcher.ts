@@ -11,7 +11,7 @@ import type { ActionCardData } from "../components/ActionCard";
 
 // ─── Vocabulary ───────────────────────────────────────────────────────────────
 
-export type TimeBucket = "5min" | "30min" | "1hr" | "fewHours" | "fullDay" | "ongoing";
+export type TimeBucket = "5min" | "10min" | "30min" | "1hr" | "fewHours" | "fullDay" | "ongoing";
 
 /**
  * What kind of action context the user is willing to engage in. Stored as
@@ -275,6 +275,9 @@ export function timeBucketFor(card: ActionCardData): TimeBucket {
       if (t.includes("< 1") || t.includes("<1")) return "30min";
       return "fewHours";
     }
+    // "5–10 min" / "5-10 min" / "10 min" → 10min (must come before the
+    // generic "5" / "30" rules below or they'd misclassify).
+    if (t.includes("5–10") || t.includes("5-10") || t.includes("10 min") || t.includes("10min")) return "10min";
     if (t.includes("30") || t.includes("min")) return "30min";
     if (t.includes("5") || t.includes("quick")) return "5min";
   }
@@ -285,6 +288,7 @@ export function timeBucketFor(card: ActionCardData): TimeBucket {
 // Bucket → minutes-equivalent for ranking. Lower is shorter.
 const BUCKET_MINUTES: Record<TimeBucket, number> = {
   "5min": 5,
+  "10min": 10,
   "30min": 30,
   "1hr": 60,
   "fewHours": 180,

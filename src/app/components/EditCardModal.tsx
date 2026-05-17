@@ -55,6 +55,7 @@ function normaliseCategory(raw: string): string {
 
 const TIME_COMMITMENT_MAP: Record<TimeBucket, string> = {
   "5min":     "< 1 hour",
+  "10min":    "5–10 minutes",
   "30min":    "< 1 hour",
   "1hr":      "1–3 hours",
   "fewHours": "1–3 hours",
@@ -64,6 +65,7 @@ const TIME_COMMITMENT_MAP: Record<TimeBucket, string> = {
 
 const TIME_STOPS = [
   { key: "5min"     as TimeBucket, title: "Just the basics", desc: "< 5 minutes" },
+  { key: "10min"    as TimeBucket, title: "A few minutes",   desc: "5–10 minutes" },
   { key: "30min"    as TimeBucket, title: "A little",        desc: "A few hours per month" },
   { key: "fewHours" as TimeBucket, title: "Regularly",       desc: "A few hours per week" },
   { key: "ongoing"  as TimeBucket, title: "All in",          desc: "Ongoing organizing" },
@@ -72,6 +74,7 @@ const TIME_STOPS = [
 function timeBucketFromCard(timeCommitment: string | undefined, quickAction?: boolean): TimeBucket {
   if (quickAction) return "5min";
   if (!timeCommitment) return "30min";
+  if (timeCommitment === "5–10 minutes" || timeCommitment === "5-10 minutes") return "10min";
   if (timeCommitment === "< 1 hour") return "30min";
   if (timeCommitment === "1 hour" || timeCommitment === "1hr") return "1hr";
   if (timeCommitment === "1–3 hours") return "fewHours";
@@ -371,7 +374,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
                   · <span className="font-medium text-[#fd8e33]">{tLevel.title}</span> — {tLevel.desc}
                 </span>
               </div>
-              <ToneRangeSlider value={tIdx} onChange={(v) => setInvolvement(TIME_STOPS[v].key)} max={3} />
+              <ToneRangeSlider value={tIdx} onChange={(v) => setInvolvement(TIME_STOPS[v].key)} max={4} />
             </div>
 
             {/* Tone sliders — admin override; non-admins see read-only defaults */}
