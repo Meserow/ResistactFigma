@@ -496,11 +496,12 @@ export default function App() {
       const pendingForAdmin = isAdminUser ? filtered.filter((c) => c.adminApproved === false) : [];
       let rankable = isAdminUser ? filtered.filter((c) => c.adminApproved !== false) : filtered;
 
-      // "Quick wins — Under 5 min" is the only slider position with a hard cap
-      // (the others are ranges like "5–10 min" / "~30 min"). Filter to the
-      // 5-min bucket so longer cards can't slip past the soft score threshold.
+      // "Quick wins — Under 5 min" is a hard cap — exclude cards clearly longer
+      // than 10 min. We include the 10min bucket too so "5–10 minutes" cards
+      // still surface (and to survive any legacy cards stored as "< 1 hour"
+      // that correctly belong here but predate the TIME_COMMITMENT_MAP fix).
       if (matchPrefs.time === "5min") {
-        rankable = rankable.filter((c) => timeBucketFor(c) === "5min");
+        rankable = rankable.filter((c) => ["5min", "10min"].includes(timeBucketFor(c)));
       }
 
       const userCtx: UserContext = { boostedIds: boostedCards };
@@ -1356,29 +1357,103 @@ export default function App() {
               </div>
             )}
 
-            {/* Match-mode banner — visible when match prefs are filtering the feed */}
-            {matchPrefs && (
-              <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-[#fd8e33] bg-[#fd8e33]/5 px-4 py-2.5">
-                <p className="font-['Poppins',sans-serif] text-sm text-gray-700">
-                  ✨ <strong className="text-[#23297e]">Matched for you.</strong>{" "}
-                  Showing actions sorted by your match preferences.
-                </p>
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    onClick={() => setMatchOpen(true)}
-                    className="font-['Poppins',sans-serif] text-xs font-semibold text-[#23297e] hover:underline"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => { setMatchPrefs(null); clearPreferences(); }}
-                    className="font-['Poppins',sans-serif] text-xs font-semibold text-gray-600 hover:text-[#fd8e33]"
-                  >
-                    Clear
-                  </button>
+            {/* Match-mode banner — visible when match prefs are filtering the feed.
+                Surfaces the user's actual settings as chips so they remember WHY
+                this set of cards is showing (and the total count, so the volume
+                is visible at a glance). */}
+            {matchPrefs && (() => {
+              // Friendly time labels — match the MatchMe slider vocabulary.
+              const timeLabel = (
+                matchPrefs.time === "5min"     ? "Under 5 min"
+                : matchPrefs.time === "10min"    ? "5–10 min"
+                : matchPrefs.time === "30min"    ? "~30 min"
+                : matchPrefs.time === "1hr"      ? "~1 hr"
+                : matchPrefs.time === "fewHours" ? "Few hrs / week"
+                : matchPrefs.time === "fullDay"  ? "~1 day"
+                : matchPrefs.time === "ongoing"  ? "Ongoing"
+                : null
+              );
+              // Location label derived from the setting array.
+              const settingLabel = (() => {
+                const s = matchPrefs.setting ?? [];
+                if (s.includes("online") && s.includes("inPerson")) return "Mostly Remote";
+                if (s.includes("online")) return "Remote only";
+                if (s.includes("inPerson")) return "In-person";
+                return "Remote + In-person";
+              })();
+              // Tone-stop names — must match MatchMeModal TONE_LABELS so the
+              // banner chip says exactly what the user picked.
+              const toneStops: Record<"anger" | "comedy" | "subversion" | "hope" | "energy", { icon: string; label: string; stops: string[] }> = {
+                anger:      { icon: "🔥", label: "Confrontational", stops: ["None", "Low", "Bold", "High"] },
+                comedy:     { icon: "😄", label: "Humor",           stops: ["None", "Light", "Irreverent", "Full mockery"] },
+                subversion: { icon: "🎭", label: "Subversive",      stops: ["None", "Mild", "Edgy", "Radical"] },
+                hope:       { icon: "🌅", label: "Hopeful",         stops: ["None", "Some", "Uplifting", "Full hope"] },
+                energy:     { icon: "⚡", label: "Motivation",      stops: ["Low",  "Mild",  "Engaged", "On fire"] },
+              };
+              // Show all tone dims that aren't fully off (> 0).
+              const toneChips = (Object.keys(toneStops) as Array<keyof typeof toneStops>)
+                .filter((k) => (matchPrefs.tone[k] ?? 1) > 0)
+                .map((k) => {
+                  const v = Math.max(0, Math.min(3, matchPrefs.tone[k] ?? 1));
+                  return { icon: toneStops[k].icon, label: toneStops[k].label, value: toneStops[k].stops[v] };
+                });
+              const groupCount = matchPrefs.vulnerableGroups?.length ?? 0;
+              return (
+                <div className="mb-4 flex flex-col gap-2 rounded-lg border border-[#fd8e33] bg-[#fd8e33]/5 px-4 py-2.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-['Poppins',sans-serif] text-sm text-gray-700">
+                      ✨ <strong className="text-[#23297e]">Matched for you.</strong>{" "}
+                      Showing <strong className="text-[#23297e]">{displayedCards.length}</strong> {displayedCards.length === 1 ? "action" : "actions"}.
+                    </p>
+                    {/* Chip strip — wraps on narrow viewports. */}
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-gray-600 font-['Poppins',sans-serif]">
+                      {timeLabel && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5">
+                          ⏱ {timeLabel}
+                        </span>
+                      )}
+                      <span className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5">
+                        🗺 {settingLabel}
+                      </span>
+                      {toneChips.map((c) => (
+                        <span key={c.icon} className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5">
+                          {c.icon} {c.label}: {c.value}
+                        </span>
+                      ))}
+                      {matchPrefs.state && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5">
+                          📍 {matchPrefs.state}
+                        </span>
+                      )}
+                      {groupCount > 0 && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5">
+                          🤝 Amplifies {groupCount} {groupCount === 1 ? "group" : "groups"}
+                        </span>
+                      )}
+                      {matchPrefs.focusDonations && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5">
+                          💵 Donation focus
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 self-start">
+                    <button
+                      onClick={() => setMatchOpen(true)}
+                      className="font-['Poppins',sans-serif] text-xs font-semibold text-[#23297e] hover:underline"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => { setMatchPrefs(null); clearPreferences(); }}
+                      className="font-['Poppins',sans-serif] text-xs font-semibold text-gray-600 hover:text-[#fd8e33]"
+                    >
+                      Clear
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {loading ? (
               <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">

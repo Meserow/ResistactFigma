@@ -61,9 +61,9 @@ const TIME_STOPS: { key: TimeBucket; title: string; desc: string }[] = [
 ];
 
 const TIME_COMMITMENT_MAP: Record<TimeBucket, string> = {
-  "5min":     "< 1 hour",
+  "5min":     "< 5 minutes",
   "10min":    "5–10 minutes",
-  "30min":    "< 1 hour",
+  "30min":    "~30 minutes",
   "1hr":      "1 hour",
   "fewHours": "1–3 hours",
   "fullDay":  "Full day",

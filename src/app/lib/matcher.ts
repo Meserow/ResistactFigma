@@ -117,7 +117,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   state: null,
   includeAnywhere: false,
   vulnerableGroups: [],
-  focusDonations: true,
+  focusDonations: false,
   tone: { anger: 1, comedy: 1, subversion: 1, hope: 1, energy: 1 },
 };
 
@@ -281,8 +281,10 @@ export function timeBucketFor(card: ActionCardData): TimeBucket {
     // "5–10 min" / "5-10 min" / "10 min" → 10min (must come before the
     // generic "5" / "30" rules below or they'd misclassify).
     if (t.includes("5–10") || t.includes("5-10") || t.includes("10 min") || t.includes("10min")) return "10min";
-    if (t.includes("30") || t.includes("min")) return "30min";
+    // "< 5 min" / "5 min" / "quick" → 5min (must come before "min" catch-all
+    // or "< 5 minutes" would be misread as 30min).
     if (t.includes("5") || t.includes("quick")) return "5min";
+    if (t.includes("30") || t.includes("min")) return "30min";
   }
   if (card.quickAction) return "5min";
   // Fall back to category default so the time slider works for seed cards.
@@ -703,7 +705,7 @@ function normalizePreferences(parsed: any): Preferences {
     state: typeof parsed.state === "string" ? parsed.state : null,
     includeAnywhere: parsed.includeAnywhere === true,
     vulnerableGroups: Array.isArray(parsed.vulnerableGroups) ? parsed.vulnerableGroups : [],
-    focusDonations: parsed.focusDonations === true,
+    focusDonations: false, // never default-on; user must explicitly opt in each session
     tone: {
       anger: typeof parsed.tone?.anger === "number" ? parsed.tone.anger : 1,
       comedy: typeof parsed.tone?.comedy === "number" ? parsed.tone.comedy : 1,
