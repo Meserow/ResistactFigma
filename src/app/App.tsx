@@ -18,6 +18,7 @@ import { LoggedInHero } from "./components/LoggedInHero";
 import { MatchMeModal } from "./components/MatchMeModal";
 import { ChangelogModal } from "./components/ChangelogModal";
 import { TierModal } from "./components/TierModal";
+import { CelebrationModal } from "./components/CelebrationModal";
 import { FeedbackModal } from "./components/FeedbackModal";
 import { SmacksPage, STATIC_SMACKS, type ReceiptCard } from "./components/SmacksPage";
 import { rankCards, score as scoreCard, loadPreferences, clearPreferences, applyMatcherConfig, fetchUserPreferences, pushUserPreferences, savePreferences, type Preferences, type UserContext } from "./lib/matcher";
@@ -269,6 +270,10 @@ export default function App() {
   const [actOpen, setActOpen] = useState(false);
   const [changelogOpen, setChangelogOpen] = useState(false);
   const [tierModalOpen, setTierModalOpen] = useState(false);
+  // Celebration modal fires on a positive "I did this" — carries the before /
+  // after action totals so the modal can animate the count-up and detect
+  // tier-up. Null = no celebration showing.
+  const [celebration, setCelebration] = useState<{ prev: number; next: number } | null>(null);
   const [askOpen, setAskOpen] = useState(false);
   const [matchOpen, setMatchOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -953,6 +958,12 @@ export default function App() {
     const alreadyCompleted = completedCards.has(id);
     const delta = alreadyCompleted ? -1 : 1;
 
+    // Snapshot the user's pre-toggle action total so the celebration modal
+    // can show the before → after climb. We prefer the server-known total
+    // when signed in; otherwise fall back to the local optimistic set.
+    const prevTotal =
+      myCompletions?.total ?? completedCards.size;
+
     setCompletedCards((prev) => {
       const next = new Set(prev);
       alreadyCompleted ? next.delete(id) : next.add(id);
@@ -964,6 +975,13 @@ export default function App() {
         ? { ...c, completions: Math.max(0, (c.completions ?? 0) + delta) }
         : c)
     );
+
+    // Fireworks for a fresh completion — never on un-do. Use the optimistic
+    // bump (prevTotal + 1) so the modal pops immediately; the server-side
+    // count syncs back in the background and overrides if it disagrees.
+    if (delta === 1) {
+      setCelebration({ prev: prevTotal, next: prevTotal + 1 });
+    }
 
     try {
       // Use the user's access token when signed in so the server can record
@@ -1507,6 +1525,23 @@ export default function App() {
           {changelogOpen && <ChangelogModal onClose={() => setChangelogOpen(false)} />}
           {tierModalOpen && <TierModal actionCount={myCompletions?.total ?? null} byCategory={myCompletions?.byCategory} onClose={() => setTierModalOpen(false)} />}
         </>
+      )}
+
+      {/* Celebration modal — fires for ALL users on a fresh "I did this".
+          Rendered outside the admin block so anon + approved users both see
+          fireworks. */}
+      {celebration && (
+        <CelebrationModal
+          prevCount={celebration.prev}
+          newCount={celebration.next}
+          onClose={() => setCelebration(null)}
+          onFindMore={() => {
+            setCelebration(null);
+            // Smooth-scroll back to the top of the action grid so "Find
+            // another action" lands on the live feed.
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+        />
       )}
     </div>
   );

@@ -64,6 +64,33 @@ function BlueSkyIcon() {
   );
 }
 
+/**
+ * Open a share URL in a new tab, reliably focusing the new tab.
+ *
+ * Why all this ceremony instead of a plain `window.open(url, "_blank")`:
+ *   1. Previously the Facebook share opened a *popup window* (width/height
+ *      features) while every other share opened a *tab*. Mixing window types
+ *      confuses OS window stacking — after a Facebook popup is created, a
+ *      subsequent Bluesky/Threads tab opens BEHIND the still-floating FB
+ *      popup. Hence the user-reported "click Bluesky, Facebook stays on top"
+ *      bug.
+ *   2. Using a stable per-platform window name (e.g. "resistact-share-bluesky")
+ *      means a second click on the same platform re-uses the same tab instead
+ *      of spawning duplicates.
+ *   3. We deliberately omit `noopener,noreferrer` so we get the window
+ *      reference back and can `.focus()` it. To still close the opener leak,
+ *      we null `win.opener` ourselves. (`rel="noopener noreferrer"` only
+ *      applies to anchor elements.)
+ */
+function openShare(url: string, platformId: string) {
+  const name = `resistact-share-${platformId}`;
+  const win = window.open(url, name);
+  if (win) {
+    try { win.opener = null; } catch { /* cross-origin, already detached */ }
+    try { win.focus(); } catch { /* popup blocker / browser-quirky */ }
+  }
+}
+
 function buildPlatforms(siteUrl: string) {
   // Always share the production URL so Facebook/Twitter can scrape og:image,
   // even when testing on localhost.
@@ -74,26 +101,27 @@ function buildPlatforms(siteUrl: string) {
   const enc = (s: string) => encodeURIComponent(s);
   return [
     { id: "facebook", label: "Facebook", bg: "#1877F2", fg: "#fff", icon: <FacebookIcon />, action: () => {
-      // Always send users straight to the Facebook share dialog. Copy the
-      // caption + link to the clipboard first so they can ⌘V/long-press paste
-      // into the FB composer (FB's new Create-post flow doesn't auto-fill the
-      // body, but once you paste the URL it renders the og:image preview).
-      // Note: iOS users with the FB app installed may see an FB-app login
-      // screen if Universal Links intercepts the sharer URL — fall back to
-      // mobile web via m.facebook.com which isn't an FB Universal Link target.
+      // Copy the caption + link to the clipboard first so the user can paste
+      // into Facebook's composer (FB's new Create-post flow doesn't auto-fill
+      // the body, but once you paste the URL it renders the og:image preview).
+      // iOS users with the FB app installed may see an FB-app login screen if
+      // Universal Links intercepts the sharer URL — fall back to mobile web
+      // via m.facebook.com which isn't an FB Universal Link target.
+      // Opens as a regular tab (not a popup window) so it doesn't stay on top
+      // of subsequent share tabs.
       try { navigator.clipboard?.writeText(shareText); } catch {}
       const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
       const host = isIOS ? "m.facebook.com" : "www.facebook.com";
-      window.open(`https://${host}/sharer/sharer.php?u=${enc(shareUrl)}`, "_blank", "noopener,noreferrer,width=600,height=600");
+      openShare(`https://${host}/sharer/sharer.php?u=${enc(shareUrl)}`, "facebook");
     }, copyNote: "Caption + link copied. Paste it into the Facebook post — the ResistAct preview will appear." },
-    { id: "threads", label: "Threads", bg: "#000", fg: "#fff", icon: <ThreadsIcon />, action: () => window.open(`https://www.threads.net/intent/post?text=${enc(shareText)}`, "_blank") },
-    { id: "bluesky", label: "Bluesky", bg: "#0085FF", fg: "#fff", icon: <BlueSkyIcon />, action: () => window.open(`https://bsky.app/intent/compose?text=${enc(shareText)}`, "_blank") },
-    { id: "whatsapp", label: "WhatsApp", bg: "#25D366", fg: "#fff", icon: <WhatsAppIcon />, action: () => window.open(`https://wa.me/?text=${enc(shareText)}`, "_blank") },
+    { id: "threads",  label: "Threads",     bg: "#000", fg: "#fff", icon: <ThreadsIcon />,  action: () => openShare(`https://www.threads.net/intent/post?text=${enc(shareText)}`, "threads") },
+    { id: "bluesky",  label: "Bluesky",     bg: "#0085FF", fg: "#fff", icon: <BlueSkyIcon />, action: () => openShare(`https://bsky.app/intent/compose?text=${enc(shareText)}`, "bluesky") },
+    { id: "whatsapp", label: "WhatsApp",    bg: "#25D366", fg: "#fff", icon: <WhatsAppIcon />, action: () => openShare(`https://wa.me/?text=${enc(shareText)}`, "whatsapp") },
     { id: "instagram", label: "Instagram", bg: "linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)", fg: "#fff", icon: <InstagramIcon />, copyText: shareText, copyNote: "Text copied — paste it into Instagram!" },
     { id: "tiktok", label: "TikTok", bg: "#010101", fg: "#fff", icon: <TikTokIcon />, copyText: shareText, copyNote: "Text copied — paste it into TikTok!" },
-    { id: "x", label: "X / Twitter", bg: "#000", fg: "#fff", icon: <XIcon />, action: () => window.open(`https://twitter.com/intent/tweet?text=${enc(shareText)}`, "_blank") },
+    { id: "x",        label: "X / Twitter", bg: "#000", fg: "#fff", icon: <XIcon />, action: () => openShare(`https://twitter.com/intent/tweet?text=${enc(shareText)}`, "x") },
     { id: "sms", label: "SMS", bg: "#34C759", fg: "#fff", icon: <MessageSquare className="w-5 h-5" />, action: () => { window.location.href = `sms:?body=${enc(shareText)}`; } },
-    { id: "email-app", label: "Email App", bg: "#6B7280", fg: "#fff", icon: <Mail className="w-5 h-5" />, action: () => window.open(`mailto:?subject=${enc("Actions you can take today — ResistAct")}&body=${enc(shareText)}`, "_blank") },
+    { id: "email-app", label: "Email App", bg: "#6B7280", fg: "#fff", icon: <Mail className="w-5 h-5" />, action: () => openShare(`mailto:?subject=${enc("Actions you can take today — ResistAct")}&body=${enc(shareText)}`, "email") },
     { id: "copy", label: "Copy Link", bg: "#F3F4F6", fg: "#111827", icon: <Link className="w-5 h-5" />, copyText: shareUrl, copyNote: "Link copied!" },
   ];
 }

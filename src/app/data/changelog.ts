@@ -16,6 +16,75 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.7.0",
+    date: "2026-05-16",
+    title: "Faster loading, Reply-on-Facts, Smacks intro, RAC + Etsy cards, and a 5–10 min time stop",
+    sections: [
+      {
+        heading: "Fireworks when you hit \"I did this\"",
+        items: [
+          "Every fresh action completion now triggers a celebration modal with animated fireworks, your new action total, and the tier you're climbing toward.",
+          "Tier-up moments (Spark → Ember, Ember → Flame, etc.) get a louder \"Welcome to ___\" treatment with an extra-bouncy badge animation.",
+          "Distance to the next tier is framed in human time: \"1 more,\" \"one a day this week,\" \"about a month at one a day\" — instead of just a raw number.",
+          "Un-doing a completion does NOT retrigger fireworks. Auto-dismisses after 8 seconds; Esc / backdrop / Close button all dismiss earlier.",
+        ],
+      },
+      {
+        heading: "Faster loading",
+        items: [
+          "First-page action cards are now cached locally — returning visitors see ~100 cards on first paint instead of waiting for the server round-trip.",
+          "First-time visitors now see skeleton placeholders while the live cards load, instead of a single lonely fallback card.",
+          "The Smacks tab no longer ships a duplicate search bar — search lives in the top nav only.",
+        ],
+      },
+      {
+        heading: "Reply on The Facts — share as a comment",
+        items: [
+          "New Reply button on every fact card opens a modal with three pre-formatted comment versions you can paste onto someone else's social-media post.",
+          "Short (X / Bluesky), Conversational (Threads / LinkedIn / Reddit), and With receipts (Instagram / Facebook / long-form) — each shows a live character count.",
+          "One-click copy for each version, plus a Copy link button for just the source URL. The modal does not post anywhere — you paste it yourself.",
+        ],
+      },
+      {
+        heading: "The Smacks tab — sharper intro",
+        items: [
+          "New intro panel at the top of The Smacks explains what a Smack is and why we use them — cartoon-villain administration, cartoon-simple responses.",
+          "Location and Category filters removed from The Smacks tab — they only ever applied to action cards. Tag chips inside the page do the real filtering.",
+        ],
+      },
+      {
+        heading: "Quick time stop — 5–10 minutes",
+        items: [
+          "Matcher slider gains a new \"A few minutes — 5–10 min\" stop between Quick wins and Light touch.",
+          "Add an Action and Edit Card pickers get the matching stop so planners can mark a card as 5–10 minutes.",
+          "Existing petition cards have been bulk-relabeled to 5–10 minutes (and the legacy quickAction shortcut stripped) so the matcher classifies them correctly.",
+        ],
+      },
+      {
+        heading: "New action cards",
+        items: [
+          "7 new email-campaign cards from the Religious Action Center of Reform Judaism: Environmental Justice for All Act, FAMILY Act paid leave, gun-violence package, hate-crime reporting (IRPHA), West Bank Violence Prevention Act, state LGBTQ+ protections, and H.R. 40 reparations commission.",
+          "4 new indie Etsy anti-Trump merch cards under Irreverence: a \"Big Beautiful Obituary\" tee (TeeTaniumCo), a \"When It Happens\" wine label (UncorkedLabels), a \"President and Dumb Should Be Different People\" tee (TeeGeekBoutique), and a \"Go Back, We Screwed Up\" evolution tee (PrintfulApparelUS).",
+        ],
+      },
+      {
+        heading: "No more imageless cards leaking to the public",
+        items: [
+          "Any card without a header image is now automatically held in the admin review queue — the server now refuses to mark such a card as approved.",
+          "Existing cards that slipped through (mostly admin-added TikTok-tag follow cards and volunteer-org cards) have been demoted to pending until a header image is uploaded.",
+        ],
+      },
+      {
+        heading: "Small fixes",
+        items: [
+          "Matcher slider labels tightened: \"~30 min / month\" and \"~1 hr / month\" now read just \"~30 min\" and \"~1 hr\" (and \"~1 day / month\" → \"~1 day\").",
+          "Desktop tab switcher (The Acts / The Facts / The Smacks) tightened horizontally so the pill takes less space in the top bar.",
+          "Trimmed the static-fallback card list down to a single safety-net card now that the live store reliably owns the catalog.",
+        ],
+      },
+    ],
+  },
+  {
     version: "0.6.0",
     date: "2026-05-16",
     title: "How It Works overhaul, tier icon upgrades, scoreboard in My Tier, and four new Smacks",
@@ -50,7 +119,15 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         heading: "New Smacks",
         items: [
-          "Four previously missing images now wired up: ResistAct, Epstein, Project 2025, and Voting Rights.",
+          "Five previously unwired images now appear in The Smacks: ResistAct, Epstein, Project 2025, Voting Rights, and Epstein Redactions.",
+        ],
+      },
+      {
+        heading: "Action cards",
+        items: [
+          "\"Did it!\" button renamed to \"DONE!\" — same checkmark, clearer language.",
+          "Three Common Cause petition cards added: rejecting Trump's 'War First, People Last' budget, defunding ICE and Trump's ballroom, and blocking Trump's mail-voting executive order.",
+          "22 local and regional action cards added: Indivisible chapter protests, canvassing events, ICE rapid-response signups, crafting parties, and frontline organization donate links — spanning Washington, California, New York, Illinois, Delaware, Maryland, Florida, and DC.",
         ],
       },
     ],
