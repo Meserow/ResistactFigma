@@ -242,6 +242,7 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
   function closeShare() { setShareReceipt(null); setLightboxOpen(false); }
 
   const [copyImageState, setCopyImageState] = useState<"idle" | "copying" | "done">("idle");
+  const [fbInstruction, setFbInstruction] = useState<"idle" | "copied" | "downloaded">("idle");
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   async function handleCopyCaption() {
@@ -303,13 +304,25 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
   }
 
   async function handleFacebookShare(r: ReceiptCard) {
-    await handleDownload(r);
+    // Open Facebook synchronously before any await (popup blocker rule).
     window.open("https://www.facebook.com/", "_blank");
+    // Copy image to clipboard so the user can paste directly into a FB post.
+    try {
+      const blob = await fetchImageBlob(r.imageUrl);
+      await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+      setFbInstruction("copied");
+    } catch {
+      // Clipboard not available — fall back to downloading the file.
+      await handleDownload(r);
+      setFbInstruction("downloaded");
+    }
+    setTimeout(() => setFbInstruction("idle"), 6000);
   }
 
   async function handleInstagramShare(r: ReceiptCard) {
-    await handleDownload(r);
+    // Same pattern — open the app first, then trigger the download.
     window.open("https://www.instagram.com/", "_blank");
+    await handleDownload(r);
   }
 
   function threadsUrl(r: ReceiptCard) {
@@ -669,6 +682,18 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
                   {copyImageState === "copying" ? "Copying…" : copyImageState === "done" ? "Image copied! Paste anywhere." : "Copy image to clipboard"}
                 </button>
 
+                {/* Facebook paste instruction — appears after clicking Facebook */}
+                {fbInstruction !== "idle" && (
+                  <div className="col-span-4 flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2.5 text-[11px] text-blue-800 font-['Poppins',sans-serif] leading-snug">
+                    <span className="text-base leading-none mt-0.5">📘</span>
+                    <span>
+                      {fbInstruction === "copied"
+                        ? <><strong>Image copied!</strong> In your Facebook post, click "Photo/Video" then paste with <strong>⌘V</strong> (Mac) or <strong>Ctrl+V</strong> (PC).</>
+                        : <><strong>Image downloaded!</strong> In your Facebook post, click "Photo/Video" and upload it from your Downloads folder.</>}
+                    </span>
+                  </div>
+                )}
+
                 {/* Facebook — spot 1 */}
                 <button
                   onClick={() => handleFacebookShare(shareReceipt)}
@@ -765,7 +790,7 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
 
               <p className="font-['Poppins',sans-serif] text-[11px] text-gray-400 text-center leading-relaxed">
                 📱 On mobile, "Share image via…" sends the image directly to Instagram, WhatsApp, and more.<br/>
-                📘 Facebook and Instagram download the image first — then upload it in the app.
+                📘 Facebook copies the image to your clipboard — paste it into a new post. Instagram downloads it — upload from your camera roll.
               </p>
 
               {/* Caption — below the fold, for users who want to customise text */}
