@@ -628,9 +628,13 @@ export default function App() {
       const remote = await fetchUserPreferences(token);
       if (remote) {
         savePreferences(remote);
+        setMatchPrefs(remote);
       } else {
         const local = loadPreferences();
-        if (local) await pushUserPreferences(token, local);
+        if (local) {
+          await pushUserPreferences(token, local);
+          setMatchPrefs(local);
+        }
       }
     } catch (err) {
       console.warn("Match prefs sync failed:", err);
@@ -1124,6 +1128,15 @@ export default function App() {
     }
   }
 
+  // ── Approve all pending acts at once (admin only) ────────────────────────────
+  // Pass an explicit list of IDs to approve only the currently-visible filtered set.
+  async function handleApproveAll(ids: number[]) {
+    if (!accessToken) return;
+    for (const id of ids) {
+      await handleApproveCard(id);
+    }
+  }
+
   // ── Handle card update from EditCardModal ──
   function handleCardSaved(updated: ActionCardData) {
     setCards((prev) =>
@@ -1291,12 +1304,20 @@ export default function App() {
                 <p className="font-['Poppins',sans-serif] text-sm text-red-700">
                   ⚠️ <strong>Pending approval only</strong> — showing {visibleActsCards.length} unapproved act{visibleActsCards.length !== 1 ? "s" : ""}.
                 </p>
-                <button
-                  onClick={() => setShowPendingActsOnly(false)}
-                  className="font-['Poppins',sans-serif] text-xs font-semibold text-red-600 hover:underline shrink-0"
-                >
-                  Show all
-                </button>
+                <div className="flex items-center gap-3 shrink-0">
+                  <button
+                    onClick={() => handleApproveAll(visibleActsCards.map((c) => c.id))}
+                    className="font-['Poppins',sans-serif] text-xs font-semibold bg-green-600 hover:bg-green-700 text-white rounded-lg px-3 py-1.5 transition-colors"
+                  >
+                    ✓ Approve all {visibleActsCards.length} showing
+                  </button>
+                  <button
+                    onClick={() => setShowPendingActsOnly(false)}
+                    className="font-['Poppins',sans-serif] text-xs font-semibold text-red-600 hover:underline"
+                  >
+                    Show all
+                  </button>
+                </div>
               </div>
             )}
 

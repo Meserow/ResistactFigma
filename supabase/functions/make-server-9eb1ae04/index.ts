@@ -528,6 +528,15 @@ const SEED_CARDS = [
   { id: 1354, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Cross-Stitch a Resistance Slogan with Subversive Cross Stitch", description: "Use Subversive Cross Stitch's pattern catalog (Julie Jackson's shop has been doing this since the 2010s) to make a Trump-era cross-stitch — frame it, gift it, post the WIP. Distinct from the existing TikTok stitch/duet card — this is literal needlework, not video stitching.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Subversive Cross Stitch", authorRole: "Independent Creator", authorLink: "https://www.instagram.com/subversivecrossstitch/", targetUrl: "https://www.instagram.com/subversivecrossstitch/", topImageUrl: "https://scontent.cdninstagram.com/v/t51.2885-19/199306322_514541513021942_7756897236030600423_n.jpg?stp=dst-jpg_s100x100_tt6&_nc_cat=103&ccb=7-5&_nc_sid=bf7eb4&_nc_ohc=LqyEUHic0_gQ7kNvwHUIZNi&_nc_oc=Adpod_8XEKCikLOFo89IHj5IC2tTzXfMHQA0HiBGP5zknuB9GWDEnyd2ADBOc-D3Qsk&_nc_zt=24&_nc_ht=scontent.cdninstagram.com&_nc_ss=73689&oh=00_Af7KBs3ih9nt1fcALCR84OacWLaLeL8sWJ6VtjZDa0st6g&oe=6A0FBB20", toneOverride: { anger: 2, comedy: 3, subversion: 3, hope: 2, energy: 2 }, adminApproved: false },
   { id: 1355, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Stitch Along with Badass Cross Stitch's Anti-Trump Patterns", description: "Shannon Downey's @badasscrossstitch runs free-pattern drops + group stitch-ins targeting MAGA-era issues. Download a current pattern, finish a piece, and post it.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Badass Cross Stitch", authorRole: "Independent Creator", authorLink: "https://www.instagram.com/badasscrossstitch/", targetUrl: "https://www.instagram.com/badasscrossstitch/", topImageUrl: "https://scontent.cdninstagram.com/v/t51.2885-19/15043801_336957816688365_8365540907474223104_a.jpg?stp=dst-jpg_s100x100_tt6&_nc_cat=109&ccb=7-5&_nc_sid=bf7eb4&_nc_ohc=34iJMqqlsSgQ7kNvwFsZ_Ck&_nc_oc=AdouHfIFvB626TQQU_h-VIKMfXIo9UqAB3Z0NdDZXIO8DaEgrCy5mpsi2Mm7TpzW33c&_nc_zt=24&_nc_ht=scontent.cdninstagram.com&_nc_ss=70689&oh=00_Af6myQ9P9IwK-3HEmui9QiOoNAHzR7wnTmhdBfRoI9XDsQ&oe=6A0F92ED", toneOverride: { anger: 2, comedy: 2, subversion: 2, hope: 3, energy: 2 }, adminApproved: false },
   { id: 1356, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Make a Craftivist Collective \"Gentle Protest\" Mini-Banner", description: "The Craftivist Collective publishes \"gentle protest\" mini-banner tutorials — small, embroidered statements you leave in public space. Pick a Trump-era theme and leave one.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Craftivist Collective", authorRole: "Movement Organization", authorLink: "https://www.instagram.com/craftivist_collective/", targetUrl: "https://www.instagram.com/craftivist_collective/", topImageUrl: "https://static.cdninstagram.com/rsrc.php/v4/yD/r/R0fBIMurK8v.png", toneOverride: { anger: 1, comedy: 2, subversion: 2, hope: 3, energy: 2 }, adminApproved: false },
+
+  // ── Grassroots-Fun batch addendum (May 17, second paste): 5 net-new cards.
+  // The other 19 rows in the second paste were already in the database from
+  // the previous batch (1336–1356) — silently skipped as exact dupes.
+  { id: 1357, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Browse Dissent Pins — Including the \"Swastikar\" Tesla Pin", description: "Independent pin maker with a full catalog of Trump/MAGA-era dissent pins, including the now-famous \"Swastikar\" pin riffing on the Tesla logo. Wholesale and ACLU collabs available — browse the full collection.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Dissent Pins", authorRole: "Resistance Merch", authorLink: "https://dissentpins.com/", targetUrl: "https://dissentpins.com/collections/", topImageUrl: "https://cdn.shopify.com/s/files/1/1746/4337/files/Stand_With_Ukraine_Pin_on_denim_1200x628_2e311cf1-9d19-432d-85f8-cafbd9866161.jpg?v=1738503135", toneOverride: { anger: 2, comedy: 2, subversion: 3, hope: 2, energy: 2 }, adminApproved: false },
+  { id: 1358, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Join the Resistance Knitters Bluesky Group", description: "Active craftivist knitting group that fought during Trump 1.0 on FB and is now organizing on Bluesky — knits hats and protest objects, shares patterns, surfaces fact-based news. Plug into the community and pick a project.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Resistance Knitters", authorRole: "Independent Creator", authorLink: "https://bsky.app/profile/resistanceknitters.bsky.social", targetUrl: "https://bsky.app/profile/resistanceknitters.bsky.social", topImageUrl: "https://cdn.bsky.app/img/banner/plain/did:plc:fldpue6iblblysw6tk4eptvz/bafkreidr2rhwv7nanxglbw3fxf76l37rwopjqixbue5nuivbnzsfe4wqkq", toneOverride: { anger: 1, comedy: 2, subversion: 2, hope: 3, energy: 2 }, adminApproved: false },
+  { id: 1359, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Stitch Feline and Floss's Free Anti-ICE Cross Stitch Pattern", description: "Feline and Floss publishes free cross-stitch patterns on Ko-fi — current drop is explicitly anti-ICE/Fuck ICE. Download, stitch, frame, gift, repeat.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Feline and Floss", authorRole: "Independent Creator", authorLink: "https://ko-fi.com/felineandfloss", targetUrl: "https://ko-fi.com/felineandfloss", topImageUrl: "https://storage.ko-fi.com/cdn/generated/lyflmrusgjymi/2026-05-11_rest-973b09129414d2335f7e561b753bf0ee-v4e73jqn.jpg", toneOverride: { anger: 2, comedy: 2, subversion: 3, hope: 2, energy: 2 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1360, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Color Your Way Through Trump 2.0 with Fresh Prints' Anti-Trump Resistance Coloring Book", description: "Indie coloring book full of anti-Trump pages — calming, shareable craft for tense news days. Pages are also sold as standalone prints.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "FreshPrintsHandmade (Etsy)", authorRole: "Resistance Merch", authorLink: "https://www.etsy.com/shop/FreshPrintsHandmade", targetUrl: "https://freshprintshandmade.etsy.com", topImageUrl: "https://i.etsystatic.com/56615728/r/isla/b30f8f/74796492/isla_500x500.74796492_b2qer1xw.jpg", toneOverride: { anger: 1, comedy: 2, subversion: 2, hope: 3, energy: 2 }, adminApproved: false },
+  { id: 1361, category: "FLASH MOB", categoryColor: "#ff00d5", actionType: "In Person Group", title: "Join a \"Honk to Dump Trump\" + \"Trump ❤️ Epstein\" Banner Drop", description: "Indivisible chapters are running overpass banner drops with the \"Honk to Dump Trump\" and \"Trump ❤️ Epstein\" twin-banner format. Search your local Indivisible chapter for the next slot.", isOnline: false, boosts: 0, spotsTotal: "Unlimited", location: "National", authorName: "Indivisible", authorRole: "Movement Organization", authorLink: "https://indivisible.org/", targetUrl: "https://www.mobilize.us/indivisible/", topImageUrl: "https://mobilizeamerica.imgix.net/uploads/organization_social/Indivisible%20Protest_20220613182827829964.png?w=1200&h=628&fit=crop&bg=FFF", toneOverride: { anger: 2, comedy: 2, subversion: 3, hope: 2, energy: 3 }, adminApproved: false },
 ];
 
 // ─── Seed receipts (The Smacks) ───────────────────────────────────────────────
@@ -1065,13 +1074,13 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       console.log("Set boosts = 950 on action:1 (Spread the Word).");
     }
 
-    const orgsSeeded = await kv.get("seed:org-actions:v22");
+    const orgsSeeded = await kv.get("seed:org-actions:v23");
     if (!orgsSeeded) {
       // Mark the seed as done UP FRONT — if the request times out partway
       // through the 260-card loop, the next request still skips the loop
       // instead of dying again. The cards already written stay; missing ones
       // get filled in on the next version bump.
-      await kv.set("seed:org-actions:v22", true);
+      await kv.set("seed:org-actions:v23", true);
       let count = 0;
       for (const card of SEED_CARDS) {
         // Seed every card in SEED_CARDS (no longer skipping ids <1000).
@@ -1322,6 +1331,24 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       }
       await kv.set("migration:petitions-10min:v1", true);
       console.log(`Petitions 10-min migration: updated ${updated} cards.`);
+    }
+
+    // One-time: bulk-mark "Cancel your …" boycott cards as "5–10 minutes".
+    // They were stored as "Ongoing" but the actual cancel step is a few clicks.
+    const cancelYour10minDone = await kv.get("migration:cancel-your-10min:v1");
+    if (!cancelYour10minDone) {
+      let updated = 0;
+      for (const prefix of ["action:", "user-action:"]) {
+        for (const c of (await kv.getByPrefix(prefix)) as any[]) {
+          if (!c || typeof c !== "object" || typeof c.id !== "number") continue;
+          if (typeof c.title !== "string") continue;
+          if (!/^cancel your/i.test(c.title)) continue;
+          await kv.set(`${prefix}${c.id}`, { ...c, timeCommitment: "5–10 minutes" });
+          updated++;
+        }
+      }
+      await kv.set("migration:cancel-your-10min:v1", true);
+      console.log(`Cancel-your 10-min migration: updated ${updated} cards.`);
     }
 
     // Seed The Smacks receipts. Bump the version key whenever SEED_RECEIPTS changes.
