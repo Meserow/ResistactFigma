@@ -22,6 +22,8 @@ export interface TierDef {
   color: string;
   /** Icon / text colour rendered on top of `color`. */
   iconColor: string;
+  /** Dark-on-white safe label colour — use this for text on light backgrounds. */
+  labelColor: string;
   /** Glow / ring accent colour for higher tiers. */
   glowColor: string;
   /** One-line tagline shown in the progress popover. */
@@ -35,32 +37,32 @@ export interface TierDef {
 export const TIERS: TierDef[] = [
   {
     key: "spark",    name: "Spark",    min: 0,   max: 2,   icon: "sparkles",
-    color: "#FCD34D", iconColor: "#78350f", glowColor: "#FDE68A",
+    color: "#FCD34D", iconColor: "#78350f", labelColor: "#92400e", glowColor: "#FDE68A",
     tagline: "Just getting started", animated: false,
   },
   {
     key: "ember",    name: "Ember",    min: 3,   max: 9,   icon: "flame",
-    color: "#FB923C", iconColor: "#fff",    glowColor: "#FED7AA",
+    color: "#FB923C", iconColor: "#fff",    labelColor: "#c2410c", glowColor: "#FED7AA",
     tagline: "Building momentum", animated: false,
   },
   {
     key: "flame",    name: "Flame",    min: 10,  max: 24,  icon: "flame",
-    color: "#F97316", iconColor: "#fff",    glowColor: "#FDBA74",
+    color: "#F97316", iconColor: "#fff",    labelColor: "#c2410c", glowColor: "#FDBA74",
     tagline: "Actively resisting", animated: false,
   },
   {
     key: "blaze",    name: "Blaze",    min: 25,  max: 49,  icon: "flame",
-    color: "#EF4444", iconColor: "#fff",    glowColor: "#FCA5A5",
+    color: "#EA580C", iconColor: "#fff",    labelColor: "#9a3412", glowColor: "#FDBA74",
     tagline: "Unstoppable", animated: false,
   },
   {
     key: "wildfire", name: "Wildfire", min: 50,  max: 99,  icon: "flame",
-    color: "#DC2626", iconColor: "#fff",    glowColor: "#F87171",
+    color: "#C2410C", iconColor: "#fff",    labelColor: "#9a3412", glowColor: "#FB923C",
     tagline: "Movement builder", animated: false,
   },
   {
     key: "inferno",  name: "Inferno",  min: 100, max: null, icon: "flame",
-    color: "#991B1B", iconColor: "#fff",    glowColor: "#EF4444",
+    color: "#9A3412", iconColor: "#fff",    labelColor: "#7c2d12", glowColor: "#F97316",
     tagline: "Legendary activist", animated: true,
   },
 ];

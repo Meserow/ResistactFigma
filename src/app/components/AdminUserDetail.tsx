@@ -14,6 +14,7 @@ import { projectId } from "/utils/supabase/info";
 import type { UserApproval } from "../lib/supabase";
 import { getUserTier, TIERS } from "../lib/tiers";
 import { TierIcon } from "./TierBadge";
+import { UserAvatar } from "./UserAvatar";
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
 
@@ -132,15 +133,11 @@ export function AdminUserDetail({ userId, accessToken, onClose }: AdminUserDetai
           <>
             {/* Identity row */}
             <div className="px-5 py-4 flex items-center gap-4 border-b border-gray-100">
-              {data.user.avatar ? (
-                <img src={data.user.avatar} alt={data.user.name} className="w-14 h-14 rounded-full object-cover ring-1 ring-gray-100" />
-              ) : (
-                <div className="w-14 h-14 rounded-full bg-[#23297e]/10 flex items-center justify-center">
-                  <span className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-xl">
-                    {data.user.name.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-              )}
+              <UserAvatar
+                name={data.user.name}
+                avatar={data.user.avatar}
+                sizeClasses="w-14 h-14"
+              />
               <div className="flex-1 min-w-0">
                 <p className="font-['Poppins',sans-serif] text-sm text-gray-700 truncate">{data.user.email}</p>
                 <div className="flex items-center gap-2 mt-1 text-[11px] text-gray-500 font-['Poppins',sans-serif] flex-wrap">

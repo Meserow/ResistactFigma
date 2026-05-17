@@ -79,9 +79,12 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         heading: "New action cards",
         items: [
+          "19 new cards from the May 17 spreadsheet load — focused on ICE / detention / Iran-war response: Tesla divestment guide, NDLON's Adopt-A-School + Adopt-A-Corner (volunteers stand watch at ICE pickup spots), Bay Area rapid-response training, Seattle Federal Building Fridays, Sabey Corp ICE-lease picket (Tukwila), Indivisible Highlands honk-and-waves, De-ICE Citizens Bank national day of action, Indivisible Harlem Know-Your-Rights canvass (NYC), ICE Out For Good Greenwich canvass, NELA monthly meeting (LA), Indivisible LA Home Depot boycott, Indivisible Westside LA weekly NO WARS protest, El Refugio Stewart Detention visitation (GA), First Friends Elizabeth Detention visitation (NJ), RAICES Texas donate, NBFN Immigration Bond + Pretrial Bail funds, and NDLON Immigrant Defense Fund.",
+          "Seven rows from the same spreadsheet were skipped as exact-URL duplicates of cards already in the database.",
           "7 new email-campaign cards from the Religious Action Center of Reform Judaism: Environmental Justice for All Act, FAMILY Act paid leave, gun-violence package, hate-crime reporting (IRPHA), West Bank Violence Prevention Act, state LGBTQ+ protections, and H.R. 40 reparations commission.",
           "4 new indie Etsy anti-Trump merch cards under Irreverence: a \"Big Beautiful Obituary\" tee (TeeTaniumCo), a \"When It Happens\" wine label (UncorkedLabels), a \"President and Dumb Should Be Different People\" tee (TeeGeekBoutique), and a \"Go Back, We Screwed Up\" evolution tee (PrintfulApparelUS).",
           "22 local and regional action cards: Indivisible chapter protests, Know Your Rights canvasses, ICE rapid-response signups, crafting parties, and frontline-org donate links — spanning Washington, California, New York, Illinois, Delaware, Maryland, Florida, and DC. All pending admin image review before going public.",
+          "24 more action cards from Mobilize and 50501: national online actions (War Powers Resolution letter, 50501 virtual hub, Indivisible ICE petitions), local protests and banner drops in Beverly MA, Joplin MO, Fort Myers FL, Portland OR, Vancouver WA, Tacoma WA, Palo Alto CA, and Seattle neighborhoods, plus NDLON Adopt-A-School, El Refugio volunteering in Georgia, Mijente's #NoTechForIce campaign, Fremont CA rapid-response training, and the Let's Get Free! DC march on July 9.",
         ],
       },
       {

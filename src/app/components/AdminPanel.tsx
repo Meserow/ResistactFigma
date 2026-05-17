@@ -3,6 +3,7 @@ import { X, CheckCircle2, XCircle, Clock, Users, ShieldCheck, Loader2, RefreshCw
 import { CardDetailsModal } from "./CardDetailsModal";
 import { EditCardModal } from "./EditCardModal";
 import { AdminUserDetail } from "./AdminUserDetail";
+import { UserAvatar } from "./UserAvatar";
 import type { ActionCardData } from "./ActionCard";
 import type { LucideIcon } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
@@ -770,17 +771,11 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
                             className="w-full text-left flex items-start gap-3 group"
                             aria-label={`Open dashboard for ${user.name}`}
                           >
-                            {/* Avatar */}
+                            {/* Avatar — UserAvatar gracefully swaps to the
+                                initial-letter bubble when the image URL fails
+                                (Google avatar URLs rotate and 403 sometimes). */}
                             <div className="shrink-0">
-                              {user.avatar ? (
-                                <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover ring-1 ring-gray-100" />
-                              ) : (
-                                <div className="w-10 h-10 rounded-full bg-[#23297e]/10 flex items-center justify-center">
-                                  <span className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-sm">
-                                    {user.name.charAt(0).toUpperCase()}
-                                  </span>
-                                </div>
-                              )}
+                              <UserAvatar name={user.name} avatar={user.avatar} />
                             </div>
 
                             {/* Info */}
