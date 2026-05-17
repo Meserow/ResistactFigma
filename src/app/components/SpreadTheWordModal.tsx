@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
+import { analytics } from "../lib/analytics";
 import { X, Flame, Send, Check, Loader2, AlertCircle, Link, Mail, MessageSquare } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
 
@@ -261,6 +262,10 @@ export function SpreadTheWordModal({ onClose }: { onClose: () => void }) {
             <button
               key={p.id}
               onClick={() => {
+                // Analytics fires regardless of which branch handles the click
+                // (some platforms copy text to clipboard, some open a tab) so
+                // every share button is counted uniformly by platform `method`.
+                analytics.shareClicked(p.id, "spread_the_word");
                 if ("copyText" in p && p.copyText) {
                   navigator.clipboard.writeText(p.copyText).catch(() => {});
                   showToast((p as { copyNote: string }).copyNote);
