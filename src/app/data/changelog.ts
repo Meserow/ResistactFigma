@@ -50,7 +50,14 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         heading: "New Smacks",
         items: [
-          "Four previously missing images now wired up: ResistAct, Epstein, Project 2025, and Voting Rights.",
+          "Five previously unwired images now appear in The Smacks: ResistAct, Epstein, Project 2025, Voting Rights, and Epstein Redactions.",
+        ],
+      },
+      {
+        heading: "Action cards",
+        items: [
+          "\"Did it!\" button renamed to \"DONE!\" — same checkmark, clearer language.",
+          "Three Common Cause petition cards added: rejecting Trump's 'War First, People Last' budget, defunding ICE and Trump's ballroom, and blocking Trump's mail-voting executive order.",
         ],
       },
     ],
