@@ -16,6 +16,36 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.0.2",
+    date: "2026-05-17",
+    title: "Google Analytics 4 wired in — privacy-respecting, event-tracked",
+    sections: [
+      {
+        heading: "Analytics live in production",
+        items: [
+          "Google Analytics 4 (G-7QS8YBZZXY) now ships with every page. Gtag loads asynchronously after first paint, so there's no performance cost up front.",
+          "Privacy posture: IPs are anonymized before storage, Google Signals (cross-device ad tracking) is disabled, ad-personalization signals are off, and visitors with browser-level Do-Not-Track are skipped entirely — gtag doesn't even load for them.",
+          "If you see this version badge in the bottom-left, the deploy is live.",
+        ],
+      },
+      {
+        heading: "Events being tracked beyond page views",
+        items: [
+          "action_completed — fires when a user marks an action as DONE. Carries the card ID and category (BOYCOTT / PETITION / PROTEST / etc.) so we can see which categories drive engagement.",
+          "share — fires on every share-button click across The Smacks (11 destinations: native share, copy-image, Facebook, Threads, Bluesky, Instagram, Pinterest, Reddit, Tumblr, X, download) AND across the Spread-the-Word modal. Each event carries a method dimension so per-platform share counts are visible.",
+          "match_set — fires when a user finishes the Match wizard and applies preferences. Captures the time bucket and all five tone dimensions, so we can see which configurations users actually pick.",
+        ],
+      },
+      {
+        heading: "Why it's a hardcoded ID instead of an env var",
+        items: [
+          "GA4 Measurement IDs are public — Google embeds them in every page's HTML the moment gtag loads, so there's no security difference between committing the ID and not committing it. Hardcoding the fallback means production picks it up automatically without needing the build environment to have .env configured.",
+          "An env var still wins over the fallback when set — handy if we add separate staging vs. production GA properties later.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.0.1",
     date: "2026-05-17",
     title: "Privacy-first Google Analytics, email consent at signup, per-platform share tracking",
