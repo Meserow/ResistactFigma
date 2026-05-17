@@ -16,6 +16,57 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.0.0",
+    date: "2026-05-17",
+    title: "🎉 ResistAct 1.0 — production launch. Smaller-faster Smacks, smarter match banner, 36 fresh cards, and the catalog crosses 1,373.",
+    sections: [
+      {
+        heading: "🚀 1.0 — out of beta",
+        items: [
+          "ResistAct is officially production. Everything below v1.0 was the building phase — this is the version we're standing behind as our first stable release. Performance, security, and admin tooling are all hardened; the catalog crossed 1,373 hand-curated action cards.",
+        ],
+      },
+      {
+        heading: "Faster, lighter Smacks",
+        items: [
+          "Image audit: every Smack PNG now has a WebP sibling generated at 82% quality. Browsers automatically load WebP via <picture>, so The Smacks tab is 80–90% lighter on first paint — roughly 47 MB of bandwidth saved per visitor. Originals stay on disk as fallback.",
+          "Sharing routes through the WebP too. Native share, Copy-for-Facebook, and Save-image-via all upload ~300–450 KB files instead of 2–3 MB PNGs. Social uploads finish in a heartbeat.",
+          "New \"Download high-res (for print)\" button on the share modal — explicit one-click access to the original PNG when you actually want the lossless full-size file (framing, printing, archiving). Other share actions stay on the WebP path.",
+          "Senate added to the Smacks library (the existing WebP sibling means it loads at 253 KB, not 2.2 MB).",
+        ],
+      },
+      {
+        heading: "Match-for-Me banner — now shows your settings",
+        items: [
+          "When Match Mode is active, the orange banner at the top of the feed now reads \"Matched for you. Showing N actions.\" — the live count of cards currently passing your filters.",
+          "Underneath the headline, a chip strip surfaces every preference you set: ⏱ time bucket, 🔥 confrontational level, 😄 humor level, 🎭 subversive level, 🌅 hopeful level, ⚡ motivation, 📍 state, 🤝 amplified-group count, 💵 donation focus. Tone dimensions left at the default are omitted so the strip stays short.",
+          "Edit / Clear buttons stay anchored on the right. Banner stacks vertically on mobile.",
+        ],
+      },
+      {
+        heading: "New action cards (36 since v0.9)",
+        items: [
+          "21 grassroots-fun batch 1: 13 indie Etsy items (candles, pins, stickers, magnets, tees) — Smells Like F*ck Trump candle, Light Me When He's Dead, MeloraTShirts Big Beautiful Obituary, Let's Go Blood Clot stickers, 3D-printed FUCK TRUMP pin, 86 47 pin, Grumpy Cat First-Of-All pin, Epstein Files pin, RESIST Tesla T decal, Elon-was-crazy magnet, Peace President My Ass candle, Worst President Since Trump pin, Tired Democrat Activist sticker. Plus 5 content-creator boosts (Randy Rainbow, Secret Handshake game, Songs for Liberation, TACO meme, Hamburg Trump opera) and 3 craftivism cards (Subversive Cross Stitch, Badass Cross Stitch, Craftivist Collective).",
+          "5 grassroots-fun batch 2 addendum: Dissent Pins full collection (incl. Swastikar), Resistance Knitters on Bluesky, Feline & Floss free anti-ICE cross-stitch pattern, Fresh Prints anti-Trump resistance coloring book, Indivisible \"Honk to Dump Trump / Trump ❤️ Epstein\" overpass banner drops.",
+          "12 grassroots-fun batch 3: \"Unpaid Protester Hating For Free\" pin, Crows Against Kings pin, Suburban Housewives Against Trump buttons, 8647 Floral pin, four Shannon Downey/Badass Cross Stitch tutorials (Abolish ICE pin, anti-Trump voodoo doll, Joyful Menace Society, Yay! flag), Subversive Cross Stitch No Kings PDF, Tom Morello at NYC anti-ICE, This Hour Has 22 Minutes Trump sketch, Iranian embassy AI memes via CNN.",
+          "Image scraping pipeline: Etsy product photos via Chrome MCP; LinkTree and Ko-fi OG via curl; TikTok and Instagram via the microlink third-party preview service (with the known caveat that TikTok/IG CDN URLs carry signed expirations — fallbacks render gracefully when they age out).",
+        ],
+      },
+      {
+        heading: "Avatar fallback fix",
+        items: [
+          "New shared UserAvatar component swaps to an initial-letter circle when the avatar URL fails to load — Google profile pictures rotate URLs aggressively and were rendering as Chrome's torn-paper broken-image icon. Also adds referrer-policy=\"no-referrer\" which fixes the most common cause (Google 403s on unexpected referrer headers) before the fallback even fires. Applied to the Admin Panel user list, the per-user detail drawer, and the top-nav profile button.",
+        ],
+      },
+      {
+        heading: "Carry-over from 0.9.0 — already shipped",
+        items: [
+          "Everything in 0.9.0 (Approve All, site-updating banner, auto-shared Smacks, My Tier Dashboard overhaul, tier color ramp, Facts hero intro, time-commitment badges, category dedup, new Smacks, 24 action cards) and 0.8.0 (admin user dashboards, full-screen fireworks, XSS-safe URLs, Push-back-on-Facts, faster loading) is in 1.0 as well. See the entries below for details.",
+        ],
+      },
+    ],
+  },
+  {
     version: "0.9.0",
     date: "2026-05-17",
     title: "Site-updating banner, Approve All, auto-shared Smacks, My Tier Dashboard overhaul, and tier color ramp",
