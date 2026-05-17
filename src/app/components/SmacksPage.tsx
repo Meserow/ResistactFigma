@@ -181,6 +181,13 @@ export const STATIC_SMACKS: ReceiptCard[] = [
     imageUrl: "/Smacks/epsteinredactions.png",
     adminApproved: true,
   },
+  {
+    id: 5026,
+    title: "Gas Prices",
+    tags: ["Economy", "Trump", "MAGA"],
+    imageUrl: "/Smacks/gasprices.png",
+    adminApproved: true,
+  },
 ];
 
 export interface ReceiptCard {
