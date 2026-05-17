@@ -18,15 +18,22 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     version: "0.7.0",
     date: "2026-05-16",
-    title: "Faster loading, Reply-on-Facts, Smacks intro, RAC + Etsy cards, and a 5–10 min time stop",
+    title: "Faster loading, Push-back-on-Facts, Smacks intro, RAC + Etsy cards, and a 5–10 min time stop",
     sections: [
       {
         heading: "Fireworks when you hit \"I did this\"",
         items: [
-          "Every fresh action completion now triggers a celebration modal with animated fireworks, your new action total, and the tier you're climbing toward.",
-          "Tier-up moments (Spark → Ember, Ember → Flame, etc.) get a louder \"Welcome to ___\" treatment with an extra-bouncy badge animation.",
+          "Every fresh action completion triggers a viewport-wide fireworks explosion — six burst origins, 80 confetti pieces, and three expanding shockwave rings that bleed past the modal edges.",
+          "Tier-up moments (Spark → Ember, Ember → Flame, etc.) get an entirely different, dramatically bigger show: three full waves of bursts over ~5 seconds (14 origins, 450+ particles), 450 confetti pieces including star shapes, nine shockwave rings in two volleys, three rapid full-screen color pulses in the new tier's color, and particles fly nearly twice as far. Lasts 5+ seconds — unmistakably different from a regular completion.",
           "Distance to the next tier is framed in human time: \"1 more,\" \"one a day this week,\" \"about a month at one a day\" — instead of just a raw number.",
-          "Un-doing a completion does NOT retrigger fireworks. Auto-dismisses after 8 seconds; Esc / backdrop / Close button all dismiss earlier.",
+          "Un-doing a completion does NOT retrigger fireworks. Esc / backdrop / Close button all dismiss earlier.",
+        ],
+      },
+      {
+        heading: "Share-button focus fix (Spread the Word)",
+        items: [
+          "Fixed a bug where clicking Bluesky / Threads / X on the Spread-the-Word modal could leave Facebook on top — because the Facebook share opened a popup window while the others opened tabs, and the OS kept the FB popup above subsequent tabs.",
+          "All share buttons now open as regular tabs with a stable per-platform window name, so re-clicking the same platform reuses its tab instead of stacking duplicates, and the newly-clicked tab gets focused reliably.",
         ],
       },
       {
@@ -38,9 +45,9 @@ export const CHANGELOG: ChangelogEntry[] = [
         ],
       },
       {
-        heading: "Reply on The Facts — share as a comment",
+        heading: "Push back on The Facts — pre-written comments to paste",
         items: [
-          "New Reply button on every fact card opens a modal with three pre-formatted comment versions you can paste onto someone else's social-media post.",
+          "New Push back button on every fact card opens a modal with three pre-formatted comment versions you can paste onto someone else's social-media post. (Earlier draft labeled this \"Reply\" — replaced because the click prepares ammo for elsewhere, not a reply on ResistAct.)",
           "Short (X / Bluesky), Conversational (Threads / LinkedIn / Reddit), and With receipts (Instagram / Facebook / long-form) — each shows a live character count.",
           "One-click copy for each version, plus a Copy link button for just the source URL. The modal does not post anywhere — you paste it yourself.",
         ],
@@ -65,6 +72,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         items: [
           "7 new email-campaign cards from the Religious Action Center of Reform Judaism: Environmental Justice for All Act, FAMILY Act paid leave, gun-violence package, hate-crime reporting (IRPHA), West Bank Violence Prevention Act, state LGBTQ+ protections, and H.R. 40 reparations commission.",
           "4 new indie Etsy anti-Trump merch cards under Irreverence: a \"Big Beautiful Obituary\" tee (TeeTaniumCo), a \"When It Happens\" wine label (UncorkedLabels), a \"President and Dumb Should Be Different People\" tee (TeeGeekBoutique), and a \"Go Back, We Screwed Up\" evolution tee (PrintfulApparelUS).",
+          "22 local and regional action cards: Indivisible chapter protests, Know Your Rights canvasses, ICE rapid-response signups, crafting parties, and frontline-org donate links — spanning Washington, California, New York, Illinois, Delaware, Maryland, Florida, and DC. All pending admin image review before going public.",
         ],
       },
       {
@@ -75,11 +83,19 @@ export const CHANGELOG: ChangelogEntry[] = [
         ],
       },
       {
+        heading: "Tier thresholds lowered",
+        items: [
+          "All six tiers now require significantly fewer actions: Ember at 3 (was 5), Flame at 10 (was 20), Blaze at 25 (was 75), Wildfire at 50 (was 200), Inferno at 100 (was 500).",
+          "The tier ladder in the How It Works modal and the My Tier panel update automatically.",
+        ],
+      },
+      {
         heading: "Small fixes",
         items: [
           "Matcher slider labels tightened: \"~30 min / month\" and \"~1 hr / month\" now read just \"~30 min\" and \"~1 hr\" (and \"~1 day / month\" → \"~1 day\").",
-          "Desktop tab switcher (The Acts / The Facts / The Smacks) tightened horizontally so the pill takes less space in the top bar.",
+          "Desktop tab switcher (The Acts / The Facts / The Smacks) tightened horizontally so the pill takes less place in the top bar.",
           "Trimmed the static-fallback card list down to a single safety-net card now that the live store reliably owns the catalog.",
+          "Facebook Smacks share now copies the image to your clipboard instead of downloading it — paste directly into your Facebook post with ⌘V or Ctrl+V. A blue instruction banner guides you through the step. Falls back to a file download if the clipboard API is unavailable.",
         ],
       },
     ],
@@ -127,7 +143,6 @@ export const CHANGELOG: ChangelogEntry[] = [
         items: [
           "\"Did it!\" button renamed to \"DONE!\" — same checkmark, clearer language.",
           "Three Common Cause petition cards added: rejecting Trump's 'War First, People Last' budget, defunding ICE and Trump's ballroom, and blocking Trump's mail-voting executive order.",
-          "22 local and regional action cards added: Indivisible chapter protests, canvassing events, ICE rapid-response signups, crafting parties, and frontline organization donate links — spanning Washington, California, New York, Illinois, Delaware, Maryland, Florida, and DC.",
         ],
       },
     ],

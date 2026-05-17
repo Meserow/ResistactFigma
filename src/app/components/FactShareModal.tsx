@@ -95,7 +95,7 @@ export function FactShareModal({ card, color, onClose }: FactShareModalProps) {
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label="Share fact as a comment"
+      aria-label="Push back — get a pre-written comment"
     >
       <div
         className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"

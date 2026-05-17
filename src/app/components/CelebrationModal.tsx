@@ -151,14 +151,11 @@ function HeroBurst({ tierColor, glowColor }: { tierColor: string; glowColor: str
 }
 
 // ─── ExplosiveFireworks (viewport-wide, bleeds everywhere) ───────────────────
-// Renders OUTSIDE the modal so it spans the full viewport and bleeds past the
-// modal edges. Multiple shockwave bursts + a confetti storm + (for tier-up
-// moments) a brief radial flash of the tier color. Aims for "I just won the
-// playoffs" energy, not "subtle micro-interaction" energy.
-//
-// Built deliberately with vanilla CSS keyframes — no canvas-confetti dep so
-// it works whether or not the user is online and ships in the existing
-// bundle.
+// Renders OUTSIDE the modal so it spans the full viewport.
+// Regular completion: one salvo of bursts + light confetti.
+// Tier-up: THREE salvos (waves), massive confetti storm (400+ pieces), eight
+//          shockwave rings, three rapid screen-color pulses, star confetti.
+//          Aims for "I just won the championship" energy.
 function ExplosiveFireworks({
   tierColor,
   glowColor,
@@ -175,78 +172,117 @@ function ExplosiveFireworks({
     const palette = [
       "#fd8e33", "#23297e", "#FCD34D", "#EF4444",
       "#10B981", "#3B82F6", "#A855F7", "#EC4899",
+      "#F59E0B", "#06B6D4", "#FF6B6B",
       tierColor,
     ];
 
-    // Burst origins (viewport-percentage). Each burst gets ~40 particles
-    // shooting outward to a random distance up to 600px.
-    const burstOrigins = [
-      { left: "50%", top: "42%", delay: 0,    color: tierColor, count: 56 },
-      { left: "22%", top: "32%", delay: 220,  color: palette[0], count: 36 },
-      { left: "78%", top: "32%", delay: 360,  color: palette[3], count: 36 },
-      { left: "18%", top: "62%", delay: 540,  color: palette[2], count: 28 },
-      { left: "82%", top: "62%", delay: 680,  color: palette[5], count: 28 },
-      { left: "50%", top: "12%", delay: 820,  color: palette[6], count: 36 },
+    // Regular burst origins — 6 origins scattered across the viewport.
+    const regularOrigins = [
+      { left: "50%", top: "44%", delay: 0,   color: tierColor,  count: 80 },
+      { left: "20%", top: "28%", delay: 180, color: palette[0], count: 64 },
+      { left: "80%", top: "28%", delay: 320, color: palette[3], count: 64 },
+      { left: "12%", top: "58%", delay: 480, color: palette[2], count: 52 },
+      { left: "88%", top: "58%", delay: 620, color: palette[5], count: 52 },
+      { left: "50%", top: "14%", delay: 780, color: palette[1], count: 48 },
     ];
+
+    // Tier-up burst origins — 14 origins across 3 waves.
+    const tierUpOrigins = [
+      // wave 1 (0–740ms)
+      { left:"50%", top:"45%", delay:0,    color:tierColor,  count:80 },
+      { left:"18%", top:"28%", delay:200,  color:palette[0], count:52 },
+      { left:"82%", top:"28%", delay:380,  color:palette[3], count:52 },
+      { left:"12%", top:"68%", delay:560,  color:palette[2], count:44 },
+      { left:"88%", top:"68%", delay:740,  color:palette[5], count:44 },
+      // wave 2 (1700–2500ms)
+      { left:"32%", top:"18%", delay:1700, color:palette[6], count:64 },
+      { left:"68%", top:"18%", delay:1900, color:palette[7], count:64 },
+      { left:"50%", top:"75%", delay:2100, color:palette[8], count:56 },
+      { left:"8%",  top:"48%", delay:2300, color:palette[9], count:48 },
+      { left:"92%", top:"48%", delay:2500, color:palette[1], count:48 },
+      // wave 3 — grand finale (3300–3950ms)
+      { left:"50%", top:"42%", delay:3300, color:tierColor,   count:96 },
+      { left:"25%", top:"50%", delay:3550, color:palette[0],  count:68 },
+      { left:"75%", top:"50%", delay:3750, color:palette[3],  count:68 },
+      { left:"50%", top:"12%", delay:3950, color:palette[10], count:60 },
+    ];
+
+    const burstOrigins = justLeveledUp ? tierUpOrigins : regularOrigins;
+    const maxDist = justLeveledUp ? 860 : 520;
 
     const bursts = burstOrigins.map((o, bi) => ({
       ...o,
       id: bi,
+      // Launch streak — a thin bright line that streaks UP from below the
+      // viewport to the burst origin, arriving right when the explosion
+      // fires. The "rocket trail" before the boom.
+      launchFromVh: rand(45, 75),
       particles: Array.from({ length: o.count }, (_, i) => {
-        const angle    = (i / o.count) * 360 + rand(-12, 12);
-        const distance = rand(220, justLeveledUp ? 720 : 520);
+        const angle    = (i / o.count) * 360 + rand(-9, 9);
+        const distance = rand(260, maxDist);
         const tx = Math.cos((angle * Math.PI) / 180) * distance;
-        // Slight upward bias on Y — feels more like a real firework that
-        // rises and arcs, less like a uniform circle.
-        const ty = Math.sin((angle * Math.PI) / 180) * distance - rand(0, 80);
-        const size = rand(6, 14);
+        // Slight upward bias before gravity kicks in — feels like a real
+        // firework that rises slightly before arcing down.
+        const ty = Math.sin((angle * Math.PI) / 180) * distance - rand(50, 160);
+        const size = rand(justLeveledUp ? 8 : 6, justLeveledUp ? 18 : 14);
         const color = palette[Math.floor(Math.random() * palette.length)];
-        const dur = rand(1400, 2200);
-        const innerDelay = rand(0, 220);
-        const spin = (Math.random() < 0.5 ? -1 : 1) * rand(180, 720);
-        return { tx, ty, size, color, dur, innerDelay, spin, key: `${bi}-${i}` };
+        const dur = rand(justLeveledUp ? 1700 : 1400, justLeveledUp ? 2800 : 2200);
+        const innerDelay = rand(0, 300);
+        const spin = (Math.random() < 0.5 ? -1 : 1) * rand(180, 1080);
+        // ~18% of particles are "sparklers" that twinkle on/off as they fall.
+        const sparkler = Math.random() < 0.18;
+        return { tx, ty, size, color, dur, innerDelay, spin, sparkler, key: `${bi}-${i}` };
       }),
     }));
 
     // Confetti rain — falls from above the viewport, drifts sideways. More
     // pieces (and longer fall) on tier-up.
-    const confettiCount = justLeveledUp ? 140 : 80;
+    const confettiCount = justLeveledUp ? 450 : 80;
+    const shapes = justLeveledUp
+      ? ["circle","square","bar","star","star","star","circle","square"]
+      : ["circle","square","bar"];
     const confetti = Array.from({ length: confettiCount }, (_, i) => {
       const left  = rand(0, 100);              // viewport %
-      const drift = rand(-180, 180);           // horizontal drift in px
-      const dur   = rand(2200, 3800);
-      const delay = rand(0, 1200);
-      const size  = rand(6, 12);
+      const drift = rand(-260, 260);           // horizontal drift in px
+      const dur   = rand(justLeveledUp ? 2800 : 2200, justLeveledUp ? 6500 : 3800);
+      const delay = rand(0, justLeveledUp ? 4500 : 1200);
+      const size  = rand(justLeveledUp ? 8 : 6, justLeveledUp ? 16 : 12);
       const color = palette[Math.floor(Math.random() * palette.length)];
       const spin  = (Math.random() < 0.5 ? -1 : 1) * rand(360, 1080);
-      const shape = ["circle", "square", "bar"][Math.floor(Math.random() * 3)];
+      const shape = shapes[Math.floor(Math.random() * shapes.length)];
       return { left, drift, dur, delay, size, color, spin, shape, key: i };
     });
 
     return { bursts, confetti };
   }, [tierColor, justLeveledUp]);
 
+  // Shockwave delays — 9 rings for tier-up, 3 for regular.
+  const shockwaveDelays = justLeveledUp
+    ? [0, 160, 320, 480, 1750, 1920, 2090, 3380, 3560]
+    : [0, 200, 400];
+
   return (
     <div className="fixed inset-0 z-[125] pointer-events-none overflow-hidden">
-      {/* Tier-up only: a brief radial flash of the tier color across the
-          whole viewport. Lasts ~600ms, then fades. */}
-      {justLeveledUp && (
+      {/* Tier-up only: THREE rapid color pulses */}
+      {justLeveledUp && [0, 320, 640].map((d, i) => (
         <div
+          key={i}
           className="absolute inset-0 celebration-screenflash"
           style={{
-            background: `radial-gradient(circle at center, ${tierColor}55 0%, ${tierColor}00 55%)`,
+            background: `radial-gradient(circle at center, ${tierColor}70 0%, ${tierColor}00 60%)`,
+            animationDelay: `${d}ms`,
           }}
         />
-      )}
+      ))}
 
       {/* Shockwave rings — concentric pulses centered on the main burst. */}
-      <div className="absolute" style={{ left: "50%", top: "42%" }}>
-        {[0, 200, 400].map((delay) => (
+      <div className="absolute" style={{ left: "50%", top: "44%" }}>
+        {shockwaveDelays.map((delay, idx) => (
           <span
             key={delay}
             className="celebration-shockwave"
             style={{
-              borderColor: tierColor,
+              borderColor: idx % 2 === 0 ? tierColor : glowColor,
               boxShadow: `0 0 24px ${glowColor}`,
               animationDelay: `${delay}ms`,
             }}
@@ -254,16 +290,42 @@ function ExplosiveFireworks({
         ))}
       </div>
 
-      {/* Particle bursts */}
+      {/* Launch streaks — a bright vertical streak rises from below the viewport
+          to each burst origin, arriving the instant the burst fires. This is
+          the "rocket trail" of a real firework, the bit before the boom. */}
+      {data.bursts.map((burst) => (
+        <span
+          key={`launch-${burst.id}`}
+          className="celebration-launch"
+          style={{
+            left: burst.left,
+            top: burst.top,
+            background: `linear-gradient(to top, transparent, ${burst.color} 70%, #ffffff)`,
+            boxShadow: `0 0 12px ${burst.color}, 0 0 24px ${burst.color}66`,
+            animationDelay: `${Math.max(0, burst.delay - 280)}ms`,
+            ["--launch-h" as any]: `${burst.launchFromVh}vh`,
+          }}
+        />
+      ))}
+
+      {/* Particle bursts — each particle has a luminous multi-shadow glow
+          so it reads as "burning ember" not "colored dot." */}
       {data.bursts.map((burst) => (
         <div key={burst.id} className="absolute" style={{ left: burst.left, top: burst.top }}>
           {burst.particles.map((p) => (
             <span
               key={p.key}
-              className="celebration-big-particle"
+              className={p.sparkler ? "celebration-big-particle celebration-sparkler" : "celebration-big-particle"}
               style={{
                 background: p.color,
-                boxShadow: `0 0 12px ${p.color}aa`,
+                // Layered glow — a tight inner halo, a wider soft halo, and a
+                // big diffuse tier-color wash to read as luminous, not flat.
+                boxShadow: `
+                  0 0 4px #ffffff,
+                  0 0 ${justLeveledUp ? 18 : 12}px ${p.color}cc,
+                  0 0 22px ${p.color}aa,
+                  0 0 40px ${p.color}55
+                `,
                 width: p.size,
                 height: p.size,
                 ["--tx" as any]: `${p.tx}px`,
@@ -297,16 +359,38 @@ function ExplosiveFireworks({
       ))}
 
       <style>{`
-        /* ───── Big-burst particles ─────────────────────────────────────── */
+        /* ───── Big-burst particles — gravity arc ────────────────────────
+           Real fireworks rise to their burst apex, expand outward as the
+           shell explodes, hang in the air for a moment, then drift DOWN
+           under gravity while fading. Our keyframes model that:
+            - 0–8%   : pre-burst flash (small, bright)
+            - 8–20%  : initial blast (full size + brightness at near-origin)
+            - 20–55% : rapid outward expansion toward (tx, ty)
+            - 55–75% : hang time at the outer position
+            - 75–100%: gravity drop (+ extra y) while fading + shrinking */
         @keyframes celebration-big-burst {
-          0%   { transform: translate(0, 0) rotate(0deg) scale(0.4); opacity: 0; }
-          12%  { transform: translate(0, 0) rotate(0deg) scale(1);   opacity: 1; }
-          60%  {
-            transform: translate(calc(var(--tx) * 0.85), calc(var(--ty) * 0.85)) rotate(calc(var(--spin) * 0.6)) scale(1);
+          0%   {
+            transform: translate(0, 0) rotate(0deg) scale(0.2);
+            opacity: 0;
+          }
+          8%   {
+            transform: translate(0, 0) rotate(0deg) scale(1.4);
             opacity: 1;
           }
+          20%  {
+            transform: translate(calc(var(--tx) * 0.4), calc(var(--ty) * 0.4)) rotate(calc(var(--spin) * 0.25)) scale(1.1);
+            opacity: 1;
+          }
+          55%  {
+            transform: translate(var(--tx), var(--ty)) rotate(calc(var(--spin) * 0.65)) scale(1);
+            opacity: 1;
+          }
+          75%  {
+            transform: translate(var(--tx), calc(var(--ty) + 60px)) rotate(calc(var(--spin) * 0.8)) scale(0.85);
+            opacity: 0.85;
+          }
           100% {
-            transform: translate(var(--tx), calc(var(--ty) + 80px)) rotate(var(--spin)) scale(0.5);
+            transform: translate(calc(var(--tx) * 1.05), calc(var(--ty) + 220px)) rotate(var(--spin)) scale(0.35);
             opacity: 0;
           }
         }
@@ -315,15 +399,52 @@ function ExplosiveFireworks({
           top: 0; left: 0;
           border-radius: 9999px;
           animation-name: celebration-big-burst;
-          animation-timing-function: cubic-bezier(0.18, 0.7, 0.3, 1);
+          animation-timing-function: cubic-bezier(0.16, 0.66, 0.32, 1);
           animation-fill-mode: forwards;
           will-change: transform, opacity;
         }
 
+        /* ───── Sparkler particles — twinkle on/off while traveling ───── */
+        @keyframes celebration-twinkle {
+          0%, 100% { opacity: 1;   filter: brightness(1);   }
+          50%      { opacity: 0.3; filter: brightness(2.4); }
+        }
+        .celebration-sparkler {
+          animation:
+            celebration-big-burst var(--dur) cubic-bezier(0.16, 0.66, 0.32, 1) forwards,
+            celebration-twinkle 240ms ease-in-out infinite;
+        }
+
+        /* ───── Launch streak — vertical rocket trail before each burst ─
+           A thin bright vertical line that streaks up from below the
+           viewport to the burst origin, ending right when the burst fires. */
+        @keyframes celebration-launch {
+          0%   {
+            transform: translate(-50%, 100vh) scaleY(0.15);
+            opacity: 0;
+          }
+          15%  { opacity: 1; }
+          85%  { opacity: 1; }
+          100% {
+            transform: translate(-50%, 0) scaleY(1);
+            opacity: 0;
+          }
+        }
+        .celebration-launch {
+          position: absolute;
+          width: 3px;
+          height: var(--launch-h, 60vh);
+          transform-origin: bottom center;
+          border-radius: 999px;
+          animation: celebration-launch 360ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+          will-change: transform, opacity;
+          pointer-events: none;
+        }
+
         /* ───── Shockwave rings ────────────────────────────────────────── */
         @keyframes celebration-shockwave {
-          0%   { width: 20px;  height: 20px;  opacity: 0.9; border-width: 4px; }
-          100% { width: 900px; height: 900px; opacity: 0;   border-width: 1px; }
+          0%   { width: 20px;   height: 20px;   opacity: 0.9; border-width: 4px; }
+          100% { width: 1400px; height: 1400px; opacity: 0;   border-width: 1px; }
         }
         .celebration-shockwave {
           position: absolute;
@@ -352,15 +473,18 @@ function ExplosiveFireworks({
         .celebration-confetti-circle { border-radius: 9999px; }
         .celebration-confetti-square { border-radius: 2px; }
         .celebration-confetti-bar    { border-radius: 1px; }
+        .celebration-confetti-star {
+          clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
+        }
 
         /* ───── Tier-up screen flash ───────────────────────────────────── */
         @keyframes celebration-screenflash {
           0%   { opacity: 0;    }
-          15%  { opacity: 1;    }
+          18%  { opacity: 1;    }
           100% { opacity: 0;    }
         }
         .celebration-screenflash {
-          animation: celebration-screenflash 900ms ease-out forwards;
+          animation: celebration-screenflash 650ms ease-out forwards;
         }
       `}</style>
     </div>
@@ -415,7 +539,7 @@ export function CelebrationModal({ prevCount, newCount, onClose, onFindMore }: C
       />
 
       <div
-        className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/45"
+        className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/65"
         onClick={onClose}
         role="dialog"
         aria-modal="true"
@@ -423,10 +547,13 @@ export function CelebrationModal({ prevCount, newCount, onClose, onFindMore }: C
       >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative z-[130] bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
+        className="relative z-[130] rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
         style={{
-          // Subtle radial halo behind the content tied to the tier color.
-          background: `radial-gradient(circle at center top, ${tier.color}14, white 65%)`,
+          // Solid white base so the modal is fully opaque — the shorthand
+          // `background:` previously overrode the bg-white class and left
+          // the center see-through. Now we set color and image separately.
+          backgroundColor: "#ffffff",
+          backgroundImage: `radial-gradient(circle at center top, ${tier.color}22, transparent 70%)`,
         }}
       >
         {/* Close button */}
