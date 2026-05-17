@@ -73,7 +73,7 @@ const SETTING_STOPS: { label: string; setting: Setting[]; showState: boolean }[]
   { label: "Remote only",   setting: ["online"],              showState: false },
   { label: "Mostly Remote", setting: ["online", "inPerson"],  showState: true  },
   { label: "In-person",     setting: ["inPerson"],            showState: true  },
-  { label: "Both equal",    setting: [],                       showState: true  },
+  { label: "Remote + In-person", setting: [],                  showState: true  },
 ];
 
 function settingIndex(setting: Setting[]): number {

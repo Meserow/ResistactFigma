@@ -27,9 +27,24 @@ function adminClient() {
   );
 }
 
+// In-memory debounce for the last-seen side-effect write below. Cuts KV writes
+// to ~1/user/minute/instance even under heavy clicking. Lives in module scope;
+// cleared on cold start. With multiple instances each may write once per
+// window — acceptable since this powers "online now" display only.
+const LAST_SEEN_DEBOUNCE_MS = 60_000;
+const lastSeenCache = new Map<string, number>();
+
 async function getUser(token: string) {
   const { data: { user }, error } = await adminClient().auth.getUser(token);
   if (error || !user) return null;
+  // Presence signal — piggybacks on every authenticated request so we don't
+  // need a client-side heartbeat. Fire-and-forget; never block the request.
+  const now = Date.now();
+  const last = lastSeenCache.get(user.id) ?? 0;
+  if (now - last >= LAST_SEEN_DEBOUNCE_MS) {
+    lastSeenCache.set(user.id, now);
+    kv.set(`user:last-seen:${user.id}`, new Date(now).toISOString()).catch(() => {});
+  }
   return user;
 }
 
@@ -537,6 +552,22 @@ const SEED_CARDS = [
   { id: 1359, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Stitch Feline and Floss's Free Anti-ICE Cross Stitch Pattern", description: "Feline and Floss publishes free cross-stitch patterns on Ko-fi — current drop is explicitly anti-ICE/Fuck ICE. Download, stitch, frame, gift, repeat.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Feline and Floss", authorRole: "Independent Creator", authorLink: "https://ko-fi.com/felineandfloss", targetUrl: "https://ko-fi.com/felineandfloss", topImageUrl: "https://storage.ko-fi.com/cdn/generated/lyflmrusgjymi/2026-05-11_rest-973b09129414d2335f7e561b753bf0ee-v4e73jqn.jpg", toneOverride: { anger: 2, comedy: 2, subversion: 3, hope: 2, energy: 2 }, amplifiesGroups: ["immigrant"], adminApproved: false },
   { id: 1360, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Color Your Way Through Trump 2.0 with Fresh Prints' Anti-Trump Resistance Coloring Book", description: "Indie coloring book full of anti-Trump pages — calming, shareable craft for tense news days. Pages are also sold as standalone prints.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "FreshPrintsHandmade (Etsy)", authorRole: "Resistance Merch", authorLink: "https://www.etsy.com/shop/FreshPrintsHandmade", targetUrl: "https://freshprintshandmade.etsy.com", topImageUrl: "https://i.etsystatic.com/56615728/r/isla/b30f8f/74796492/isla_500x500.74796492_b2qer1xw.jpg", toneOverride: { anger: 1, comedy: 2, subversion: 2, hope: 3, energy: 2 }, adminApproved: false },
   { id: 1361, category: "FLASH MOB", categoryColor: "#ff00d5", actionType: "In Person Group", title: "Join a \"Honk to Dump Trump\" + \"Trump ❤️ Epstein\" Banner Drop", description: "Indivisible chapters are running overpass banner drops with the \"Honk to Dump Trump\" and \"Trump ❤️ Epstein\" twin-banner format. Search your local Indivisible chapter for the next slot.", isOnline: false, boosts: 0, spotsTotal: "Unlimited", location: "National", authorName: "Indivisible", authorRole: "Movement Organization", authorLink: "https://indivisible.org/", targetUrl: "https://www.mobilize.us/indivisible/", topImageUrl: "https://mobilizeamerica.imgix.net/uploads/organization_social/Indivisible%20Protest_20220613182827829964.png?w=1200&h=628&fit=crop&bg=FFF", toneOverride: { anger: 2, comedy: 2, subversion: 3, hope: 2, energy: 3 }, adminApproved: false },
+
+  // ── Grassroots-Fun batch 3 (May 17): 12 net-new cards. 9 rows from the
+  // user's paste were exact-URL duplicates of cards already in the database
+  // and were silently skipped.
+  { id: 1362, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Pin: \"Unpaid Protester, Hating For Free\"", description: "A 2.25\" pin for tired-but-still-fighting Democrats: \"Unpaid Protester, Hating For Free.\" Wear it to the next No Kings rally or pin it on a tote.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "HUGRco (Etsy)", authorRole: "Resistance Merch", authorLink: "https://www.etsy.com/shop/HUGRco", targetUrl: "https://www.etsy.com/listing/4463726967/not-paid-hate-for-free-anti-trump-pin", topImageUrl: "https://i.etsystatic.com/36342593/r/il/f41707/7817044311/il_1080xN.7817044311_smdg.jpg", toneOverride: { anger: 1, comedy: 3, subversion: 2, hope: 1, energy: 2 }, adminApproved: false },
+  { id: 1363, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Pin: \"Crows Against Kings\" — Corvid Solidarity for No Kings Era", description: "Hand-illustrated pinback button of a flock of crows ganging up on a tossed crown — corvid solidarity for the No Kings era. Wear it loud or tuck it on a denim jacket.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "PencilIsland (Etsy)", authorRole: "Resistance Merch", authorLink: "https://www.etsy.com/shop/PencilIsland", targetUrl: "https://www.etsy.com/listing/4366381414/crows-against-kings-pinback-button-no", topImageUrl: "https://i.etsystatic.com/14793879/r/il/198027/7703767710/il_1080xN.7703767710_siqr.jpg", toneOverride: { anger: 1, comedy: 2, subversion: 3, hope: 1, energy: 2 }, adminApproved: false },
+  { id: 1364, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Retro \"Suburban Housewives Against Trump\" Buttons", description: "A 1950s-inspired button reclaiming the \"suburban housewife\" trope Trump kept campaigning to — wear it to a knit-in, pin it on a tote, or hand them out at PTA.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "CafeChaCha (Etsy)", authorRole: "Resistance Merch", authorLink: "https://www.etsy.com/shop/CafeChaCha", targetUrl: "https://www.etsy.com/listing/855158042/retro-suburban-housewives-against-trump", topImageUrl: "https://i.etsystatic.com/8327952/r/il/e051fb/2520953040/il_1080xN.2520953040_rqb8.jpg", toneOverride: { anger: 1, comedy: 3, subversion: 2, hope: 1, energy: 2 }, amplifiesGroups: ["woman"], adminApproved: false },
+  { id: 1365, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Pin: \"86 47\" Botanical (Subtle Anti-Trump)", description: "Botanical-illustrated take on the \"86 47\" anti-Trump number code — subtle enough for the office, sharp enough to be unmistakable to anyone who knows.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "BlueWaveInk (Etsy)", authorRole: "Resistance Merch", authorLink: "https://www.etsy.com/shop/BlueWaveInk", targetUrl: "https://www.etsy.com/listing/4306542331/8647-floral-button-subtle-anti-trump-pin", topImageUrl: "https://i.etsystatic.com/22550025/r/il/fd0b03/6915660471/il_1080xN.6915660471_ken4.jpg", toneOverride: { anger: 1, comedy: 2, subversion: 3, hope: 1, energy: 2 }, adminApproved: false },
+  { id: 1366, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Stitch the \"Abolish ICE\" Pin (Shannon Downey Tutorial)", description: "Free DIY needlepoint tutorial from craftivist Shannon Downey for stitching your own Abolish ICE pin — turn rage at the deportation raids into something you can pin on a denim jacket.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Badass Cross Stitch (Shannon Downey)", authorRole: "Independent Creator", authorLink: "https://linktr.ee/BadassCrossStitch", targetUrl: "https://linktr.ee/BadassCrossStitch", topImageUrl: "https://linktr.ee/og/image/BadassCrossStitch.jpg", toneOverride: { anger: 3, comedy: 1, subversion: 2, hope: 2, energy: 2 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1367, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Stitch Your Own Anti-Trump Voodoo Doll (Free Pattern)", description: "Cathartic free needlepoint pattern from Shannon Downey — stitch a tiny effigy and stick the pins yourself. Therapy plus craftivism.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Badass Cross Stitch (Shannon Downey)", authorRole: "Independent Creator", authorLink: "https://linktr.ee/BadassCrossStitch", targetUrl: "https://linktr.ee/BadassCrossStitch", topImageUrl: "https://linktr.ee/og/image/BadassCrossStitch.jpg", toneOverride: { anger: 3, comedy: 3, subversion: 3, hope: 1, energy: 2 }, adminApproved: false },
+  { id: 1368, category: "JOIN A GROUP", categoryColor: "#9c2779", actionType: "Online", title: "Join the Joyful Menace Society", description: "Shannon Downey's monthly craftivist community: stitch-along assignments, harm-reduction zines, and a low-key plan for menacing the regime with fabric.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Badass Cross Stitch (Shannon Downey)", authorRole: "Independent Creator", authorLink: "https://linktr.ee/BadassCrossStitch", targetUrl: "https://linktr.ee/BadassCrossStitch", topImageUrl: "https://linktr.ee/og/image/BadassCrossStitch.jpg", toneOverride: { anger: 1, comedy: 2, subversion: 2, hope: 3, energy: 2 }, adminApproved: false },
+  { id: 1369, category: "SPREAD POSITIVITY", categoryColor: "#d97706", actionType: "Online", title: "Make a \"Yay!\" Flag for Your Window", description: "Sew or paper-craft a Yay! flag to celebrate every protest, court win, or canceled deportation — tiny visible joy in the windows of a fascist-curious neighborhood.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Badass Cross Stitch (Shannon Downey)", authorRole: "Independent Creator", authorLink: "https://linktr.ee/BadassCrossStitch", targetUrl: "https://linktr.ee/BadassCrossStitch", topImageUrl: "https://linktr.ee/og/image/BadassCrossStitch.jpg", toneOverride: { anger: 0, comedy: 2, subversion: 1, hope: 3, energy: 2 }, adminApproved: false },
+  { id: 1370, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Free \"No Kings\" Cross-Stitch PDF", description: "Free instant-download No Kings cross-stitch pattern from the OG snarky-sampler shop — stitch one for your kitchen wall before the next No Kings Day.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Subversive Cross Stitch (Julie Jackson)", authorRole: "Independent Creator", authorLink: "https://linktr.ee/subversivecrossstitch", targetUrl: "https://linktr.ee/subversivecrossstitch", topImageUrl: "https://linktr.ee/og/image/subversivecrossstitch.jpg", toneOverride: { anger: 1, comedy: 2, subversion: 3, hope: 2, energy: 2 }, adminApproved: false },
+  { id: 1371, category: "ART PIECE", categoryColor: "#896312", actionType: "Online", title: "Watch & Share: Tom Morello Sings \"This Land Is Your Land\" at NYC Anti-ICE Protest", description: "Tom Morello broke out the Woody Guthrie at a Hands Off NYC rally against ICE raids — share the clip to keep this protest's song alive in the algorithm.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Consequence Sound (via Tom Morello)", authorRole: "Independent Creator", authorLink: "https://www.tiktok.com/@consequence", targetUrl: "https://www.tiktok.com/@consequence/video/7639124680695106829", topImageUrl: "https://p16-common-sign.tiktokcdn-us.com/tos-useast5-p-0068-tx/oYIlgkQez1BgbeErPPBUnKLxkf0GNoAHAlSyHC~tplv-tiktokx-origin.image?dr=9636&x-expires=1779202800&x-signature=an0tOdUQmbI3xuzdtqJyzDlX5vg%3D&t=4d5b0474&ps=13740610&shp=81f88b70&shcp=43f4a2f9&idc=useast5", toneOverride: { anger: 2, comedy: 1, subversion: 2, hope: 3, energy: 3 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1372, category: "SOCIAL MEDIA", categoryColor: "#e44b4b", actionType: "Online", title: "Boost This Hour Has 22 Minutes' Trump Book Sketch", description: "Canadian sketch show 22 Minutes is gleefully roasting Trump from across the border — re-post their parody bits so more people hear the laugh-from-Canada take on MAGA.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "This Hour Has 22 Minutes", authorRole: "Independent Creator", authorLink: "https://www.tiktok.com/@thishourhas22minutes", targetUrl: "https://www.tiktok.com/@thishourhas22minutes/video/7576736715587472660", topImageUrl: "https://p16-common-sign.tiktokcdn-us.com/tos-alisg-p-0037/o0BQf4mEDD8So4gLH6FhAlQEjAsFCQWfI6CSPf~tplv-tiktokx-origin.image?dr=9636&x-expires=1779202800&x-signature=%2FPzBiIwlVygkqqD%2FnEVWBD9WPNw%3D&t=4d5b0474&ps=13740610&shp=81f88b70&shcp=43f4a2f9&idc=useast5", toneOverride: { anger: 1, comedy: 3, subversion: 2, hope: 1, energy: 2 }, adminApproved: false },
+  { id: 1373, category: "SOCIAL MEDIA", categoryColor: "#e44b4b", actionType: "Online", title: "Re-Share the Iranian Embassy AI Memes Mocking Trump", description: "Iranian embassies are flooding social with AI-generated memes ridiculing Trump's war posture — a strange-bedfellows trolling moment worth reposting for the absurdity alone.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "CNN (reporting on Iranian embassies)", authorRole: "Independent Creator", authorLink: "https://www.tiktok.com/@cnn", targetUrl: "https://www.tiktok.com/@cnn/video/7628912004643753230", topImageUrl: "https://p16-common-sign.tiktokcdn-us.com/tos-useast5-p-0068-tx/o0kHx4Tge6vGfCXrADkjqeIALIAjtEvw5YUENg~tplv-tiktokx-origin.image?dr=9636&x-expires=1779202800&x-signature=kmkl6YMcM%2Bs%2F6%2FizN8Uc7LwgcrA%3D&t=4d5b0474&ps=13740610&shp=81f88b70&shcp=43f4a2f9&idc=useast5", toneOverride: { anger: 1, comedy: 3, subversion: 3, hope: 0, energy: 2 }, adminApproved: false },
 ];
 
 // ─── Seed receipts (The Smacks) ───────────────────────────────────────────────
@@ -779,6 +810,57 @@ app.get("/make-server-9eb1ae04/admin/users", async (c) => {
   } catch (err) {
     console.log("Admin users error:", err);
     return c.json({ error: `Failed to list users: ${err}` }, 500);
+  }
+});
+
+// ─── ADMIN: Who's online right now ────────────────────────────────────────────
+// Reads `user:last-seen:*` (written by `getUser` on every authenticated
+// request) and joins with `user:approval:{userId}` for display fields.
+// "Online" = last-seen within `windowMinutes` (default 5).
+app.get("/make-server-9eb1ae04/admin/online-users", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const windowMinutes = Math.max(1, Math.min(60, parseInt(c.req.query("windowMinutes") ?? "5", 10) || 5));
+    const cutoffMs = Date.now() - windowMinutes * 60_000;
+
+    const sb = adminClient();
+    const { data: rows } = await sb
+      .from("kv_store_9eb1ae04")
+      .select("key, value")
+      .like("key", "user:last-seen:%");
+
+    const online: Array<{ userId: string; lastSeenAt: string }> = [];
+    for (const row of rows ?? []) {
+      const userId = String(row.key).slice("user:last-seen:".length);
+      const iso = typeof row.value === "string" ? row.value : row.value?.at;
+      if (!iso) continue;
+      const ms = Date.parse(iso);
+      if (isNaN(ms) || ms < cutoffMs) continue;
+      online.push({ userId, lastSeenAt: iso });
+    }
+
+    // Hydrate with display fields from the approval record.
+    const enriched = await Promise.all(online.map(async (entry) => {
+      const record = await kv.get(`user:approval:${entry.userId}`) as any;
+      return {
+        userId: entry.userId,
+        lastSeenAt: entry.lastSeenAt,
+        name: record?.name ?? "Resistor",
+        email: record?.email ?? "",
+        avatar: record?.avatar ?? null,
+        isAdmin: !!record?.isAdmin,
+        status: record?.status ?? "pending",
+      };
+    }));
+
+    enriched.sort((a, b) => b.lastSeenAt.localeCompare(a.lastSeenAt));
+    return c.json({ users: enriched, windowMinutes, count: enriched.length });
+  } catch (err) {
+    console.log("Admin online-users error:", err);
+    return c.json({ error: `Failed to list online users: ${err}` }, 500);
   }
 });
 
@@ -1074,13 +1156,13 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       console.log("Set boosts = 950 on action:1 (Spread the Word).");
     }
 
-    const orgsSeeded = await kv.get("seed:org-actions:v23");
+    const orgsSeeded = await kv.get("seed:org-actions:v24");
     if (!orgsSeeded) {
       // Mark the seed as done UP FRONT — if the request times out partway
       // through the 260-card loop, the next request still skips the loop
       // instead of dying again. The cards already written stay; missing ones
       // get filled in on the next version bump.
-      await kv.set("seed:org-actions:v23", true);
+      await kv.set("seed:org-actions:v24", true);
       let count = 0;
       for (const card of SEED_CARDS) {
         // Seed every card in SEED_CARDS (no longer skipping ids <1000).
@@ -3010,6 +3092,75 @@ app.post("/make-server-9eb1ae04/admin/bulk-import", async (c) => {
   } catch (err) {
     console.log("Bulk import error:", err);
     return c.json({ error: `Bulk import failed: ${err}` }, 500);
+  }
+});
+
+// ─── POST /admin/bulk-update-time-commitment — audit-driven time fixes ───────
+// Same auth pattern as bulk-import (static admin token, NOT a user JWT). Built
+// for the 2026-05-17 time-commitment audit and reusable for future passes.
+// Only `timeCommitment` and `quickAction` are touched; everything else on the
+// card is preserved. Supports dryRun:true to preview without writing.
+const VALID_TIME_COMMITMENTS = new Set([
+  "< 1 hour", "5–10 minutes", "1–3 hours", "Full day", "Ongoing",
+]);
+
+app.post("/make-server-9eb1ae04/admin/bulk-update-time-commitment", async (c) => {
+  try {
+    const token = c.req.header("X-Admin-Import-Token");
+    const expected = Deno.env.get("ADMIN_IMPORT_TOKEN");
+    if (!expected) return c.json({ error: "ADMIN_IMPORT_TOKEN not configured on server" }, 500);
+    if (!token || token !== expected) return c.json({ error: "Forbidden" }, 403);
+
+    const body = await c.req.json<{ updates?: any[]; dryRun?: boolean }>();
+    const updates = Array.isArray(body.updates) ? body.updates : [];
+    const dryRun = body.dryRun === true;
+    if (updates.length === 0) return c.json({ error: "updates array required" }, 400);
+
+    const updated: any[] = [];
+    const notFound: any[] = [];
+    const errors:   any[] = [];
+
+    for (const u of updates) {
+      try {
+        const id = Number(u.id);
+        const tc = String(u.timeCommitment ?? "");
+        const qa = u.quickAction === true;
+        if (!Number.isFinite(id)) { errors.push({ id: u.id, error: "id must be a number" }); continue; }
+        if (!VALID_TIME_COMMITMENTS.has(tc)) {
+          errors.push({ id, error: `invalid timeCommitment: "${tc}"` }); continue;
+        }
+
+        let cardKey = `action:${id}`;
+        let card = await kv.get(cardKey) as any;
+        if (!card) {
+          cardKey = `user-action:${id}`;
+          card = await kv.get(cardKey) as any;
+        }
+        if (!card) { notFound.push({ id }); continue; }
+
+        const before = { timeCommitment: card.timeCommitment ?? null, quickAction: card.quickAction ?? null };
+        const after  = { timeCommitment: tc, quickAction: qa };
+
+        if (!dryRun) {
+          await kv.set(cardKey, {
+            ...card,
+            timeCommitment: tc,
+            quickAction: qa,
+            updatedAt: new Date().toISOString(),
+            updatedBy: "bulk-update-time",
+          });
+        }
+        updated.push({ id, title: card.title, before, after });
+      } catch (rowErr) {
+        errors.push({ id: u?.id, error: String(rowErr) });
+      }
+    }
+
+    console.log(`bulk-update-time: updated=${updated.length} notFound=${notFound.length} errors=${errors.length} dryRun=${dryRun}`);
+    return c.json({ updated, notFound, errors, dryRun });
+  } catch (err) {
+    console.log("Bulk update time error:", err);
+    return c.json({ error: `Bulk update failed: ${err}` }, 500);
   }
 });
 

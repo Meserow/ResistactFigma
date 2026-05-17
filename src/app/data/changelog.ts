@@ -16,6 +16,99 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "0.9.0",
+    date: "2026-05-17",
+    title: "Site-updating banner, Approve All, auto-shared Smacks, My Tier Dashboard overhaul, and tier color ramp",
+    sections: [
+      {
+        heading: "Admin: Approve All button",
+        items: [
+          "A green '✓ Approve all N showing' button now appears in the pending-only banner — one click approves every card currently visible after your filters are applied.",
+          "If you've filtered by category or location first, only those cards get approved — not the entire queue. The count in the button updates live as you filter.",
+        ],
+      },
+      {
+        heading: "Admin: Site-updating banner",
+        items: [
+          "New toggle in the admin dropdown: '🔧 Show updating banner' — flip it on before a deploy and a full-width navy banner appears for all visitors: 'SITE UPDATING — PLEASE BE PATIENT (2 minutes!)'.",
+          "Flip it off after the deploy and the banner disappears. State is stored in the database so it survives page refreshes and is visible to every user immediately.",
+          "Button shows an orange 'ON' badge and changes label to 'Turn off updating banner' so you always know if it's live.",
+        ],
+      },
+      {
+        heading: "The Smacks — auto-shared tracking",
+        items: [
+          "No more manual 'I shared it' button. The moment you click any share destination (Facebook, Bluesky, Threads, X, Instagram, Pinterest, Reddit, Tumblr, Download, or Copy image), the card is automatically marked as Shared.",
+          "A green '✓ Shared' badge replaces the Share button on the card tile — so your history is accurate without you having to remember to tap anything.",
+          "Boost button moved from the card footer to the same bottom-left image-overlay position it occupies on action cards — consistent across both tabs.",
+        ],
+      },
+      {
+        heading: "My Tier Dashboard — redesigned",
+        items: [
+          "Renamed from 'My Tier' to 'My Tier Dashboard' everywhere.",
+          "Tier rows are now compact enough that the whole ladder, progress bar, and scoreboard fit on a phone screen without scrolling.",
+          "Tier names are styled in their own color against white — Spark is now legible (was washed out against the white modal background).",
+          "Tier ladder removed from the profile dropdown — the progress bar and 'N acts done' label are enough there; the full ladder lives in the modal.",
+          "Pending Acts and Pending Smacks items in the dropdown are now gray (same as other items) instead of red — the red badge numbers still flag the count.",
+        ],
+      },
+      {
+        heading: "Tier color overhaul",
+        items: [
+          "All six tiers now flow through a single orange ramp: Spark (gold), Ember (soft orange), Flame (bright orange), Blaze (deep orange), Wildfire (burnt orange), Inferno (dark rust).",
+          "A separate 'label color' is now used when tier names appear as text on white backgrounds, so every tier name is legible at any size.",
+          "Action count badge on the avatar changed from red to navy — less alarming, more on-brand.",
+        ],
+      },
+      {
+        heading: "The Facts — hero intro panel",
+        items: [
+          "The Facts tab now opens with an intro panel identical in style to The Smacks hero — explains what a Fact is and why pre-loaded rebuttals matter.",
+        ],
+      },
+      {
+        heading: "Tier progress language",
+        items: [
+          "The standalone action count in the profile dropdown now reads '26 acts done' instead of a bare number.",
+          "'N more actions to reach…' now reads 'N more acts to reach…' throughout the tier progress bar and modal.",
+        ],
+      },
+      {
+        heading: "Quick Match — completed cards excluded",
+        items: [
+          "The Quick Match carousel no longer shows actions you've already completed — they're filtered out at pick-time so every slot is a fresh opportunity.",
+        ],
+      },
+      {
+        heading: "Time-commitment badge on cards",
+        items: [
+          "Action cards now display a time-commitment badge so you can see '5–10 min' or '~1 hr' at a glance without opening the card.",
+          "All 'Cancel your…' subscription cards confirmed at 5–10 minutes.",
+        ],
+      },
+      {
+        heading: "Category filter deduplication",
+        items: [
+          "Six category filters had mixed-case duplicates (e.g. 'Boycott' and 'BOYCOTT' both appeared as separate chips). All categories are now stored as uppercase — BOYCOTT, PROTEST, PETITION, LETTER WRITING, CRAFTING, SPREAD POSITIVITY — so each filter chip is unique.",
+        ],
+      },
+      {
+        heading: "New Smacks",
+        items: [
+          "'Gas Prices' added to The Smacks with Economy / Trump / MAGA tags.",
+        ],
+      },
+      {
+        heading: "New action cards",
+        items: [
+          "19 ICE / detention / Iran-war response cards seeded: Tesla divestment guide, NDLON Adopt-A-School + Adopt-A-Corner, Bay Area rapid-response training, Seattle Federal Building Fridays, Sabey Corp ICE-lease picket (Tukwila), De-ICE Citizens Bank national day of action, Indivisible Harlem Know-Your-Rights canvass, ICE Out For Good Greenwich canvass, NELA monthly meeting (LA), El Refugio Stewart Detention visitation (GA), First Friends Elizabeth Detention visitation (NJ), RAICES Texas donate, NBFN Immigration Bond + Pretrial Bail funds, and NDLON Immigrant Defense Fund.",
+          "5 addendum grassroots-fun cards: Dissent Pins full collection, Resistance Knitters Bluesky group, Feline and Floss free anti-ICE cross-stitch pattern, Fresh Prints anti-Trump coloring book, and Indivisible 'Honk to Dump Trump / Trump ❤️ Epstein' overpass banner drops.",
+        ],
+      },
+    ],
+  },
+  {
     version: "0.8.0",
     date: "2026-05-17",
     title: "Admin user dashboards, full-screen fireworks on \"I did this\", XSS-safe URLs, Push-back-on-Facts, faster loading",
@@ -176,7 +269,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         heading: "The Smacks — new tab",
         items: [
-          "Brand-new “The Smacks” tab: a library of shareable political images you can post directly to Instagram, Threads, Bluesky, Twitter, and more.",
+          "Brand-new 'The Smacks' tab: a library of shareable political images you can post directly to Instagram, Threads, Bluesky, Twitter, and more.",
           "Share buttons added for Instagram, Threads, and Bluesky across the platform.",
           "Card grid layout redesigned for a cleaner, more visual feel.",
           "Admin tools: approve, delete, and review pending smacks from the admin panel.",
@@ -189,7 +282,7 @@ export const CHANGELOG: ChangelogEntry[] = [
           "Your avatar is now a flame icon that reflects your tier level — Spark, Ember, Flame, Blaze, Wildfire, or Inferno.",
           "Six tiers based on total actions completed: 0–4 (Spark) through 500+ (Inferno), with escalating colors from yellow to deep red.",
           "Tier progress bar and next-tier countdown visible in your dropdown menu.",
-          "Tap “My Tier” in your profile dropdown to see the full tier ladder.",
+          "Tap 'My Tier' in your profile dropdown to see the full tier ladder.",
           "Action count displayed in a red badge on your avatar.",
         ],
       },
@@ -239,10 +332,10 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         heading: "Quick Matches for Me",
         items: [
-          "Hero panel button renamed to “Quick Matches for Me”.",
+          "Hero panel button renamed to 'Quick Matches for Me'.",
           "Carousel expanded to 12 matches (up from 10).",
-          "When you pick “Both equal” location, the 12 slots are now split 50/50 online vs. in-person — no more 11/12 online results.",
-          "“Show me all my matches” now applies a score floor (30% of the top match) so you see genuine matches instead of all 396 cards re-sorted.",
+          "When you pick 'Both equal' location, the 12 slots are now split 50/50 online vs. in-person — no more 11/12 online results.",
+          "'Show me all my matches' now applies a score floor (30% of the top match) so you see genuine matches instead of all 396 cards re-sorted.",
           "Targeted group checkboxes display in two columns so the list is half the height.",
           "Page 2 footer (Back / Show me my matches) is pinned below the scrollable content — no more white gap at the bottom.",
           "Clicking a targeted-group checkbox no longer collapses the dropdown and blanks the modal.",
@@ -251,7 +344,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         heading: "Location filter",
         items: [
-          "“Online” renamed to “Remote”, “From Home” renamed to “At Home”, “Multi-state” renamed to “Multi-State” — consistent with how people actually talk about these options.",
+          "'Online' renamed to 'Remote', 'From Home' renamed to 'At Home', 'Multi-state' renamed to 'Multi-State' — consistent with how people actually talk about these options.",
           "Existing cards with the old location strings continue to filter and display correctly (backward-compatible mapping).",
           "The Add-an-Action and Edit-card location dropdowns use the same new names.",
         ],
@@ -259,7 +352,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         heading: "Add an Action modal",
         items: [
-          "ResistAct fist logo added to the header; “Make an ASK” label removed.",
+          "ResistAct fist logo added to the header; 'Make an ASK' label removed.",
           "Title field moved above Category so the most important field comes first.",
         ],
       },
@@ -268,7 +361,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         items: [
           "Edit button added to each pending card's approval row — opens the full edit modal inline.",
           "Version badge and changelog link are now visible to admin users only.",
-          "Spread the Word card is excluded from the “cards without URLs” admin list.",
+          "Spread the Word card is excluded from the 'cards without URLs' admin list.",
           "95 existing cards had their URL migrated from the authorLink field into the proper targetUrl field.",
         ],
       },
@@ -276,7 +369,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         heading: "Bug fixes & polish",
         items: [
           "Spread the Word card always shows the correct description regardless of what's stored in the database.",
-          "Category filter “+ N more” dropdown is no longer clipped by the navbar's overflow-hidden container.",
+          "Category filter '+ N more' dropdown is no longer clipped by the navbar's overflow-hidden container.",
           "All native select dropdowns now have right padding so the browser chevron doesn't crowd the text.",
           "Compact carousel cards (Quick Match strip) no longer show the flame / share button.",
           "Modal titles across Match Me, Add an Action, and Info are all styled consistently (bold, navy, 20px).",
@@ -339,29 +432,29 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         heading: "Quick Match Tool",
         items: [
-          "Renamed from “What's your fit today?” to “Quick Match Tool”.",
+          "Renamed from 'What's your fit today?' to 'Quick Match Tool'.",
           "Four sample matches (up from three) and they're now visually distinct — no two cards in the strip share the same image.",
-          "Slot 1 is always “Spread the Word about ResistAct” until you mark it done — easy first action that grows the community.",
+          "Slot 1 is always 'Spread the Word about ResistAct' until you mark it done — easy first action that grows the community.",
           "Setting picker + state field share one row above the sliders for a tighter top half.",
           "Sliders moved to a two-column layout to halve vertical scroll, with calmer type weight and indented under the section heading.",
-          "Card descriptions in the preview clamp to 2 lines + a right-aligned italic “Read more →” so the modal doesn't jump as you slide.",
-          "“Not a good match” buttons get an orange outline and a monochrome thumbs-down icon (no more yellow emoji).",
+          "Card descriptions in the preview clamp to 2 lines + a right-aligned italic 'Read more →' so the modal doesn't jump as you slide.",
+          "'Not a good match' buttons get an orange outline and a monochrome thumbs-down icon (no more yellow emoji).",
           "Card heights locked to a stable 240px so the modal stops jumping around when you drag sliders.",
         ],
       },
       {
         heading: "Decisions made clearer",
         items: [
-          "Donation-focus question defaults to “Yes — show me high-leverage races” so people don't miss it.",
+          "Donation-focus question defaults to 'Yes — show me high-leverage races' so people don't miss it.",
           "Donation toggle buttons stacked title + subtitle for legibility.",
-          "Two final CTAs on the modal's last page: an outline “Show me all my matches → no sign up required” and a filled “#jointheresistance → Sign up to save your match settings.”",
+          "Two final CTAs on the modal's last page: an outline 'Show me all my matches → no sign up required' and a filled '#jointheresistance → Sign up to save your match settings.'",
           "Privacy footnote uses a modern lock icon (instead of a starred *) and is tucked under the buttons in a single right-aligned block.",
         ],
       },
       {
         heading: "Brand consistency",
         items: [
-          "Navbar “Join the Resistance” CTA adopts the same #jointheresistance two-line treatment used in the modal — sign-up reason explicit on the button.",
+          "Navbar 'Join the Resistance' CTA adopts the same #jointheresistance two-line treatment used in the modal — sign-up reason explicit on the button.",
           "Spread the Word card never shows a boost button (you can't boost the share-this-site card on behalf of yourself).",
         ],
       },
@@ -369,7 +462,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         heading: "Visual rest",
         items: [
           "Less bold, less navy. Most headings demoted to dark-gray semibold so the modal stops shouting.",
-          "“Read more →” links across all cards are now right-aligned and italic (was left-aligned and bold).",
+          "'Read more →' links across all cards are now right-aligned and italic (was left-aligned and bold).",
           "Subtitle removed under the modal title — the title is enough.",
         ],
       },
@@ -386,7 +479,7 @@ export const CHANGELOG: ChangelogEntry[] = [
           "Two-step modal instead of three — almost everything on the first page.",
           "Sample matches show as real card previews (side-by-side) instead of a text list.",
           "Setting + state moved up front; state field only appears when in-person is on the table.",
-          "Live replacement: tap “Not a good match” and the next-best candidate slides in.",
+          "Live replacement: tap 'Not a good match' and the next-best candidate slides in.",
           "Tone sliders renamed for clarity (Time Commitment, Confrontational, Humorous, Subversive, Hopeful, Motivation) and laid out horizontally so they take less vertical space.",
           "New optional question: laser-focused donation guidance for high-leverage midterm races.",
         ],
@@ -395,31 +488,31 @@ export const CHANGELOG: ChangelogEntry[] = [
         heading: "Feed",
         items: [
           "Completed actions now stay visible but sort to the bottom of every view (instead of being hidden).",
-          "“Today's Five” strip removed — Quick Matches replaces it as the on-ramp for new visitors.",
+          "'Today's Five' strip removed — Quick Matches replaces it as the on-ramp for new visitors.",
         ],
       },
       {
         heading: "Identity & safety",
         items: [
-          "Reframed the targeted-group question from “Are you part of…” to “Do you want to focus on…” — about action focus, not personal identity. We no longer collect identity data.",
+          "Reframed the targeted-group question from 'Are you part of…' to 'Do you want to focus on…' — about action focus, not personal identity. We no longer collect identity data.",
           "Personal-risk down-ranking removed. The sliders already steer risk-averse users away (low Confrontational + low Motivation + Remote = a safe feed).",
-          "Universal “⚠ In-person — know your rights” chip on PROTEST and FLASH MOB cards, linking to ACLU's protesters' rights guide.",
+          "Universal '⚠ In-person — know your rights' chip on PROTEST and FLASH MOB cards, linking to ACLU's protesters' rights guide.",
         ],
       },
       {
         heading: "Admin",
         items: [
-          "Time commitment now saves correctly when editing a card (previously stuck on “5 min” if the card had been quickAction).",
-          "“TODAY'S 5” admin badge renamed to “HIGHLIGHTED”.",
+          "Time commitment now saves correctly when editing a card (previously stuck on '5 min' if the card had been quickAction).",
+          "'TODAY'S 5' admin badge renamed to 'HIGHLIGHTED'.",
           "TikTok and YouTube cards now use proper high-res logos instead of low-res scraped OG images.",
         ],
       },
       {
         heading: "Other",
         items: [
-          "Hero CTA renamed: “Match Me with Acts” → “Quick Matches for My Mood”.",
-          "“At home” setting option merged into “Remote” (they were functionally identical).",
-          "“Any” option renamed to “Both”.",
+          "Hero CTA renamed: 'Match Me with Acts' → 'Quick Matches for My Mood'.",
+          "'At home' setting option merged into 'Remote' (they were functionally identical).",
+          "'Any' option renamed to 'Both'.",
           "Bottom-left version badge is now a clickable link to this changelog.",
         ],
       },

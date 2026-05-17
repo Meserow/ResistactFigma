@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   X, Upload, Loader2, Share2, Copy, Check, Download,
-  ExternalLink, Plus, Tag, Flame, Trash2,
+  ExternalLink, Plus, Tag, Flame, Trash2, ZoomIn,
 } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
 import type { UserApproval } from "../lib/supabase";
@@ -187,6 +187,13 @@ export const STATIC_SMACKS: ReceiptCard[] = [
     title: "Gas Prices",
     tags: ["Economy", "Trump", "MAGA"],
     imageUrl: "/Smacks/gasprices.png",
+    adminApproved: true,
+  },
+  {
+    id: 5027,
+    title: "Senate",
+    tags: ["Trump", "MAGA"],
+    imageUrl: "/Smacks/senate.png",
     adminApproved: true,
   },
 ];
@@ -953,7 +960,9 @@ function ReceiptTile({
   onApprove: () => void;
   onDelete: () => void;
 }) {
+  const [tileLightboxOpen, setTileLightboxOpen] = useState(false);
   return (
+    <>
     <div
       className={`rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all bg-white flex flex-col ${!receipt.adminApproved && isAdmin ? "ring-2 ring-red-400" : ""}`}
     >
@@ -982,11 +991,11 @@ function ReceiptTile({
         </div>
       )}
 
-      {/* Thumbnail — click to open share modal */}
+      {/* Thumbnail — click to open lightbox */}
       <button
         type="button"
-        onClick={onShare}
-        className="relative block w-full h-[200px] overflow-hidden bg-gray-100 group shrink-0 text-left"
+        onClick={() => setTileLightboxOpen(true)}
+        className="relative block w-full h-[200px] overflow-hidden bg-gray-100 group shrink-0 text-left cursor-zoom-in"
       >
         <ImageWithFallback
           src={receipt.imageUrl}
@@ -997,8 +1006,8 @@ function ReceiptTile({
         {/* Hover overlay */}
         <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
           <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/90 font-['Poppins',sans-serif] font-bold text-xs text-[#23297e]">
-            <Share2 size={12} />
-            Share this
+            <ZoomIn size={12} />
+            View larger
           </span>
         </div>
         {/* Boost — bottom-left overlay, same position as Acts cards */}
@@ -1072,6 +1081,30 @@ function ReceiptTile({
         </div>
       </div>
     </div>
+
+    {/* Tile lightbox — full-bleed image preview. Closes on backdrop click. */}
+    {tileLightboxOpen && (
+      <div
+        className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4"
+        onClick={() => setTileLightboxOpen(false)}
+      >
+        <button
+          type="button"
+          className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors"
+          onClick={() => setTileLightboxOpen(false)}
+          aria-label="Close"
+        >
+          <X size={18} />
+        </button>
+        <img
+          src={receipt.imageUrl}
+          alt={receipt.title}
+          className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
+        />
+      </div>
+    )}
+    </>
   );
 }
 

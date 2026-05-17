@@ -33,7 +33,17 @@ interface AdminPanelProps {
 }
 
 type TabFilter = "active" | "pending" | "approved" | "rejected" | "all";
-type PanelMode = "cards" | "users" | "nourl" | "matcher";
+type PanelMode = "cards" | "users" | "nourl" | "matcher" | "online";
+
+interface OnlineUser {
+  userId: string;
+  name: string;
+  email: string;
+  avatar: string | null;
+  isAdmin: boolean;
+  status: string;
+  lastSeenAt: string;
+}
 
 const TONE_DIMS: { key: keyof Tone; label: string; Icon: LucideIcon; stops: { label: string; desc: string }[] }[] = [
   { key: "anger",      label: "Angry",      Icon: Flame,        stops: [
@@ -245,6 +255,11 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
   const [urlEdits, setUrlEdits] = useState<Record<number, string>>({});
   const [urlSaving, setUrlSaving] = useState<number | null>(null);
 
+  // ── Online-now state ─────────────────────────────────────────────────────────
+  const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
+  const [onlineLoading, setOnlineLoading] = useState(false);
+  const [onlineError, setOnlineError] = useState<string | null>(null);
+
   const authHeaders = {
     "Content-Type": "application/json",
     Authorization: `Bearer ${accessToken}`,
@@ -316,9 +331,31 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
     }
   }
 
+  async function fetchOnlineUsers() {
+    setOnlineLoading(true);
+    setOnlineError(null);
+    try {
+      const res = await fetch(`${API}/admin/online-users?windowMinutes=5`, { headers: authHeaders });
+      const data = await res.json();
+      if (!res.ok) { setOnlineError(data.error ?? "Failed to load online users."); return; }
+      setOnlineUsers(data.users ?? []);
+    } catch {
+      setOnlineError("Network error loading online users.");
+    } finally {
+      setOnlineLoading(false);
+    }
+  }
+
   useEffect(() => { fetchPendingCards(); }, []);
   useEffect(() => { if (mode === "users" && users.length === 0) fetchUsers(); }, [mode]);
   useEffect(() => { if (mode === "nourl" && noUrlCards.length === 0 && !noUrlLoading) fetchNoUrlCards(); }, [mode]);
+  // Online tab: fetch on enter, then re-fetch every 30s while the tab is open.
+  useEffect(() => {
+    if (mode !== "online") return;
+    fetchOnlineUsers();
+    const id = window.setInterval(fetchOnlineUsers, 30_000);
+    return () => window.clearInterval(id);
+  }, [mode]);
 
   async function handleApprove(userId: string) {
     setActionLoading(userId + ":approve");
@@ -409,17 +446,17 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
               <div>
                 <p className="font-['Poppins',sans-serif] font-bold text-gray-900 text-base leading-tight">Admin Panel</p>
                 <p className="font-['Poppins',sans-serif] text-gray-400 text-xs">
-                  {mode === "users" ? "Manage user approvals" : mode === "nourl" ? "Cards missing an action link" : "Review submitted actions"}
+                  {mode === "users" ? "Manage user approvals" : mode === "nourl" ? "Cards missing an action link" : mode === "online" ? "Users active in the last 5 minutes" : "Review submitted actions"}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={mode === "users" ? fetchUsers : mode === "nourl" ? fetchNoUrlCards : fetchPendingCards}
-                disabled={mode === "users" ? loading : mode === "nourl" ? noUrlLoading : cardsLoading}
+                onClick={mode === "users" ? fetchUsers : mode === "nourl" ? fetchNoUrlCards : mode === "online" ? fetchOnlineUsers : fetchPendingCards}
+                disabled={mode === "users" ? loading : mode === "nourl" ? noUrlLoading : mode === "online" ? onlineLoading : cardsLoading}
                 className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40"
               >
-                <RefreshCw size={15} className={(mode === "users" ? loading : mode === "nourl" ? noUrlLoading : cardsLoading) ? "animate-spin" : ""} />
+                <RefreshCw size={15} className={(mode === "users" ? loading : mode === "nourl" ? noUrlLoading : mode === "online" ? onlineLoading : cardsLoading) ? "animate-spin" : ""} />
               </button>
               <button
                 onClick={onClose}
@@ -437,6 +474,7 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
               { key: "nourl" as PanelMode, icon: <Link2 size={13} />, label: `No URL${noUrlCards.length > 0 ? ` (${noUrlCards.length})` : ""}` },
               { key: "users" as PanelMode, icon: <Users size={13} />, label: "Users" },
               { key: "matcher" as PanelMode, icon: <Sliders size={13} />, label: "Matcher" },
+              { key: "online" as PanelMode, icon: <Users size={13} />, label: `Online${onlineUsers.length > 0 ? ` (${onlineUsers.length})` : ""}` },
             ]).map(({ key, icon, label }) => (
               <button
                 key={key}
@@ -870,6 +908,58 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
           {/* ── MATCHER mode ───────────────────────────────────────────────────────── */}
           {mode === "matcher" && (
             <MatcherTuning accessToken={accessToken} />
+          )}
+
+          {/* ── ONLINE-NOW mode ────────────────────────────────────────────────────── */}
+          {mode === "online" && (
+            <>
+              <div className="px-5 py-3 border-b border-gray-100 shrink-0">
+                <p className="font-['Poppins',sans-serif] text-xs text-gray-500">
+                  {onlineLoading && onlineUsers.length === 0
+                    ? "Loading…"
+                    : onlineUsers.length === 0
+                      ? "No one is active right now."
+                      : `${onlineUsers.length} user${onlineUsers.length !== 1 ? "s" : ""} active in the last 5 min · refreshes every 30s`}
+                </p>
+              </div>
+
+              <div className="flex-1 overflow-y-auto">
+                {onlineError ? (
+                  <div className="p-5 text-center">
+                    <p className="font-['Poppins',sans-serif] text-sm text-red-500">{onlineError}</p>
+                    <button onClick={fetchOnlineUsers} className="mt-3 text-xs text-[#23297e] underline font-['Poppins',sans-serif]">Retry</button>
+                  </div>
+                ) : onlineUsers.length === 0 && !onlineLoading ? (
+                  <div className="flex flex-col items-center justify-center h-40 gap-2">
+                    <Users size={28} className="text-gray-200" />
+                    <p className="font-['Poppins',sans-serif] text-sm text-gray-400">No one online.</p>
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-gray-50">
+                    {onlineUsers.map((u) => (
+                      <li key={u.userId} className="px-5 py-3 flex items-center gap-3">
+                        <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" aria-label="online" />
+                        <UserAvatar name={u.name} avatar={u.avatar} sizeClasses="w-8 h-8" />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-['Poppins',sans-serif] font-semibold text-sm text-gray-800 truncate">{u.name}</p>
+                            {u.isAdmin && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-[#23297e] bg-[#23297e]/10 rounded px-1.5 py-0.5">
+                                <ShieldCheck size={10} /> Admin
+                              </span>
+                            )}
+                          </div>
+                          <p className="font-['Poppins',sans-serif] text-xs text-gray-400 truncate">{u.email}</p>
+                        </div>
+                        <p className="font-['Poppins',sans-serif] text-xs text-gray-400 shrink-0" title={u.lastSeenAt}>
+                          {formatRelative(u.lastSeenAt)}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </>
           )}
         </div>
       </div>
