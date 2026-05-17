@@ -16,9 +16,9 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: "0.7.0",
-    date: "2026-05-16",
-    title: "Admin user dashboards, full-screen fireworks on \"I did this\", Push-back-on-Facts, faster loading, and a 5–10 min time stop",
+    version: "0.8.0",
+    date: "2026-05-17",
+    title: "Admin user dashboards, full-screen fireworks on \"I did this\", XSS-safe URLs, Push-back-on-Facts, faster loading",
     sections: [
       {
         heading: "Admin: see active users + their tier + recent activity",
