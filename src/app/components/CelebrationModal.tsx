@@ -246,7 +246,7 @@ function ExplosiveFireworks({
       const drift = rand(-260, 260);           // horizontal drift in px
       const dur   = rand(justLeveledUp ? 2800 : 2200, justLeveledUp ? 6500 : 3800);
       const delay = rand(0, justLeveledUp ? 4500 : 1200);
-      const size  = rand(justLeveledUp ? 8 : 6, justLeveledUp ? 16 : 12);
+      const size  = rand(justLeveledUp ? 24 : 6, justLeveledUp ? 54 : 12);
       const color = palette[Math.floor(Math.random() * palette.length)];
       const spin  = (Math.random() < 0.5 ? -1 : 1) * rand(360, 1080);
       const shape = shapes[Math.floor(Math.random() * shapes.length)];
