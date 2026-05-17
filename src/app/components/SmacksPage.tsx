@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
 import type { UserApproval } from "../lib/supabase";
+import { ImageWithFallback } from "./figma/ImageWithFallback";
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
 
@@ -181,6 +182,13 @@ export const STATIC_SMACKS: ReceiptCard[] = [
     imageUrl: "/Smacks/epsteinredactions.png",
     adminApproved: true,
   },
+  {
+    id: 5026,
+    title: "Gas Prices",
+    tags: ["Economy", "Trump", "MAGA"],
+    imageUrl: "/Smacks/gasprices.png",
+    adminApproved: true,
+  },
 ];
 
 export interface ReceiptCard {
@@ -261,10 +269,38 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
     } catch { /* ignore */ }
   }
 
+  /** Smacks-only WebP rewrite: same logic as ImageWithFallback's
+   *  webpSibling — root-rooted public path, .png/.jpg, not already WebP.
+   *  Returns null for anything else (Supabase storage URLs, http(s) absolute,
+   *  protocol-relative). The share/copy/native-share flow uses the WebP when
+   *  available so users upload ~85% smaller files to social platforms. The
+   *  "Download high-res" button bypasses this and pulls the original. */
+  function smacksWebpSibling(src: string): string | null {
+    if (!/^\/[^/]/.test(src)) return null;
+    if (!/\.(jpe?g|png)(\?|#|$)/i.test(src)) return null;
+    return src.replace(/\.(jpe?g|png)(\?|#|$)/i, ".webp$2");
+  }
+
+  /** Fetch the share-optimised version of a Smack: try the WebP sibling first,
+   *  fall back to the original on 404. Used by share / copy / native-share so
+   *  users upload tiny files. The "Download high-res" button skips this and
+   *  passes through fetchImageBlobRaw(). */
   async function fetchImageBlob(url: string) {
+    const webp = smacksWebpSibling(url);
+    if (webp) {
+      const r = await fetch(webp);
+      if (r.ok) return r.blob();
+      // fall through to the original on 404 / non-2xx
+    }
+    return fetchImageBlobRaw(url);
+  }
+
+  /** Always pull the raw original — for print downloads. */
+  async function fetchImageBlobRaw(url: string) {
     const res = await fetch(url);
     return res.blob();
   }
+
 
   async function handleNativeShare() {
     if (!shareReceipt) return;
@@ -361,16 +397,26 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
     return `https://www.tumblr.com/widgets/share/tool?posttype=photo&content=${source}&caption=${caption}`;
   }
 
+  /** Download the original file (PNG / JPG / WebP — whatever the seed
+   *  references). This is the HI-RES path — print services want the lossless
+   *  PNG when available, and the original keeps full dimensions. The share /
+   *  copy / native-share flow uses the WebP sibling via fetchImageBlob() so
+   *  uploads to social platforms are tiny; this download is for users who
+   *  want the original quality (frame it, print it, archive it). */
   async function handleDownload(r: ReceiptCard) {
     try {
-      const res = await fetch(r.imageUrl);
-      const blob = await res.blob();
+      const blob = await fetchImageBlobRaw(r.imageUrl);
+      // Use the actual file extension from the URL so the saved filename
+      // matches the bytes (was hardcoded to .jpg before, even for PNGs).
+      const ext = (r.imageUrl.match(/\.(png|jpe?g|webp|gif)(?:\?|#|$)/i)?.[1] ?? "png").toLowerCase();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${r.title.replace(/[^a-z0-9]/gi, "-").toLowerCase()}.jpg`;
+      a.download = `${r.title.replace(/[^a-z0-9]/gi, "-").toLowerCase()}-hires.${ext}`;
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch {
       window.open(r.imageUrl, "_blank");
     }
@@ -643,7 +689,7 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
                 onClick={() => setLightboxOpen(true)}
                 className="group relative block w-full rounded-2xl overflow-hidden bg-gray-50 border border-gray-100 cursor-zoom-in"
               >
-                <img
+                <ImageWithFallback
                   src={shareReceipt.imageUrl}
                   alt={shareReceipt.title}
                   className="w-full h-auto object-contain max-h-[38vh]"
@@ -793,13 +839,22 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
                   Post to X
                 </a>
 
-                {/* Download */}
+                {/* Download — pulls the ORIGINAL high-res file (PNG, full
+                    dimensions). Use this when you want to print the Smack
+                    or archive it. The share / copy / "Save image via…"
+                    buttons above silently route through the WebP sibling
+                    instead, so social uploads are 80–90% smaller. */}
                 <button
                   onClick={() => { markShared(shareReceipt.id); handleDownload(shareReceipt); }}
-                  className="col-span-4 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-['Poppins',sans-serif] font-bold text-sm transition-colors"
+                  className="col-span-4 flex flex-col items-center justify-center gap-0.5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-['Poppins',sans-serif] transition-colors"
                 >
-                  <Download size={14} />
-                  Download image
+                  <span className="flex items-center gap-2 font-bold text-sm">
+                    <Download size={14} />
+                    Download high-res (for print)
+                  </span>
+                  <span className="text-[10px] text-gray-500 font-medium">
+                    Full-size original — slower upload, best for printing
+                  </span>
                 </button>
               </div>
 
@@ -856,7 +911,7 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
           className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-4 cursor-zoom-out"
           onClick={() => setLightboxOpen(false)}
         >
-          <img
+          <ImageWithFallback
             src={shareReceipt.imageUrl}
             alt={shareReceipt.title}
             className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
@@ -933,7 +988,7 @@ function ReceiptTile({
         onClick={onShare}
         className="relative block w-full h-[200px] overflow-hidden bg-gray-100 group shrink-0 text-left"
       >
-        <img
+        <ImageWithFallback
           src={receipt.imageUrl}
           alt={receipt.title}
           className="w-full h-full object-cover object-top transition-transform duration-300 group-hover:scale-[1.03]"

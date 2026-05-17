@@ -264,9 +264,12 @@ const CATEGORY_DEFAULT_BUCKET: Partial<Record<string, TimeBucket>> = {
 };
 
 export function timeBucketFor(card: ActionCardData): TimeBucket {
-  if (card.quickAction) return "5min";
   const t = (card.timeCommitment ?? "").toLowerCase();
-  // Explicit timeCommitment wins over the category default.
+  // Explicit timeCommitment wins over the `quickAction` shortcut and the
+  // category default — both are fallbacks for cards with no explicit time.
+  // (Historically `quickAction: true` was set on many cards regardless of
+  // their actual duration, so honoring an explicit "Ongoing" / "1–3 hours"
+  // is more truthful than the legacy flag.)
   if (t) {
     if (t.includes("ongoing")) return "ongoing";
     if (t.includes("full")) return "fullDay";
@@ -281,6 +284,7 @@ export function timeBucketFor(card: ActionCardData): TimeBucket {
     if (t.includes("30") || t.includes("min")) return "30min";
     if (t.includes("5") || t.includes("quick")) return "5min";
   }
+  if (card.quickAction) return "5min";
   // Fall back to category default so the time slider works for seed cards.
   return CATEGORY_DEFAULT_BUCKET[card.category?.toUpperCase()] ?? "30min";
 }

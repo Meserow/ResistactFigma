@@ -65,9 +65,11 @@ interface NavbarProps {
   pendingActsCount?: number;
   pendingSmacksCount?: number;
   onTierClick?: () => void;
+  siteUpdating?: boolean;
+  onToggleSiteUpdating?: (enabled: boolean) => void;
 }
 
-export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick, onPendingSmacksClick, onPendingActsClick, pendingActsCount, pendingSmacksCount, onTierClick }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
+export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick, onPendingSmacksClick, onPendingActsClick, pendingActsCount, pendingSmacksCount, onTierClick, siteUpdating, onToggleSiteUpdating }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
   // Acts filters in render order: Location dropdown first, Category pills second.
   // Used for "Clear all" and the mobile filter row that shows just the names.
   const ACTS_FILTER_OPTIONS: Record<string, string[]> = {
@@ -429,6 +431,23 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                           <span className="ml-auto bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center">
                             {pendingSmacksCount > 99 ? "99+" : pendingSmacksCount}
                           </span>
+                        )}
+                      </button>
+                    )}
+                    {isAdmin && (
+                      <button
+                        onClick={() => onToggleSiteUpdating?.(!siteUpdating)}
+                        className={[
+                          "w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-['Poppins',sans-serif] font-medium transition-colors",
+                          siteUpdating
+                            ? "text-orange-600 hover:bg-orange-50"
+                            : "text-gray-600 hover:bg-gray-50",
+                        ].join(" ")}
+                      >
+                        <span className="text-base leading-none">🔧</span>
+                        {siteUpdating ? "Turn off updating banner" : "Show updating banner"}
+                        {siteUpdating && (
+                          <span className="ml-auto text-[10px] font-bold bg-orange-500 text-white rounded-full px-1.5 py-0.5">ON</span>
                         )}
                       </button>
                     )}

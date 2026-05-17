@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from "react";
-import { Bookmark, BookmarkCheck, CheckCircle2, Flame, Globe, MapPin, Pencil, Share2 } from "lucide-react";
+import { Bookmark, BookmarkCheck, CheckCircle2, Clock, Flame, Globe, MapPin, Pencil, Share2 } from "lucide-react";
 import { ShareModal } from "./ShareModal";
 import { SpreadTheWordModal } from "./SpreadTheWordModal";
 import { CardDetailsModal } from "./CardDetailsModal";
@@ -187,6 +187,22 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
     );
   }
 
+  // ── Time-commitment pill (top-right of header) ─────────────────────────────
+  // Mirrors the location badge at bottom-right of the image so users can see
+  // "how long will this take" at a glance without opening the card.
+  function TimeBadge({ light = true }: { light?: boolean }) {
+    if (!card.timeCommitment) return null;
+    const cls = light
+      ? "bg-black/50 backdrop-blur-sm text-white"
+      : "bg-gray-100 text-gray-700";
+    return (
+      <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-['Poppins',sans-serif] text-[11px] font-semibold ${cls}`}>
+        <Clock size={11} />
+        {card.timeCommitment}
+      </span>
+    );
+  }
+
   // ── Shared top-right controls (pencil + bookmark) ──────────────────────────
   // On image (`light`), the icons sit inside a translucent dark pill so they
   // stay legible regardless of the photo behind them — bright/light images
@@ -231,7 +247,8 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
               ? <img src={card.topImage} alt={card.title} className="absolute inset-0 w-full h-full object-cover object-top" />
               : card.featuredIllustration
             }
-            <div className="absolute top-2.5 right-3">
+            <div className="absolute top-2.5 right-3 flex items-center gap-1.5">
+              {!compact && <TimeBadge light={true} />}
               <TopControls light={true} />
             </div>
             {/* Spread the Word (pinToTop) doesn't show a boost — boosting yourself
@@ -352,7 +369,8 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
 
             {/* Pencil + Bookmark — hidden in compact preview mode. */}
             {!compact && (
-              <div className="absolute top-2.5 right-3">
+              <div className="absolute top-2.5 right-3 flex items-center gap-1.5">
+                <TimeBadge light={true} />
                 <TopControls light={true} />
               </div>
             )}
@@ -386,7 +404,8 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           /* No image — show controls in top-right corner of card (skip in compact mode). */
           !compact && (
             <div className="relative h-8 shrink-0">
-              <div className="absolute top-2 right-3">
+              <div className="absolute top-2 right-3 flex items-center gap-1.5">
+                <TimeBadge light={false} />
                 <TopControls light={false} />
               </div>
             </div>
