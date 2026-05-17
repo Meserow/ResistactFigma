@@ -18,8 +18,12 @@
 
 // Read the GA4 Measurement ID from the Vite env. Set this in .env or in your
 // deploy provider's env vars. Format: G-XXXXXXXXXX. Empty string = disabled.
-const MEASUREMENT_ID =
-  ((import.meta as any)?.env?.VITE_GA_MEASUREMENT_ID as string | undefined) ?? "";
+//
+// IMPORTANT: must be `import.meta.env.VITE_GA_MEASUREMENT_ID` exactly —
+// Vite's env-injection transform looks for that specific pattern and
+// substitutes at request time. Optional chaining (`import.meta?.env?.`) or
+// any wrapping defeats the substitution and ships the literal source.
+const MEASUREMENT_ID: string = import.meta.env.VITE_GA_MEASUREMENT_ID ?? "";
 
 let loaded = false;
 let logged = false; // log the on/off state exactly once

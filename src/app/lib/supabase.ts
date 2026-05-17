@@ -31,4 +31,6 @@ export interface UserApproval {
   /** ISO timestamp of the user's most recent completion. Null if they've
    *  never marked anything done. Populated by /admin/users. */
   lastActiveAt?: string | null;
+  /** Whether the user opted in to receive emails at registration. */
+  emailConsent?: boolean | null;
 }

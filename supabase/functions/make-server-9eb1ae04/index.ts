@@ -791,10 +791,20 @@ app.get("/make-server-9eb1ae04/admin/users", async (c) => {
       }
     }
 
+    // Fetch email consent from auth user metadata (stored at sign-up).
+    const consentByUser: Record<string, boolean | null> = {};
+    try {
+      const { data: authUsers } = await sb.auth.admin.listUsers({ perPage: 1000 });
+      for (const u of authUsers?.users ?? []) {
+        consentByUser[u.id] = u.user_metadata?.emailConsent ?? null;
+      }
+    } catch { /* non-fatal — consent column stays null */ }
+
     const enriched = list.map((u) => ({
       ...u,
       totalActions: totalByUser[u.userId] ?? 0,
       lastActiveAt: lastActiveByUser[u.userId] ?? null,
+      emailConsent: consentByUser[u.userId] ?? null,
     }));
 
     // Sort by last-active DESC by default; users with no activity fall to the

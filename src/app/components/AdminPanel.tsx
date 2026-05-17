@@ -855,6 +855,21 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
                                 <span className="font-['Poppins',sans-serif] text-[10px] text-gray-400">
                                   joined {new Date(user.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                                 </span>
+                                {user.emailConsent != null && (
+                                  <>
+                                    <span className="text-gray-200">·</span>
+                                    <span
+                                      className={`inline-flex items-center gap-1 font-['Poppins',sans-serif] text-[10px] font-semibold rounded-md px-1.5 py-0.5 ${
+                                        user.emailConsent
+                                          ? "text-emerald-700 bg-emerald-50 border border-emerald-200"
+                                          : "text-gray-400 bg-gray-50 border border-gray-200 line-through"
+                                      }`}
+                                      title={user.emailConsent ? "Opted in to emails" : "No email consent"}
+                                    >
+                                      ✉️ {user.emailConsent ? "emails ok" : "no emails"}
+                                    </span>
+                                  </>
+                                )}
                               </div>
                             </div>
                           </button>
