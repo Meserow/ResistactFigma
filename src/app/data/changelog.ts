@@ -16,6 +16,28 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.0.1",
+    date: "2026-05-17",
+    title: "Privacy-first Google Analytics, email consent at signup, per-platform share tracking",
+    sections: [
+      {
+        heading: "Privacy-first analytics",
+        items: [
+          "Google Analytics 4 is now active — but only if the environment has a measurement ID configured and your browser's Do-Not-Track header is off. Both conditions must hold; if either fails, no scripts load and no network calls are made.",
+          "IP anonymization is on. Google Signals and ad-personalization are disabled. No tracking for tracking's sake — just the signals we need to understand which actions are resonating.",
+          "Three events are tracked: completing an action (with category), applying Match Me preferences, and sharing a Smack (per-destination — Facebook, Bluesky, X, download, copy, etc.).",
+        ],
+      },
+      {
+        heading: "Email opt-in at account creation",
+        items: [
+          "A checkbox at signup lets you say yes (or no) to receiving ResistAct emails about new actions, updates, and resistance news. Off by default — you have to actively check it.",
+          "Your choice is stored on your account. The admin user list now shows an 'emails ok' or 'no emails' badge on each user row so we always know who we can reach.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.0.0",
     date: "2026-05-17",
     title: "🎉 ResistAct 1.0 — production launch. Smaller-faster Smacks, smarter match banner, 36 fresh cards, and the catalog crosses 1,373.",

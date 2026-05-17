@@ -57,7 +57,7 @@ export function CardDetailsModal({ card, onClose, onShare }: CardDetailsModalPro
             <ImageWithFallback
               src={card.topImage}
               alt={card.title}
-              className={`w-full h-full ${card.imageContain ? "object-contain p-3" : "object-cover"}`}
+              className={`w-full h-full ${card.imageContain ? "object-contain p-3" : "object-cover object-top"}`}
             />
             {!card.imageContain && (
               <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
