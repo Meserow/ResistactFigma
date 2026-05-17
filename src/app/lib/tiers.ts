@@ -1,14 +1,13 @@
 // ─── Tier definitions ─────────────────────────────────────────────────────────
-// Thresholds are calibrated for a civic-action platform where most users do
-// 1–10 actions.  The low end is fine-grained so new users feel progress fast;
-// the top end is aspirational and motivates long-term engagement.
+// Thresholds are calibrated so regular users feel real progress quickly and
+// committed users can reach the top tier in a few weeks of active use.
 //
-// Spark     0–4      just getting started
-// Ember     5–19     building momentum
-// Flame     20–74    actively resisting
-// Blaze     75–199   unstoppable
-// Wildfire  200–499  movement builder
-// Inferno   500+     legendary activist
+// Spark     0–2      just getting started
+// Ember     3–9      building momentum
+// Flame     10–24    actively resisting
+// Blaze     25–49    unstoppable
+// Wildfire  50–99    movement builder
+// Inferno   100+     legendary activist
 
 export type TierKey = "spark" | "ember" | "flame" | "blaze" | "wildfire" | "inferno";
 
@@ -35,32 +34,32 @@ export interface TierDef {
 
 export const TIERS: TierDef[] = [
   {
-    key: "spark",    name: "Spark",    min: 0,   max: 4,   icon: "sparkles",
+    key: "spark",    name: "Spark",    min: 0,   max: 2,   icon: "sparkles",
     color: "#FCD34D", iconColor: "#78350f", glowColor: "#FDE68A",
     tagline: "Just getting started", animated: false,
   },
   {
-    key: "ember",    name: "Ember",    min: 5,   max: 19,  icon: "flame",
+    key: "ember",    name: "Ember",    min: 3,   max: 9,   icon: "flame",
     color: "#FB923C", iconColor: "#fff",    glowColor: "#FED7AA",
     tagline: "Building momentum", animated: false,
   },
   {
-    key: "flame",    name: "Flame",    min: 20,  max: 74,  icon: "flame",
+    key: "flame",    name: "Flame",    min: 10,  max: 24,  icon: "flame",
     color: "#F97316", iconColor: "#fff",    glowColor: "#FDBA74",
     tagline: "Actively resisting", animated: false,
   },
   {
-    key: "blaze",    name: "Blaze",    min: 75,  max: 199, icon: "flame",
+    key: "blaze",    name: "Blaze",    min: 25,  max: 49,  icon: "flame",
     color: "#EF4444", iconColor: "#fff",    glowColor: "#FCA5A5",
     tagline: "Unstoppable", animated: false,
   },
   {
-    key: "wildfire", name: "Wildfire", min: 200, max: 499, icon: "flame",
+    key: "wildfire", name: "Wildfire", min: 50,  max: 99,  icon: "flame",
     color: "#DC2626", iconColor: "#fff",    glowColor: "#F87171",
     tagline: "Movement builder", animated: false,
   },
   {
-    key: "inferno",  name: "Inferno",  min: 500, max: null, icon: "flame",
+    key: "inferno",  name: "Inferno",  min: 100, max: null, icon: "flame",
     color: "#991B1B", iconColor: "#fff",    glowColor: "#EF4444",
     tagline: "Legendary activist", animated: true,
   },

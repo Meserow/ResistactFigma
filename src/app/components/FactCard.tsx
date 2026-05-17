@@ -145,15 +145,17 @@ export function FactCard({ card, onBoost, isBoosted, boostCount = 0 }: FactCardP
           🔥 {boostCount.toLocaleString()} boost{boostCount === 1 ? "" : "s"}
         </p>
         <div className="flex items-center gap-1.5">
-          {/* Reply — opens a copy-ready comment for someone else's social post */}
+          {/* Push back — opens a pre-written comment to paste on someone
+              else's social-media post. Not a reply *to* ResistAct — it's
+              ammunition for the comments section out in the wild. */}
           <button
             onClick={() => setShareOpen(true)}
-            aria-label="Share as a comment"
-            title="Share as a comment on someone else's post"
+            aria-label="Push back — get a pre-written comment to paste on someone else's post"
+            title="Get a pre-written comment to paste on someone else's post"
             className="flex items-center gap-1 px-3 py-1.5 rounded-xl font-['Poppins',sans-serif] font-bold text-[12px] transition-all bg-white hover:bg-gray-50 text-gray-700 border border-gray-200"
           >
             <MessageSquare size={12} strokeWidth={2.5} />
-            Reply
+            Push back
           </button>
           <button
             onClick={() => onBoost?.(card.id)}
