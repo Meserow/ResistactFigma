@@ -1,0 +1,140 @@
+/**
+ * Google Analytics 4 — privacy-respecting wiring.
+ *
+ * Disabled-by-default: if VITE_GA_MEASUREMENT_ID isn't set in the build
+ * environment, this module loads NO scripts, makes NO network calls, and
+ * every `track()` call is a no-op. Drop in a Measurement ID and it activates.
+ *
+ * Privacy defaults baked in (no opt-in needed):
+ *   • Anonymize IP (truncate to /24 / /48)
+ *   • Disable Google Signals (no cross-device ad tracking)
+ *   • Disable ad-personalization signals
+ *   • Respect browser Do-Not-Track header — if the user has DNT on, we don't
+ *     load gtag at all
+ *
+ * For a more aggressive posture (consent banner, EU geo gating, etc.) bolt
+ * those layers on top of this module rather than rewriting it.
+ */
+
+// Read the GA4 Measurement ID from the Vite env. Set this in .env or in your
+// deploy provider's env vars. Format: G-XXXXXXXXXX. Empty string = disabled.
+const MEASUREMENT_ID =
+  ((import.meta as any)?.env?.VITE_GA_MEASUREMENT_ID as string | undefined) ?? "";
+
+let loaded = false;
+let logged = false; // log the on/off state exactly once
+
+function userHasDoNotTrack(): boolean {
+  if (typeof navigator === "undefined") return false;
+  // Standard + IE/MS legacy + window-level fallback.
+  return (
+    navigator.doNotTrack === "1" ||
+    (navigator as any).msDoNotTrack === "1" ||
+    (typeof window !== "undefined" && (window as any).doNotTrack === "1")
+  );
+}
+
+/**
+ * Initialise GA4. Call once at app startup. Safe to call multiple times —
+ * subsequent calls no-op. Loads the gtag.js script + dataLayer if and only if:
+ *   • A Measurement ID is configured, AND
+ *   • The user does NOT have Do-Not-Track set.
+ */
+export function initAnalytics(): void {
+  if (loaded) return;
+  if (typeof window === "undefined") return; // SSR safety, future-proofing
+
+  if (!MEASUREMENT_ID) {
+    if (!logged) {
+      // eslint-disable-next-line no-console
+      console.info("[analytics] Disabled — no VITE_GA_MEASUREMENT_ID configured.");
+      logged = true;
+    }
+    return;
+  }
+  if (userHasDoNotTrack()) {
+    if (!logged) {
+      // eslint-disable-next-line no-console
+      console.info("[analytics] Disabled — respecting browser Do-Not-Track signal.");
+      logged = true;
+    }
+    return;
+  }
+
+  loaded = true;
+
+  // Inject gtag.js (async, deferred — won't block first paint).
+  const s = document.createElement("script");
+  s.async = true;
+  s.src = `https://www.googletagmanager.com/gtag/js?id=${MEASUREMENT_ID}`;
+  document.head.appendChild(s);
+
+  // Bootstrap dataLayer + global gtag().
+  (window as any).dataLayer = (window as any).dataLayer || [];
+  function gtag(...args: any[]) {
+    (window as any).dataLayer.push(args);
+  }
+  (window as any).gtag = gtag;
+
+  gtag("js", new Date());
+  gtag("config", MEASUREMENT_ID, {
+    // Truncate IP before storage.
+    anonymize_ip: true,
+    // Don't merge with Google's ad-network identity graph.
+    allow_google_signals: false,
+    allow_ad_personalization_signals: false,
+    // Default consent posture — analytics only, no ad storage.
+    // (See gtag consent docs if you later add a banner.)
+    storage: "granted",
+  });
+}
+
+/**
+ * Low-level event tracker. Most callers should use the typed helpers below.
+ * No-op when analytics is disabled (no ID configured, DNT on, etc.).
+ */
+export function track(event: string, params: Record<string, any> = {}): void {
+  if (!loaded) return;
+  const gtag = (window as any).gtag as undefined | ((...args: any[]) => void);
+  gtag?.("event", event, params);
+}
+
+// ─── Typed event helpers ─────────────────────────────────────────────────────
+// Keep these tight + consistent. The string keys are the GA event names that
+// show up in the dashboard; the param keys map to GA recommended properties
+// when possible (e.g. `method` for share destinations).
+
+export const analytics = {
+  /** A user marked an action card as DONE. Most engagement-meaningful event. */
+  actionCompleted(cardId: number, category: string | undefined): void {
+    track("action_completed", {
+      card_id: cardId,
+      category: (category ?? "OTHER").toUpperCase(),
+    });
+  },
+
+  /** A user finished the Match wizard and applied preferences. */
+  matchSet(time: string | null, tone: Record<string, number>): void {
+    track("match_set", {
+      time_bucket: time ?? "unset",
+      tone_anger:      tone.anger      ?? 1,
+      tone_comedy:     tone.comedy     ?? 1,
+      tone_subversion: tone.subversion ?? 1,
+      tone_hope:       tone.hope       ?? 1,
+      tone_energy:     tone.energy     ?? 1,
+    });
+  },
+
+  /**
+   * A user clicked a share destination. `surface` distinguishes the source
+   * (e.g. "smack", "spread_the_word", "fact_pushback") so the same `method`
+   * dimension (facebook/bluesky/x/…) is comparable across surfaces.
+   */
+  shareClicked(method: string, surface: string, contentId?: string | number): void {
+    track("share", {
+      method,
+      content_type: surface,
+      ...(contentId != null ? { item_id: String(contentId) } : {}),
+    });
+  },
+};

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useDeferredValue } from "react";
+import { initAnalytics, analytics } from "./lib/analytics";
 import { Navbar } from "./components/Navbar";
 import { ActionCard, ActionCardData } from "./components/ActionCard";
 import { FactCard } from "./components/FactCard";
@@ -734,6 +735,10 @@ export default function App() {
     setAccessToken(null);
   }
 
+  // ── Boot analytics on mount. No-op when VITE_GA_MEASUREMENT_ID is unset
+  //    or the browser has Do-Not-Track on. Idempotent — safe to call again. ──
+  useEffect(() => { initAnalytics(); }, []);
+
   // ── Sync cards from Supabase ──
   const PAGE_SIZE = 20;
 
@@ -995,6 +1000,10 @@ export default function App() {
     // count syncs back in the background and overrides if it disagrees.
     if (delta === 1) {
       setCelebration({ prev: prevTotal, next: prevTotal + 1 });
+      // Analytics: fire only on a fresh completion. Pulls the card from the
+      // current state map so we know the category at click-time.
+      const card = cards.find((c) => c.id === id);
+      analytics.actionCompleted(id, card?.category);
     }
 
     try {
@@ -1589,6 +1598,7 @@ export default function App() {
             setMatchPrefs(prefs);
             savePreferences(prefs);
             setMatchOpen(false);
+            analytics.matchSet(prefs.time, prefs.tone);
             // Sync to the user's profile so prefs follow them across devices.
             // Anonymous users skip the push — their prefs stay in localStorage
             // until they sign up, at which point syncMatchPreferencesOnLogin
@@ -1602,6 +1612,7 @@ export default function App() {
             setMatchPrefs(prefs);
             savePreferences(prefs);
             setMatchOpen(false);
+            analytics.matchSet(prefs.time, prefs.tone);
             setAuthModalOpen(true);
           }}
         />

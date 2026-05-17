@@ -4,3 +4,8 @@ dist/
 # Supabase CLI machine-local cache
 supabase/.temp/
 .image-backup/
+# Local env files (Vite reads VITE_* into the client at build time — never
+# commit real values). .env.example IS tracked.
+.env
+.env.local
+.env.*.local

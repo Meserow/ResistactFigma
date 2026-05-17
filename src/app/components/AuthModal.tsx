@@ -92,6 +92,7 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [pendingSignUp, setPendingSignUp] = useState(false);
   const [captchaKey, setCaptchaKey] = useState(0);
+  const [emailConsent, setEmailConsent] = useState(false);
 
   const resetCaptcha = () => { setCaptchaToken(null); setCaptchaKey(k => k + 1); };
 
@@ -156,7 +157,7 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
           email,
           password,
           options: {
-            data: { name: name.trim(), full_name: name.trim() },
+            data: { name: name.trim(), full_name: name.trim(), emailConsent },
             emailRedirectTo: window.location.origin,
             ...(captchaToken ? { captchaToken } : {}),
           },
@@ -384,6 +385,22 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
           <div className="pt-1">
             <Turnstile key={captchaKey} onToken={setCaptchaToken} />
           </div>
+        )}
+
+        {/* Email consent — only shown for new accounts (name filled in) */}
+        {name.trim() && (
+          <label className="flex items-start gap-2.5 cursor-pointer select-none pt-1">
+            <input
+              type="checkbox"
+              checked={emailConsent}
+              onChange={e => setEmailConsent(e.target.checked)}
+              className="mt-0.5 w-4 h-4 rounded border-gray-300 accent-[#fd8e33] shrink-0 cursor-pointer"
+            />
+            <span className="font-['Poppins',sans-serif] text-xs text-gray-500 leading-snug">
+              Yes, ResistAct can email me about new actions, updates, and resistance news.{" "}
+              <span className="text-gray-400 italic">No spam — unsubscribe anytime.</span>
+            </span>
+          </label>
         )}
 
         {error && (
