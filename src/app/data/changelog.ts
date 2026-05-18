@@ -16,6 +16,27 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.0.8",
+    date: "2026-05-17",
+    title: "Cards can no longer be approved without an image — closed three bypass paths",
+    sections: [
+      {
+        heading: "What changed",
+        items: [
+          "12 image-less cards from a May 2026 Etsy/Bluesky/TikTok creator import had landed in production already approved, showing as half-blank tiles in the live feed. They've all been flipped back to pending and now appear in Admin → Pending — upload a header image to re-approve, or delete.",
+          "The PUT /actions/:id endpoint (used by Admin → Edit) no longer accepts `adminApproved` in the request body. Approval can only happen through POST /admin/approve-action/:id, which enforces the image-presence check.",
+          "The Etsy-creators bulk-import code now sets `adminApproved` based on whether an image was actually resolved, not unconditionally true.",
+        ],
+      },
+      {
+        heading: "How it could happen",
+        items: [
+          "Three approval paths existed: (1) user submit → defaults to false, fine; (2) admin approve via the proper endpoint → image-required, fine; (3) direct KV writes inside one-off data migrations → no gate. The Etsy-creators migration used path (3) and skipped the gate.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.0.7",
     date: "2026-05-17",
     title: "Gamification animations — counters roll, bookmarks bounce, streaks burn, avatars get XP rings",
@@ -31,12 +52,6 @@ export const CHANGELOG: ChangelogEntry[] = [
           "Featured card shimmer — Boosted ⭐ cards get a diagonal highlight sweep across their navy hero image every ~5.5s. Soft, single pass, easy to ignore but draws the eye.",
           "Avatar XP ring — your tier-colored progress ring now wraps your profile photo in the mobile menu, filling clockwise toward the next tier. Apple Watch / Strava energy.",
           "First-match-wizard confetti — the very first time you finish the Match wizard (ever, per browser), a 180-piece confetti burst rains down. Once. Then never again.",
-        ],
-      },
-      {
-        heading: "Already in the app from before",
-        items: [
-          "The big celebration modal that fires when you mark an action DONE — full-screen fireworks, three waves of bursts, color pulses on tier-up, count-up of your total action count — has been around for a while. We didn't replace any of that; the new animations layer in around it for the smaller moments that didn't have feedback yet.",
         ],
       },
       {
@@ -59,12 +74,6 @@ export const CHANGELOG: ChangelogEntry[] = [
           "The match banner under \"✨ Matched for you\" used to hide tone chips (Confrontational, Humor, Subversive, Hopeful, Motivation) when they were sitting at the default value — so all-defaults users saw just ⏱ time and 🗺 setting. Confusing if you wanted a quick \"what are my settings right now?\" check.",
           "Now: all 5 tone chips are visible at all times. Ones at the default render greyed out + thin border (background context). Ones you've bumped off the default render in orange-accent + bold + navy text — so anything you've customised pops at a glance.",
           "Hover any chip for a tooltip that says whether it's at default or what value it's been bumped to.",
-        ],
-      },
-      {
-        heading: "Why",
-        items: [
-          "Earlier today we'd flipped the logic the other way (only show bumped chips) because we'd briefly had a version where every tone dim showed up loudly even when nothing was set — felt like noise. This is the middle path: always show everything, but make the customised stuff visually louder than the defaults.",
         ],
       },
     ],
@@ -107,7 +116,6 @@ export const CHANGELOG: ChangelogEntry[] = [
         heading: "What changed",
         items: [
           "Hovering over any action card now lifts it 4px, scales it 2%, and rotates it 0.3° — subtle enough you feel it more than you see it. The shadow still lifts to a softer larger shadow underneath. Reads as \"I am clickable and physical\" without screaming for attention.",
-          "Why not the literal \"shake\" we talked about? Shake is the single worst CSS animation for vestibular disorders, it reads as an error signal in UI vocabulary (think iOS wrong-password), and on a dense feed of 400+ cards a mouse passing over a dozen of them while you scroll would feel like the page is malfunctioning. The lift achieves the same \"I noticed you\" effect without those costs.",
         ],
       },
       {
