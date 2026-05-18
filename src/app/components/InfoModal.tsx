@@ -56,7 +56,7 @@ export function InfoModal({ onClose }: InfoModalProps) {
                   <Shield size={14} strokeWidth={2.5} className="text-white" />
                 </div>
                 <p className="font-['Poppins',sans-serif] text-gray-600 text-[12.5px] leading-relaxed">
-                  <span className="font-semibold text-[#23297e]">Stay private.</span>{" "}No tracking, no inescapable email list. Resist without leaving a trail. Make an account only if you want to save matches or submit an action.
+                  <span className="font-semibold text-[#23297e]">Stay private.</span>{" "}No tracking, no inescapable email list. Resist without leaving a trail. Apply for founding access if you want to save your progress, track your streak, or submit your own actions.
                 </p>
               </div>
 

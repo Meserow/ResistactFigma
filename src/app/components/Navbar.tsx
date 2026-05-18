@@ -67,9 +67,10 @@ interface NavbarProps {
   onTierClick?: () => void;
   siteUpdating?: boolean;
   onToggleSiteUpdating?: (enabled: boolean) => void;
+  pendingUsersCount?: number;
 }
 
-export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick, onPendingSmacksClick, onPendingActsClick, pendingActsCount, pendingSmacksCount, onTierClick, siteUpdating, onToggleSiteUpdating }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
+export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick, onPendingSmacksClick, onPendingActsClick, pendingActsCount, pendingSmacksCount, pendingUsersCount = 0, onTierClick, siteUpdating, onToggleSiteUpdating }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
   // Acts filters in render order: Location dropdown first, Category pills second.
   // Used for "Clear all" and the mobile filter row that shows just the names.
   const ACTS_FILTER_OPTIONS: Record<string, string[]> = {
@@ -458,6 +459,11 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                       >
                         <ShieldCheck size={15} />
                         Admin Panel
+                        {pendingUsersCount > 0 && (
+                          <span className="ml-auto text-[10px] font-bold bg-amber-500 text-white rounded-full px-1.5 py-0.5 leading-none">
+                            {pendingUsersCount}
+                          </span>
+                        )}
                       </button>
                     )}
                     <button
@@ -492,7 +498,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                   #jointheresistance
                 </span>
                 <span className="text-[10.5px] font-normal italic text-white/85 leading-tight mt-0.5">
-                  Log in or sign up to save your progress.
+                  Sign in to continue — or join if you're new.
                 </span>
               </button>
             </>
@@ -989,7 +995,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                 #jointheresistance
               </span>
               <span className="text-[10.5px] font-normal italic text-white/85 leading-tight mt-0.5">
-                Log in or sign up to save your progress.
+                Sign in to continue — or join if you're new.
               </span>
             </button>
           )}
@@ -1009,6 +1015,11 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
             >
               <ShieldCheck size={16} />
               Admin Panel
+              {pendingUsersCount > 0 && (
+                <span className="ml-auto text-[10px] font-bold bg-amber-500 text-white rounded-full px-1.5 py-0.5 leading-none">
+                  {pendingUsersCount}
+                </span>
+              )}
             </button>
           )}
         </div>

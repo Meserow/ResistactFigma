@@ -89,6 +89,7 @@ interface ActionCardProps {
   onBookmark?: (id: number) => void;
   onEdit?: (id: number) => void;
   onApprove?: (id: number) => void;
+  onInfoClick?: () => void;
   isBoosted?: boolean;
   isCompleted?: boolean;
   isBookmarked?: boolean;
@@ -101,7 +102,7 @@ interface ActionCardProps {
   compact?: boolean;
 }
 
-function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdit, onApprove, isBoosted, isCompleted, isBookmarked, canEdit, isPending, compact = false }: ActionCardProps) {
+function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdit, onApprove, onInfoClick, isBoosted, isCompleted, isBookmarked, canEdit, isPending, compact = false }: ActionCardProps) {
   const [shareOpen, setShareOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
@@ -279,8 +280,8 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           // haven't asked the OS for reduced motion (vestibular safety).
           // hover:z-10 keeps the lifted card painting above its neighbors
           // in the grid rather than getting clipped at edges.
-          className={`bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:shadow-lg motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10 ${card.pinToTop ? "cursor-pointer" : ""}`}
-          onClick={card.pinToTop ? () => setShareOpen(true) : undefined}
+          className={`resistact-card-shine bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:shadow-lg motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10 ${card.pinToTop && onInfoClick ? "cursor-pointer" : ""}`}
+          onClick={card.pinToTop && onInfoClick ? onInfoClick : undefined}
         >
           {/* Illustration — use uploaded image if available, else navy illustration */}
           {/* `resistact-anim-shimmer` overlays a diagonal highlight sweep on

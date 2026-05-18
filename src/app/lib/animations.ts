@@ -97,6 +97,14 @@ export const GAMIFICATION_KEYFRAMES = `
     60%       { opacity: 0.6; }
     100%      { transform: translateX(250%)  skewX(-20deg); opacity: 0; }
   }
+  /* Card gloss: on hover, a wide gloss sweep fires once across the whole card —
+     like picking up a physical card and catching the light. */
+  @keyframes resistact-card-gloss {
+    0%   { transform: translateX(-160%) skewX(-18deg); opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 1; }
+    100% { transform: translateX(260%)  skewX(-18deg); opacity: 0; }
+  }
   /* Bookmark pop: scale up, then back, like a satisfying tap. */
   @keyframes resistact-bookmark-pop {
     0%   { transform: scale(1); }
@@ -122,7 +130,8 @@ export const GAMIFICATION_KEYFRAMES = `
     .resistact-anim-flicker,
     .resistact-anim-shimmer::after,
     .resistact-anim-pop,
-    .resistact-anim-stagger {
+    .resistact-anim-stagger,
+    .resistact-card-shine::before {
       animation: none !important;
     }
   }
@@ -146,5 +155,27 @@ export const GAMIFICATION_KEYFRAMES = `
     pointer-events: none;
     animation: resistact-shimmer 5500ms ease-in-out infinite;
     animation-delay: 1500ms;
+  }
+
+  /* Card gloss — applied to the outer card wrapper. On hover, fires a single
+     gloss sweep across the whole card (image + content area). The card's own
+     overflow:hidden and border-radius clip it so it stays inside the rounded
+     corners. Looks like a physical card catching light as you reach for it. */
+  .resistact-card-shine { position: relative; }
+  .resistact-card-shine::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: linear-gradient(110deg,
+      transparent 20%,
+      rgba(255,255,255,0.18) 42%,
+      rgba(255,255,255,0.32) 50%,
+      rgba(255,255,255,0.18) 58%,
+      transparent 80%);
+    pointer-events: none;
+    z-index: 15;
+    opacity: 0;
+  }
+  .resistact-card-shine:hover::before {
+    animation: resistact-card-gloss 650ms ease-in-out forwards;
   }
 `;
