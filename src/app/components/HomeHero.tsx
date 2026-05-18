@@ -11,9 +11,10 @@ export function HomeHero({ onMatchClick, onAskClick, onHowClick }: HomeHeroProps
   return (
     <div className="bg-white relative overflow-hidden border-b border-[#f0e8de]">
       <div className="relative z-10 max-w-[880px] mx-auto px-5 pt-9 pb-7 text-center">
-        <h1 className="font-['Poppins',sans-serif] text-[#23297e] text-[18px] md:text-[22px] font-bold leading-[1.2] md:whitespace-nowrap">
-          America is being run by cartoon villains. MAGA is nuts.{" "}
-          <em className="italic font-semibold text-[#fd8e33]">But what can I do?</em>
+        <h1 className="font-['Poppins',sans-serif] text-[#2a2a2a] text-[18px] md:text-[22px] font-bold leading-[1.2]">
+          <span className="inline-block -translate-x-10 md:-translate-x-24">America is being run by cartoon villains. MAGA is nuts.</span>
+          <br />
+          <em className="stamp-in font-['Rock_Salt',cursive] not-italic font-bold text-[#fd8e33] text-[18px] md:text-[22px] leading-none align-baseline inline-block translate-x-12 md:translate-x-32">But what can one person do?</em>
         </h1>
 
         <div className="flex items-center justify-center mt-3 mb-0">
@@ -26,7 +27,7 @@ export function HomeHero({ onMatchClick, onAskClick, onHowClick }: HomeHeroProps
 
         <p className="font-['Poppins',sans-serif] text-base">
           <strong className="font-bold text-[#23297e]">Pick one. <span className="text-[#fd8e33]">Do it.</span> Share it.</strong>{" "}
-          <em className="italic text-gray-600">Come back tomorrow.</em>
+          <em className="italic font-bold text-[#fd8e33]">Come back tomorrow.</em>
         </p>
       </div>
     </div>

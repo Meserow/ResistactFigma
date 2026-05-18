@@ -93,7 +93,7 @@ export function LoggedInHero({ userId, name, newActionsToday, onMatchClick, onAs
         <p className="mt-1 font-['Poppins',sans-serif] text-sm text-gray-600 m-0">
           {subline}{" "}
           <strong className="font-bold text-[#23297e]">Pick one. <span className="text-[#fd8e33]">Do it.</span> Share it.</strong>{" "}
-          <em className="italic text-gray-600">Come back tomorrow.</em>
+          <em className="italic font-bold text-[#fd8e33]">Come back tomorrow.</em>
         </p>
 
         <div className="mt-4">

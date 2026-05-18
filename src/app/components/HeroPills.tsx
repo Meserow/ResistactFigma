@@ -65,8 +65,8 @@ export function HeroPills({ onMatchClick, onAskClick, onHowClick, hasMatchPrefs 
                 </>
               ) : (
                 <>
-                  <span className="text-[14px] font-extrabold text-white tracking-tight">Quick Matches for Me</span>
-                  <span className="text-[11px] font-medium text-white/90 italic">Pressed for time? Show me what fits.</span>
+                  <span className="text-[14px] font-extrabold text-white tracking-tight">Quick Acts for Me</span>
+                  <span className="text-[11px] font-medium text-white/90 italic">Overwhelmed? Click here to tailor the options.</span>
                 </>
               )}
             </span>
@@ -79,7 +79,7 @@ export function HeroPills({ onMatchClick, onAskClick, onHowClick, hasMatchPrefs 
           >
             <Megaphone size={14} strokeWidth={2.5} className="text-[#23297e]" />
             <span className="flex flex-col items-start text-left leading-tight whitespace-nowrap">
-              <span className="text-[13px] font-bold text-[#23297e]">Add an Action!</span>
+              <span className="text-[13px] font-bold text-[#23297e]">Add an Act!</span>
               <span className="text-[10.5px] font-normal text-[#23297e]/70 italic">Find people to do a great idea!</span>
             </span>
           </button>
