@@ -11,7 +11,7 @@ export function HomeHero({ onMatchClick, onAskClick, onHowClick }: HomeHeroProps
   return (
     <div className="bg-white relative overflow-hidden border-b border-[#f0e8de]">
       <div className="relative z-10 max-w-[880px] mx-auto px-5 pt-9 pb-7 text-center">
-        <h1 className="font-['Poppins',sans-serif] text-gray-900 text-[18px] md:text-[22px] font-bold leading-[1.2] md:whitespace-nowrap">
+        <h1 className="font-['Poppins',sans-serif] text-[#23297e] text-[18px] md:text-[22px] font-bold leading-[1.2] md:whitespace-nowrap">
           America is being run by cartoon villains. MAGA is nuts.{" "}
           <em className="italic font-semibold text-[#fd8e33]">But what can I do?</em>
         </h1>
