@@ -826,14 +826,15 @@ app.get("/make-server-9eb1ae04/admin/users", async (c) => {
 // ─── ADMIN: Who's online right now ────────────────────────────────────────────
 // Reads `user:last-seen:*` (written by `getUser` on every authenticated
 // request) and joins with `user:approval:{userId}` for display fields.
-// "Online" = last-seen within `windowMinutes` (default 5).
+// "Online" = last-seen within `windowMinutes` (default 1440 = 24h). Cap is
+// 1 week (10 080 min) so an admin can scan recent-but-not-current activity.
 app.get("/make-server-9eb1ae04/admin/online-users", async (c) => {
   try {
     const token = c.req.header("Authorization")?.split(" ")[1];
     const admin = await requireAdmin(token);
     if (!admin) return c.json({ error: "Forbidden" }, 403);
 
-    const windowMinutes = Math.max(1, Math.min(60, parseInt(c.req.query("windowMinutes") ?? "5", 10) || 5));
+    const windowMinutes = Math.max(1, Math.min(10_080, parseInt(c.req.query("windowMinutes") ?? "1440", 10) || 1440));
     const cutoffMs = Date.now() - windowMinutes * 60_000;
 
     const sb = adminClient();

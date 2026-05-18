@@ -16,6 +16,57 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.0.4",
+    date: "2026-05-17",
+    title: "Cards lift on hover — a tiny bit of physicality, without making anyone seasick",
+    sections: [
+      {
+        heading: "What changed",
+        items: [
+          "Hovering over any action card now lifts it 4px, scales it 2%, and rotates it 0.3° — subtle enough you feel it more than you see it. The shadow still lifts to a softer larger shadow underneath. Reads as \"I am clickable and physical\" without screaming for attention.",
+          "Why not the literal \"shake\" we talked about? Shake is the single worst CSS animation for vestibular disorders, it reads as an error signal in UI vocabulary (think iOS wrong-password), and on a dense feed of 400+ cards a mouse passing over a dozen of them while you scroll would feel like the page is malfunctioning. The lift achieves the same \"I noticed you\" effect without those costs.",
+        ],
+      },
+      {
+        heading: "Accessibility",
+        items: [
+          "All three transforms (lift, scale, microtilt) are gated behind `prefers-reduced-motion: no-preference`. If you have \"Reduce motion\" turned on in your OS settings (macOS, iOS, Windows, Android — all support it), the cards still get the shadow-lift but they don't move. No flag to toggle in our app — we just respect the system setting.",
+          "The hovered card also paints above its neighbors so its edges don't get clipped where it overlaps the next card in the grid.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.0.3",
+    date: "2026-05-17",
+    title: "Admin → Online now shows the last 24 hours, with at-a-glance freshness",
+    sections: [
+      {
+        heading: "Online tab is now \"active today\", not \"on right now\"",
+        items: [
+          "The Admin Panel's Online tab used to only show users active in the last 5 minutes — which meant 0 most of the time, and useless for checking whether a Facebook blast actually drew traffic. It now shows everyone active in the last 24 hours.",
+          "The list is still sorted most-recent first and still refreshes every 30 seconds while the tab is open.",
+        ],
+      },
+      {
+        heading: "Color-tiered status dots",
+        items: [
+          "Green dot = active in the last 5 minutes (\"online now\").",
+          "Amber dot = active in the last hour (\"active recently\").",
+          "Gray dot = active today, but not recently.",
+          "Hover the dot to see the label. This way you can still tell who's live right this second without losing the bigger \"who used the site today\" picture.",
+        ],
+      },
+      {
+        heading: "Under the hood",
+        items: [
+          "The /admin/online-users endpoint default window jumped from 5 minutes to 1440 minutes (24h), and the upper cap went from 60 minutes to a full week. The frontend now requests 1440 by default.",
+          "Same data source as before: `user:last-seen:*` keys written on every authenticated request. No new tracking, no new storage — just a wider read window.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.0.2",
     date: "2026-05-17",
     title: "Google Analytics 4 wired in — privacy-respecting, event-tracked",
