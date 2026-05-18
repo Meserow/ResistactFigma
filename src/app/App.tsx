@@ -298,6 +298,7 @@ export default function App() {
   // ── Live stats from server ──
   const [statsCitiesCount, setStatsCitiesCount] = useState<number | null>(null);
   const [statsUsersCount, setStatsUsersCount] = useState<number | null>(null);
+  const [pendingUsersCount, setPendingUsersCount] = useState<number>(0);
   const [siteUpdating, setSiteUpdating] = useState(false);
 
   // ── Filters ──
@@ -851,6 +852,7 @@ export default function App() {
         const data = await res.json();
         if (typeof data.citiesCount === "number") setStatsCitiesCount(data.citiesCount);
         if (typeof data.usersCount === "number") setStatsUsersCount(data.usersCount);
+        if (typeof data.pendingUsersCount === "number") setPendingUsersCount(data.pendingUsersCount);
         if (typeof data.siteUpdating === "boolean") setSiteUpdating(data.siteUpdating);
       } catch (err) {
         console.error("Network error fetching stats:", err);
@@ -1212,6 +1214,7 @@ export default function App() {
         onPendingSmacksClick={() => { handleTabChange("receipts"); setSmacksPendingVersion((v) => v + 1); }}
         pendingActsCount={pendingActsCount}
         pendingSmacksCount={pendingSmacksCount}
+        pendingUsersCount={pendingUsersCount}
         onInfoClick={() => setInfoOpen(true)}
         onActClick={() => setActOpen(true)}
         onBookmarksClick={() => setBookmarksOpen(true)}
@@ -1354,7 +1357,9 @@ export default function App() {
           /* ── Acts view ── */
           (() => {
             const visibleActsCards = (isAdminUser && showPendingActsOnly)
-              ? displayedCards.filter((c) => c.adminApproved === false)
+              // Pull from the raw card list so match-scoring / ranking can't hide
+              // unapproved cards from the admin review queue.
+              ? cards.filter((c) => c.adminApproved === false && !(c.eventDate && c.eventDate < todayISO))
               : displayedCards;
             return (
           <>

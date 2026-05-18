@@ -226,9 +226,9 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
           <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center">
             <Clock size={32} className="text-amber-500" />
           </div>
-          <h2 className="font-['Poppins',sans-serif] font-bold text-gray-900 text-xl">Account pending approval</h2>
+          <h2 className="font-['Poppins',sans-serif] font-bold text-gray-900 text-xl">You're in the queue 🎉</h2>
           <p className="font-['Poppins',sans-serif] text-gray-500 text-sm leading-relaxed max-w-xs">
-            Thanks for joining ResistAct! Your account is under review. We'll approve it shortly — browse all current acts while you wait.
+            Your application is in — we review every founding member personally and will approve you shortly. Browse the full action catalog while you wait.
           </p>
           <button onClick={onClose} className="mt-2 px-8 py-2.5 bg-[#23297e] text-white rounded-xl font-['Poppins',sans-serif] font-semibold text-sm hover:bg-[#1a2060] transition-colors">
             Got it, let me browse
@@ -260,12 +260,12 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
         <div className="mb-5">
           <div className="flex items-center gap-2 mb-1">
             <Flame size={20} className="text-[#fd8e33]" strokeWidth={2.5} />
-            <h2 className="font-['Poppins',sans-serif] font-bold text-gray-900 text-[22px] leading-tight">
-              Join the Resistance
+            <h2 className="font-['Poppins',sans-serif] font-bold text-gray-900 text-[17px] leading-tight">
+              Apply for founding access
             </h2>
           </div>
           <p className="font-['Poppins',sans-serif] text-gray-400 text-[13px] leading-snug">
-            No tracking, no donation asks, no list you can't get away from.
+            We're building this with a founding cohort. No tracking, no donation asks, no list you can't escape.
           </p>
         </div>
 

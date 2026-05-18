@@ -2511,12 +2511,14 @@ app.get("/make-server-9eb1ae04/stats", async (c) => {
 
     // Count approved/pending/all users
     const users = await kv.getByPrefix("user:approval:");
-    const usersCount = (users as any[]).filter((u) => u && typeof u === "object" && u.userId).length;
+    const validUsers = (users as any[]).filter((u) => u && typeof u === "object" && u.userId);
+    const usersCount = validUsers.length;
+    const pendingUsersCount = validUsers.filter((u) => u.status === "pending").length;
 
     const siteUpdating = (await kv.get("system:site-updating")) === true;
 
-    console.log(`Stats: ${allCards.length} acts, ${citiesCount} cities, ${usersCount} users`);
-    return c.json({ citiesCount, usersCount, actsCount: allCards.length, siteUpdating });
+    console.log(`Stats: ${allCards.length} acts, ${citiesCount} cities, ${usersCount} users (${pendingUsersCount} pending)`);
+    return c.json({ citiesCount, usersCount, pendingUsersCount, actsCount: allCards.length, siteUpdating });
   } catch (err) {
     console.log("Stats error:", err);
     return c.json({ error: `Failed to fetch stats: ${err}` }, 500);
