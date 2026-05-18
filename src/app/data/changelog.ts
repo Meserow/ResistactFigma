@@ -16,6 +16,34 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.1.1",
+    date: "2026-05-18",
+    title: "Always-on navy footer, lower-right match-me toast, bolder hero callout",
+    sections: [
+      {
+        heading: "Hero tweaks",
+        items: [
+          "Bumped the hand-painted 'But what can one person do?' a little bigger and made it visually heavier — the Rock Salt font only ships in one weight, so the extra thickness comes from a matching-orange text stroke rather than a different font weight.",
+          "Walked back the red 'one person → ResistAct' cartoon arrow experiment — it kept colliding with the wordmark and didn't read like the rest of the hand-drawn vibe.",
+        ],
+      },
+      {
+        heading: "Always-on tagline footer",
+        items: [
+          "'Pick one. Do it. Share it. Come back tomorrow.' now lives in a navy bar pinned to the bottom of the page on every tab, every scroll position. White type on navy with the orange highlight words preserved.",
+          "Added bottom padding to the action grid so the last row of cards doesn't sit underneath the footer.",
+        ],
+      },
+      {
+        heading: "Match-me nudge is now a toast",
+        items: [
+          "The 'Finding it hard to choose?' prompt that used to span the whole bottom of the screen is now a compact navy card in the lower-right corner — clear of the tagline footer.",
+          "The toast auto-dismisses after 30 seconds if you don't engage with it, so it doesn't camp out indefinitely.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.1.0",
     date: "2026-05-18",
     title: "New ResistAct wordmark and hero, report-a-problem flag on every act, faster card sync",

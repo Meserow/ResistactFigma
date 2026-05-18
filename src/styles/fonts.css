@@ -1,10 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Rock+Salt&display=swap');
 
 @keyframes stamp-in {
-  0%   { opacity: 0; transform: scale(2.4) rotate(-22deg); filter: blur(2px); }
-  55%  { opacity: 1; transform: scale(0.92) rotate(-2deg); filter: blur(0); }
-  75%  { transform: scale(1.04) rotate(-6deg); }
-  100% { opacity: 1; transform: scale(1) rotate(-5deg); filter: blur(0); }
+  0%   { opacity: 0; transform: scale(2.4) rotate(-10deg); filter: blur(2px); }
+  55%  { opacity: 1; transform: scale(0.92) rotate(-1deg); filter: blur(0); }
+  75%  { transform: scale(1.04) rotate(-3deg); }
+  100% { opacity: 1; transform: scale(1) rotate(-2deg); filter: blur(0); }
 }
 
 .stamp-in {
@@ -19,4 +19,9 @@
     animation: none;
     opacity: 1;
   }
+}
+
+@keyframes slide-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
 }

@@ -654,6 +654,15 @@ export default function App() {
     if (matchPrefs !== null) setScrollNudgeVisible(false);
   }, [matchPrefs]);
 
+  // Auto-dismiss the nudge toast after 30 seconds so it doesn't stick around
+  // forever. It's a soft suggestion — if the user hasn't engaged in 30s,
+  // it's clutter.
+  useEffect(() => {
+    if (!scrollNudgeVisible) return;
+    const t = setTimeout(() => setScrollNudgeVisible(false), 30_000);
+    return () => clearTimeout(t);
+  }, [scrollNudgeVisible]);
+
   // ── On mount: restore session + listen for OAuth redirects ──
   useEffect(() => {
     // Check for an existing session (including OAuth redirects)
@@ -1335,7 +1344,7 @@ export default function App() {
         </div>
       )}
 
-      <main className="px-4 md:px-8 py-8">
+      <main className="px-4 md:px-8 py-8 pb-20">
         <ErrorBoundary>
         {activeTab === "receipts" ? (
           /* ── Receipts view ── */
@@ -1653,31 +1662,43 @@ export default function App() {
         </ErrorBoundary>
       </main>
 
-      {/* Scroll nudge — sticky bottom bar after scrolling past ~8 cards */}
+      {/* Always-on tagline footer: motivational reminder pinned to the bottom
+          of the viewport. The scroll nudge toast sits in the lower-right
+          (not full-width) so it no longer covers this. */}
+      <div className="fixed bottom-0 inset-x-0 z-30 bg-[#23297e] shadow-[0_-1px_3px_rgba(0,0,0,0.15)]">
+        <p className="font-['Poppins',sans-serif] text-center text-[14px] md:text-base py-2.5 px-4 leading-tight">
+          <strong className="font-bold text-white">Pick one. <span className="text-[#fd8e33]">Do it.</span> Share it.</strong>{" "}
+          <em className="italic font-bold text-[#fd8e33]">Come back tomorrow.</em>
+        </p>
+      </div>
+
+      {/* Scroll nudge — lower-right toast after scrolling past ~8 cards.
+          Auto-expires after 30s (see useEffect above). Sits well clear of the
+          always-on tagline footer so it doesn't cover it. */}
       {scrollNudgeVisible && !scrollNudgeDismissed && (
-        <div className="fixed bottom-0 inset-x-0 z-40 flex items-center justify-between gap-3 bg-[#23297e] px-5 py-3 shadow-lg">
-          <p className="font-['Poppins',sans-serif] text-sm text-white/90">
-            Finding it hard to choose? <span className="font-semibold text-white">Let us match you in 30 seconds.</span>
-          </p>
-          <div className="flex items-center gap-3 shrink-0">
+        <div className="fixed bottom-16 right-4 md:bottom-20 md:right-6 z-40 max-w-[340px] flex items-start gap-2 bg-[#23297e] rounded-xl shadow-xl px-4 py-3 animate-[slide-in-up_220ms_ease-out]">
+          <div className="min-w-0 flex-1">
+            <p className="font-['Poppins',sans-serif] text-[13px] text-white/90 leading-snug mb-2">
+              Finding it hard to choose? <span className="font-semibold text-white">Let us match you in 30 seconds.</span>
+            </p>
             <button
               onClick={() => { setScrollNudgeVisible(false); setMatchOpen(true); }}
-              className="px-4 py-1.5 bg-[#fd8e33] hover:bg-[#e07a28] text-white font-['Poppins',sans-serif] font-bold text-sm rounded-xl transition-colors whitespace-nowrap"
+              className="px-3.5 py-1.5 bg-[#fd8e33] hover:bg-[#e07a28] text-white font-['Poppins',sans-serif] font-bold text-[13px] rounded-lg transition-colors whitespace-nowrap"
             >
               ✨ Find my match
             </button>
-            <button
-              onClick={() => {
-                setScrollNudgeVisible(false);
-                setScrollNudgeDismissed(true);
-                localStorage.setItem("resistact_nudge_dismissed", "1");
-              }}
-              className="text-white/50 hover:text-white transition-colors"
-              aria-label="Dismiss"
-            >
-              ✕
-            </button>
           </div>
+          <button
+            onClick={() => {
+              setScrollNudgeVisible(false);
+              setScrollNudgeDismissed(true);
+              localStorage.setItem("resistact_nudge_dismissed", "1");
+            }}
+            className="text-white/50 hover:text-white transition-colors shrink-0 -mr-1"
+            aria-label="Dismiss"
+          >
+            ✕
+          </button>
         </div>
       )}
 
