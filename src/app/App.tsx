@@ -821,22 +821,33 @@ export default function App() {
         // Cache the raw first page so the next visit hydrates instantly.
         writeCardsCache(firstBatch, total);
 
-        // Drain the rest in the background — small payload, keeps the
-        // category filter list and search complete for power users.
-        let offset = all.length;
-        while (offset < total) {
-          const res = await fetch(`${API}/actions?limit=100&offset=${offset}`, { headers: HEADERS });
-          if (!res.ok) break;
-          const data = await res.json();
-          const batch = (data.cards as ServerCard[] | undefined) ?? [];
-          if (batch.length === 0) break;
-          const resolved = batch.map(resolveCard);
-          setCards((prev) => {
-            const seen = new Set(prev.map((c) => c.id));
-            return [...prev, ...resolved.filter((c) => !seen.has(c.id))];
-          });
-          offset += batch.length;
-          setServerOffset(offset);
+        // Drain the rest in parallel — sequential fetches add up to multi-second
+        // sync on slower connections, which makes the acts count next to the
+        // sort dropdown read low (e.g. "200 acts") and silently scopes search
+        // to whatever's loaded so far. Fire all remaining pages at once and
+        // commit them in offset order.
+        const remainingOffsets: number[] = [];
+        for (let o = all.length; o < total; o += 100) remainingOffsets.push(o);
+        if (remainingOffsets.length > 0) {
+          const results = await Promise.all(
+            remainingOffsets.map(async (o) => {
+              const res = await fetch(`${API}/actions?limit=100&offset=${o}`, { headers: HEADERS });
+              if (!res.ok) return { offset: o, cards: [] as ServerCard[] };
+              const data = await res.json();
+              return { offset: o, cards: (data.cards as ServerCard[] | undefined) ?? [] };
+            }),
+          );
+          const ordered = results
+            .sort((a, b) => a.offset - b.offset)
+            .flatMap((r) => r.cards);
+          if (ordered.length > 0) {
+            const resolved = ordered.map(resolveCard);
+            setCards((prev) => {
+              const seen = new Set(prev.map((c) => c.id));
+              return [...prev, ...resolved.filter((c) => !seen.has(c.id))];
+            });
+            setServerOffset(all.length + ordered.length);
+          }
         }
       } catch (err) {
         console.error("Network error syncing cards:", err);
