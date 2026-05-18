@@ -1,4 +1,4 @@
-import logoImg from "../../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
+import logoImg from "../../assets/resistact-logo-horizontal.webp";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import type { ReactNode } from "react";
 import { FACT_CARDS } from "../data/factCards";
@@ -10,7 +10,7 @@ import { UserAvatar } from "./UserAvatar";
 
 function ResistActLogo() {
   return (
-    <img src={logoImg} alt="ResistAct logo" className="w-20 h-20 object-contain" />
+    <img src={logoImg} alt="ResistAct — Citizen Action" className="h-12 md:h-14 w-auto object-contain" />
   );
 }
 
@@ -237,24 +237,19 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
        <div className="flex items-center gap-4">
         {/* Logo + Brand */}
         <div className="flex items-center gap-3 shrink-0">
-          <button onClick={onInfoClick} title="How does ResistAct work?" className="focus:outline-none focus-visible:ring-2 focus-visible:ring-[#fd8e33] rounded-full">
+          <button onClick={onInfoClick} title="How does ResistAct work?" className="focus:outline-none focus-visible:ring-2 focus-visible:ring-[#fd8e33] rounded-md">
             <ResistActLogo />
           </button>
-          <div className="hidden sm:block">
-            <p className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-2xl leading-tight tracking-tight">
-              ResistAct
-            </p>
-            <p
-              onClick={onInfoClick}
-              title="How does ResistAct work?"
-              className="font-['Poppins',sans-serif] text-[#767574] text-[11px] leading-snug hidden lg:block max-w-[200px] italic cursor-pointer hover:text-[#23297e] transition-colors"
-            >
-              "Never doubt that a small group
-              <br />
-              of thoughtful, committed citizens can change the world. Indeed, it's the only thing that ever has."
-              <span className="not-italic font-semibold block text-right">— Margaret Mead</span>
-            </p>
-          </div>
+          <p
+            onClick={onInfoClick}
+            title="How does ResistAct work?"
+            className="font-['Poppins',sans-serif] text-[#767574] text-[11px] leading-snug hidden lg:block max-w-[200px] italic cursor-pointer hover:text-[#23297e] transition-colors"
+          >
+            "Never doubt that a small group
+            <br />
+            of thoughtful, committed citizens can change the world. Indeed, it's the only thing that ever has."
+            <span className="not-italic font-semibold block text-right">— Margaret Mead</span>
+          </p>
         </div>
 
         {/* ── Tab switcher: The Acts / The Facts / The Smacks ── */}

@@ -1,4 +1,4 @@
-import logoImg from "../../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
+import logoImg from "../../assets/resistact-logo-horizontal.webp";
 import { HeroPills } from "./HeroPills";
 
 interface HomeHeroProps {
@@ -16,11 +16,8 @@ export function HomeHero({ onMatchClick, onAskClick, onHowClick }: HomeHeroProps
           <em className="italic font-semibold text-[#fd8e33]">But what can I do?</em>
         </h1>
 
-        <div className="flex items-center justify-center gap-2 mt-3 mb-0">
-          <img src={logoImg} alt="" aria-hidden="true" className="h-10 md:h-12 w-auto" />
-          <p className="font-['Poppins',sans-serif] text-[34px] md:text-[44px] font-extrabold text-[#23297e] leading-tight">
-            ResistAct
-          </p>
+        <div className="flex items-center justify-center mt-3 mb-0">
+          <img src={logoImg} alt="ResistAct — Citizen Action" className="h-20 md:h-28 w-auto" />
         </div>
 
         <div className="mt-5 mb-5">
