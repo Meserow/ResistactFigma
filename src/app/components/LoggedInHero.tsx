@@ -72,12 +72,23 @@ export function LoggedInHero({ userId, name, newActionsToday, onMatchClick, onAs
       ? `${newActionsToday} new action${newActionsToday === 1 ? "" : "s"} today.`
       : "";
 
+  // Show a flickering flame at 7+ day streaks. The threshold matters: anyone
+  // can get to "Day 3" by accident, but a 7-day streak is a deliberate habit
+  // worth celebrating in the UI. Larger thresholds (30, 90) could unlock
+  // bigger visuals later — for now one flame is enough signal.
+  const showStreakFlame = streak >= 7;
+
   return (
     <div className="bg-gradient-to-b from-white to-[#faf6f0] border-b border-[#f0e8de]">
       <div className="max-w-[880px] mx-auto px-5 py-6 text-center">
         <p className="font-['Poppins',sans-serif] text-[#23297e] text-[20px] md:text-[24px] font-bold leading-[1.2] m-0">
           {greeting}, {firstName}.{" "}
-          <em className="italic font-semibold text-[#fd8e33]">Day {streak}.</em>
+          <em className="italic font-semibold text-[#fd8e33]">
+            {showStreakFlame && (
+              <span className="resistact-anim-flicker mr-1" aria-hidden title={`${streak}-day streak — keep it lit!`}>🔥</span>
+            )}
+            Day {streak}.
+          </em>
         </p>
         <p className="mt-1 font-['Poppins',sans-serif] text-sm text-gray-600 m-0">
           {subline}{" "}

@@ -1,0 +1,150 @@
+/**
+ * Shared animation primitives.
+ *
+ * - `useAnimatedNumber(target)` — smoothly tweens an integer toward `target`
+ *   so counters roll up instead of snapping. Respects prefers-reduced-motion
+ *   (snaps instantly when reduced motion is on).
+ *
+ * - `useFirstChange(value)` — true the first time `value` changes from its
+ *   initial render value. Lets components fire a one-shot animation only on
+ *   real user-driven changes, not on mount.
+ *
+ * - `prefersReducedMotion()` — reads the media query once at call time.
+ */
+import { useEffect, useRef, useState } from "react";
+
+/** Media-query helper. Returns false on SSR / non-browser environments. */
+export function prefersReducedMotion(): boolean {
+  if (typeof window === "undefined" || !window.matchMedia) return false;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/**
+ * Tween an integer from its previous value to `target` over `durationMs`.
+ * Uses requestAnimationFrame + cubic ease-out so the number lands and settles.
+ * On reduced-motion users it snaps immediately to `target`.
+ */
+export function useAnimatedNumber(target: number, durationMs = 600): number {
+  // Keep the previous value in a ref so re-renders that don't change `target`
+  // don't restart the animation — only a NEW target triggers a new tween.
+  const fromRef = useRef<number>(target);
+  const [displayed, setDisplayed] = useState<number>(target);
+
+  useEffect(() => {
+    if (fromRef.current === target) return;
+    if (prefersReducedMotion()) {
+      fromRef.current = target;
+      setDisplayed(target);
+      return;
+    }
+    const from = fromRef.current;
+    fromRef.current = target;
+    const start = performance.now();
+    let raf = 0;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / durationMs);
+      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      setDisplayed(Math.round(from + (target - from) * eased));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, durationMs]);
+
+  return displayed;
+}
+
+/**
+ * Returns a stable boolean that flips to `true` the first time `value`
+ * changes from its initial render value, and stays true thereafter (until
+ * unmount). Useful for distinguishing "user just bumped this" from "page
+ * loaded with this value already set" — only the former should trigger a
+ * one-shot celebratory animation.
+ */
+export function useHasChanged<T>(value: T): boolean {
+  const firstRef = useRef<T>(value);
+  const [changed, setChanged] = useState(false);
+  useEffect(() => {
+    if (!changed && firstRef.current !== value) setChanged(true);
+  }, [value, changed]);
+  return changed;
+}
+
+/**
+ * Global keyframes used across the gamification animations. Injected once
+ * via a <style> tag at app root (see App.tsx). Centralising here keeps the
+ * `@keyframes` defs out of every component file.
+ */
+export const GAMIFICATION_KEYFRAMES = `
+  /* Twinkle: a sparkle that pulses scale + opacity to feel "alive". */
+  @keyframes resistact-twinkle {
+    0%, 100% { transform: scale(1)    rotate(0deg);   opacity: 1; }
+    25%      { transform: scale(1.25) rotate(8deg);   opacity: 0.85; }
+    50%      { transform: scale(0.9)  rotate(-6deg);  opacity: 1; }
+    75%      { transform: scale(1.15) rotate(4deg);   opacity: 0.9; }
+  }
+  /* Flicker: a flame that breathes — subtle scale + skew so it feels organic. */
+  @keyframes resistact-flicker {
+    0%, 100% { transform: scale(1)    skewX(0deg);    filter: drop-shadow(0 0 4px #fd8e33aa); }
+    20%      { transform: scale(1.1)  skewX(-2deg);   filter: drop-shadow(0 0 8px #fd8e33cc); }
+    50%      { transform: scale(0.95) skewX(1.5deg);  filter: drop-shadow(0 0 3px #fd8e3399); }
+    75%      { transform: scale(1.08) skewX(-1deg);   filter: drop-shadow(0 0 7px #fd8e33bb); }
+  }
+  /* Shimmer: a diagonal highlight sweeps across the element every 6s. */
+  @keyframes resistact-shimmer {
+    0%        { transform: translateX(-150%) skewX(-20deg); opacity: 0; }
+    20%       { opacity: 0.6; }
+    60%       { opacity: 0.6; }
+    100%      { transform: translateX(250%)  skewX(-20deg); opacity: 0; }
+  }
+  /* Bookmark pop: scale up, then back, like a satisfying tap. */
+  @keyframes resistact-bookmark-pop {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.45); }
+    70%  { transform: scale(0.92); }
+    100% { transform: scale(1); }
+  }
+  /* Stagger-in: fade up + slide. Used by match results to feel "built for you". */
+  @keyframes resistact-stagger-in {
+    0%   { opacity: 0; transform: translateY(14px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  /* Counter pop: brief scale bump on the parent when the number rolls. */
+  @keyframes resistact-count-pop {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.08); }
+  }
+
+  /* All gamification animations are gated behind motion-safe via this class
+     wrapper. Users with prefers-reduced-motion get the static styles only. */
+  @media (prefers-reduced-motion: reduce) {
+    .resistact-anim-twinkle,
+    .resistact-anim-flicker,
+    .resistact-anim-shimmer::after,
+    .resistact-anim-pop,
+    .resistact-anim-stagger {
+      animation: none !important;
+    }
+  }
+
+  .resistact-anim-twinkle  { animation: resistact-twinkle 2200ms ease-in-out infinite; display: inline-block; transform-origin: center; }
+  .resistact-anim-flicker  { animation: resistact-flicker 1600ms ease-in-out infinite; display: inline-block; transform-origin: bottom center; }
+  .resistact-anim-pop      { animation: resistact-count-pop 320ms ease-out; }
+  .resistact-anim-bookmark { animation: resistact-bookmark-pop 320ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+  .resistact-anim-stagger  { animation: resistact-stagger-in 420ms ease-out both; }
+  /* Shimmer uses a pseudo-element so it can sweep on top of the parent
+     without changing the parent's layout. Parent needs position:relative
+     and overflow:hidden. */
+  .resistact-anim-shimmer { position: relative; overflow: hidden; }
+  .resistact-anim-shimmer::after {
+    content: "";
+    position: absolute; inset: 0;
+    background: linear-gradient(120deg,
+      transparent 30%,
+      rgba(255,255,255,0.55) 50%,
+      transparent 70%);
+    pointer-events: none;
+    animation: resistact-shimmer 5500ms ease-in-out infinite;
+    animation-delay: 1500ms;
+  }
+`;

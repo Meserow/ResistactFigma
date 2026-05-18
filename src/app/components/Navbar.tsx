@@ -952,11 +952,24 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
           {isLoggedIn ? (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <UserAvatar
-                  name={approval?.name ?? ""}
-                  avatar={approval?.avatar}
-                  className=""
-                />
+                {(() => {
+                  // XP ring around the mobile-menu avatar. Tier-colored arc
+                  // fills clockwise to show progress to the next tier — visible
+                  // every time the user opens the menu. Top tier (no next)
+                  // gets a full-ring "100%" feel as the tier definition
+                  // returns progressPct=100.
+                  const ti = myCompletions ? getUserTier(myCompletions.total) : null;
+                  return (
+                    <UserAvatar
+                      name={approval?.name ?? ""}
+                      avatar={approval?.avatar}
+                      className=""
+                      progressPct={ti?.progressPct}
+                      ringColor={ti?.tier.color ?? "#fd8e33"}
+                      ringSizePx={40}
+                    />
+                  );
+                })()}
                 <div>
                   <p className="font-['Poppins',sans-serif] font-semibold text-base">{approval?.name}</p>
                   <p className="font-['Poppins',sans-serif] text-gray-400 text-sm">{approval?.email}</p>
