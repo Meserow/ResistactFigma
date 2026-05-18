@@ -1,9 +1,10 @@
 import { memo, useEffect, useState } from "react";
-import { Bookmark, BookmarkCheck, CheckCircle2, Clock, Flame, Globe, MapPin, Pencil, Share2 } from "lucide-react";
+import { Bookmark, BookmarkCheck, CheckCircle2, Clock, Flag, Flame, Globe, MapPin, Pencil, Share2 } from "lucide-react";
 import { useAnimatedNumber, useHasChanged } from "../lib/animations";
 import { ShareModal } from "./ShareModal";
 import { SpreadTheWordModal } from "./SpreadTheWordModal";
 import { CardDetailsModal } from "./CardDetailsModal";
+import { FlagCardModal } from "./FlagCardModal";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 
 // Approximate threshold for when the description gets clamped in the grid view.
@@ -100,11 +101,15 @@ interface ActionCardProps {
   /** Smaller image + tighter padding + 2-line description. Used inside the
    * Match Me sample preview so cards read as previews, not as the main event. */
   compact?: boolean;
+  /** Supabase access token for authenticated flag submissions. Anonymous
+   * users can still flag (anon key is used). */
+  accessToken?: string | null;
 }
 
-function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdit, onApprove, onInfoClick, isBoosted, isCompleted, isBookmarked, canEdit, isPending, compact = false }: ActionCardProps) {
+function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdit, onApprove, onInfoClick, isBoosted, isCompleted, isBookmarked, canEdit, isPending, compact = false, accessToken }: ActionCardProps) {
   const [shareOpen, setShareOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [flagOpen, setFlagOpen] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
   useEffect(() => { setImageFailed(false); }, [card.topImage]);
   const showTopImage = !!card.topImage && !imageFailed;
@@ -194,18 +199,32 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
   // ── Floating share button (top-right of content area, below image) ───────
   function FloatingShareButton() {
     return (
-      <button
-        onClick={(e) => { e.stopPropagation(); setShareOpen(true); }}
-        title={card.pinToTop ? "Spread the word!" : "Share"}
-        aria-label={`Share ${card.title}`}
-        className={`absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-full backdrop-blur-sm transition-colors z-10 ${
-          card.pinToTop
-            ? "bg-[#fd8e33] text-white hover:bg-[#d96612]"
-            : "bg-white/90 text-gray-500 hover:text-[#fd8e33] hover:bg-white"
-        }`}
-      >
-        {card.pinToTop ? <Flame size={13} /> : <Share2 size={13} />}
-      </button>
+      <div className="absolute top-2 right-2 flex items-center gap-1.5 z-10">
+        {/* Flag is hidden on the pinned "Spread the Word" card — that card
+            isn't user-submitted content, so it can't be reported. */}
+        {!card.pinToTop && (
+          <button
+            onClick={(e) => { e.stopPropagation(); setFlagOpen(true); }}
+            title="Report a problem with this act"
+            aria-label={`Report ${card.title}`}
+            className="w-7 h-7 flex items-center justify-center rounded-full bg-white/90 text-gray-400 hover:text-red-500 hover:bg-white backdrop-blur-sm transition-colors"
+          >
+            <Flag size={12} />
+          </button>
+        )}
+        <button
+          onClick={(e) => { e.stopPropagation(); setShareOpen(true); }}
+          title={card.pinToTop ? "Spread the word!" : "Share"}
+          aria-label={`Share ${card.title}`}
+          className={`w-7 h-7 flex items-center justify-center rounded-full backdrop-blur-sm transition-colors ${
+            card.pinToTop
+              ? "bg-[#fd8e33] text-white hover:bg-[#d96612]"
+              : "bg-white/90 text-gray-500 hover:text-[#fd8e33] hover:bg-white"
+          }`}
+        >
+          {card.pinToTop ? <Flame size={13} /> : <Share2 size={13} />}
+        </button>
+      </div>
     );
   }
 
@@ -362,6 +381,9 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
             onClose={() => setDetailsOpen(false)}
             onShare={card.pinToTop ? () => setShareOpen(true) : undefined}
           />
+        )}
+        {flagOpen && (
+          <FlagCardModal cardId={card.id} cardTitle={card.title} accessToken={accessToken} onClose={() => setFlagOpen(false)} />
         )}
       </>
     );
@@ -564,6 +586,9 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
       )}
       {detailsOpen && (
         <CardDetailsModal card={card} onClose={() => setDetailsOpen(false)} />
+      )}
+      {flagOpen && (
+        <FlagCardModal cardId={card.id} cardTitle={card.title} accessToken={accessToken} onClose={() => setFlagOpen(false)} />
       )}
     </>
   );

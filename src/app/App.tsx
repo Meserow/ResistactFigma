@@ -1601,6 +1601,7 @@ export default function App() {
                   canEdit={canEditCard(card)}
                   isPending={isAdminUser && card.adminApproved === false}
                   onApprove={isAdminUser ? handleApproveCard : undefined}
+                  accessToken={accessToken}
                 />
                 </div>
               ))}
