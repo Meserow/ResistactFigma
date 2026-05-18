@@ -16,6 +16,94 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.0.4",
+    date: "2026-05-17",
+    title: "Cards lift on hover — a tiny bit of physicality, without making anyone seasick",
+    sections: [
+      {
+        heading: "What changed",
+        items: [
+          "Hovering over any action card now lifts it 4px, scales it 2%, and rotates it 0.3° — subtle enough you feel it more than you see it. The shadow still lifts to a softer larger shadow underneath. Reads as \"I am clickable and physical\" without screaming for attention.",
+          "Why not the literal \"shake\" we talked about? Shake is the single worst CSS animation for vestibular disorders, it reads as an error signal in UI vocabulary (think iOS wrong-password), and on a dense feed of 400+ cards a mouse passing over a dozen of them while you scroll would feel like the page is malfunctioning. The lift achieves the same \"I noticed you\" effect without those costs.",
+        ],
+      },
+      {
+        heading: "Accessibility",
+        items: [
+          "All three transforms (lift, scale, microtilt) are gated behind `prefers-reduced-motion: no-preference`. If you have \"Reduce motion\" turned on in your OS settings (macOS, iOS, Windows, Android — all support it), the cards still get the shadow-lift but they don't move. No flag to toggle in our app — we just respect the system setting.",
+          "The hovered card also paints above its neighbors so its edges don't get clipped where it overlaps the next card in the grid.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.0.3",
+    date: "2026-05-17",
+    title: "Admin → Online now shows the last 24 hours, with at-a-glance freshness",
+    sections: [
+      {
+        heading: "Online tab is now \"active today\", not \"on right now\"",
+        items: [
+          "The Admin Panel's Online tab used to only show users active in the last 5 minutes — which meant 0 most of the time, and useless for checking whether a Facebook blast actually drew traffic. It now shows everyone active in the last 24 hours.",
+          "The list is still sorted most-recent first and still refreshes every 30 seconds while the tab is open.",
+        ],
+      },
+      {
+        heading: "Color-tiered status dots",
+        items: [
+          "Green dot = active in the last 5 minutes (\"online now\").",
+          "Amber dot = active in the last hour (\"active recently\").",
+          "Gray dot = active today, but not recently.",
+          "Hover the dot to see the label. This way you can still tell who's live right this second without losing the bigger \"who used the site today\" picture.",
+        ],
+      },
+      {
+        heading: "Under the hood",
+        items: [
+          "The /admin/online-users endpoint default window jumped from 5 minutes to 1440 minutes (24h), and the upper cap went from 60 minutes to a full week. The frontend now requests 1440 by default.",
+          "Same data source as before: `user:last-seen:*` keys written on every authenticated request. No new tracking, no new storage — just a wider read window.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.0.2",
+    date: "2026-05-17",
+    title: "Google Analytics 4 wired in — privacy-respecting, event-tracked",
+    sections: [
+      {
+        heading: "Analytics live in production",
+        items: [
+          "Google Analytics 4 (G-7QS8YBZZXY) now ships with every page. Gtag loads asynchronously after first paint, so there's no performance cost up front.",
+          "Privacy posture: IPs are anonymized before storage, Google Signals (cross-device ad tracking) is disabled, ad-personalization signals are off, and visitors with browser-level Do-Not-Track are skipped entirely — gtag doesn't even load for them.",
+          "If you see this version badge in the bottom-left, the deploy is live.",
+        ],
+      },
+      {
+        heading: "Events being tracked beyond page views",
+        items: [
+          "action_completed — fires when a user marks an action as DONE. Carries the card ID and category (BOYCOTT / PETITION / PROTEST / etc.) so we can see which categories drive engagement.",
+          "share — fires on every share-button click across The Smacks (11 destinations: native share, copy-image, Facebook, Threads, Bluesky, Instagram, Pinterest, Reddit, Tumblr, X, download) AND across the Spread-the-Word modal. Each event carries a method dimension so per-platform share counts are visible.",
+          "match_set — fires when a user finishes the Match wizard and applies preferences. Captures the time bucket and all five tone dimensions, so we can see which configurations users actually pick.",
+        ],
+      },
+      {
+        heading: "Why it's a hardcoded ID instead of an env var",
+        items: [
+          "GA4 Measurement IDs are public — Google embeds them in every page's HTML the moment gtag loads, so there's no security difference between committing the ID and not committing it. Hardcoding the fallback means production picks it up automatically without needing the build environment to have .env configured.",
+          "An env var still wins over the fallback when set — handy if we add separate staging vs. production GA properties later.",
+        ],
+      },
+      {
+        heading: "Match Me: \"5–10 min\" now hard-filters",
+        items: [
+          "Picking the \"A few minutes — 5–10 min\" stop in the Match wizard now actually drops cards that take longer. Previously it was a ranking signal only, so you'd see all 400+ cards with the short ones at the top. Now you only see cards in the 5min and 10min buckets — typically 60–100 actions. The 30min / 1hr / few-hours / ongoing stops stay ranking-only as before.",
+          "Also restored: the banner chip strip only shows tone dimensions you've moved off the default. With all-defaults you'll see just ⏱ time and any state / group / donation chips. Bumping a tone slider above default makes its chip appear.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.0.1",
     date: "2026-05-17",
     title: "Privacy-first Google Analytics, email consent at signup, per-platform share tracking",

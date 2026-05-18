@@ -238,7 +238,12 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
     return (
       <>
         <div
-          className={`bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full hover:shadow-lg transition-shadow ${card.pinToTop ? "cursor-pointer" : ""}`}
+          // Hover state: shadow lifts for everyone (gentle, no motion).
+          // motion-safe lift + scale + microtilt only fires for users who
+          // haven't asked the OS for reduced motion (vestibular safety).
+          // hover:z-10 keeps the lifted card painting above its neighbors
+          // in the grid rather than getting clipped at edges.
+          className={`bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:shadow-lg motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10 ${card.pinToTop ? "cursor-pointer" : ""}`}
           onClick={card.pinToTop ? () => setShareOpen(true) : undefined}
         >
           {/* Illustration — use uploaded image if available, else navy illustration */}
@@ -324,7 +329,9 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
   /* ── Standard card ────────────────────────────────────── */
   return (
     <>
-      <div className={`bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full hover:shadow-lg transition-shadow ${isPending ? "ring-2 ring-red-400" : ""}`}>
+      {/* Hover state: see the featured-card branch above for rationale.
+          Same lift + scale + microtilt, gated behind motion-safe. */}
+      <div className={`bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:shadow-lg motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10 ${isPending ? "ring-2 ring-red-400" : ""}`}>
         {/* ── Admin: pending approval banner ── */}
         {isPending && !compact && (
           <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-red-50 border-b border-red-200 shrink-0">

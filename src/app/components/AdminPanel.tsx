@@ -335,7 +335,10 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
     setOnlineLoading(true);
     setOnlineError(null);
     try {
-      const res = await fetch(`${API}/admin/online-users?windowMinutes=5`, { headers: authHeaders });
+      // 1440 minutes = 24 hours. The Online tab now answers "who has used
+      // the site today?", not "who is on right now?" — much more useful for
+      // an admin checking engagement after pushing the site out.
+      const res = await fetch(`${API}/admin/online-users?windowMinutes=1440`, { headers: authHeaders });
       const data = await res.json();
       if (!res.ok) { setOnlineError(data.error ?? "Failed to load online users."); return; }
       setOnlineUsers(data.users ?? []);
@@ -446,7 +449,7 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
               <div>
                 <p className="font-['Poppins',sans-serif] font-bold text-gray-900 text-base leading-tight">Admin Panel</p>
                 <p className="font-['Poppins',sans-serif] text-gray-400 text-xs">
-                  {mode === "users" ? "Manage user approvals" : mode === "nourl" ? "Cards missing an action link" : mode === "online" ? "Users active in the last 5 minutes" : "Review submitted actions"}
+                  {mode === "users" ? "Manage user approvals" : mode === "nourl" ? "Cards missing an action link" : mode === "online" ? "Users active in the last 24 hours" : "Review submitted actions"}
                 </p>
               </div>
             </div>
@@ -933,8 +936,8 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
                   {onlineLoading && onlineUsers.length === 0
                     ? "Loading…"
                     : onlineUsers.length === 0
-                      ? "No one is active right now."
-                      : `${onlineUsers.length} user${onlineUsers.length !== 1 ? "s" : ""} active in the last 5 min · refreshes every 30s`}
+                      ? "No one has been active in the last 24 hours."
+                      : `${onlineUsers.length} user${onlineUsers.length !== 1 ? "s" : ""} active in the last 24 hours · refreshes every 30s`}
                 </p>
               </div>
 
@@ -947,13 +950,23 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
                 ) : onlineUsers.length === 0 && !onlineLoading ? (
                   <div className="flex flex-col items-center justify-center h-40 gap-2">
                     <Users size={28} className="text-gray-200" />
-                    <p className="font-['Poppins',sans-serif] text-sm text-gray-400">No one online.</p>
+                    <p className="font-['Poppins',sans-serif] text-sm text-gray-400">No activity in the last 24 hours.</p>
                   </div>
                 ) : (
                   <ul className="divide-y divide-gray-50">
-                    {onlineUsers.map((u) => (
+                    {onlineUsers.map((u) => {
+                      // Tier the status dot by how recent: green = truly live,
+                      // amber = recent, gray = active today but cold. Avoids
+                      // implying "online right now" for 23-hours-ago activity.
+                      const ageMs = Date.now() - new Date(u.lastSeenAt).getTime();
+                      const dot = ageMs < 5 * 60_000
+                        ? { color: "bg-green-500", label: "online now" }
+                        : ageMs < 60 * 60_000
+                          ? { color: "bg-amber-400", label: "active recently" }
+                          : { color: "bg-gray-300", label: "active today" };
+                      return (
                       <li key={u.userId} className="px-5 py-3 flex items-center gap-3">
-                        <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" aria-label="online" />
+                        <span className={`w-2 h-2 rounded-full ${dot.color} shrink-0`} aria-label={dot.label} title={dot.label} />
                         <UserAvatar name={u.name} avatar={u.avatar} sizeClasses="w-8 h-8" />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
@@ -970,7 +983,8 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
                           {formatRelative(u.lastSeenAt)}
                         </p>
                       </li>
-                    ))}
+                      );
+                    })}
                   </ul>
                 )}
               </div>

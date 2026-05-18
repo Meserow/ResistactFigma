@@ -826,14 +826,15 @@ app.get("/make-server-9eb1ae04/admin/users", async (c) => {
 // ─── ADMIN: Who's online right now ────────────────────────────────────────────
 // Reads `user:last-seen:*` (written by `getUser` on every authenticated
 // request) and joins with `user:approval:{userId}` for display fields.
-// "Online" = last-seen within `windowMinutes` (default 5).
+// "Online" = last-seen within `windowMinutes` (default 1440 = 24h). Cap is
+// 1 week (10 080 min) so an admin can scan recent-but-not-current activity.
 app.get("/make-server-9eb1ae04/admin/online-users", async (c) => {
   try {
     const token = c.req.header("Authorization")?.split(" ")[1];
     const admin = await requireAdmin(token);
     if (!admin) return c.json({ error: "Forbidden" }, 403);
 
-    const windowMinutes = Math.max(1, Math.min(60, parseInt(c.req.query("windowMinutes") ?? "5", 10) || 5));
+    const windowMinutes = Math.max(1, Math.min(10_080, parseInt(c.req.query("windowMinutes") ?? "1440", 10) || 1440));
     const cutoffMs = Date.now() - windowMinutes * 60_000;
 
     const sb = adminClient();
@@ -1423,6 +1424,205 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       }
       await kv.set("migration:petitions-10min:v1", true);
       console.log(`Petitions 10-min migration: updated ${updated} cards.`);
+    }
+
+    // One-time: import 16 Etsy/Bluesky/TikTok creator-shop cards. 4 have
+    // source images we can fetch (Bluesky public API + CrimethInc CDN); the
+    // other 12 land without a header image (Etsy 429s scrapers, TikTok needs
+    // JS, Facebook search URL has no stable asset) and need images attached
+    // via Admin → Edit. All inserted with adminApproved=true.
+    const etsyCreatorsImportDone = await kv.get("migration:etsy-creators-import-2026-05:v1");
+    if (!etsyCreatorsImportDone) {
+      type NewCard = {
+        category: string;
+        categoryColor: string;
+        title: string;
+        description: string;
+        authorName: string;
+        authorRole: string;
+        authorLink: string;
+        targetUrl: string;
+        toneOverride: { anger: number; comedy: number; subversion: number; hope: number; energy: number };
+        sourceImageUrl?: string;
+      };
+      const incoming: NewCard[] = [
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Wear the "No Kings" Anti-Trump Protest Pin Button Set`,
+          description: `Pack of anti-fascism "No Kings" pin buttons from indie Etsy shop CraftedVibeStudioCo — wear them stacked on a jacket or hand them out at the next visibility brigade.`,
+          authorName: "CraftedVibeStudioCo", authorRole: "Etsy shop",
+          authorLink: "https://www.etsy.com/shop/CraftedVibeStudioCo",
+          targetUrl: "https://www.etsy.com/listing/4505083806/anti-trump-protest-pin-button-set",
+          toneOverride: { anger: 2, comedy: 1, subversion: 2, hope: 2, energy: 2 } },
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Slap FendywitchDesigns' witchy "MAGA Parody" anti-Trump vinyl sticker on everything`,
+          description: `Hand-drawn parody sticker mocking MAGA from a witchy/pagan/environmentalist angle — sticks on laptops, water bottles, lamp posts, your neighbor's mailbox.`,
+          authorName: "FendywitchDesigns", authorRole: "Etsy shop",
+          authorLink: "https://www.etsy.com/shop/FendywitchDesigns",
+          targetUrl: "https://www.etsy.com/listing/742494439/maga-parody-vinyl-sticker-anti-trump",
+          toneOverride: { anger: 2, comedy: 3, subversion: 3, hope: 1, energy: 2 } },
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Sport the "Is He Dead Yet?" Black Cat Dad Hat (subtle FDT)`,
+          description: `Deadpan grumpy-cat dad hat reading "Is He Dead Yet?" — a sotto-voce FDT statement disguised as a cat hat, wearable at family dinners and PTA meetings alike.`,
+          authorName: "ElifGiftsUs", authorRole: "Etsy shop",
+          authorLink: "https://www.etsy.com/shop/ElifGiftsUs",
+          targetUrl: "https://www.etsy.com/listing/4506217910/is-he-dead-yet-black-cat-hat-anti-trump",
+          toneOverride: { anger: 3, comedy: 3, subversion: 3, hope: 1, energy: 2 } },
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Pin a "Stop Project 2025" 1.25" Button or Magnet`,
+          description: `Tiny but mighty 1.25-inch button or magnet calling out Project 2025 — pin it on your tote, stick it on your fridge, hand them out at neighborhood meetings.`,
+          authorName: "ButtonRepublic", authorRole: "Etsy shop",
+          authorLink: "https://www.etsy.com/shop/ButtonRepublic",
+          targetUrl: "https://www.etsy.com/listing/1856171148/stop-project-2025-pin-anti-trump",
+          toneOverride: { anger: 2, comedy: 0, subversion: 2, hope: 2, energy: 2 } },
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Stick an "ICE OUT" Magnet or Bumper Decal on your car`,
+          description: `Bold "ICE OUT" car magnet / bumper sticker calling for ICE abolition under Trump — turns every traffic jam into a visibility action.`,
+          authorName: "DaisyBlueDesignsCo", authorRole: "Etsy shop",
+          authorLink: "https://www.etsy.com/shop/DaisyBlueDesignsCo",
+          targetUrl: "https://www.etsy.com/listing/4442526838/ice-out-magnet-or-decal-anti-ice-protest",
+          toneOverride: { anger: 3, comedy: 0, subversion: 2, hope: 1, energy: 2 } },
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Wear the "No Kings — Republican Oligarchy" Anti-MAGA Pin`,
+          description: `Bold "No Kings / Republican Oligarchy" resist button — a conversation-starter at school pickup, the office, or the next protest line.`,
+          authorName: "BewitchingBetties", authorRole: "Etsy shop",
+          authorLink: "https://www.etsy.com/shop/BewitchingBetties",
+          targetUrl: "https://www.etsy.com/listing/4329164263/no-kings-button-pin-anti-trump-pin",
+          toneOverride: { anger: 2, comedy: 1, subversion: 2, hope: 2, energy: 2 } },
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Order a Subversive Cross-Stitch Kit from Hartford Yarn Works`,
+          description: `Hartford Yarn Works just restocked their subversive cross-stitch kits (plus their book and new styles) — turn rage at Trump/MAGA into hours of meditative stabby thread-work.`,
+          authorName: "Hartford Yarn Works", authorRole: "Independent shop",
+          authorLink: "https://bsky.app/profile/hartfordyarnworks.bsky.social",
+          targetUrl: "https://hartfordyarnworks.com/",
+          toneOverride: { anger: 2, comedy: 2, subversion: 3, hope: 2, energy: 2 } },
+        { category: "SOCIAL MEDIA", categoryColor: "#e44b4b",
+          title: `Boost Eric Champnella's "Donny / 8647 Ain't a Crime" Trump parody song`,
+          description: `Eric Champnella's parody of Tommy Tutone's "Jenny/867-5309" recasts it as "Donny / 8647 Ain't a Crime" — a singable response to Trump DOJ's bogus seashell charges against Comey. Reshare widely.`,
+          authorName: "Eric Champnella", authorRole: "Bluesky creator",
+          authorLink: "https://bsky.app/profile/echamp.bsky.social",
+          targetUrl: "https://bsky.app/profile/echamp.bsky.social",
+          toneOverride: { anger: 2, comedy: 3, subversion: 3, hope: 1, energy: 2 },
+          sourceImageUrl: "https://cdn.bsky.app/img/banner/plain/did:plc:aixsk56es7lwhmva54ghdqdi/bafkreihjgwu6jssrvn6zvjvb5baphrgofnzjoz2hm3aduxsjfl5getozcq" },
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Print + share Emily K's "One Simple Act" anti-fascism zine`,
+          description: `Artist Emily K's printable zine "One Simple Act" gives concrete small steps for resisting fascism — print at home, fold, leave stacks in coffee shops, laundromats, and libraries.`,
+          authorName: "Art by Emily K", authorRole: "Bluesky creator",
+          authorLink: "https://bsky.app/profile/museum.of.emilyk.art",
+          targetUrl: "https://bsky.app/profile/museum.of.emilyk.art",
+          toneOverride: { anger: 1, comedy: 1, subversion: 3, hope: 3, energy: 2 },
+          sourceImageUrl: "https://cdn.bsky.app/img/banner/plain/did:plc:l2bvlovg53aahtytp32r7mqe/bafkreih2ijenpyxetgtwo6z6zzagw5tqjedegymcqlelpjkbkkgilgr63i" },
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Print + distribute CrimethInc's Security Culture zine for the Trump era`,
+          description: `CrimethInc's printable zine on security culture for activists organizing under Trump's pledged federal-agency attacks on anti-fascists — print, staple, leave in spaces where organizers gather.`,
+          authorName: "CrimethInc. Ex-Workers' Collective", authorRole: "Bluesky creator",
+          authorLink: "https://bsky.app/profile/crimethinc.com",
+          targetUrl: "https://crimethinc.com/zines",
+          toneOverride: { anger: 2, comedy: 1, subversion: 3, hope: 2, energy: 2 },
+          sourceImageUrl: "https://cdn.crimethinc.com/assets/share/crimethinc-site-share.png" },
+        { category: "ART PIECE", categoryColor: "#896312",
+          title: `Boost First Amendment Troop's "ResistDance" Lincoln Memorial / Kennedy Center protest dance`,
+          description: `Twelve teen dancers staged "ResistDance" / "Resistadance vs Redaction" at the Lincoln Memorial and Kennedy Center — leotards displayed Jane Doe 4's Epstein-file testimony as protest against Trump-era redactions. Share the TikTok.`,
+          authorName: "First Amendment Troop", authorRole: "TikTok creator",
+          authorLink: "https://www.tiktok.com/@firstamendmenttroop",
+          targetUrl: "https://www.tiktok.com/@firstamendmenttroop",
+          toneOverride: { anger: 3, comedy: 1, subversion: 3, hope: 3, energy: 3 } },
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Stitch along with The Morning Crafter's free anti-Trump-era craftivism patterns`,
+          description: `@the_morningcrafter releases free craftivism patterns on TikTok (kept off Etsy, free on her site) for people compelled to make things while resisting Trump.`,
+          authorName: "The Morning Crafter", authorRole: "TikTok creator",
+          authorLink: "https://www.tiktok.com/@the_morningcrafter",
+          targetUrl: "https://www.tiktok.com/@the_morningcrafter",
+          toneOverride: { anger: 1, comedy: 2, subversion: 2, hope: 3, energy: 2 } },
+        { category: "SPREAD POSITIVITY", categoryColor: "#d97706",
+          title: `Share This Hour Has 22 Minutes' "A New Book by Donald Trump" sketch`,
+          description: `CBC's This Hour Has 22 Minutes dropped a deadpan sketch-comedy parody of "A New Book by Donald Trump." Reshare to fill a feed with something that lands a laugh AND a punchline.`,
+          authorName: "This Hour Has 22 Minutes (CBC)", authorRole: "TikTok creator",
+          authorLink: "https://www.tiktok.com/@thishourhas22minutes",
+          targetUrl: "https://www.tiktok.com/@thishourhas22minutes",
+          toneOverride: { anger: 0, comedy: 3, subversion: 2, hope: 2, energy: 2 } },
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Boost Yarn Sisters / Guardian "Weapons of Mass Construction" anti-Trump craftivism feature`,
+          description: `Yarn Sisters' FB community is amplifying the Guardian feature on US craftivists fighting Trump with yarn — embroidered pistols, slogan quilts, knitted protest banners. Share, then pick up a needle.`,
+          authorName: "Yarn Sisters (Facebook community)", authorRole: "Facebook community",
+          authorLink: "https://www.facebook.com/search/top/?q=craftivism%20trump",
+          targetUrl: "https://www.facebook.com/search/top/?q=craftivism%20trump",
+          toneOverride: { anger: 1, comedy: 2, subversion: 3, hope: 3, energy: 2 } },
+        { category: "ART PIECE", categoryColor: "#896312",
+          title: `Drop a "Tesla T Party" Anti-Musk Protest Banner (Bruce S.'s craftivist template)`,
+          description: `Bruce S. (@bmschech.bsky.social) is circulating "Tesla T Party" protest-art and banner-drop visuals tying Musk-DOGE to anti-Trump street action — DIY-replicable for your own bridge or overpass.`,
+          authorName: "Bruce S. / ActivistArt", authorRole: "Bluesky creator",
+          authorLink: "https://bsky.app/profile/bmschech.bsky.social",
+          targetUrl: "https://bsky.app/profile/bmschech.bsky.social",
+          toneOverride: { anger: 2, comedy: 2, subversion: 3, hope: 2, energy: 2 },
+          sourceImageUrl: "https://cdn.bsky.app/img/avatar/plain/did:plc:ptzl2hqpetxgk2xnudzsbiim/bafkreibqplcarfena2hbirjlrh47jeiav3gj3ws5cc6cmojh27xnrq2isu" },
+        { category: "SPREAD POSITIVITY", categoryColor: "#d97706",
+          title: `Reshare Tom Morello's "This Land is Your Land" at Hands Off NYC anti-ICE protest`,
+          description: `Tom Morello covered Woody Guthrie's "This Land is Your Land" at a Hands Off NYC protest against Trump-era ICE abuses targeting immigrant New Yorkers — share the clip as a singalong for your own local action.`,
+          authorName: "Consequence / Tom Morello", authorRole: "TikTok creator",
+          authorLink: "https://www.tiktok.com/@consequence",
+          targetUrl: "https://www.tiktok.com/@consequence",
+          toneOverride: { anger: 2, comedy: 0, subversion: 2, hope: 3, energy: 3 } },
+      ];
+
+      // Helper: fetch external image, upload to the action-images bucket, return
+      // the stable Supabase public URL. Falls back to the external URL on error
+      // so the card still shows *something* — admin can re-upload via Edit.
+      async function importImage(srcUrl: string): Promise<string> {
+        try {
+          const res = await fetch(srcUrl, { headers: { "User-Agent": "Mozilla/5.0 ResistActMigration" } });
+          if (!res.ok) { console.log(`Image fetch ${res.status} for ${srcUrl}`); return srcUrl; }
+          const contentType = res.headers.get("content-type") ?? "image/jpeg";
+          const buf = await res.arrayBuffer();
+          const ext = contentType.includes("png") ? "png" : contentType.includes("webp") ? "webp" : contentType.includes("gif") ? "gif" : "jpg";
+          const key = `etsy-creators-import-${crypto.randomUUID()}.${ext}`;
+          const supabase = adminClient();
+          const BUCKET = "action-images";
+          const { error: upErr } = await supabase.storage.from(BUCKET).upload(key, buf, { contentType, upsert: false });
+          if (upErr) { console.log(`Image upload failed for ${srcUrl}:`, upErr.message); return srcUrl; }
+          const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(key);
+          return urlData.publicUrl;
+        } catch (err) {
+          console.log(`Image error for ${srcUrl}:`, err);
+          return srcUrl;
+        }
+      }
+
+      const currentIds = ((await kv.get("user-action:ids")) ?? []) as number[];
+      const base = Math.max(...(currentIds.length ? currentIds : [1305]), 1305);
+      const nowIso = new Date().toISOString();
+      const newIds = [...currentIds];
+      let added = 0;
+      for (let i = 0; i < incoming.length; i++) {
+        const c = incoming[i];
+        const id = base + 1 + i;
+        const topImageUrl = c.sourceImageUrl ? await importImage(c.sourceImageUrl) : undefined;
+        const card: any = {
+          id,
+          category: c.category,
+          categoryColor: c.categoryColor,
+          actionType: "Online",
+          isOnline: true,
+          timeCommitment: "5–10 minutes",
+          title: c.title,
+          description: c.description,
+          spotsTotal: "Unlimited",
+          boosts: 0,
+          authorName: c.authorName,
+          authorRole: c.authorRole,
+          authorLink: c.authorLink,
+          targetUrl: c.targetUrl,
+          ...(topImageUrl ? { topImageUrl } : {}),
+          toneOverride: c.toneOverride,
+          adminApproved: true,
+          createdAt: nowIso,
+        };
+        await kv.set(`user-action:${id}`, card);
+        newIds.push(id);
+        added++;
+      }
+      await kv.set("user-action:ids", newIds);
+      await kv.set("migration:etsy-creators-import-2026-05:v1", true);
+      console.log(`Etsy creators import: added ${added} cards (ids ${base + 1}..${base + added}).`);
     }
 
     // One-time: bulk-mark "Cancel your …" boycott cards as "5–10 minutes".
