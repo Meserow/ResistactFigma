@@ -197,6 +197,20 @@ export const STATIC_SMACKS: ReceiptCard[] = [
     imageUrl: "/Smacks/senate.png",
     adminApproved: true,
   },
+  {
+    id: 5028,
+    title: "Hair",
+    tags: ["Trump", "MAGA"],
+    imageUrl: "/Smacks/hair.webp",
+    adminApproved: true,
+  },
+  {
+    id: 5029,
+    title: "Biden Is Not President",
+    tags: ["Trump", "MAGA"],
+    imageUrl: "/Smacks/bidenisnotpresident.webp",
+    adminApproved: true,
+  },
 ];
 
 export interface ReceiptCard {
