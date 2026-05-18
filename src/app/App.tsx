@@ -1298,8 +1298,8 @@ export default function App() {
         sortBy={sortBy}
         onSortChange={setSortBy}
         heroSlot={
-          activeTab === "acts"
-            ? approval
+          approval
+            ? activeTab === "acts"
               ? (() => {
                   const todayStr = new Date().toISOString().slice(0, 10);
                   const newToday = cards.filter((c: any) => {
@@ -1317,12 +1317,12 @@ export default function App() {
                     />
                   );
                 })()
-              : <HomeHero
-                  onMatchClick={() => setMatchOpen(true)}
-                  onAskClick={() => setAskOpen(true)}
-                  onHowClick={() => setInfoOpen(true)}
-                />
-            : null
+              : null
+            : <HomeHero
+                onMatchClick={() => setMatchOpen(true)}
+                onAskClick={() => setAskOpen(true)}
+                onHowClick={() => setInfoOpen(true)}
+              />
         }
       />
 

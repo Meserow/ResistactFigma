@@ -85,20 +85,20 @@ export function FlagCardModal({ cardId, cardTitle, accessToken, onClose }: FlagC
           </button>
         </div>
 
-        <div className="px-5 py-4">
-          <p className="font-['Poppins',sans-serif] text-sm text-gray-600 mb-3">
-            Flagging <span className="font-semibold text-gray-900">"{cardTitle}"</span>{" "}
-            for admin review. Thanks for keeping this clean.
+        <div className="px-5 py-3">
+          <p className="font-['Poppins',sans-serif] text-[13px] text-gray-600 mb-2.5 leading-snug">
+            Flagging <span className="font-semibold text-gray-900">"{cardTitle}"</span>
+            {" "}for admin review.
           </p>
 
-          <fieldset className="space-y-2 mb-4">
-            <legend className="font-['Poppins',sans-serif] font-semibold text-xs uppercase tracking-wider text-gray-500 mb-1">
-              What's wrong?
-            </legend>
+          <p className="font-['Poppins',sans-serif] font-semibold text-[11px] uppercase tracking-wider text-gray-500 mb-1">
+            What's wrong?
+          </p>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1 mb-3">
             {REASONS.map((r) => (
               <label
                 key={r.value}
-                className="flex items-center gap-2 cursor-pointer rounded-lg px-2 py-1.5 hover:bg-gray-50"
+                className="flex items-center gap-1.5 cursor-pointer rounded px-1 py-0.5 hover:bg-gray-50"
               >
                 <input
                   type="radio"
@@ -108,28 +108,25 @@ export function FlagCardModal({ cardId, cardTitle, accessToken, onClose }: FlagC
                   onChange={() => setReason(r.value)}
                   className="accent-[#fd8e33]"
                 />
-                <span className="font-['Poppins',sans-serif] text-sm text-gray-800">
+                <span className="font-['Poppins',sans-serif] text-[13px] text-gray-800">
                   {r.label}
                 </span>
               </label>
             ))}
-          </fieldset>
+          </div>
 
           <label className="block">
-            <span className="font-['Poppins',sans-serif] font-semibold text-xs uppercase tracking-wider text-gray-500">
+            <span className="font-['Poppins',sans-serif] font-semibold text-[11px] uppercase tracking-wider text-gray-500">
               Detail (optional)
             </span>
             <textarea
               value={detail}
               onChange={(e) => setDetail(e.target.value)}
               maxLength={500}
-              rows={3}
-              placeholder="What did you see? Anything an admin should know."
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 font-['Poppins',sans-serif] text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#fd8e33] focus:border-transparent"
+              rows={2}
+              placeholder="Anything an admin should know."
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-1.5 font-['Poppins',sans-serif] text-[13px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#fd8e33] focus:border-transparent"
             />
-            <p className="font-['Poppins',sans-serif] text-[11px] text-gray-400 mt-1 text-right">
-              {detail.length}/500
-            </p>
           </label>
         </div>
 
