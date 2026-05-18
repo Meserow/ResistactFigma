@@ -16,6 +16,36 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.0.9",
+    date: "2026-05-17",
+    title: "Admin nav cleans up when queues are empty, card gloss on hover, founding-member signup framing",
+    sections: [
+      {
+        heading: "Admin nav cleanup",
+        items: [
+          "'Pending Acts' and 'Pending Smacks' items now hide entirely from the admin dropdown when their queues are empty — no more phantom menu items saying 'Pending Acts' with nothing to review.",
+          "Pending acts count now comes from the server so it reflects the full dataset, not just cards already loaded in the browser. The '21 pending' case that wasn't showing in the nav is fixed.",
+          "Amber badge on the Admin Panel button shows how many user applications are waiting for approval — sourced from the server on every page load.",
+          "Admin review queue for acts now bypasses match-scoring and ranking, so pending cards can't be suppressed by the score floor. All unapproved cards show up when you switch to pending-only mode.",
+          "Tier Dashboard is now available to all logged-in users, not just admins — it was accidentally inside the admin-only render block.",
+        ],
+      },
+      {
+        heading: "Card gloss on hover",
+        items: [
+          "Hovering any action card now fires a single diagonal gloss sweep across the full card face — image header and content area both. Feels like picking up a physical card and catching the light. Gated behind prefers-reduced-motion.",
+        ],
+      },
+      {
+        heading: "Founding-member signup framing",
+        items: [
+          "The signup modal now says 'Apply for founding access' rather than a generic 'Join the Resistance' — makes the approval queue feel intentional. After submitting, you see 'You're in the queue' instead of 'Account pending approval'.",
+          "Clicking the Spread the Word card now opens the 'How does ResistAct work?' info modal instead of jumping straight to the share sheet — consistent with clicking the Mead quote in the header.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.0.8",
     date: "2026-05-17",
     title: "Cards can no longer be approved without an image — closed three bypass paths",
