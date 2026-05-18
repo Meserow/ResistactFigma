@@ -9,6 +9,7 @@ import { FACT_CARDS } from "./data/factCards";
 import { STATIC_CARDS, IMAGE_MAP } from "./data/actionCards";
 import { AuthModal } from "./components/AuthModal";
 import { AdminPanel } from "./components/AdminPanel";
+import { FlagsAdminModal } from "./components/FlagsAdminModal";
 import { AskFlowModal } from "./components/AskFlowModal";
 import { JoinACTersModal } from "./components/JoinACTersModal";
 import { InfoModal } from "./components/InfoModal";
@@ -305,6 +306,8 @@ export default function App() {
   const [statsUsersCount, setStatsUsersCount] = useState<number | null>(null);
   const [pendingUsersCount, setPendingUsersCount] = useState<number>(0);
   const [serverPendingActsCount, setServerPendingActsCount] = useState<number>(0);
+  const [flagsCount, setFlagsCount] = useState<number>(0);
+  const [flagsAdminOpen, setFlagsAdminOpen] = useState<boolean>(false);
   const [siteUpdating, setSiteUpdating] = useState(false);
 
   // ── Filters ──
@@ -901,6 +904,7 @@ export default function App() {
         if (typeof data.usersCount === "number") setStatsUsersCount(data.usersCount);
         if (typeof data.pendingUsersCount === "number") setPendingUsersCount(data.pendingUsersCount);
         if (typeof data.pendingActsCount === "number") setServerPendingActsCount(data.pendingActsCount);
+        if (typeof data.flagsCount === "number") setFlagsCount(data.flagsCount);
         if (typeof data.siteUpdating === "boolean") setSiteUpdating(data.siteUpdating);
       } catch (err) {
         console.error("Network error fetching stats:", err);
@@ -1260,9 +1264,11 @@ export default function App() {
         onAdminClick={() => setAdminPanelOpen(true)}
         onPendingActsClick={() => { handleTabChange("acts"); setPendingActsVersion((v) => v + 1); }}
         onPendingSmacksClick={() => { handleTabChange("receipts"); setSmacksPendingVersion((v) => v + 1); }}
+        onFlaggedActsClick={() => setFlagsAdminOpen(true)}
         pendingActsCount={pendingActsCount}
         pendingSmacksCount={pendingSmacksCount}
         pendingUsersCount={pendingUsersCount}
+        flagsCount={isAdminUser ? flagsCount : 0}
         onInfoClick={() => setInfoOpen(true)}
         onActClick={() => setActOpen(true)}
         onBookmarksClick={() => setBookmarksOpen(true)}
@@ -1712,6 +1718,15 @@ export default function App() {
           accessToken={accessToken}
           onClose={() => setAdminPanelOpen(false)}
           imageMap={IMAGE_MAP}
+        />
+      )}
+
+      {/* Flagged Acts admin modal */}
+      {flagsAdminOpen && accessToken && (
+        <FlagsAdminModal
+          accessToken={accessToken}
+          onClose={() => setFlagsAdminOpen(false)}
+          onFlagsChange={setFlagsCount}
         />
       )}
 

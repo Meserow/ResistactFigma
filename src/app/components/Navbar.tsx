@@ -2,7 +2,7 @@ import logoImg from "../../assets/resistact-logo-horizontal.webp";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import type { ReactNode } from "react";
 import { FACT_CARDS } from "../data/factCards";
-import { Bell, Bookmark, ChevronDown, Clock, Flame, Info, LogOut, MapPin, Menu, MessageCircle, Search, ShieldCheck, SlidersHorizontal, Sparkles, X, Zap } from "lucide-react";
+import { Bell, Bookmark, ChevronDown, Clock, Flag, Flame, Info, LogOut, MapPin, Menu, MessageCircle, Search, ShieldCheck, SlidersHorizontal, Sparkles, X, Zap } from "lucide-react";
 import type { UserApproval } from "../lib/supabase";
 import { TierProgress } from "./TierProgress";
 import { getUserTier } from "../lib/tiers";
@@ -62,15 +62,17 @@ interface NavbarProps {
   onMatchClick?: () => void;
   onPendingSmacksClick?: () => void;
   onPendingActsClick?: () => void;
+  onFlaggedActsClick?: () => void;
   pendingActsCount?: number;
   pendingSmacksCount?: number;
+  flagsCount?: number;
   onTierClick?: () => void;
   siteUpdating?: boolean;
   onToggleSiteUpdating?: (enabled: boolean) => void;
   pendingUsersCount?: number;
 }
 
-export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick, onPendingSmacksClick, onPendingActsClick, pendingActsCount, pendingSmacksCount, pendingUsersCount = 0, onTierClick, siteUpdating, onToggleSiteUpdating }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
+export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick, onPendingSmacksClick, onPendingActsClick, onFlaggedActsClick, pendingActsCount, pendingSmacksCount, flagsCount = 0, pendingUsersCount = 0, onTierClick, siteUpdating, onToggleSiteUpdating }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
   // Acts filters in render order: Location dropdown first, Category pills second.
   // Used for "Clear all" and the mobile filter row that shows just the names.
   const ACTS_FILTER_OPTIONS: Record<string, string[]> = {
@@ -306,7 +308,29 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
         <div className="hidden md:flex items-center gap-3 shrink-0 ml-1">
           {isLoggedIn ? (
             <>
-              <Bell size={20} className="text-gray-500 cursor-pointer hover:text-[#23297e] transition-colors" />
+              {(() => {
+                // Master "needs attention" badge — sum of every admin queue
+                // so the user sees one big number, then drills in via the
+                // dropdown to find which queue needs love.
+                const attentionCount = isAdmin
+                  ? (pendingActsCount ?? 0) + (pendingSmacksCount ?? 0) + (pendingUsersCount ?? 0) + (flagsCount ?? 0)
+                  : 0;
+                return (
+                  <button
+                    onClick={() => setDropdownOpen(o => !o)}
+                    title={attentionCount > 0 ? `${attentionCount} ${attentionCount === 1 ? "item" : "items"} need your attention` : "Notifications"}
+                    aria-label={attentionCount > 0 ? `${attentionCount} items need attention` : "Notifications"}
+                    className="relative text-gray-500 cursor-pointer hover:text-[#23297e] transition-colors"
+                  >
+                    <Bell size={20} />
+                    {attentionCount > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center ring-2 ring-white">
+                        {attentionCount > 99 ? "99+" : attentionCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })()}
 
               <div className="relative" ref={dropdownRef}>
                 <button
@@ -423,6 +447,18 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                         Pending Smacks
                         <span className="ml-auto bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center">
                           {pendingSmacksCount > 99 ? "99+" : pendingSmacksCount}
+                        </span>
+                      </button>
+                    )}
+                    {isAdmin && !!flagsCount && (
+                      <button
+                        onClick={() => { setDropdownOpen(false); onFlaggedActsClick?.(); }}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-['Poppins',sans-serif] font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                      >
+                        <Flag size={15} />
+                        Flagged Acts
+                        <span className="ml-auto bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center">
+                          {flagsCount > 99 ? "99+" : flagsCount}
                         </span>
                       </button>
                     )}
