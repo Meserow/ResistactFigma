@@ -280,8 +280,8 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           // haven't asked the OS for reduced motion (vestibular safety).
           // hover:z-10 keeps the lifted card painting above its neighbors
           // in the grid rather than getting clipped at edges.
-          className={`resistact-card-shine bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:shadow-lg motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10 ${card.pinToTop && onInfoClick ? "cursor-pointer" : ""}`}
-          onClick={card.pinToTop && onInfoClick ? onInfoClick : undefined}
+          className={`resistact-card-shine bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:shadow-lg motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10 ${card.pinToTop ? "cursor-pointer" : ""}`}
+          onClick={card.pinToTop ? () => setShareOpen(true) : undefined}
         >
           {/* Illustration — use uploaded image if available, else navy illustration */}
           {/* `resistact-anim-shimmer` overlays a diagonal highlight sweep on
