@@ -1613,7 +1613,12 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           targetUrl: c.targetUrl,
           ...(topImageUrl ? { topImageUrl } : {}),
           toneOverride: c.toneOverride,
-          adminApproved: true,
+          // Only auto-approve if we actually resolved an image. Image-less
+          // cards must go through the manual Admin → Edit → upload-image →
+          // Approve flow, same as any other pending card. This makes the
+          // migration safe to re-run on a fresh KV without recreating the
+          // approved-without-image situation.
+          adminApproved: !!topImageUrl,
           createdAt: nowIso,
         };
         await kv.set(`user-action:${id}`, card);
@@ -1623,6 +1628,41 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       await kv.set("user-action:ids", newIds);
       await kv.set("migration:etsy-creators-import-2026-05:v1", true);
       console.log(`Etsy creators import: added ${added} cards (ids ${base + 1}..${base + added}).`);
+    }
+
+    // One-time: defensive cleanup for approved-without-image cards.
+    //
+    // The etsy-creators import on 2026-05 hard-coded adminApproved=true for
+    // all 25 cards, including 12 that landed without a header image (Etsy
+    // 429s scrapers, TikTok needs JS, etc). The approval-time image gate in
+    // /admin/approve-action/:id was bypassed because those cards were
+    // written directly to KV from inside the migration.
+    //
+    // This migration walks every action:* and user-action:* record and, for
+    // any record with adminApproved=true but no topImage* field, flips
+    // adminApproved back to false so the card re-appears in Admin → Pending.
+    // From there an admin can upload an image and approve through the proper
+    // gate, or delete the card.
+    //
+    // The PUT-leak and migration source-code holes are closed in this same
+    // release, so this cleanup is one-shot — bad state can't recur.
+    const approvedNoImageCleanupDone = await kv.get("migration:approved-without-image-cleanup:v1");
+    if (!approvedNoImageCleanupDone) {
+      let flipped = 0;
+      const flippedIds: number[] = [];
+      for (const prefix of ["action:", "user-action:"]) {
+        for (const c of (await kv.getByPrefix(prefix)) as any[]) {
+          if (!c || typeof c !== "object" || typeof c.id !== "number") continue;
+          if (c.adminApproved !== true) continue;
+          const hasImage = Boolean(c.topImageUrl) || Boolean(c.topImageKey) || Boolean(c.topImage);
+          if (hasImage) continue;
+          await kv.set(`${prefix}${c.id}`, { ...c, adminApproved: false });
+          flipped++;
+          flippedIds.push(c.id);
+        }
+      }
+      await kv.set("migration:approved-without-image-cleanup:v1", true);
+      console.log(`Approved-without-image cleanup: flipped ${flipped} cards back to pending. IDs: ${flippedIds.join(", ")}`);
     }
 
     // One-time: bulk-mark "Cancel your …" boycott cards as "5–10 minutes".
@@ -3044,8 +3084,15 @@ app.put("/make-server-9eb1ae04/actions/:id", async (c) => {
 
     // Strip immutable fields. Admins can additionally set `boosts` directly
     // (used for moderation / corrections); non-admins cannot.
+    //
+    // SECURITY: `adminApproved` is also stripped here. Approval has a hard
+    // image-presence requirement (enforced in /admin/approve-action/:id), and
+    // the PUT endpoint has no such check — so accepting `adminApproved: true`
+    // in a free-form edit body was a bypass for the image rule. Approval
+    // must go through /admin/approve-action/:id only.
     const { id: _id, createdBy: _createdBy, createdAt: _createdAt,
             authorAvatarKey: _avatarKey, topImageKey: _topImageKey,
+            adminApproved: _adminApproved,
             boosts: bodyBoosts, ...safeUpdates } = body;
 
     const updated: any = {
