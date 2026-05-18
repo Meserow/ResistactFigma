@@ -2515,10 +2515,12 @@ app.get("/make-server-9eb1ae04/stats", async (c) => {
     const usersCount = validUsers.length;
     const pendingUsersCount = validUsers.filter((u) => u.status === "pending").length;
 
+    const pendingActsCount = allCards.filter((c: any) => c.adminApproved === false).length;
+
     const siteUpdating = (await kv.get("system:site-updating")) === true;
 
-    console.log(`Stats: ${allCards.length} acts, ${citiesCount} cities, ${usersCount} users (${pendingUsersCount} pending)`);
-    return c.json({ citiesCount, usersCount, pendingUsersCount, actsCount: allCards.length, siteUpdating });
+    console.log(`Stats: ${allCards.length} acts (${pendingActsCount} pending), ${citiesCount} cities, ${usersCount} users (${pendingUsersCount} pending)`);
+    return c.json({ citiesCount, usersCount, pendingUsersCount, pendingActsCount, actsCount: allCards.length, siteUpdating });
   } catch (err) {
     console.log("Stats error:", err);
     return c.json({ error: `Failed to fetch stats: ${err}` }, 500);

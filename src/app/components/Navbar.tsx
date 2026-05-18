@@ -407,32 +407,28 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                       <SlidersHorizontal size={15} />
                       My Match Settings
                     </button>
-                    {isAdmin && (
+                    {isAdmin && !!pendingActsCount && (
                       <button
                         onClick={() => { setDropdownOpen(false); onPendingActsClick?.(); }}
                         className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-['Poppins',sans-serif] font-medium text-gray-600 hover:bg-gray-50 transition-colors"
                       >
                         <ShieldCheck size={15} />
                         Pending Acts
-                        {!!pendingActsCount && (
-                          <span className="ml-auto bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center">
-                            {pendingActsCount > 99 ? "99+" : pendingActsCount}
-                          </span>
-                        )}
+                        <span className="ml-auto bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center">
+                          {pendingActsCount > 99 ? "99+" : pendingActsCount}
+                        </span>
                       </button>
                     )}
-                    {isAdmin && (
+                    {isAdmin && !!pendingSmacksCount && (
                       <button
                         onClick={() => { setDropdownOpen(false); onPendingSmacksClick?.(); }}
                         className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-['Poppins',sans-serif] font-medium text-gray-600 hover:bg-gray-50 transition-colors"
                       >
                         <ShieldCheck size={15} />
                         Pending Smacks
-                        {!!pendingSmacksCount && (
-                          <span className="ml-auto bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center">
-                            {pendingSmacksCount > 99 ? "99+" : pendingSmacksCount}
-                          </span>
-                        )}
+                        <span className="ml-auto bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center">
+                          {pendingSmacksCount > 99 ? "99+" : pendingSmacksCount}
+                        </span>
                       </button>
                     )}
                     {isAdmin && (

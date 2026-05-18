@@ -299,6 +299,7 @@ export default function App() {
   const [statsCitiesCount, setStatsCitiesCount] = useState<number | null>(null);
   const [statsUsersCount, setStatsUsersCount] = useState<number | null>(null);
   const [pendingUsersCount, setPendingUsersCount] = useState<number>(0);
+  const [serverPendingActsCount, setServerPendingActsCount] = useState<number>(0);
   const [siteUpdating, setSiteUpdating] = useState(false);
 
   // ── Filters ──
@@ -452,7 +453,7 @@ export default function App() {
   // Today's date as ISO string (YYYY-MM-DD) for expiry + sort comparisons.
   const todayISO = new Date().toISOString().slice(0, 10);
   const isAdminUser = approval?.isAdmin === true;
-  const pendingActsCount   = isAdminUser ? cards.filter((c) => (c as any).adminApproved === false).length : 0;
+  const pendingActsCount   = isAdminUser ? serverPendingActsCount : 0;
   const pendingSmacksCount = isAdminUser ? receipts.filter((r) => (r as any).adminApproved === false).length : 0;
 
   const displayedCards = (() => {
@@ -853,6 +854,7 @@ export default function App() {
         if (typeof data.citiesCount === "number") setStatsCitiesCount(data.citiesCount);
         if (typeof data.usersCount === "number") setStatsUsersCount(data.usersCount);
         if (typeof data.pendingUsersCount === "number") setPendingUsersCount(data.pendingUsersCount);
+        if (typeof data.pendingActsCount === "number") setServerPendingActsCount(data.pendingActsCount);
         if (typeof data.siteUpdating === "boolean") setSiteUpdating(data.siteUpdating);
       } catch (err) {
         console.error("Network error fetching stats:", err);
@@ -1740,9 +1742,11 @@ export default function App() {
             v{__APP_VERSION__}
           </button>
           {changelogOpen && <ChangelogModal onClose={() => setChangelogOpen(false)} />}
-          {tierModalOpen && <TierModal actionCount={myCompletions?.total ?? null} byCategory={myCompletions?.byCategory} onClose={() => setTierModalOpen(false)} />}
         </>
       )}
+
+      {/* Tier modal — available to all logged-in users, not just admins */}
+      {tierModalOpen && <TierModal actionCount={myCompletions?.total ?? null} byCategory={myCompletions?.byCategory} onClose={() => setTierModalOpen(false)} />}
 
       {/* Celebration modal — fires for ALL users on a fresh "I did this".
           Rendered outside the admin block so anon + approved users both see
