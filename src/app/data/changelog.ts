@@ -16,6 +16,35 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.0.5",
+    date: "2026-05-17",
+    title: "Facebook share preview now matches the new Spread the Word illustration",
+    sections: [
+      {
+        heading: "What was wrong",
+        items: [
+          "When you shared resistact.org on Facebook, the preview thumbnail showed an old photo+illustration mashup — even though the in-app Spread the Word card had already been swapped to the new fully-illustrated version with the cartoon crowd, the Capitol dome, and the bright orange fist.",
+          "The bug: the Open Graph meta tag in our HTML still pointed at the old `og-image.jpg` file, so every social platform that scraped the URL got the old image.",
+        ],
+      },
+      {
+        heading: "What changed",
+        items: [
+          "Generated a 1200×800 JPEG version of the new illustration as `og-image-v2.jpg` — 289 KB, ~9× smaller than the source PNG, so Facebook's scraper finishes pulling it before timing out.",
+          "Pointed both the `og:image` and `twitter:image` meta tags at the new file, with correct width/height attributes for the new dimensions.",
+          "Used a new filename instead of overwriting the old one because Facebook caches OG images by URL — a new URL is the single most reliable way to force every social platform to re-scrape.",
+        ],
+      },
+      {
+        heading: "If old previews still appear after deploy",
+        items: [
+          "Facebook caches share previews per-URL for ~24 hours. To force-refresh: open https://developers.facebook.com/tools/debug/, paste https://www.resistact.org/, click Scrape Again. Twitter/X is similar at https://cards-dev.twitter.com/validator.",
+          "Anyone who already saw the old preview on Facebook may still see it for a while — FB caches at multiple layers. New shares from this point on will use the new image.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.0.4",
     date: "2026-05-17",
     title: "Cards lift on hover — a tiny bit of physicality, without making anyone seasick",
