@@ -1526,6 +1526,7 @@ export default function App() {
                   onShare={handleShare}
                   onBookmark={handleBookmark}
                   onEdit={(id) => setEditCardId(id)}
+                  onInfoClick={card.pinToTop ? () => setInfoOpen(true) : undefined}
                   isBoosted={boostedCards.has(card.id)}
                   isCompleted={completedCards.has(card.id)}
                   isBookmarked={bookmarkedCards.has(card.id)}
