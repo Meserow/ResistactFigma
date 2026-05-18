@@ -497,11 +497,16 @@ export default function App() {
       const pendingForAdmin = isAdminUser ? filtered.filter((c) => c.adminApproved === false) : [];
       let rankable = isAdminUser ? filtered.filter((c) => c.adminApproved !== false) : filtered;
 
-      // "Quick wins — Under 5 min" is a hard cap — exclude cards clearly longer
-      // than 10 min. We include the 10min bucket too so "5–10 minutes" cards
-      // still surface (and to survive any legacy cards stored as "< 1 hour"
-      // that correctly belong here but predate the TIME_COMMITMENT_MAP fix).
+      // Hard time caps for the "I have very little time" buckets. The user
+      // picking either of these is explicitly saying "show me only the
+      // quickies" — anything longer doesn't belong in the result set.
+      //   • "Quick wins — Under 5 min" → keep only 5min cards
+      //   • "A few minutes — 5–10 min" → keep 5min + 10min cards
+      // Longer buckets (30min and up) stay ranking-only — picking those is
+      // a "weighted preference," not an explicit cap.
       if (matchPrefs.time === "5min") {
+        rankable = rankable.filter((c) => timeBucketFor(c) === "5min");
+      } else if (matchPrefs.time === "10min") {
         rankable = rankable.filter((c) => ["5min", "10min"].includes(timeBucketFor(c)));
       }
 
@@ -1399,9 +1404,12 @@ export default function App() {
                 hope:       { icon: "🌅", label: "Hopeful",         stops: ["None", "Some", "Uplifting", "Full hope"] },
                 energy:     { icon: "⚡", label: "Motivation",      stops: ["Low",  "Mild",  "Engaged", "On fire"] },
               };
-              // Show all tone dims that aren't fully off (> 0).
+              // Only surface tone dims the user moved off the default (1). The
+              // banner is supposed to be a digest of what's *interesting* about
+              // the current preferences — listing every dim at its default
+              // value buries the actually-set ones in noise.
               const toneChips = (Object.keys(toneStops) as Array<keyof typeof toneStops>)
-                .filter((k) => (matchPrefs.tone[k] ?? 1) > 0)
+                .filter((k) => (matchPrefs.tone[k] ?? 1) !== 1)
                 .map((k) => {
                   const v = Math.max(0, Math.min(3, matchPrefs.tone[k] ?? 1));
                   return { icon: toneStops[k].icon, label: toneStops[k].label, value: toneStops[k].stops[v] };

@@ -43,6 +43,13 @@ export const CHANGELOG: ChangelogEntry[] = [
           "An env var still wins over the fallback when set — handy if we add separate staging vs. production GA properties later.",
         ],
       },
+      {
+        heading: "Match Me: \"5–10 min\" now hard-filters",
+        items: [
+          "Picking the \"A few minutes — 5–10 min\" stop in the Match wizard now actually drops cards that take longer. Previously it was a ranking signal only, so you'd see all 400+ cards with the short ones at the top. Now you only see cards in the 5min and 10min buckets — typically 60–100 actions. The 30min / 1hr / few-hours / ongoing stops stay ranking-only as before.",
+          "Also restored: the banner chip strip only shows tone dimensions you've moved off the default. With all-defaults you'll see just ⏱ time and any state / group / donation chips. Bumping a tone slider above default makes its chip appear.",
+        ],
+      },
     ],
   },
   {
