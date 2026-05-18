@@ -16,6 +16,49 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.1.0",
+    date: "2026-05-18",
+    title: "New ResistAct wordmark and hero, report-a-problem flag on every act, faster card sync",
+    sections: [
+      {
+        heading: "New ResistAct wordmark",
+        items: [
+          "Replaced the standalone fist icon + code-styled 'ResistAct' type in the navbar and hero with a single illustrated wordmark: fist of fire on the left, navy 'RESISTACT' next to it, 'CITIZEN ACTION' rule in dark grey underneath. Shipped as a tiny WebP so the page weight didn't budge.",
+          "Hero now opens with 'America is being run by cartoon villains. MAGA is nuts.' in dark grey, with a hand-painted orange 'But what can one person do?' stamping in over the logo — a deliberate handwritten layer over the printed wordmark.",
+          "Logged-out visitors now see the hero on every tab — The Acts, The Facts, and The Smacks — instead of only on The Acts.",
+        ],
+      },
+      {
+        heading: "Report a problem on any act",
+        items: [
+          "Every act card now has a small flag icon next to the share button. Tap it to file a short report — broken link, out of date, wrong info, off-topic, duplicate, or 'something else' — with an optional detail box. Goes straight to admin review without leaving the feed.",
+          "Admins get a new 'Flagged Acts' entry in the user-avatar menu with the open count, a list view of every flag (with reporter and timestamp), and one-click dismiss.",
+          "A new 'needs attention' badge sits on the bell next to the user avatar, summing pending acts, pending smacks, pending user applications, and open flags so admins see one total to act on.",
+        ],
+      },
+      {
+        heading: "Faster card list",
+        items: [
+          "The full set of acts now loads in parallel instead of one page at a time. The acts counter next to the sort dropdown reaches its true total in roughly one round trip, and search/filter no longer silently miss cards that hadn't streamed in yet.",
+        ],
+      },
+      {
+        heading: "Copy",
+        items: [
+          "'Quick Matches for Me' → 'Quick Acts for Me' with a new 'Overwhelmed? Click here to tailor the options.' subtitle. 'Add an Action!' → 'Add an Act!' (and the modal title to match). 'What's the Action?' → 'What's the Act?' for the create flow.",
+          "'Find another action' → 'Find another act' in the celebration modal.",
+          "'Come back tomorrow.' below the hero pills is now bold italic orange for emphasis.",
+        ],
+      },
+      {
+        heading: "Small fixes",
+        items: [
+          "Clicking the 'Spread the Word about ResistAct' card body now opens the share sheet directly instead of the 'How does ResistAct work?' info modal — which made it feel like the share affordance was hidden.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.0.9",
     date: "2026-05-17",
     title: "Admin nav cleans up when queues are empty, card gloss on hover, founding-member signup framing",
