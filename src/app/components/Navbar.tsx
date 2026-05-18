@@ -2,8 +2,11 @@ import logoImg from "../../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import type { ReactNode } from "react";
 import { FACT_CARDS } from "../data/factCards";
-import { Bell, Bookmark, ChevronDown, Clock, Flame, Info, LogOut, MapPin, Menu, MessageCircle, Search, ShieldCheck, SlidersHorizontal, X, Zap } from "lucide-react";
+import { Bell, Bookmark, ChevronDown, Clock, Flame, Info, LogOut, MapPin, Menu, MessageCircle, Search, ShieldCheck, SlidersHorizontal, Sparkles, X, Zap } from "lucide-react";
 import type { UserApproval } from "../lib/supabase";
+import { TierProgress } from "./TierProgress";
+import { getUserTier } from "../lib/tiers";
+import { UserAvatar } from "./UserAvatar";
 
 function ResistActLogo() {
   return (
@@ -34,6 +37,7 @@ interface NavbarProps {
   /** Clear active match filter. */
   onMatchClear?: () => void;
   statsActsCount?: number | null;
+  statsSmacksCount?: number | null;
   statsResistorsCount?: number | null;
   statsCitiesCount?: number | null;
   statsSynced?: boolean;
@@ -43,8 +47,8 @@ interface NavbarProps {
   onFilterChange: (filterName: string, selected: string[]) => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
-  activeTab: "facts" | "acts";
-  onTabChange: (tab: "facts" | "acts") => void;
+  activeTab: "facts" | "acts" | "receipts";
+  onTabChange: (tab: "facts" | "acts" | "receipts") => void;
   /** Render between the top bar and the filter row (e.g. the homepage hero). */
   heroSlot?: ReactNode;
   /** Quick-actions toggle: when true, only show 5–10 min "quick win" cards. */
@@ -56,9 +60,17 @@ interface NavbarProps {
   bookmarkCount?: number;
   onFeedbackClick?: () => void;
   onMatchClick?: () => void;
+  onPendingSmacksClick?: () => void;
+  onPendingActsClick?: () => void;
+  pendingActsCount?: number;
+  pendingSmacksCount?: number;
+  onTierClick?: () => void;
+  siteUpdating?: boolean;
+  onToggleSiteUpdating?: (enabled: boolean) => void;
+  pendingUsersCount?: number;
 }
 
-export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick }: NavbarProps) {
+export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick, onPendingSmacksClick, onPendingActsClick, pendingActsCount, pendingSmacksCount, pendingUsersCount = 0, onTierClick, siteUpdating, onToggleSiteUpdating }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
   // Acts filters in render order: Location dropdown first, Category pills second.
   // Used for "Clear all" and the mobile filter row that shows just the names.
   const ACTS_FILTER_OPTIONS: Record<string, string[]> = {
@@ -131,12 +143,6 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
-
-  // Sorted category breakdown — biggest categories first.
-  const completionEntries = useMemo(() => {
-    if (!myCompletions) return [];
-    return Object.entries(myCompletions.byCategory).sort((a, b) => b[1] - a[1]);
-  }, [myCompletions]);
 
   const isLoggedIn = !!approval;
   const isPending = approval?.status === "pending";
@@ -251,11 +257,11 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
           </div>
         </div>
 
-        {/* ── Tab switcher: The Facts / The Acts ── */}
-        <div className="hidden sm:flex items-center shrink-0 bg-gray-100 rounded-2xl p-1.5 gap-1">
+        {/* ── Tab switcher: The Acts / The Facts / The Smacks ── */}
+        <div className="hidden md:flex items-center shrink-0 bg-gray-100 rounded-2xl p-1.5 gap-1">
           <button
             onClick={() => onTabChange("acts")}
-            className={`px-5 py-3 rounded-xl font-['Poppins',sans-serif] font-bold text-base transition-all whitespace-nowrap ${
+            className={`px-3 py-2.5 rounded-xl font-['Poppins',sans-serif] font-bold text-sm transition-all whitespace-nowrap ${
               activeTab === "acts"
                 ? "bg-white text-[#fd8e33] shadow-sm"
                 : "text-gray-500 hover:text-gray-700"
@@ -265,13 +271,23 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
           </button>
           <button
             onClick={() => onTabChange("facts")}
-            className={`px-5 py-3 rounded-xl font-['Poppins',sans-serif] font-bold text-base transition-all whitespace-nowrap ${
+            className={`px-3 py-2.5 rounded-xl font-['Poppins',sans-serif] font-bold text-sm transition-all whitespace-nowrap ${
               activeTab === "facts"
                 ? "bg-white text-[#fd8e33] shadow-sm"
                 : "text-gray-500 hover:text-gray-700"
             }`}
           >
             The Facts
+          </button>
+          <button
+            onClick={() => onTabChange("receipts")}
+            className={`px-3 py-2.5 rounded-xl font-['Poppins',sans-serif] font-bold text-sm transition-all whitespace-nowrap ${
+              activeTab === "receipts"
+                ? "bg-white text-[#fd8e33] shadow-sm"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            The Smacks
           </button>
         </div>
 
@@ -284,7 +300,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder={activeTab === "facts" ? "Search facts by topic or claim…" : "Search Resistance Acts…"}
+              placeholder={activeTab === "facts" ? "Search facts by topic or claim…" : activeTab === "receipts" ? "Search The Smacks…" : "Search Resistance Acts…"}
               className="w-full pl-11 pr-4 py-2.5 bg-white border border-gray-300 rounded-xl font-['Poppins',sans-serif] text-base text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#23297e] focus:border-transparent"
             />
           </div>
@@ -299,32 +315,49 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
 
               <div className="relative" ref={dropdownRef}>
                 <button
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  onClick={() => setDropdownOpen(o => !o)}
                   className="flex items-center gap-2.5 cursor-pointer hover:opacity-80 transition-opacity"
                 >
-                  <span className="relative">
-                    {approval?.avatar ? (
-                      <img src={approval.avatar} alt={approval.name} className="w-9 h-9 rounded-full object-cover ring-2 ring-gray-100" />
-                    ) : (
-                      <div className="w-9 h-9 rounded-full bg-[#23297e]/10 ring-2 ring-gray-100 flex items-center justify-center">
-                        <span className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-sm">
-                          {approval?.name?.charAt(0)?.toUpperCase() ?? "?"}
+                  {(() => {
+                    const tierInfo = myCompletions ? getUserTier(myCompletions.total) : null;
+                    const tier = tierInfo?.tier;
+                    return (
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className="relative">
+                          <div
+                            className="w-9 h-9 rounded-full ring-2 ring-gray-100 flex items-center justify-center"
+                            style={{ backgroundColor: tier?.color ?? "#fd8e33" }}
+                            aria-label={tier ? `${tier.name} tier` : undefined}
+                          >
+                            {tier?.icon === "sparkles"
+                              ? <Sparkles size={20} className="text-white" strokeWidth={2.5} aria-hidden="true" style={{ color: tier.iconColor }} />
+                              : <Flame    size={20} strokeWidth={2.5} aria-hidden="true" style={{ color: tier?.iconColor ?? "#fff" }} />
+                            }
+                          </div>
+                          {myCompletions && (
+                            <span
+                              title={`You've done ${myCompletions.total} action${myCompletions.total === 1 ? "" : "s"}`}
+                              aria-label={`You've done ${myCompletions.total} action${myCompletions.total === 1 ? "" : "s"} — click to see scoreboard`}
+                              className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-[#23297e] text-white shadow ring-2 ring-white flex items-center justify-center font-['Poppins',sans-serif] font-bold text-[9px] leading-none pointer-events-none"
+                            >
+                              {myCompletions.total > 99 ? "99+" : myCompletions.total}
+                            </span>
+                          )}
                         </span>
+                        {tier && (
+                          <span
+                            className="font-['Poppins',sans-serif] font-semibold text-[9px] leading-none tracking-wide"
+                            style={{ color: tier.labelColor }}
+                          >
+                            {tier.name}
+                          </span>
+                        )}
                       </div>
-                    )}
-                    {myCompletions && (
-                      <span
-                        title={`You've done ${myCompletions.total} action${myCompletions.total === 1 ? "" : "s"}`}
-                        aria-label={`You've done ${myCompletions.total} action${myCompletions.total === 1 ? "" : "s"} — click to see scoreboard`}
-                        className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-[#fd8e33] text-white shadow ring-2 ring-white flex items-center justify-center font-['Poppins',sans-serif] font-bold text-[10px] transition-colors leading-none pointer-events-none"
-                      >
-                        {myCompletions.total > 99 ? "99+" : myCompletions.total}
-                      </span>
-                    )}
-                  </span>
+                    );
+                  })()}
                   <div className="hidden lg:block text-left">
                     <p className="font-['Poppins',sans-serif] font-semibold text-[#3b3b3b] text-sm leading-tight">{approval?.name}</p>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
                       {isPending ? (
                         <span className="font-['Poppins',sans-serif] text-amber-500 text-xs flex items-center gap-0.5">
                           <Clock size={10} />Pending approval
@@ -344,31 +377,16 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                       <p className="font-['Poppins',sans-serif] text-gray-400 text-xs truncate">{approval?.email}</p>
                     </div>
                     {myCompletions && (
-                      <div className="px-4 py-2.5 border-b border-gray-50">
-                        <p className="font-['Poppins',sans-serif] text-[11px] uppercase tracking-wider text-gray-400 font-semibold">
-                          Your scoreboard
-                        </p>
-                        <p className="font-['Poppins',sans-serif] font-bold text-gray-900 text-sm mt-0.5">
-                          {myCompletions.total} action{myCompletions.total === 1 ? "" : "s"} done
-                        </p>
-                        {completionEntries.length === 0 ? (
-                          <p className="font-['Poppins',sans-serif] text-[12px] text-gray-500 mt-1">
-                            Click "✓ I did this" on any card to start your streak.
-                          </p>
-                        ) : (
-                          <div className="max-h-48 overflow-y-auto mt-1.5 -mx-1">
-                            {completionEntries.map(([cat, n]) => (
-                              <div
-                                key={cat}
-                                className="flex items-center justify-between px-1 py-0.5 font-['Poppins',sans-serif] text-[12px]"
-                              >
-                                <span className="text-gray-700 font-medium">{cat}</span>
-                                <span className="text-[#fd8e33] font-bold tabular-nums">{n}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                      <TierProgress actionCount={myCompletions.total} />
+                    )}
+                    {myCompletions && onTierClick && (
+                      <button
+                        onClick={() => { setDropdownOpen(false); onTierClick(); }}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-['Poppins',sans-serif] font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                      >
+                        <Flame size={15} />
+                        My Tier Dashboard
+                      </button>
                     )}
                     <button
                       onClick={() => { setDropdownOpen(false); onBookmarksClick?.(); }}
@@ -389,6 +407,47 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                       <SlidersHorizontal size={15} />
                       My Match Settings
                     </button>
+                    {isAdmin && !!pendingActsCount && (
+                      <button
+                        onClick={() => { setDropdownOpen(false); onPendingActsClick?.(); }}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-['Poppins',sans-serif] font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                      >
+                        <ShieldCheck size={15} />
+                        Pending Acts
+                        <span className="ml-auto bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center">
+                          {pendingActsCount > 99 ? "99+" : pendingActsCount}
+                        </span>
+                      </button>
+                    )}
+                    {isAdmin && !!pendingSmacksCount && (
+                      <button
+                        onClick={() => { setDropdownOpen(false); onPendingSmacksClick?.(); }}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-['Poppins',sans-serif] font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                      >
+                        <ShieldCheck size={15} />
+                        Pending Smacks
+                        <span className="ml-auto bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center">
+                          {pendingSmacksCount > 99 ? "99+" : pendingSmacksCount}
+                        </span>
+                      </button>
+                    )}
+                    {isAdmin && (
+                      <button
+                        onClick={() => onToggleSiteUpdating?.(!siteUpdating)}
+                        className={[
+                          "w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-['Poppins',sans-serif] font-medium transition-colors",
+                          siteUpdating
+                            ? "text-orange-600 hover:bg-orange-50"
+                            : "text-gray-600 hover:bg-gray-50",
+                        ].join(" ")}
+                      >
+                        <span className="text-base leading-none">🔧</span>
+                        {siteUpdating ? "Turn off updating banner" : "Show updating banner"}
+                        {siteUpdating && (
+                          <span className="ml-auto text-[10px] font-bold bg-orange-500 text-white rounded-full px-1.5 py-0.5">ON</span>
+                        )}
+                      </button>
+                    )}
                     {isAdmin && (
                       <button
                         onClick={() => { setDropdownOpen(false); onAdminClick(); }}
@@ -396,6 +455,11 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                       >
                         <ShieldCheck size={15} />
                         Admin Panel
+                        {pendingUsersCount > 0 && (
+                          <span className="ml-auto text-[10px] font-bold bg-amber-500 text-white rounded-full px-1.5 py-0.5 leading-none">
+                            {pendingUsersCount}
+                          </span>
+                        )}
                       </button>
                     )}
                     <button
@@ -430,7 +494,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                   #jointheresistance
                 </span>
                 <span className="text-[10.5px] font-normal italic text-white/85 leading-tight mt-0.5">
-                  Log in or sign up to save your progress.
+                  Sign in to continue — or join if you're new.
                 </span>
               </button>
             </>
@@ -466,9 +530,14 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
         style={{ top: topBarHeight }}
         ref={filterBarRef}
       >
-        {/* LEFT GROUP — takes all available space; pills inside adapt via ResizeObserver */}
+        {/* LEFT GROUP — takes all available space; pills inside adapt via ResizeObserver.
+            On the Smacks tab there are no Location/Category filters; the page leads with
+            an intro instead. The left group still gets a flex-1 spacer so the right group
+            (Sort + counts) stays anchored to the right. */}
         <div className="flex-1 min-w-0 flex items-center gap-1">
-        <span className="font-['Poppins',sans-serif] text-gray-400 text-[10px] uppercase tracking-widest font-semibold shrink-0 mr-1">Filter by</span>
+        {activeTab !== "receipts" && (
+          <span className="font-['Poppins',sans-serif] text-gray-400 text-[10px] uppercase tracking-widest font-semibold shrink-0 mr-1">Filter by</span>
+        )}
 
         {/* Quick-actions toggle (Acts tab only) */}
         {activeTab === "acts" && onQuickActionsChange && (
@@ -489,7 +558,11 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
           </button>
         )}
 
-        {activeTab === "facts" ? (
+        {activeTab === "receipts" ? (
+          /* ── Smacks: no filters in the navbar. The SmacksPage shows its own
+                tag chips + sort toggle, and the intro lives inline above. */
+          null
+        ) : activeTab === "facts" ? (
           /* ── Facts: top-N category pills + "More" dropdown ───────────── */
           <div ref={factsPillsRef} className="flex-1 min-w-0 flex items-center gap-1">
             <div className="flex-1 min-w-0 flex items-center gap-1 overflow-hidden">
@@ -743,13 +816,19 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full bg-[#fd8e33]" />
               <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
-                <strong className="text-[#23297e] font-bold">{statsSynced ? statsActsCount : "—"}</strong>{" "}resistance acts
+                <strong className="text-[#23297e] font-bold">{statsSynced ? statsActsCount : "—"}</strong>{" "}acts
               </span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full bg-[#127f05]" />
               <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
-                <strong className="text-[#127f05] font-bold">{FACT_CARDS.length}</strong>{" "}resistance facts
+                <strong className="text-[#127f05] font-bold">{FACT_CARDS.length}</strong>{" "}facts
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-[#23297e]" />
+              <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
+                <strong className="text-[#23297e] font-bold">{statsSmacksCount ?? "—"}</strong>{" "}smacks
               </span>
             </div>
           </div>
@@ -763,7 +842,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
           <div className="flex items-center bg-gray-200 rounded-xl p-1 gap-0.5">
             <button
               onClick={() => onTabChange("acts")}
-              className={`flex-1 py-2 rounded-lg font-['Poppins',sans-serif] font-bold text-sm transition-all ${
+              className={`flex-1 py-2 rounded-lg font-['Poppins',sans-serif] font-bold text-xs transition-all ${
                 activeTab === "acts" ? "bg-white text-[#fd8e33] shadow-sm" : "text-gray-500"
               }`}
             >
@@ -771,11 +850,19 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
             </button>
             <button
               onClick={() => onTabChange("facts")}
-              className={`flex-1 py-2 rounded-lg font-['Poppins',sans-serif] font-bold text-sm transition-all ${
+              className={`flex-1 py-2 rounded-lg font-['Poppins',sans-serif] font-bold text-xs transition-all ${
                 activeTab === "facts" ? "bg-white text-[#fd8e33] shadow-sm" : "text-gray-500"
               }`}
             >
               The Facts
+            </button>
+            <button
+              onClick={() => onTabChange("receipts")}
+              className={`flex-1 py-2 rounded-lg font-['Poppins',sans-serif] font-bold text-xs transition-all ${
+                activeTab === "receipts" ? "bg-white text-[#fd8e33] shadow-sm" : "text-gray-500"
+              }`}
+            >
+              The Smacks
             </button>
           </div>
         </div>
@@ -867,13 +954,24 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
           {isLoggedIn ? (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                {approval?.avatar ? (
-                  <img src={approval.avatar} alt={approval.name} className="w-10 h-10 rounded-full object-cover" />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-[#23297e]/10 flex items-center justify-center">
-                    <span className="font-bold text-[#23297e]">{approval?.name?.charAt(0)?.toUpperCase()}</span>
-                  </div>
-                )}
+                {(() => {
+                  // XP ring around the mobile-menu avatar. Tier-colored arc
+                  // fills clockwise to show progress to the next tier — visible
+                  // every time the user opens the menu. Top tier (no next)
+                  // gets a full-ring "100%" feel as the tier definition
+                  // returns progressPct=100.
+                  const ti = myCompletions ? getUserTier(myCompletions.total) : null;
+                  return (
+                    <UserAvatar
+                      name={approval?.name ?? ""}
+                      avatar={approval?.avatar}
+                      className=""
+                      progressPct={ti?.progressPct}
+                      ringColor={ti?.tier.color ?? "#fd8e33"}
+                      ringSizePx={40}
+                    />
+                  );
+                })()}
                 <div>
                   <p className="font-['Poppins',sans-serif] font-semibold text-base">{approval?.name}</p>
                   <p className="font-['Poppins',sans-serif] text-gray-400 text-sm">{approval?.email}</p>
@@ -893,7 +991,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                 #jointheresistance
               </span>
               <span className="text-[10.5px] font-normal italic text-white/85 leading-tight mt-0.5">
-                Log in or sign up to save your progress.
+                Sign in to continue — or join if you're new.
               </span>
             </button>
           )}
@@ -913,6 +1011,11 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
             >
               <ShieldCheck size={16} />
               Admin Panel
+              {pendingUsersCount > 0 && (
+                <span className="ml-auto text-[10px] font-bold bg-amber-500 text-white rounded-full px-1.5 py-0.5 leading-none">
+                  {pendingUsersCount}
+                </span>
+              )}
             </button>
           )}
         </div>

@@ -11,7 +11,7 @@ import type { ActionCardData } from "../components/ActionCard";
 
 // ─── Vocabulary ───────────────────────────────────────────────────────────────
 
-export type TimeBucket = "5min" | "30min" | "1hr" | "fewHours" | "fullDay" | "ongoing";
+export type TimeBucket = "5min" | "10min" | "30min" | "1hr" | "fewHours" | "fullDay" | "ongoing";
 
 /**
  * What kind of action context the user is willing to engage in. Stored as
@@ -117,7 +117,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   state: null,
   includeAnywhere: false,
   vulnerableGroups: [],
-  focusDonations: true,
+  focusDonations: false,
   tone: { anger: 1, comedy: 1, subversion: 1, hope: 1, energy: 1 },
 };
 
@@ -264,9 +264,12 @@ const CATEGORY_DEFAULT_BUCKET: Partial<Record<string, TimeBucket>> = {
 };
 
 export function timeBucketFor(card: ActionCardData): TimeBucket {
-  if (card.quickAction) return "5min";
   const t = (card.timeCommitment ?? "").toLowerCase();
-  // Explicit timeCommitment wins over the category default.
+  // quickAction wins when the stored timeCommitment is the legacy "< 1 hour"
+  // string that was incorrectly used for both 5-min and 30-min cards. For any
+  // other explicit timeCommitment, the string takes priority (so an "Ongoing"
+  // or "1–3 hours" card isn't accidentally pulled into the quick bucket).
+  if (card.quickAction && (!t || t === "< 1 hour")) return "5min";
   if (t) {
     if (t.includes("ongoing")) return "ongoing";
     if (t.includes("full")) return "fullDay";
@@ -275,9 +278,15 @@ export function timeBucketFor(card: ActionCardData): TimeBucket {
       if (t.includes("< 1") || t.includes("<1")) return "30min";
       return "fewHours";
     }
-    if (t.includes("30") || t.includes("min")) return "30min";
+    // "5–10 min" / "5-10 min" / "10 min" → 10min (must come before the
+    // generic "5" / "30" rules below or they'd misclassify).
+    if (t.includes("5–10") || t.includes("5-10") || t.includes("10 min") || t.includes("10min")) return "10min";
+    // "< 5 min" / "5 min" / "quick" → 5min (must come before "min" catch-all
+    // or "< 5 minutes" would be misread as 30min).
     if (t.includes("5") || t.includes("quick")) return "5min";
+    if (t.includes("30") || t.includes("min")) return "30min";
   }
+  if (card.quickAction) return "5min";
   // Fall back to category default so the time slider works for seed cards.
   return CATEGORY_DEFAULT_BUCKET[card.category?.toUpperCase()] ?? "30min";
 }
@@ -285,6 +294,7 @@ export function timeBucketFor(card: ActionCardData): TimeBucket {
 // Bucket → minutes-equivalent for ranking. Lower is shorter.
 const BUCKET_MINUTES: Record<TimeBucket, number> = {
   "5min": 5,
+  "10min": 10,
   "30min": 30,
   "1hr": 60,
   "fewHours": 180,
@@ -695,7 +705,7 @@ function normalizePreferences(parsed: any): Preferences {
     state: typeof parsed.state === "string" ? parsed.state : null,
     includeAnywhere: parsed.includeAnywhere === true,
     vulnerableGroups: Array.isArray(parsed.vulnerableGroups) ? parsed.vulnerableGroups : [],
-    focusDonations: parsed.focusDonations === true,
+    focusDonations: false, // never default-on; user must explicitly opt in each session
     tone: {
       anger: typeof parsed.tone?.anger === "number" ? parsed.tone.anger : 1,
       comedy: typeof parsed.tone?.comedy === "number" ? parsed.tone.comedy : 1,

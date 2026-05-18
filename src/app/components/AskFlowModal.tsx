@@ -51,17 +51,19 @@ const TONE_FIELDS: { key: keyof ToneVec; label: string; Icon: LucideIcon; stops:
   ]},
 ];
 
-/** 4-stop time commitment scale — matches EditCardModal and MatchMe style. */
+/** 5-stop time commitment scale — matches EditCardModal and MatchMe style. */
 const TIME_STOPS: { key: TimeBucket; title: string; desc: string }[] = [
   { key: "5min",     title: "Just the basics",  desc: "< 5 minutes" },
+  { key: "10min",    title: "A few minutes",    desc: "5–10 minutes" },
   { key: "30min",    title: "A little",         desc: "A few hours per month" },
   { key: "fewHours", title: "Regularly",        desc: "A few hours per week" },
   { key: "ongoing",  title: "All in",           desc: "Ongoing organizing" },
 ];
 
 const TIME_COMMITMENT_MAP: Record<TimeBucket, string> = {
-  "5min":     "< 1 hour",
-  "30min":    "< 1 hour",
+  "5min":     "< 5 minutes",
+  "10min":    "5–10 minutes",
+  "30min":    "~30 minutes",
   "1hr":      "1 hour",
   "fewHours": "1–3 hours",
   "fullDay":  "Full day",
@@ -432,7 +434,7 @@ export function AskFlowModal({
                     <ToneRangeSlider
                       value={tIdx}
                       onChange={(v) => setInvolvement(TIME_STOPS[v].key)}
-                      max={3}
+                      max={4}
                     />
                   </div>
 

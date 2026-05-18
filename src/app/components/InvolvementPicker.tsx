@@ -1,5 +1,5 @@
 /**
- * 4-card picker that replaces the 6-stop time slider in the matcher and
+ * 5-card picker that replaces the 7-stop time slider in the matcher and
  * collects the same field on Add an Action. Stores values as TimeBucket so
  * the existing matcher math works unchanged. Time buckets that don't have
  * their own card (1hr, fullDay) are folded into the closest selected card —
@@ -18,6 +18,7 @@ interface Level {
  * where the question is "how involved do *you* want to be?". */
 const LEVELS_MATCH: Level[] = [
   { key: "5min",     title: "Just the basics", subtitle: "When I have a sec", desc: "Quick, < 5 minutes" },
+  { key: "10min",    title: "A few minutes",   subtitle: "5–10 min",          desc: "Takes a few minutes" },
   { key: "30min",    title: "A little",        subtitle: "Few hrs / month",   desc: "Show up here and there" },
   { key: "fewHours", title: "Regularly",       subtitle: "Few hrs / week",    desc: "Phone bank, local org" },
   { key: "ongoing",  title: "All in",          subtitle: "Ongoing",           desc: "Organizing, leadership" },
@@ -28,12 +29,13 @@ const LEVELS_MATCH: Level[] = [
  * they personally have time for. */
 const LEVELS_PLAN: Level[] = [
   { key: "5min",     title: "Just the basics", subtitle: "Takes a moment",  desc: "Quick, < 5 minutes" },
+  { key: "10min",    title: "A few minutes",   subtitle: "5–10 min",        desc: "Takes a few minutes" },
   { key: "30min",    title: "A little",        subtitle: "Few hrs / month", desc: "Show up here and there" },
   { key: "fewHours", title: "Regularly",       subtitle: "Few hrs / week",  desc: "Phone bank, local org" },
   { key: "ongoing",  title: "All in",          subtitle: "Ongoing",         desc: "Organizing, leadership" },
 ];
 
-/** Maps any TimeBucket to one of the 4 picker cards. The matcher still scores
+/** Maps any TimeBucket to one of the 5 picker cards. The matcher still scores
  * against the underlying TimeBucket, so cards with `1hr` or `fullDay` keep
  * their precision — this only governs which card the user sees highlighted. */
 export function involvementLevelFor(b: TimeBucket | null | undefined): TimeBucket {
@@ -68,7 +70,7 @@ export function InvolvementPicker({ value, onChange, question, hint, variant = "
           {hint}
         </p>
       )}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2">
         {levels.map(({ key, title, subtitle, desc }) => {
           const isSelected = selected === key;
           return (

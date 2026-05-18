@@ -1,4 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useDeferredValue } from "react";
+import { initAnalytics, analytics } from "./lib/analytics";
+import { GAMIFICATION_KEYFRAMES } from "./lib/animations";
+import { burstConfetti } from "./lib/confetti";
 import { Navbar } from "./components/Navbar";
 import { ActionCard, ActionCardData } from "./components/ActionCard";
 import { FactCard } from "./components/FactCard";
@@ -17,8 +20,11 @@ import { HomeHero } from "./components/HomeHero";
 import { LoggedInHero } from "./components/LoggedInHero";
 import { MatchMeModal } from "./components/MatchMeModal";
 import { ChangelogModal } from "./components/ChangelogModal";
+import { TierModal } from "./components/TierModal";
+import { CelebrationModal } from "./components/CelebrationModal";
 import { FeedbackModal } from "./components/FeedbackModal";
-import { rankCards, score as scoreCard, loadPreferences, clearPreferences, applyMatcherConfig, fetchUserPreferences, pushUserPreferences, savePreferences, type Preferences, type UserContext } from "./lib/matcher";
+import { SmacksPage, STATIC_SMACKS, type ReceiptCard } from "./components/SmacksPage";
+import { rankCards, score as scoreCard, loadPreferences, clearPreferences, applyMatcherConfig, fetchUserPreferences, pushUserPreferences, savePreferences, timeBucketFor, type Preferences, type UserContext } from "./lib/matcher";
 import svgPaths from "../imports/svg-77lgd1zdt6";
 import { projectId, publicAnonKey } from "/utils/supabase/info";
 import { supabase } from "./lib/supabase";
@@ -101,6 +107,50 @@ function FeaturedIllustration() {
   );
 }
 
+// ─── Cards localStorage cache ─────────────────────────────────────────────────
+// First-paint optimization: stash the first page of /actions in localStorage so
+// returning visitors see ~100 real cards immediately instead of waiting for the
+// edge function to cold-start, run migrations, and prefix-scan KV. We cache the
+// raw ServerCard array (not the resolved one) so image keys re-resolve through
+// the *current* bundle's IMAGE_MAP — avoids stale hashed URLs after a deploy.
+const CARDS_CACHE_KEY = "resistact:cards-cache:v1";
+const CARDS_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h — fresh enough; sync overrides anyway
+
+interface CardsCachePayload {
+  savedAt: number;
+  total: number;
+  rawCards: ServerCard[];
+}
+
+function readCardsCache(): { cards: ActionCardData[]; total: number } | null {
+  try {
+    if (typeof localStorage === "undefined") return null;
+    const raw = localStorage.getItem(CARDS_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CardsCachePayload;
+    if (!parsed?.savedAt || Date.now() - parsed.savedAt > CARDS_CACHE_TTL_MS) return null;
+    if (!Array.isArray(parsed.rawCards) || parsed.rawCards.length === 0) return null;
+    return {
+      cards: parsed.rawCards.map(resolveCard),
+      total: parsed.total ?? parsed.rawCards.length,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeCardsCache(rawCards: ServerCard[], total: number) {
+  try {
+    if (typeof localStorage === "undefined") return;
+    localStorage.setItem(
+      CARDS_CACHE_KEY,
+      JSON.stringify({ savedAt: Date.now(), total, rawCards } satisfies CardsCachePayload),
+    );
+  } catch {
+    // Quota exceeded, private browsing, etc. — silently no-op.
+  }
+}
+
 // ─── Skeleton card ────────────────────────────────────────────────────────────
 function CardSkeleton() {
   return (
@@ -128,11 +178,19 @@ function CardSkeleton() {
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
   // ── Card state ──
-  const [cards, setCards] = useState<ActionCardData[]>([]);
+  // Hydrate from localStorage cache when fresh so repeat visitors skip the
+  // edge-function round-trip and see ~100 cards on first paint. Falls back
+  // to STATIC_CARDS (1 card) on first visit; a fresh sync runs in the
+  // background either way to reconcile boosts, new cards, and admin edits.
+  const cardsCacheHit = readCardsCache();
+  const [cards, setCards] = useState<ActionCardData[]>(cardsCacheHit?.cards ?? STATIC_CARDS);
   const [synced, setSynced] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [serverTotal, setServerTotal] = useState(0);
-  const [serverOffset, setServerOffset] = useState(0);
+  // Render skeleton grid only when we have nothing meaningful to show yet.
+  // With a cache hit we skip skeletons entirely — the cached cards are good
+  // enough until the live sync replaces them milliseconds later.
+  const [loading, setLoading] = useState(!cardsCacheHit);
+  const [serverTotal, setServerTotal] = useState(cardsCacheHit?.total ?? 0);
+  const [serverOffset, setServerOffset] = useState(cardsCacheHit?.cards.length ?? 0);
   const [loadingMore, setLoadingMore] = useState(false);
   // How many cards to actually render in the DOM. Kept small to avoid
   // Safari/mobile memory crashes when hundreds of image-bearing cards are
@@ -214,6 +272,11 @@ export default function App() {
   const [infoOpen, setInfoOpen] = useState(false);
   const [actOpen, setActOpen] = useState(false);
   const [changelogOpen, setChangelogOpen] = useState(false);
+  const [tierModalOpen, setTierModalOpen] = useState(false);
+  // Celebration modal fires on a positive "I did this" — carries the before /
+  // after action totals so the modal can animate the count-up and detect
+  // tier-up. Null = no celebration showing.
+  const [celebration, setCelebration] = useState<{ prev: number; next: number } | null>(null);
   const [askOpen, setAskOpen] = useState(false);
   const [matchOpen, setMatchOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -224,6 +287,11 @@ export default function App() {
   const scrollNudgeFired = useRef(false);
   /** Active match prefs — when set, the feed re-ranks by `rankCards`. */
   const [matchPrefs, setMatchPrefs] = useState<Preferences | null>(null);
+  // Incremented every time the user applies a new Match config. Used to
+  // re-key the first 12 cards in the Acts grid so they stagger-fade in,
+  // giving the "we just built this lineup for you" feel — without animating
+  // every card on every infinite-scroll page.
+  const [staggerKey, setStaggerKey] = useState(0);
   const [editCardId, setEditCardId] = useState<number | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -235,10 +303,22 @@ export default function App() {
   // ── Live stats from server ──
   const [statsCitiesCount, setStatsCitiesCount] = useState<number | null>(null);
   const [statsUsersCount, setStatsUsersCount] = useState<number | null>(null);
+  const [pendingUsersCount, setPendingUsersCount] = useState<number>(0);
+  const [serverPendingActsCount, setServerPendingActsCount] = useState<number>(0);
+  const [siteUpdating, setSiteUpdating] = useState(false);
 
   // ── Filters ──
   const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>({});
-  const [activeTab, setActiveTab] = useState<"facts" | "acts">("acts");
+  const [activeTab, setActiveTab] = useState<"facts" | "acts" | "receipts">("acts");
+  const [smacksPendingVersion, setSmacksPendingVersion] = useState(0);
+  const [pendingActsVersion, setPendingActsVersion] = useState(0);
+  const [showPendingActsOnly, setShowPendingActsOnly] = useState(false);
+  const [deepLinkId, setDeepLinkId] = useState<number | null>(() => {
+    const param = new URLSearchParams(window.location.search).get("act");
+    const id = param ? parseInt(param, 10) : NaN;
+    return isNaN(id) ? null : id;
+  });
+  const [receipts, setReceipts] = useState<ReceiptCard[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   // useDeferredValue lets React keep the input responsive: keystrokes update
   // `searchQuery` synchronously (so the textbox shows them instantly), while
@@ -252,11 +332,12 @@ export default function App() {
     setActiveFilters((prev) => ({ ...prev, [filterName]: selected }));
   }
 
-  function handleTabChange(tab: "facts" | "acts") {
+  function handleTabChange(tab: "facts" | "acts" | "receipts") {
     setActiveTab(tab);
     setActiveFilters({});
     setSearchQuery("");
     setQuickActionsOnly(false);
+    if (tab !== "acts") setShowPendingActsOnly(false);
   }
 
   // ── Apply filters client-side ──
@@ -377,14 +458,16 @@ export default function App() {
   // Today's date as ISO string (YYYY-MM-DD) for expiry + sort comparisons.
   const todayISO = new Date().toISOString().slice(0, 10);
   const isAdminUser = approval?.isAdmin === true;
+  const pendingActsCount   = isAdminUser ? serverPendingActsCount : 0;
+  const pendingSmacksCount = isAdminUser ? receipts.filter((r) => (r as any).adminApproved === false).length : 0;
 
   const displayedCards = (() => {
     // ── Global gate: expiry + approval + already-done ────────────────────────
     const gated = cards.filter((card) => {
       // Hide expired events from everyone
       if (card.eventDate && card.eventDate < todayISO) return false;
-      // Hide unapproved cards from everyone — use the admin panel to approve
-      if (card.adminApproved === false) return false;
+      // Hide unapproved cards from non-admins — admins see them with a PENDING badge
+      if (card.adminApproved === false && !isAdminUser) return false;
       // Completed cards stay in the feed but get sorted to the bottom (see
       // `completedLast` below) so users can still find things they've done
       // without them dominating the top.
@@ -423,17 +506,47 @@ export default function App() {
     // is more specific. We pass an empty completedIds so the matcher doesn't
     // drop completed cards — completedLast pushes them to the bottom instead.
     if (matchPrefs) {
+      // Admins always see pending cards — pull them out so the score threshold
+      // doesn't silently drop them, then append them after the ranked results.
+      const pendingForAdmin = isAdminUser ? filtered.filter((c) => c.adminApproved === false) : [];
+      let rankable = isAdminUser ? filtered.filter((c) => c.adminApproved !== false) : filtered;
+
+      // Hard time caps for the "I have very little time" buckets. The user
+      // picking either of these is explicitly saying "show me only the
+      // quickies" — anything longer doesn't belong in the result set.
+      //   • "Quick wins — Under 5 min" → keep only 5min cards
+      //   • "A few minutes — 5–10 min" → keep 5min + 10min cards
+      // Longer buckets (30min and up) stay ranking-only — picking those is
+      // a "weighted preference," not an explicit cap.
+      if (matchPrefs.time === "5min") {
+        rankable = rankable.filter((c) => timeBucketFor(c) === "5min");
+      } else if (matchPrefs.time === "10min") {
+        rankable = rankable.filter((c) => ["5min", "10min"].includes(timeBucketFor(c)));
+      }
+
       const userCtx: UserContext = { boostedIds: boostedCards };
-      const ranked = rankCards(filtered, matchPrefs, userCtx);
+      const ranked = rankCards(rankable, matchPrefs, userCtx);
       // Apply a score floor so only genuine matches surface. Score every card,
       // keep only those hitting ≥ 30% of the top card's score. This prevents
       // the "396 matches" problem where low-preference-overlap cards still pass
       // because the engagement floor alone keeps them above zero.
-      if (ranked.length > 0) {
-        const topScore = scoreCard(ranked[0], matchPrefs, userCtx);
-        const threshold = topScore * 0.30;
-        const matched = ranked.filter((c) => scoreCard(c, matchPrefs, userCtx) >= threshold);
-        return pinFirst(completedLast(matched));
+      if (ranked.length > 0 || pendingForAdmin.length > 0) {
+        const matched = ranked.length > 0
+          ? (() => {
+              const topScore = scoreCard(ranked[0], matchPrefs, userCtx);
+              const threshold = topScore * 0.30;
+              return ranked.filter((c) => scoreCard(c, matchPrefs, userCtx) >= threshold);
+            })()
+          : [];
+        const combined = [...matched, ...pendingForAdmin];
+        // Honor explicit sort selection within the match-filtered set.
+        if (sortBy === "az") {
+          return pinFirst(completedLast([...combined].sort((a, b) => a.title.localeCompare(b.title))));
+        }
+        if (sortBy === "newest") {
+          return pinFirst(completedLast([...combined].sort((a, b) => (b.id ?? 0) - (a.id ?? 0))));
+        }
+        return pinFirst(completedLast(combined));
       }
       return [];
     }
@@ -574,9 +687,13 @@ export default function App() {
       const remote = await fetchUserPreferences(token);
       if (remote) {
         savePreferences(remote);
+        setMatchPrefs(remote);
       } else {
         const local = loadPreferences();
-        if (local) await pushUserPreferences(token, local);
+        if (local) {
+          await pushUserPreferences(token, local);
+          setMatchPrefs(local);
+        }
       }
     } catch (err) {
       console.warn("Match prefs sync failed:", err);
@@ -667,6 +784,10 @@ export default function App() {
     setAccessToken(null);
   }
 
+  // ── Boot analytics on mount. No-op when VITE_GA_MEASUREMENT_ID is unset
+  //    or the browser has Do-Not-Track on. Idempotent — safe to call again. ──
+  useEffect(() => { initAnalytics(); }, []);
+
   // ── Sync cards from Supabase ──
   const PAGE_SIZE = 20;
 
@@ -697,6 +818,8 @@ export default function App() {
         setServerOffset(all.length);
         setSynced(true);
         setLoading(false);
+        // Cache the raw first page so the next visit hydrates instantly.
+        writeCardsCache(firstBatch, total);
 
         // Drain the rest in the background — small payload, keeps the
         // category filter list and search complete for power users.
@@ -722,6 +845,20 @@ export default function App() {
       }
     }
     syncCards();
+  }, []);
+
+  // ── Load Receipts ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${API}/receipts`, { headers: HEADERS });
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        if (!cancelled) setReceipts(data.receipts ?? []);
+      } catch { /* non-critical */ }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   // ── Pull admin-tuned matcher config on mount so scoring uses the latest
@@ -751,6 +888,9 @@ export default function App() {
         const data = await res.json();
         if (typeof data.citiesCount === "number") setStatsCitiesCount(data.citiesCount);
         if (typeof data.usersCount === "number") setStatsUsersCount(data.usersCount);
+        if (typeof data.pendingUsersCount === "number") setPendingUsersCount(data.pendingUsersCount);
+        if (typeof data.pendingActsCount === "number") setServerPendingActsCount(data.pendingActsCount);
+        if (typeof data.siteUpdating === "boolean") setSiteUpdating(data.siteUpdating);
       } catch (err) {
         console.error("Network error fetching stats:", err);
       }
@@ -829,6 +969,37 @@ export default function App() {
     return () => observer.disconnect();
   }, [displayLimit, displayedCards.length, hasActiveFilters, loadingMore, serverOffset, serverTotal]);
 
+  // ── Deep link: ?act=<cardId> ──
+  // Switch to The Acts tab and scroll the target card into view.
+  useEffect(() => {
+    if (deepLinkId === null) return;
+    setActiveTab("acts");
+    // Make sure the card is within the visible slice (increase limit if needed).
+    const idx = displayedCards.findIndex((c) => c.id === deepLinkId);
+    if (idx !== -1 && idx >= displayLimit) {
+      setDisplayLimit(idx + 1);
+    }
+    // Give React one frame to render the card, then scroll to it.
+    const frame = requestAnimationFrame(() => {
+      const el = document.getElementById(`card-${deepLinkId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.classList.add("ring-2", "ring-[#fd8e33]", "ring-offset-2");
+        setTimeout(() => el.classList.remove("ring-2", "ring-[#fd8e33]", "ring-offset-2"), 2500);
+        setDeepLinkId(null);
+        // Clean the param from the URL bar without triggering a reload.
+        const url = new URL(window.location.href);
+        url.searchParams.delete("act");
+        window.history.replaceState({}, "", url.toString());
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [deepLinkId, displayedCards, displayLimit]);
+
+  useEffect(() => {
+    if (pendingActsVersion > 0) setShowPendingActsOnly(true);
+  }, [pendingActsVersion]);
+
   // ── Load more ──
   const handleLoadMore = async () => {
     setLoadingMore(true);
@@ -857,6 +1028,12 @@ export default function App() {
     const alreadyCompleted = completedCards.has(id);
     const delta = alreadyCompleted ? -1 : 1;
 
+    // Snapshot the user's pre-toggle action total so the celebration modal
+    // can show the before → after climb. We prefer the server-known total
+    // when signed in; otherwise fall back to the local optimistic set.
+    const prevTotal =
+      myCompletions?.total ?? completedCards.size;
+
     setCompletedCards((prev) => {
       const next = new Set(prev);
       alreadyCompleted ? next.delete(id) : next.add(id);
@@ -868,6 +1045,17 @@ export default function App() {
         ? { ...c, completions: Math.max(0, (c.completions ?? 0) + delta) }
         : c)
     );
+
+    // Fireworks for a fresh completion — never on un-do. Use the optimistic
+    // bump (prevTotal + 1) so the modal pops immediately; the server-side
+    // count syncs back in the background and overrides if it disagrees.
+    if (delta === 1) {
+      setCelebration({ prev: prevTotal, next: prevTotal + 1 });
+      // Analytics: fire only on a fresh completion. Pulls the card from the
+      // current state map so we know the category at click-time.
+      const card = cards.find((c) => c.id === id);
+      analytics.actionCompleted(id, card?.category);
+    }
 
     try {
       // Use the user's access token when signed in so the server can record
@@ -994,6 +1182,46 @@ export default function App() {
     return false;
   }
 
+  // ── One-click approve from the main feed (admin only) ────────────────────────
+  async function handleApproveCard(id: number) {
+    if (!accessToken) return;
+    try {
+      const res = await fetch(`${API}/admin/approve-action/${id}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setCards((prev) => prev.map((c) => c.id === id ? { ...c, adminApproved: true, ...data.card } : c));
+    } catch (err) {
+      console.error("Approve card error:", err);
+    }
+  }
+
+  // ── Toggle site-updating banner (admin only) ─────────────────────────────────
+  async function handleToggleSiteUpdating(enabled: boolean) {
+    if (!accessToken) return;
+    try {
+      await fetch(`${API}/admin/site-updating`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled }),
+      });
+      setSiteUpdating(enabled);
+    } catch (err) {
+      console.error("Toggle site-updating failed:", err);
+    }
+  }
+
+  // ── Approve all pending acts at once (admin only) ────────────────────────────
+  // Pass an explicit list of IDs to approve only the currently-visible filtered set.
+  async function handleApproveAll(ids: number[]) {
+    if (!accessToken) return;
+    for (const id of ids) {
+      await handleApproveCard(id);
+    }
+  }
+
   // ── Handle card update from EditCardModal ──
   function handleCardSaved(updated: ActionCardData) {
     setCards((prev) =>
@@ -1010,21 +1238,33 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-['Poppins',sans-serif]">
+      {/* Gamification keyframes injected once. Centralised in lib/animations.ts
+          so individual components only need to add a class name to opt in. */}
+      <style>{GAMIFICATION_KEYFRAMES}</style>
       <Navbar
         approval={approval}
         myCompletions={myCompletions ?? localCompletions}
         onLoginClick={() => setAuthModalOpen(true)}
         onLogout={handleLogout}
         onAdminClick={() => setAdminPanelOpen(true)}
+        onPendingActsClick={() => { handleTabChange("acts"); setPendingActsVersion((v) => v + 1); }}
+        onPendingSmacksClick={() => { handleTabChange("receipts"); setSmacksPendingVersion((v) => v + 1); }}
+        pendingActsCount={pendingActsCount}
+        pendingSmacksCount={pendingSmacksCount}
+        pendingUsersCount={pendingUsersCount}
         onInfoClick={() => setInfoOpen(true)}
         onActClick={() => setActOpen(true)}
         onBookmarksClick={() => setBookmarksOpen(true)}
         bookmarkCount={bookmarkedCards.size}
         onFeedbackClick={() => setFeedbackOpen(true)}
         onMatchClick={() => setMatchOpen(true)}
+        onTierClick={() => setTierModalOpen(true)}
+        siteUpdating={siteUpdating}
+        onToggleSiteUpdating={handleToggleSiteUpdating}
         matchActive={matchPrefs !== null}
         onMatchClear={() => { setMatchPrefs(null); clearPreferences(); }}
         statsActsCount={displayedCards.length}
+        statsSmacksCount={receipts.length + STATIC_SMACKS.length}
         statsResistorsCount={statsUsersCount}
         statsCitiesCount={statsCitiesCount}
         statsSynced={synced}
@@ -1069,9 +1309,35 @@ export default function App() {
         }
       />
 
+      {/* Site-updating banner */}
+      {siteUpdating && (
+        <div className="w-full bg-[#23297e] text-white text-center px-4 py-3 font-['Poppins',sans-serif] font-bold text-sm flex items-center justify-center gap-2">
+          <span>🔧</span>
+          <span>SITE UPDATING — PLEASE BE PATIENT (2 minutes!)</span>
+          <span>🔧</span>
+        </div>
+      )}
+
       <main className="px-4 md:px-8 py-8">
         <ErrorBoundary>
-        {activeTab === "facts" ? (
+        {activeTab === "receipts" ? (
+          /* ── Receipts view ── */
+          <SmacksPage
+            receipts={receipts}
+            searchQuery={deferredSearchQuery}
+            accessToken={accessToken}
+            approval={approval}
+            onReceiptAdded={(r) => setReceipts((prev) => [...prev, r])}
+            onReceiptApproved={(id) =>
+              setReceipts((prev) =>
+                prev.map((r) => (r.id === id ? { ...r, adminApproved: true } : r))
+              )
+            }
+            pendingFilterVersion={smacksPendingVersion}
+            onComplete={handleComplete}
+            completedSmackIds={completedCards}
+          />
+        ) : activeTab === "facts" ? (
           /* ── Facts view ── */
           (() => {
             const q = deferredSearchQuery.toLowerCase().trim();
@@ -1090,6 +1356,15 @@ export default function App() {
             });
             return (
               <>
+                {/* ── Facts hero panel ── */}
+                <div className="mb-5 rounded-2xl border border-[#23297e]/15 bg-gradient-to-br from-[#23297e]/5 via-white to-[#fd8e33]/5 px-4 py-3.5 sm:px-5 sm:py-4">
+                  <p className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-sm sm:text-base mb-1.5 flex items-center gap-1.5">
+                    <span aria-hidden="true">🧠</span> What's a Fact?
+                  </p>
+                  <p className="font-['Poppins',sans-serif] text-xs sm:text-sm text-gray-700 leading-snug">
+                    MAGA spreads lies faster than you can look them up. <strong className="text-[#23297e]">The Facts</strong> gives you pre-loaded rebuttals — the claim, the truth, and a question to ask back that puts them on defense. <span className="text-[#fd8e33] font-semibold">Read one. Use it. Win the argument.</span>
+                  </p>
+                </div>
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-5">
                   {filteredFacts.map((fc) => (
                     <FactCard
@@ -1117,6 +1392,13 @@ export default function App() {
           })()
         ) : (
           /* ── Acts view ── */
+          (() => {
+            const visibleActsCards = (isAdminUser && showPendingActsOnly)
+              // Pull from the raw card list so match-scoring / ranking can't hide
+              // unapproved cards from the admin review queue.
+              ? cards.filter((c) => c.adminApproved === false && !(c.eventDate && c.eventDate < todayISO))
+              : displayedCards;
+            return (
           <>
             {/* Unfiltered banner — nudges users to try the match tool */}
             {!matchPrefs && !hasActiveFilters && activeTab === "acts" && synced && (
@@ -1133,29 +1415,146 @@ export default function App() {
               </div>
             )}
 
-            {/* Match-mode banner — visible when match prefs are filtering the feed */}
-            {matchPrefs && (
-              <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-[#fd8e33] bg-[#fd8e33]/5 px-4 py-2.5">
-                <p className="font-['Poppins',sans-serif] text-sm text-gray-700">
-                  ✨ <strong className="text-[#23297e]">Matched for you.</strong>{" "}
-                  Showing actions sorted by your match preferences.
+            {/* Pending-only banner */}
+            {isAdminUser && showPendingActsOnly && (
+              <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-red-300 bg-red-50 px-4 py-2.5">
+                <p className="font-['Poppins',sans-serif] text-sm text-red-700">
+                  ⚠️ <strong>Pending approval only</strong> — showing {visibleActsCards.length} unapproved act{visibleActsCards.length !== 1 ? "s" : ""}.
                 </p>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-3 shrink-0">
                   <button
-                    onClick={() => setMatchOpen(true)}
-                    className="font-['Poppins',sans-serif] text-xs font-semibold text-[#23297e] hover:underline"
+                    onClick={() => handleApproveAll(visibleActsCards.map((c) => c.id))}
+                    className="font-['Poppins',sans-serif] text-xs font-semibold bg-green-600 hover:bg-green-700 text-white rounded-lg px-3 py-1.5 transition-colors"
                   >
-                    Edit
+                    ✓ Approve all {visibleActsCards.length} showing
                   </button>
                   <button
-                    onClick={() => { setMatchPrefs(null); clearPreferences(); }}
-                    className="font-['Poppins',sans-serif] text-xs font-semibold text-gray-600 hover:text-[#fd8e33]"
+                    onClick={() => setShowPendingActsOnly(false)}
+                    className="font-['Poppins',sans-serif] text-xs font-semibold text-red-600 hover:underline"
                   >
-                    Clear
+                    Show all
                   </button>
                 </div>
               </div>
             )}
+
+            {/* Match-mode banner — visible when match prefs are filtering the feed.
+                Surfaces the user's actual settings as chips so they remember WHY
+                this set of cards is showing (and the total count, so the volume
+                is visible at a glance). */}
+            {matchPrefs && (() => {
+              // Friendly time labels — match the MatchMe slider vocabulary.
+              const timeLabel = (
+                matchPrefs.time === "5min"     ? "Under 5 min"
+                : matchPrefs.time === "10min"    ? "5–10 min"
+                : matchPrefs.time === "30min"    ? "~30 min"
+                : matchPrefs.time === "1hr"      ? "~1 hr"
+                : matchPrefs.time === "fewHours" ? "Few hrs / week"
+                : matchPrefs.time === "fullDay"  ? "~1 day"
+                : matchPrefs.time === "ongoing"  ? "Ongoing"
+                : null
+              );
+              // Location label derived from the setting array.
+              const settingLabel = (() => {
+                const s = matchPrefs.setting ?? [];
+                if (s.includes("online") && s.includes("inPerson")) return "Mostly Remote";
+                if (s.includes("online")) return "Remote only";
+                if (s.includes("inPerson")) return "In-person";
+                return "Remote + In-person";
+              })();
+              // Tone-stop names — must match MatchMeModal TONE_LABELS so the
+              // banner chip says exactly what the user picked.
+              const toneStops: Record<"anger" | "comedy" | "subversion" | "hope" | "energy", { icon: string; label: string; stops: string[] }> = {
+                anger:      { icon: "🔥", label: "Confrontational", stops: ["None", "Low", "Bold", "High"] },
+                comedy:     { icon: "😄", label: "Humor",           stops: ["None", "Light", "Irreverent", "Full mockery"] },
+                subversion: { icon: "🎭", label: "Subversive",      stops: ["None", "Mild", "Edgy", "Radical"] },
+                hope:       { icon: "🌅", label: "Hopeful",         stops: ["None", "Some", "Uplifting", "Full hope"] },
+                energy:     { icon: "⚡", label: "Motivation",      stops: ["Low",  "Mild",  "Engaged", "On fire"] },
+              };
+              // Show all 5 tone dims always, but visually distinguish dims at
+              // the default (1) from ones the user has moved off. Defaults
+              // render greyed-out + slimmer so they read as "background", and
+              // bumped ones get an orange accent so they pop. This gives the
+              // user a complete at-a-glance view of their match config without
+              // having to open the Match wizard, while still calling out
+              // what's been customised.
+              const toneChips = (Object.keys(toneStops) as Array<keyof typeof toneStops>)
+                .map((k) => {
+                  const raw = matchPrefs.tone[k] ?? 1;
+                  const v = Math.max(0, Math.min(3, raw));
+                  return {
+                    icon: toneStops[k].icon,
+                    label: toneStops[k].label,
+                    value: toneStops[k].stops[v],
+                    isDefault: raw === 1,
+                  };
+                });
+              const groupCount = matchPrefs.vulnerableGroups?.length ?? 0;
+              return (
+                <div className="mb-4 flex flex-col gap-2 rounded-lg border border-[#fd8e33] bg-[#fd8e33]/5 px-4 py-2.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-['Poppins',sans-serif] text-sm text-gray-700">
+                      <span className="resistact-anim-twinkle" aria-hidden>✨</span>{" "}
+                      <strong className="text-[#23297e]">Matched for you.</strong>{" "}
+                      Showing <strong className="text-[#23297e]">{displayedCards.length}</strong> {displayedCards.length === 1 ? "action" : "actions"}.
+                    </p>
+                    {/* Chip strip — wraps on narrow viewports. */}
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-gray-600 font-['Poppins',sans-serif]">
+                      {timeLabel && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5">
+                          ⏱ {timeLabel}
+                        </span>
+                      )}
+                      <span className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5">
+                        🗺 {settingLabel}
+                      </span>
+                      {toneChips.map((c) => (
+                        <span
+                          key={c.icon}
+                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 border ${
+                            c.isDefault
+                              ? "bg-gray-50 border-gray-100 text-gray-400"
+                              : "bg-[#fd8e33]/10 border-[#fd8e33]/30 text-[#23297e] font-semibold"
+                          }`}
+                          title={c.isDefault ? `${c.label} — default (not set)` : `${c.label} bumped to ${c.value}`}
+                        >
+                          {c.icon} {c.label}: {c.value}
+                        </span>
+                      ))}
+                      {matchPrefs.state && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5">
+                          📍 {matchPrefs.state}
+                        </span>
+                      )}
+                      {groupCount > 0 && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5">
+                          🤝 Amplifies {groupCount} {groupCount === 1 ? "group" : "groups"}
+                        </span>
+                      )}
+                      {matchPrefs.focusDonations && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5">
+                          💵 Donation focus
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 self-start">
+                    <button
+                      onClick={() => setMatchOpen(true)}
+                      className="font-['Poppins',sans-serif] text-xs font-semibold text-[#23297e] hover:underline"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => { setMatchPrefs(null); clearPreferences(); }}
+                      className="font-['Poppins',sans-serif] text-xs font-semibold text-gray-600 hover:text-[#fd8e33]"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
 
             {loading ? (
               <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
@@ -1164,20 +1563,35 @@ export default function App() {
             ) : (
             <>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
-              {(hasActiveFilters ? displayedCards : displayedCards.slice(0, displayLimit)).map((card) => (
+              {(hasActiveFilters || showPendingActsOnly ? visibleActsCards : visibleActsCards.slice(0, displayLimit)).map((card, idx) => (
+                // First 12 cards get a stagger-in animation, keyed by
+                // `staggerKey` so it re-fires whenever the user applies a new
+                // Match config. Cards past index 11 don't animate — keeps
+                // infinite scroll quiet. The `key={...}-${staggerKey}` forces
+                // React to re-mount the wrapper on key change so the CSS
+                // keyframe runs from the start.
+                <div
+                  key={idx < 12 ? `${card.id}-${staggerKey}` : card.id}
+                  id={`card-${card.id}`}
+                  className={idx < 12 ? "resistact-anim-stagger" : undefined}
+                  style={idx < 12 ? { animationDelay: `${idx * 40}ms` } : undefined}
+                >
                 <ActionCard
-                  key={card.id}
                   card={card.isFeatured ? { ...card, featuredIllustration: <FeaturedIllustration /> } : card}
                   onBoost={handleBoost}
                   onComplete={handleComplete}
                   onShare={handleShare}
                   onBookmark={handleBookmark}
                   onEdit={(id) => setEditCardId(id)}
+                  onInfoClick={card.pinToTop ? () => setInfoOpen(true) : undefined}
                   isBoosted={boostedCards.has(card.id)}
                   isCompleted={completedCards.has(card.id)}
                   isBookmarked={bookmarkedCards.has(card.id)}
                   canEdit={canEditCard(card)}
+                  isPending={isAdminUser && card.adminApproved === false}
+                  onApprove={isAdminUser ? handleApproveCard : undefined}
                 />
+                </div>
               ))}
             </div>
             </>
@@ -1215,6 +1629,8 @@ export default function App() {
               </div>
             )}
           </>
+            );
+          })()
         )}
         </ErrorBoundary>
       </main>
@@ -1314,6 +1730,19 @@ export default function App() {
             setMatchPrefs(prefs);
             savePreferences(prefs);
             setMatchOpen(false);
+            setStaggerKey((k) => k + 1);
+            analytics.matchSet(prefs.time, prefs.tone);
+            // First-match-ever confetti. The flag is per-browser (localStorage)
+            // so a user who's switched devices may see it again — that's fine,
+            // the moment is "you finished the wizard for the first time HERE".
+            // Wrapped in try/catch because localStorage can throw in private
+            // browsing on some Safaris, and we never want to break the apply.
+            try {
+              if (!localStorage.getItem("resistact_first_match_done")) {
+                burstConfetti({ pieces: 180, duration: 3600 });
+                localStorage.setItem("resistact_first_match_done", "1");
+              }
+            } catch {}
             // Sync to the user's profile so prefs follow them across devices.
             // Anonymous users skip the push — their prefs stay in localStorage
             // until they sign up, at which point syncMatchPreferencesOnLogin
@@ -1327,6 +1756,7 @@ export default function App() {
             setMatchPrefs(prefs);
             savePreferences(prefs);
             setMatchOpen(false);
+            analytics.matchSet(prefs.time, prefs.tone);
             setAuthModalOpen(true);
           }}
         />
@@ -1391,6 +1821,26 @@ export default function App() {
           </button>
           {changelogOpen && <ChangelogModal onClose={() => setChangelogOpen(false)} />}
         </>
+      )}
+
+      {/* Tier modal — available to all logged-in users, not just admins */}
+      {tierModalOpen && <TierModal actionCount={myCompletions?.total ?? null} byCategory={myCompletions?.byCategory} onClose={() => setTierModalOpen(false)} />}
+
+      {/* Celebration modal — fires for ALL users on a fresh "I did this".
+          Rendered outside the admin block so anon + approved users both see
+          fireworks. */}
+      {celebration && (
+        <CelebrationModal
+          prevCount={celebration.prev}
+          newCount={celebration.next}
+          onClose={() => setCelebration(null)}
+          onFindMore={() => {
+            setCelebration(null);
+            // Smooth-scroll back to the top of the action grid so "Find
+            // another action" lands on the live feed.
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
+        />
       )}
     </div>
   );

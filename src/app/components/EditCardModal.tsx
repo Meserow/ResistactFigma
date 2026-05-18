@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { X, Loader2, Pencil, Trash2, Upload, Clock, Flame, Laugh, VenetianMask, Sunrise, Zap } from "lucide-react";
+import { X, Loader2, Pencil, Trash2, Upload, Clock, Flame, Laugh, VenetianMask, Sunrise, Zap, ZoomIn } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
 import type { ActionCardData } from "./ActionCard";
@@ -54,8 +54,9 @@ function normaliseCategory(raw: string): string {
 }
 
 const TIME_COMMITMENT_MAP: Record<TimeBucket, string> = {
-  "5min":     "< 1 hour",
-  "30min":    "< 1 hour",
+  "5min":     "< 5 minutes",
+  "10min":    "5–10 minutes",
+  "30min":    "~30 minutes",
   "1hr":      "1–3 hours",
   "fewHours": "1–3 hours",
   "fullDay":  "Full day",
@@ -64,6 +65,7 @@ const TIME_COMMITMENT_MAP: Record<TimeBucket, string> = {
 
 const TIME_STOPS = [
   { key: "5min"     as TimeBucket, title: "Just the basics", desc: "< 5 minutes" },
+  { key: "10min"    as TimeBucket, title: "A few minutes",   desc: "5–10 minutes" },
   { key: "30min"    as TimeBucket, title: "A little",        desc: "A few hours per month" },
   { key: "fewHours" as TimeBucket, title: "Regularly",       desc: "A few hours per week" },
   { key: "ongoing"  as TimeBucket, title: "All in",          desc: "Ongoing organizing" },
@@ -72,6 +74,7 @@ const TIME_STOPS = [
 function timeBucketFromCard(timeCommitment: string | undefined, quickAction?: boolean): TimeBucket {
   if (quickAction) return "5min";
   if (!timeCommitment) return "30min";
+  if (timeCommitment === "5–10 minutes" || timeCommitment === "5-10 minutes") return "10min";
   if (timeCommitment === "< 1 hour") return "30min";
   if (timeCommitment === "1 hour" || timeCommitment === "1hr") return "1hr";
   if (timeCommitment === "1–3 hours") return "fewHours";
@@ -131,6 +134,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
   const [toneHope,       setToneHope]       = useState<number | null>((card.toneOverride?.hope       ?? null) as number | null);
   const [toneEnergy,     setToneEnergy]     = useState<number | null>((card.toneOverride?.energy     ?? null) as number | null);
 
+  const [lightboxOpen,  setLightboxOpen]  = useState(false);
   const [loading,       setLoading]       = useState(false);
   const [error,         setError]         = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -253,6 +257,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
   const tLevel = TIME_STOPS[tIdx];
 
   return (
+    <>
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div
         className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden"
@@ -369,7 +374,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
                   · <span className="font-medium text-[#fd8e33]">{tLevel.title}</span> — {tLevel.desc}
                 </span>
               </div>
-              <ToneRangeSlider value={tIdx} onChange={(v) => setInvolvement(TIME_STOPS[v].key)} max={3} />
+              <ToneRangeSlider value={tIdx} onChange={(v) => setInvolvement(TIME_STOPS[v].key)} max={4} />
             </div>
 
             {/* Tone sliders — admin override; non-admins see read-only defaults */}
@@ -454,13 +459,19 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
               className={INPUT_CLS}
             />
             {(topImageUrl.trim() || card.topImage) && (
-              <div className="mt-2 relative h-24 rounded-xl overflow-hidden bg-gray-50 border border-gray-200">
+              <div
+                className="mt-2 relative h-24 rounded-xl overflow-hidden bg-gray-50 border border-gray-200 cursor-zoom-in group"
+                onClick={() => setLightboxOpen(true)}
+              >
                 <img
                   src={topImageUrl.trim() || card.topImage}
                   alt="Header preview"
                   className="w-full h-full object-cover"
                   onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = "none"; }}
                 />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/25 transition-colors">
+                  <ZoomIn size={22} className="text-white opacity-0 group-hover:opacity-100 drop-shadow transition-opacity" />
+                </div>
               </div>
             )}
             {uploadError && (
@@ -557,5 +568,27 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
         </div>
       </div>
     </div>
+
+    {/* ── Lightbox ── */}
+    {lightboxOpen && (
+      <div
+        className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4"
+        onClick={() => setLightboxOpen(false)}
+      >
+        <button
+          className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors"
+          onClick={() => setLightboxOpen(false)}
+        >
+          <X size={18} />
+        </button>
+        <img
+          src={topImageUrl.trim() || card.topImage}
+          alt="Header image"
+          className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
+        />
+      </div>
+    )}
+    </>
   );
 }

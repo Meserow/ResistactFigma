@@ -2,12 +2,27 @@ import { useState, useEffect, useRef } from "react";
 import { X, CheckCircle2, XCircle, Clock, Users, ShieldCheck, Loader2, RefreshCw, FileText, Trash2, Calendar, ExternalLink, ImageIcon, Upload, ZoomIn, AlertTriangle, Sliders, RotateCcw, Save, Eye, Flame, Laugh, VenetianMask, Heart, Sunrise, Zap, Link2, Pencil } from "lucide-react";
 import { CardDetailsModal } from "./CardDetailsModal";
 import { EditCardModal } from "./EditCardModal";
+import { AdminUserDetail } from "./AdminUserDetail";
+import { UserAvatar } from "./UserAvatar";
 import type { ActionCardData } from "./ActionCard";
 import type { LucideIcon } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
 import type { UserApproval } from "../lib/supabase";
 import { DEFAULT_CATEGORY_TONE, applyMatcherConfig, type Tone } from "../lib/matcher";
 import { ToneRangeSlider } from "./ToneSlider";
+import { getUserTier } from "../lib/tiers";
+
+/** Friendly relative time string like "3 days ago" or "just now". */
+function formatRelative(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  if (diffMs < 0)                       return "just now";
+  if (diffMs < 60_000)                  return "just now";
+  if (diffMs < 3600_000)                return `${Math.floor(diffMs / 60_000)}m ago`;
+  if (diffMs < 86_400_000)              return `${Math.floor(diffMs / 3600_000)}h ago`;
+  if (diffMs < 7 * 86_400_000)          return `${Math.floor(diffMs / 86_400_000)}d ago`;
+  if (diffMs < 30 * 86_400_000)         return `${Math.floor(diffMs / (7 * 86_400_000))}w ago`;
+  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
 
@@ -17,8 +32,18 @@ interface AdminPanelProps {
   imageMap?: Record<string, string>;
 }
 
-type TabFilter = "pending" | "approved" | "rejected" | "all";
-type PanelMode = "cards" | "users" | "nourl" | "matcher";
+type TabFilter = "active" | "pending" | "approved" | "rejected" | "all";
+type PanelMode = "cards" | "users" | "nourl" | "matcher" | "online";
+
+interface OnlineUser {
+  userId: string;
+  name: string;
+  email: string;
+  avatar: string | null;
+  isAdmin: boolean;
+  status: string;
+  lastSeenAt: string;
+}
 
 const TONE_DIMS: { key: keyof Tone; label: string; Icon: LucideIcon; stops: { label: string; desc: string }[] }[] = [
   { key: "anger",      label: "Angry",      Icon: Flame,        stops: [
@@ -207,7 +232,9 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
   const [users, setUsers] = useState<UserApproval[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<TabFilter>("pending");
+  const [tab, setTab] = useState<TabFilter>("active");
+  /** Per-user detail drawer: the userId whose dashboard is open (or null). */
+  const [detailUserId, setDetailUserId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   // ── Cards state ──────────────────────────────────────────────────────────────
@@ -227,6 +254,11 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
   const [noUrlError, setNoUrlError] = useState<string | null>(null);
   const [urlEdits, setUrlEdits] = useState<Record<number, string>>({});
   const [urlSaving, setUrlSaving] = useState<number | null>(null);
+
+  // ── Online-now state ─────────────────────────────────────────────────────────
+  const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
+  const [onlineLoading, setOnlineLoading] = useState(false);
+  const [onlineError, setOnlineError] = useState<string | null>(null);
 
   const authHeaders = {
     "Content-Type": "application/json",
@@ -299,9 +331,34 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
     }
   }
 
+  async function fetchOnlineUsers() {
+    setOnlineLoading(true);
+    setOnlineError(null);
+    try {
+      // 1440 minutes = 24 hours. The Online tab now answers "who has used
+      // the site today?", not "who is on right now?" — much more useful for
+      // an admin checking engagement after pushing the site out.
+      const res = await fetch(`${API}/admin/online-users?windowMinutes=1440`, { headers: authHeaders });
+      const data = await res.json();
+      if (!res.ok) { setOnlineError(data.error ?? "Failed to load online users."); return; }
+      setOnlineUsers(data.users ?? []);
+    } catch {
+      setOnlineError("Network error loading online users.");
+    } finally {
+      setOnlineLoading(false);
+    }
+  }
+
   useEffect(() => { fetchPendingCards(); }, []);
   useEffect(() => { if (mode === "users" && users.length === 0) fetchUsers(); }, [mode]);
   useEffect(() => { if (mode === "nourl" && noUrlCards.length === 0 && !noUrlLoading) fetchNoUrlCards(); }, [mode]);
+  // Online tab: fetch on enter, then re-fetch every 30s while the tab is open.
+  useEffect(() => {
+    if (mode !== "online") return;
+    fetchOnlineUsers();
+    const id = window.setInterval(fetchOnlineUsers, 30_000);
+    return () => window.clearInterval(id);
+  }, [mode]);
 
   async function handleApprove(userId: string) {
     setActionLoading(userId + ":approve");
@@ -355,15 +412,25 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
   // an AI-side signal (set via /admin/flag-off-topic), and admins act on it
   // by Approve or Delete instead. Endpoints stay live for that automation.
 
-  const filtered = users.filter((u) => tab === "all" || u.status === tab);
-  const pendingCount = users.filter((u) => u.status === "pending").length;
+  // "Active" = anyone who has marked at least one action done in the last 30
+  // days. Excludes never-active users (totalActions = 0) and stale accounts.
+  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+  const activeCutoff = new Date(Date.now() - THIRTY_DAYS_MS).toISOString();
+  const filtered = users.filter((u) => {
+    if (tab === "all") return true;
+    if (tab === "active") return Boolean(u.lastActiveAt && u.lastActiveAt > activeCutoff);
+    return u.status === tab;
+  });
+  const pendingCount  = users.filter((u) => u.status === "pending").length;
+  const activeCount   = users.filter((u) => u.lastActiveAt && u.lastActiveAt > activeCutoff).length;
   const pendingCardsCount = pendingCards.length;
 
   const TAB_ITEMS: { key: TabFilter; label: string }[] = [
-    { key: "pending", label: `Pending${pendingCount > 0 ? ` (${pendingCount})` : ""}` },
+    { key: "active",   label: `Active${activeCount > 0 ? ` (${activeCount})` : ""}` },
+    { key: "pending",  label: `Pending${pendingCount > 0 ? ` (${pendingCount})` : ""}` },
     { key: "approved", label: "Approved" },
     { key: "rejected", label: "Rejected" },
-    { key: "all", label: "All" },
+    { key: "all",      label: "All" },
   ];
 
   return (
@@ -382,17 +449,17 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
               <div>
                 <p className="font-['Poppins',sans-serif] font-bold text-gray-900 text-base leading-tight">Admin Panel</p>
                 <p className="font-['Poppins',sans-serif] text-gray-400 text-xs">
-                  {mode === "users" ? "Manage user approvals" : mode === "nourl" ? "Cards missing an action link" : "Review submitted actions"}
+                  {mode === "users" ? "Manage user approvals" : mode === "nourl" ? "Cards missing an action link" : mode === "online" ? "Users active in the last 24 hours" : "Review submitted actions"}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={mode === "users" ? fetchUsers : mode === "nourl" ? fetchNoUrlCards : fetchPendingCards}
-                disabled={mode === "users" ? loading : mode === "nourl" ? noUrlLoading : cardsLoading}
+                onClick={mode === "users" ? fetchUsers : mode === "nourl" ? fetchNoUrlCards : mode === "online" ? fetchOnlineUsers : fetchPendingCards}
+                disabled={mode === "users" ? loading : mode === "nourl" ? noUrlLoading : mode === "online" ? onlineLoading : cardsLoading}
                 className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40"
               >
-                <RefreshCw size={15} className={(mode === "users" ? loading : mode === "nourl" ? noUrlLoading : cardsLoading) ? "animate-spin" : ""} />
+                <RefreshCw size={15} className={(mode === "users" ? loading : mode === "nourl" ? noUrlLoading : mode === "online" ? onlineLoading : cardsLoading) ? "animate-spin" : ""} />
               </button>
               <button
                 onClick={onClose}
@@ -406,10 +473,11 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
           {/* Mode switcher — Cards first */}
           <div className="px-5 flex gap-1 border-b border-gray-100 shrink-0">
             {([
-              { key: "cards" as PanelMode, icon: <FileText size={13} />, label: `Cards${pendingCardsCount > 0 ? ` (${pendingCardsCount})` : ""}` },
+              { key: "cards" as PanelMode, icon: <FileText size={13} />, label: `Cards${!cardsLoading && pendingCardsCount > 0 ? ` (${pendingCardsCount})` : ""}` },
               { key: "nourl" as PanelMode, icon: <Link2 size={13} />, label: `No URL${noUrlCards.length > 0 ? ` (${noUrlCards.length})` : ""}` },
               { key: "users" as PanelMode, icon: <Users size={13} />, label: "Users" },
               { key: "matcher" as PanelMode, icon: <Sliders size={13} />, label: "Matcher" },
+              { key: "online" as PanelMode, icon: <Users size={13} />, label: `Online${onlineUsers.length > 0 ? ` (${onlineUsers.length})` : ""}` },
             ]).map(({ key, icon, label }) => (
               <button
                 key={key}
@@ -430,9 +498,11 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
             <>
               <div className="px-5 py-3 border-b border-gray-100 shrink-0">
                 <p className="font-['Poppins',sans-serif] text-xs text-gray-500">
-                  {pendingCards.length === 0 && !cardsLoading
-                    ? "No cards awaiting approval."
-                    : `${pendingCards.length} card${pendingCards.length !== 1 ? "s" : ""} awaiting review`}
+                  {cardsLoading
+                    ? "Loading…"
+                    : pendingCards.length === 0
+                      ? "No cards awaiting approval."
+                      : `${pendingCards.length} card${pendingCards.length !== 1 ? "s" : ""} awaiting review`}
                 </p>
               </div>
 
@@ -722,33 +792,37 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
                 ) : filtered.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-40 gap-2">
                     <Users size={28} className="text-gray-200" />
-                    <p className="font-['Poppins',sans-serif] text-sm text-gray-400">No {tab === "all" ? "" : tab} users</p>
+                    <p className="font-['Poppins',sans-serif] text-sm text-gray-400">
+                    {tab === "active" ? "No users active in the last 30 days." : `No ${tab === "all" ? "" : tab} users`}
+                  </p>
                   </div>
                 ) : (
                   <ul className="divide-y divide-gray-50">
                     {filtered.map((user) => {
                       const status = STATUS_CONFIG[user.status] ?? STATUS_CONFIG.pending;
                       const isActing = actionLoading?.startsWith(user.userId);
+                      const total = user.totalActions ?? 0;
+                      const tier = getUserTier(total).tier;
                       return (
                         <li key={user.userId} className="px-5 py-4 hover:bg-gray-50/60 transition-colors">
-                          <div className="flex items-start gap-3">
-                            {/* Avatar */}
+                          {/* Row clickable area — opens the detail drawer */}
+                          <button
+                            type="button"
+                            onClick={() => setDetailUserId(user.userId)}
+                            className="w-full text-left flex items-start gap-3 group"
+                            aria-label={`Open dashboard for ${user.name}`}
+                          >
+                            {/* Avatar — UserAvatar gracefully swaps to the
+                                initial-letter bubble when the image URL fails
+                                (Google avatar URLs rotate and 403 sometimes). */}
                             <div className="shrink-0">
-                              {user.avatar ? (
-                                <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover ring-1 ring-gray-100" />
-                              ) : (
-                                <div className="w-10 h-10 rounded-full bg-[#23297e]/10 flex items-center justify-center">
-                                  <span className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-sm">
-                                    {user.name.charAt(0).toUpperCase()}
-                                  </span>
-                                </div>
-                              )}
+                              <UserAvatar name={user.name} avatar={user.avatar} />
                             </div>
 
                             {/* Info */}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <p className="font-['Poppins',sans-serif] font-semibold text-gray-900 text-sm truncate">{user.name}</p>
+                                <p className="font-['Poppins',sans-serif] font-semibold text-gray-900 text-sm truncate group-hover:underline">{user.name}</p>
                                 {user.isAdmin && (
                                   <span className="text-[10px] font-bold bg-[#23297e] text-white rounded-md px-1.5 py-0.5 font-['Poppins',sans-serif]">ADMIN</span>
                                 )}
@@ -756,19 +830,52 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
                                   {status.icon}
                                   {status.label}
                                 </span>
+                                {/* Tier chip — color-coded to the user's current tier. */}
+                                <span
+                                  className="inline-flex items-center gap-1 text-[10px] font-bold rounded-md px-1.5 py-0.5 font-['Poppins',sans-serif] uppercase tracking-wider"
+                                  style={{ background: `${tier.color}22`, color: tier.color }}
+                                  title={tier.tagline}
+                                >
+                                  {tier.name}
+                                </span>
                               </div>
                               <p className="font-['Poppins',sans-serif] text-xs text-gray-400 truncate mt-0.5">{user.email}</p>
-                              <div className="flex items-center gap-2 mt-1">
+                              <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                <span className="font-['Poppins',sans-serif] text-[10px] font-semibold text-gray-600">
+                                  {total} action{total === 1 ? "" : "s"}
+                                </span>
+                                <span className="text-gray-200">·</span>
+                                <span className="font-['Poppins',sans-serif] text-[10px] text-gray-400">
+                                  {user.lastActiveAt
+                                    ? `active ${formatRelative(user.lastActiveAt)}`
+                                    : "never active"}
+                                </span>
+                                <span className="text-gray-200">·</span>
                                 <span className="font-['Poppins',sans-serif] text-[10px] text-gray-400">
                                   via {PROVIDER_LABELS[user.provider] ?? user.provider}
                                 </span>
                                 <span className="text-gray-200">·</span>
                                 <span className="font-['Poppins',sans-serif] text-[10px] text-gray-400">
-                                  {new Date(user.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                                  joined {new Date(user.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                                 </span>
+                                {user.emailConsent != null && (
+                                  <>
+                                    <span className="text-gray-200">·</span>
+                                    <span
+                                      className={`inline-flex items-center gap-1 font-['Poppins',sans-serif] text-[10px] font-semibold rounded-md px-1.5 py-0.5 ${
+                                        user.emailConsent
+                                          ? "text-emerald-700 bg-emerald-50 border border-emerald-200"
+                                          : "text-gray-400 bg-gray-50 border border-gray-200 line-through"
+                                      }`}
+                                      title={user.emailConsent ? "Opted in to emails" : "No email consent"}
+                                    >
+                                      ✉️ {user.emailConsent ? "emails ok" : "no emails"}
+                                    </span>
+                                  </>
+                                )}
                               </div>
                             </div>
-                          </div>
+                          </button>
 
                           {/* Action buttons — only show for non-admin pending/rejected users */}
                           {!user.isAdmin && user.status !== "approved" && (
@@ -820,6 +927,69 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
           {mode === "matcher" && (
             <MatcherTuning accessToken={accessToken} />
           )}
+
+          {/* ── ONLINE-NOW mode ────────────────────────────────────────────────────── */}
+          {mode === "online" && (
+            <>
+              <div className="px-5 py-3 border-b border-gray-100 shrink-0">
+                <p className="font-['Poppins',sans-serif] text-xs text-gray-500">
+                  {onlineLoading && onlineUsers.length === 0
+                    ? "Loading…"
+                    : onlineUsers.length === 0
+                      ? "No one has been active in the last 24 hours."
+                      : `${onlineUsers.length} user${onlineUsers.length !== 1 ? "s" : ""} active in the last 24 hours · refreshes every 30s`}
+                </p>
+              </div>
+
+              <div className="flex-1 overflow-y-auto">
+                {onlineError ? (
+                  <div className="p-5 text-center">
+                    <p className="font-['Poppins',sans-serif] text-sm text-red-500">{onlineError}</p>
+                    <button onClick={fetchOnlineUsers} className="mt-3 text-xs text-[#23297e] underline font-['Poppins',sans-serif]">Retry</button>
+                  </div>
+                ) : onlineUsers.length === 0 && !onlineLoading ? (
+                  <div className="flex flex-col items-center justify-center h-40 gap-2">
+                    <Users size={28} className="text-gray-200" />
+                    <p className="font-['Poppins',sans-serif] text-sm text-gray-400">No activity in the last 24 hours.</p>
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-gray-50">
+                    {onlineUsers.map((u) => {
+                      // Tier the status dot by how recent: green = truly live,
+                      // amber = recent, gray = active today but cold. Avoids
+                      // implying "online right now" for 23-hours-ago activity.
+                      const ageMs = Date.now() - new Date(u.lastSeenAt).getTime();
+                      const dot = ageMs < 5 * 60_000
+                        ? { color: "bg-green-500", label: "online now" }
+                        : ageMs < 60 * 60_000
+                          ? { color: "bg-amber-400", label: "active recently" }
+                          : { color: "bg-gray-300", label: "active today" };
+                      return (
+                      <li key={u.userId} className="px-5 py-3 flex items-center gap-3">
+                        <span className={`w-2 h-2 rounded-full ${dot.color} shrink-0`} aria-label={dot.label} title={dot.label} />
+                        <UserAvatar name={u.name} avatar={u.avatar} sizeClasses="w-8 h-8" />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-['Poppins',sans-serif] font-semibold text-sm text-gray-800 truncate">{u.name}</p>
+                            {u.isAdmin && (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-[#23297e] bg-[#23297e]/10 rounded px-1.5 py-0.5">
+                                <ShieldCheck size={10} /> Admin
+                              </span>
+                            )}
+                          </div>
+                          <p className="font-['Poppins',sans-serif] text-xs text-gray-400 truncate">{u.email}</p>
+                        </div>
+                        <p className="font-['Poppins',sans-serif] text-xs text-gray-400 shrink-0" title={u.lastSeenAt}>
+                          {formatRelative(u.lastSeenAt)}
+                        </p>
+                      </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -867,6 +1037,15 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
             setPendingCards((prev) => prev.filter((c) => c.id !== id));
             setEditingCard(null);
           }}
+        />
+      )}
+
+      {/* Per-user detail drawer — tier, breakdown, recent activity */}
+      {detailUserId && (
+        <AdminUserDetail
+          userId={detailUserId}
+          accessToken={accessToken}
+          onClose={() => setDetailUserId(null)}
         />
       )}
     </>

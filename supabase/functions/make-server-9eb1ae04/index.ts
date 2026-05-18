@@ -27,9 +27,24 @@ function adminClient() {
   );
 }
 
+// In-memory debounce for the last-seen side-effect write below. Cuts KV writes
+// to ~1/user/minute/instance even under heavy clicking. Lives in module scope;
+// cleared on cold start. With multiple instances each may write once per
+// window — acceptable since this powers "online now" display only.
+const LAST_SEEN_DEBOUNCE_MS = 60_000;
+const lastSeenCache = new Map<string, number>();
+
 async function getUser(token: string) {
   const { data: { user }, error } = await adminClient().auth.getUser(token);
   if (error || !user) return null;
+  // Presence signal — piggybacks on every authenticated request so we don't
+  // need a client-side heartbeat. Fire-and-forget; never block the request.
+  const now = Date.now();
+  const last = lastSeenCache.get(user.id) ?? 0;
+  if (now - last >= LAST_SEEN_DEBOUNCE_MS) {
+    lastSeenCache.set(user.id, now);
+    kv.set(`user:last-seen:${user.id}`, new Date(now).toISOString()).catch(() => {});
+  }
   return user;
 }
 
@@ -451,6 +466,130 @@ const SEED_CARDS = [
   { id: 1298, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Tell Congress: Pass the John R. Lewis Voting Rights Advancement Act", description: "The JLVRAA restores federal oversight of states with discriminatory voting histories, protects ballot access for communities of color, and guarantees equal voting rights for every citizen. Reject the SAVE Act. Advance the JLVRAA. Voting rights are American rights — contact Congress now.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "NAACP", authorRole: "Civil Rights Organization", authorLink: "https://naacp.org/", targetUrl: "https://naacp.org/actions/tell-congress-protect-our-voting-rights", topImageUrl: "https://naacp.org/sites/default/files/styles/hero_desktop/public/images/iStock-1202146507.jpg.webp?itok=57dCxKlE", toneOverride: { anger: 2, comedy: 0, subversion: 0, hope: 2, energy: 1 }, adminApproved: false },
   { id: 1299, category: "NEWS STORY", categoryColor: "#3b4a73", actionType: "Online", title: "Share Your Story: How Federal Budget Cuts Are Hurting Your Family", description: "Congress is slashing Medicaid and SNAP while handing tax breaks to billionaires. The NAACP needs your story — how would losing healthcare, food assistance, or housing support affect you or someone you love? Personal testimonies shift congressional votes. Two minutes to submit.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "NAACP", authorRole: "Civil Rights Organization", authorLink: "https://naacp.org/", targetUrl: "https://support.naacp.org/a/budget-and-tax-stories", topImageUrl: "https://naacp.org/sites/default/files/styles/hero_desktop/public/images/GettyImages-844235780-cropped.jpg.webp", toneOverride: { anger: 2, comedy: 0, subversion: 0, hope: 1, energy: 0 }, firstTimerFriendly: true, adminApproved: false },
   { id: 1301, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Email Your Senator: Kill the 'Kill Nonprofits' Bill (H.R. 9495)", description: "H.R. 9495 lets the government strip tax-exempt status from any nonprofit it labels 'terrorist supporting' — meaning the NAACP, ACLU, Planned Parenthood, any org that criticizes the administration. This is the infrastructure for silencing civil society. Email your senator to stop it.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "NAACP", authorRole: "Civil Rights Organization", authorLink: "https://naacp.org/", targetUrl: "https://naacp.org/actions/oppose-hr-9495-protect-nonprofit-organizations", topImageUrl: "https://naacp.org/sites/default/files/styles/hero_desktop/public/images/pexels-life-matters-4613879-%281%29.jpg.webp?itok=G50qUJOv", toneOverride: { anger: 3, comedy: 0, subversion: 0, hope: 1, energy: 1 }, adminApproved: false },
+
+  // ── Dissent Pins resistance merch ─────────────────────────────────────────────
+  { id: 1302, category: "PERSONAL COMMITMENT", categoryColor: "#23297e", actionType: "Online", title: "Slap a 'No War Is Holy' Sticker on Your Car (or Laptop)", description: "Tired of hearing Trump claim divine favor for his wars? This UV-laminated bumper sticker (5.25″ × 3″) pushes back on the gospel of holy wars. Weather-resistant for indoor or outdoor use — sticker or car magnet. From Dissent Pins.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Dissent Pins", authorRole: "Resistance Merch", authorLink: "https://dissentpins.com/", targetUrl: "https://dissentpins.com/collections/best-sellers/products/no-war-is-holy-bumper-sticker", topImageUrl: "https://dissentpins.com/cdn/shop/files/NoWarIsHolyStickerMock-up_2000x2000.jpg?v=1776273173", toneOverride: { anger: 2, comedy: 1, subversion: 2, hope: 1, energy: 1 }, adminApproved: false },
+  { id: 1303, category: "FUNDING", categoryColor: "#127f05", actionType: "Online", title: "Buy a Fifth Amendment Sticker — 50% to Immigrant Rights Orgs", description: "The Fifth Amendment protects everyone in the U.S. — citizens and non-citizens alike. Show it. 50% of profits go directly to immigrant rights organizations doing legal defense and community education, including Hands Off NYC, Illinois Coalition for Immigrant Rights, and Portland Immigrant Rights Coalition. 8.3″ wide, UV-laminated.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Dissent Pins", authorRole: "Resistance Merch", authorLink: "https://dissentpins.com/", targetUrl: "https://dissentpins.com/collections/best-sellers/products/fifth-amendment-bumper-sticker", topImageUrl: "https://dissentpins.com/cdn/shop/files/FifthAmendmentBumperSticker_1500x1500.png?v=1752677646", toneOverride: { anger: 2, comedy: 0, subversion: 1, hope: 2, energy: 1 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1304, category: "FUNDING", categoryColor: "#127f05", actionType: "Online", title: "Buy an Abolish ICE Liberty Sticker — 50% to Immigrant Rights Orgs", description: "Show solidarity with neighbors under threat from ICE enforcement. 50% of profits fund five immigrant rights organizations doing legal defense and community education. UV-laminated sticker (6.5″ × 4.4″) or car magnet.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Dissent Pins", authorRole: "Resistance Merch", authorLink: "https://dissentpins.com/", targetUrl: "https://dissentpins.com/collections/best-sellers/products/abolish-ice-liberty-bumper-sticker-or-car-magnet", topImageUrl: "https://dissentpins.com/cdn/shop/files/AbolishICELibertycarmagnetonblue2000x2000_2000x2000.jpg?v=1766517162", toneOverride: { anger: 3, comedy: 0, subversion: 2, hope: 2, energy: 2 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1305, category: "FUNDING", categoryColor: "#127f05", actionType: "Online", title: "Buy a FCK ICE Tee — 100% to Immigrant Defense Funds", description: "Wear your resistance and fund it. 100% of profits go directly to Minnesota Immigrant Rapid Response Fund, Immigrant Law Center of Minnesota, and UNIDOSMN. Light blue, 100% cotton, sizes XS–4XL. Made with Vermont-based New Duds.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Dissent Pins", authorRole: "Resistance Merch", authorLink: "https://dissentpins.com/", targetUrl: "https://dissentpins.com/collections/best-sellers/products/fckice-tshirt", topImageUrl: "https://dissentpins.com/cdn/shop/files/FCKICEHoodieUGCJoinbrandsDanTinklerMar202612000x2000_1024x.jpg?v=1773673949", toneOverride: { anger: 3, comedy: 1, subversion: 2, hope: 2, energy: 2 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+
+  // ── Religious Action Center of Reform Judaism — Legislative Action Center ───
+  { id: 1306, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Tell Congress: Pass the Environmental Justice for All Act", description: "Reform Jewish constituent email backing the A. Donald McEachin Environmental Justice for All Act (S. 919 / H.R. 1705). Forces federal agencies to weigh environmental and health impacts on Black, brown, low-income, and Indigenous communities before approving permits — the people Trump's deregulation hits first. One click sends to your delegation.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "RAC of Reform Judaism", authorRole: "RAC", authorLink: "https://rac.org/", targetUrl: "https://www.votervoice.net/URJ/campaigns/97971/respond", topImageUrl: "https://rac.org/sites/default/files/styles/page_header/public/2025-10/Hands%20cradling%20Earth.png?itok=6LiFeyEf", toneOverride: { anger: 2, comedy: 0, subversion: 0, hope: 2, energy: 1 }, adminApproved: false },
+  { id: 1307, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Tell Congress: Pass the FAMILY Act for Paid Family + Medical Leave", description: "Reform Jewish constituent email backing the FAMILY Act — paid family and medical leave for every worker in America. The U.S. is the only wealthy country without it. One click sends to your Reps and Senators.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "RAC of Reform Judaism", authorRole: "RAC", authorLink: "https://rac.org/", targetUrl: "https://www.votervoice.net/URJ/campaigns/97797/respond", topImageUrl: "https://rac.org/sites/default/files/styles/page_header/public/2025-10/Coins%20stack%20with%20balance%20scale.png?itok=LoJBbP7S", toneOverride: { anger: 1, comedy: 0, subversion: 0, hope: 2, energy: 1 }, adminApproved: false },
+  { id: 1308, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Tell Congress: Close Loopholes, Ban Assault Weapons, Fund Violence Intervention", description: "Reform Jewish action backing eight gun-violence-prevention measures — universal background checks, an assault weapons ban, safe storage, community violence intervention funding, and more. Faith voices move members who tune out everyone else. One-click email.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "RAC of Reform Judaism", authorRole: "RAC", authorLink: "https://rac.org/", targetUrl: "https://www.votervoice.net/URJ/Campaigns/97975/Respond", topImageUrl: "https://rac.org/sites/default/files/styles/page_header/public/2025-10/keep%20our%20schools%20safe%20sign.png?itok=V9BPpWTZ", toneOverride: { anger: 3, comedy: 0, subversion: 0, hope: 2, energy: 1 }, adminApproved: false },
+  { id: 1309, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Tell Congress: Mandate Hate Crime Reporting (IRPHA)", description: "Reform Jewish ask to pass the bipartisan Improving Reporting to Prevent Hate Act — requires local law enforcement to actually report hate crimes to the FBI. Reporting is voluntary right now, which is why federal hate-crime data is unusable. One-click constituent email.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "RAC of Reform Judaism", authorRole: "RAC", authorLink: "https://rac.org/", targetUrl: "https://www.votervoice.net/URJ/campaigns/115231/respond", topImageUrl: "https://rac.org/sites/default/files/styles/page_header/public/2025-10/memorial%20candle.png?itok=F95veFJk", toneOverride: { anger: 2, comedy: 0, subversion: 0, hope: 2, energy: 1 }, adminApproved: false },
+  { id: 1310, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Urge Congress: Pass the West Bank Violence Prevention Act", description: "Reform Jewish-led ask for U.S. sanctions on Israeli settlers and entities driving violence against Palestinians in the West Bank. Jewish constituents pushing this carries weight Trump and Netanyahu can't deflect. One-click email to your full delegation.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "RAC of Reform Judaism", authorRole: "RAC", authorLink: "https://rac.org/", targetUrl: "https://www.votervoice.net/URJ/campaigns/131611/respond", topImageUrl: "https://rac.org/sites/default/files/styles/page_header/public/2025-10/Jerusalem%20Day%20celebrations.png?itok=2n1dkw_y", toneOverride: { anger: 2, comedy: 0, subversion: 0, hope: 2, energy: 1 }, adminApproved: false },
+  { id: 1311, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Tell Your State Legislators: Protect LGBTQ+ People in Your State", description: "Reform Jewish state-level email pushing back on the 500+ anti-LGBTQ+ bills introduced in 2024. Targets your Governor and state legislators with a faith-rooted framing on equal protection — the message that lands in red and purple statehouses when nothing else does.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "RAC of Reform Judaism", authorRole: "RAC", authorLink: "https://rac.org/", targetUrl: "https://www.votervoice.net/URJ/campaigns/98070/respond", topImageUrl: "https://rac.org/sites/default/files/styles/page_header/public/2025-10/Young%20woman%20waving%20LGBTQ%2Bflag.png?itok=DIxOv-AP", toneOverride: { anger: 2, comedy: 0, subversion: 0, hope: 2, energy: 1 }, amplifiesGroups: ["lgbtq"], adminApproved: false },
+  { id: 1312, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Tell Congress: Pass H.R. 40 — Commission to Study Reparations", description: "Reform Jewish constituent email urging passage of H.R. 40 / S. 40 — establishes a federal Commission to Study and Develop Reparation Proposals for African Americans. Doesn't pay reparations; it produces the official record that makes them possible. Jewish memory in service of Black liberation.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "RAC of Reform Judaism", authorRole: "RAC", authorLink: "https://rac.org/", targetUrl: "https://www.votervoice.net/URJ/campaigns/97892/respond", topImageUrl: "https://rac.org/sites/default/files/styles/page_header/public/2025-11/RAC%20header%20-%20Reparations.png?itok=gCQMs0dl", toneOverride: { anger: 2, comedy: 0, subversion: 0, hope: 2, energy: 1 }, adminApproved: false },
+
+  // ── Etsy anti-Trump merch (indie makers) ──────────────────────────────────
+  // og:image URLs scraped from each listing's product page. Etsy CDN images
+  // are stable but the listings themselves can be pulled by sellers — if a
+  // card 404s the link, the admin panel can swap the targetUrl without
+  // touching the image.
+  { id: 1313, category: "IRREVERENCE", categoryColor: "#9333ea", actionType: "Online", title: "Buy the \"Waiting for the Big Beautiful Obituary\" Anti-Trump Tee", description: "Subtle FDT tee that flips Trump's \"big, beautiful\" branding into the obituary nobody's writing yet. Anti-MAGA, V-neck option, the kind of shirt that gets a knowing nod at the protest and a long stare in the suburbs. Indie maker (TeeTaniumCo) ships from Raleigh, NC.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "TeeTaniumCo (Etsy)", authorRole: "Resistance Merch", authorLink: "https://www.etsy.com/shop/TeeTaniumCo", targetUrl: "https://www.etsy.com/listing/4484525481/anti-trump-tee-waiting-for-big-beautiful", topImageUrl: "https://i.etsystatic.com/46711686/r/il/38bf26/7886752294/il_1080xN.7886752294_gy8z.jpg", toneOverride: { anger: 2, comedy: 2, subversion: 2, hope: 1, energy: 1 }, adminApproved: false },
+  { id: 1314, category: "IRREVERENCE", categoryColor: "#9333ea", actionType: "Online", title: "Slap a \"When It Happens\" Anti-Trump Wine Label on the Bottle", description: "Custom champagne / wine label sticker for the bottle you're saving for the day Trump is finally out. Subtle FDT, Democrat-gift-grade, makes any cabinet shelf into a countdown clock. Stick it now, pop it later — UncorkedLabels ships from Ocoee, FL.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "UncorkedLabels (Etsy)", authorRole: "Resistance Merch", authorLink: "https://www.etsy.com/shop/UncorkedLabels", targetUrl: "https://www.etsy.com/listing/4357310155/anti-trump-custom-wine-label-funny", topImageUrl: "https://i.etsystatic.com/45057606/r/il/171012/7696003810/il_1080xN.7696003810_4ugp.jpg", toneOverride: { anger: 1, comedy: 3, subversion: 2, hope: 2, energy: 1 }, adminApproved: false },
+  { id: 1315, category: "IRREVERENCE", categoryColor: "#9333ea", actionType: "Online", title: "Buy the \"President and Dumb Should Be Different People\" Tee", description: "Anti-Trump slogan tee that says the quiet part out loud. Wearable irreverence for anyone tired of pretending we're still doing the diplomatic-disagreement thing about this presidency. TeeGeekBoutique ships from San Jose, CA.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "TeeGeekBoutique (Etsy)", authorRole: "Resistance Merch", authorLink: "https://www.etsy.com/shop/TeeGeekBoutique", targetUrl: "https://www.etsy.com/listing/4469069065/anti-trump-tee-president-and-dumb-should", topImageUrl: "https://i.etsystatic.com/46736936/r/il/c5a9ce/7834235639/il_1080xN.7834235639_6k7m.jpg", toneOverride: { anger: 2, comedy: 2, subversion: 2, hope: 1, energy: 1 }, adminApproved: false },
+  { id: 1316, category: "IRREVERENCE", categoryColor: "#9333ea", actionType: "Online", title: "Buy the \"Go Back, We Screwed Up\" Trump Evolution Tee", description: "The evolution-of-man cartoon, except the last frame is an apology. \"Go back, we screwed up.\" Vote-blue, Kamala-friendly, pure billboard energy on a t-shirt. PrintfulApparelUS ships from Stafford, TX.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "PrintfulApparelUS (Etsy)", authorRole: "Resistance Merch", authorLink: "https://www.etsy.com/shop/PrintfulApparelUS", targetUrl: "https://www.etsy.com/listing/1797660855/anti-trump-tshirt-go-back-we-screwed-up", topImageUrl: "https://i.etsystatic.com/53712756/r/il/57fd0e/6288678088/il_1080xN.6288678088_ll21.jpg", toneOverride: { anger: 1, comedy: 3, subversion: 2, hope: 2, energy: 1 }, adminApproved: false },
+
+  // ── Spreadsheet batch (May 17): 19 new cards from anti-ICE / detention /
+  // anti-Iran-war / Tesla-divest sources. 7 of the original 26 rows were
+  // skipped as exact-URL or generic-URL duplicates of existing cards.
+  // All start as adminApproved:false so the admin can eyeball before publish.
+  { id: 1317, category: "BOYCOTT", categoryColor: "#7a1f7a", actionType: "Online", title: "Divest your portfolio (and your funds) from Tesla", description: "Tesla Takedown's divestment guide walks you through identifying which of your index funds, ETFs, and retirement accounts hold TSLA — and how to move them. Close the financial faucet on Musk and DOGE.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Tesla Takedown", authorRole: "Movement Organization", authorLink: "https://www.teslatakedown.com/", targetUrl: "https://www.teslatakedown.com/divest", topImageKey: "org_tesla-takedown", toneOverride: { anger: 3, comedy: 0, subversion: 2, hope: 1, energy: 2 }, adminApproved: false },
+  { id: 1318, category: "JOIN A GROUP", categoryColor: "#9c2779", actionType: "In Person Group", title: "Adopt-A-School: deter ICE raids at your neighborhood school", description: "NDLON's Adopt-A-School program assigns volunteers to be physically present at school drop-off and pick-up to deter ICE agents from snatching kids and parents. Sign up by zip — Seattle pilot is live; program expanding.", isOnline: false, boosts: 0, spotsTotal: "Unlimited", location: "Multi-State", authorName: "National Day Laborer Organizing Network", authorRole: "Movement Organization", authorLink: "https://ndlon.org/", targetUrl: "https://www.mobilize.us/mobilize/event/942116/", topImageUrl: "https://mobilizeamerica.imgix.net/uploads/organization/signal-2026-01-21-45558%E2%80%AFPM_20260123222132428157.png?w=1200&h=628&fit=crop&bg=FFF", toneOverride: { anger: 3, comedy: 0, subversion: 2, hope: 3, energy: 3 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1319, category: "JOIN A GROUP", categoryColor: "#9c2779", actionType: "In Person Group", title: "Adopt-A-Corner: stand watch at a known ICE pickup spot", description: "NDLON's Adopt-A-Corner rapid-response program assigns volunteers to monitor and disrupt ICE pickup locations (Home Depots, day-laborer corners, transit stops). Long-running commitment — open through Jan 2029.", isOnline: false, boosts: 0, spotsTotal: "Unlimited", location: "Multi-State", authorName: "National Day Laborer Organizing Network", authorRole: "Movement Organization", authorLink: "https://ndlon.org/", targetUrl: "https://www.mobilize.us/mobilize/event/856822/", topImageUrl: "https://mobilizeamerica.imgix.net/uploads/organization/Adopt%20a%20Corner%20Mobilize%20Group%20Graphic_20250807185842207845.png?w=1200&h=628&fit=crop&bg=FFF", toneOverride: { anger: 3, comedy: 0, subversion: 2, hope: 3, energy: 3 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1320, category: "TRAINING", categoryColor: "#126d89", actionType: "In Person Group", title: "Volunteer Training: Rapid Response to ICE Actions (Fremont CA)", description: "Three-hour training to join the Bay Area rapid-response phone tree — verify ICE sightings, deploy verifiers, document violations. Wed May 20, 6pm, Fremont CA.", isOnline: false, boosts: 0, spotsTotal: "Unlimited", location: "California", authorName: "Indivisible Fremont", authorRole: "Movement Organization", authorLink: "https://www.mobilize.us/mobilize/", targetUrl: "https://www.mobilize.us/mobilize/event/943590/", topImageUrl: "https://mobilizeamerica.imgix.net/uploads/event/ACELIP%20training%20image%20A_20251031044153435196.png?w=1200&h=628&fit=crop&bg=FFF", toneOverride: { anger: 3, comedy: 0, subversion: 2, hope: 2, energy: 3 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1321, category: "PROTEST", categoryColor: "#23297e", actionType: "In Person Group", title: "Federal Building Fridays: weekly anti-Trump regime protest (Seattle)", description: "Weekly Friday lunchtime protest at the Henry M. Jackson Federal Building in downtown Seattle targeting the Trump regime broadly — ICE, DOGE cuts, Iran war, RIFs. Hosted by Southend Indivisible.", isOnline: false, boosts: 0, spotsTotal: "Unlimited", location: "Washington", authorName: "Southend Indivisible", authorRole: "Movement Organization", authorLink: "https://www.mobilize.us/mobilize/", targetUrl: "https://www.mobilize.us/mobilize/event/944909/", topImageUrl: "https://mobilizeamerica.imgix.net/uploads/event/IMG_4009%20%281%29_20251222215412756888.JPG?w=1200&h=628&fit=crop&bg=FFF", toneOverride: { anger: 3, comedy: 1, subversion: 1, hope: 2, energy: 3 }, adminApproved: false },
+  { id: 1322, category: "PROTEST", categoryColor: "#23297e", actionType: "In Person Group", title: "NO ICE Expansion: tell Sabey Corp to cancel new ICE lease (Tukwila WA)", description: "Picket Sabey Corp's Tukwila campus to demand they cancel the lease they just signed with ICE for a new processing office. Recurring Wednesdays — May 20, Jun 3, and on.", isOnline: false, boosts: 0, spotsTotal: "Unlimited", location: "Washington", authorName: "Southend Indivisible", authorRole: "Movement Organization", authorLink: "https://www.mobilize.us/mobilize/", targetUrl: "https://www.mobilize.us/mobilize/event/933915/", topImageUrl: "https://mobilizeamerica.imgix.net/uploads/event/All%20Sabey%20protests_20260406081542745590.png?w=1200&h=628&fit=crop&bg=FFF", toneOverride: { anger: 3, comedy: 0, subversion: 2, hope: 2, energy: 3 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1323, category: "PROTEST", categoryColor: "#23297e", actionType: "In Person Group", title: "Honk-and-Wave rallies to protest Trump regime corruption", description: "Virtual + IRL drive-by honk-and-wave rallies coordinated by Indivisible Highlands and Beyond targeting Trump regime corruption. Distributed format — join from anywhere with a sign and a road.", isOnline: false, boosts: 0, spotsTotal: "Unlimited", location: "Multi-State", authorName: "Indivisible Highlands and Beyond", authorRole: "Movement Organization", authorLink: "https://www.mobilize.us/mobilize/", targetUrl: "https://www.mobilize.us/mobilize/event/950956/", topImageUrl: "https://mobilizeamerica.imgix.net/uploads/event/photo-3623_singular_display_fullPicture_20260506164538825158.jpeg?w=1200&h=628&fit=crop&bg=FFF", toneOverride: { anger: 2, comedy: 2, subversion: 1, hope: 2, energy: 3 }, adminApproved: false },
+  { id: 1324, category: "BOYCOTT", categoryColor: "#7a1f7a", actionType: "In Person Group", title: "De-ICE Citizens Bank: National Day of Action (Jun 6)", description: "Boycott + picket Citizens Bank branches nationwide for financing GEO Group and CoreCivic ICE detention contracts. National Day of Action coordinated by the De-ICE Citizens Bank Coalition — Sat Jun 6, 11am locally.", isOnline: false, boosts: 0, spotsTotal: "Unlimited", location: "Multi-State", authorName: "De-ICE Citizens Bank Coalition", authorRole: "Movement Organization", authorLink: "https://www.mobilize.us/mobilize/", targetUrl: "https://www.mobilize.us/mobilize/event/953075/", topImageUrl: "https://mobilizeamerica.imgix.net/uploads/organization/RSVP%20now_20260505235325939806.jpeg?w=1200&h=628&fit=crop&bg=FFF", toneOverride: { anger: 3, comedy: 0, subversion: 2, hope: 2, energy: 3 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1325, category: "JOIN A GROUP", categoryColor: "#9c2779", actionType: "In Person Group", title: "Hands Off NYC: small-business canvass for immigrant safety (NYC)", description: "Indivisible Harlem canvass of Harlem and uptown small businesses, distributing Know Your Rights materials and ICE-watch info to immigrant-employee-heavy storefronts. Wed May 20, 10am, plus more dates.", isOnline: false, boosts: 0, spotsTotal: "Unlimited", location: "New York", authorName: "Indivisible Harlem", authorRole: "Movement Organization", authorLink: "https://www.mobilize.us/mobilize/", targetUrl: "https://www.mobilize.us/mobilize/event/838849/", topImageUrl: "https://mobilizeamerica.imgix.net/uploads/event/welcome%20us%20image_20251011175816920835.png?w=1200&h=628&fit=crop&bg=FFF", toneOverride: { anger: 2, comedy: 0, subversion: 2, hope: 3, energy: 3 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1326, category: "TRAINING", categoryColor: "#126d89", actionType: "In Person Group", title: "ICE Out for Good: Know-Your-Rights canvass in Greenwich Village", description: "Volunteers distribute Know-Your-Rights cards to ICE-targeted immigrants and the lawyers who serve them around Greenwich Village. Fri May 29, 3pm, NYC.", isOnline: false, boosts: 0, spotsTotal: "Unlimited", location: "New York", authorName: "ICE Out For Good", authorRole: "Movement Organization", authorLink: "https://www.mobilize.us/mobilize/", targetUrl: "https://www.mobilize.us/mobilize/event/956018/", topImageUrl: "https://mobilizeamerica.imgix.net/uploads/organization/ICE%20out%20for%20GOOD%20wordmark_16x9_20260108201816461490.png?w=1200&h=628&fit=crop&bg=FFF", toneOverride: { anger: 3, comedy: 0, subversion: 2, hope: 2, energy: 3 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1327, category: "MEETING", categoryColor: "#5a3e9e", actionType: "In Person Group", title: "NELA Alliance for Democracy: monthly meeting (Northeast LA)", description: "Northeast Los Angeles Alliance for Democracy monthly anti-Trump organizing meeting — coordination on rapid response, voter ed, ICE watch. Thu May 28, 7pm, recurring.", isOnline: false, boosts: 0, spotsTotal: "Unlimited", location: "California", authorName: "Indivisible NELA", authorRole: "Movement Organization", authorLink: "https://www.mobilize.us/mobilize/", targetUrl: "https://www.mobilize.us/mobilize/event/771218/", topImageUrl: "https://mobilizeamerica.imgix.net/uploads/event/NELAAforD%20mobilize%20program%20MONTHLY%20NELA%20Meeting%20in-person_20250818155924620096.jpg?w=1200&h=628&fit=crop&bg=FFF", toneOverride: { anger: 2, comedy: 0, subversion: 1, hope: 2, energy: 2 }, adminApproved: false },
+  { id: 1328, category: "BOYCOTT", categoryColor: "#7a1f7a", actionType: "In Person Group", title: "Boycott Home Depot for cooperating with ICE raids (LA)", description: "LA Indivisible community-support + Home Depot boycott action targeting Home Depot's pattern of allowing ICE raids on day-laborer corners outside its stores. Sun Jun 28, 12pm, recurring.", isOnline: false, boosts: 0, spotsTotal: "Unlimited", location: "California", authorName: "Indivisible Los Angeles", authorRole: "Movement Organization", authorLink: "https://www.mobilize.us/mobilize/", targetUrl: "https://www.mobilize.us/mobilize/event/881851/", topImageUrl: "https://mobilizeamerica.imgix.net/uploads/organization/Mobilize%20Generalized%20Indivisible%20Event%20Campaign%20Image%201_20231214173802957298.png?w=1200&h=628&fit=crop&bg=FFF", toneOverride: { anger: 3, comedy: 0, subversion: 2, hope: 2, energy: 3 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1329, category: "PROTEST", categoryColor: "#23297e", actionType: "In Person Group", title: "NO WARS! Take Back Our Streets: Venice + Santa Monica weekly", description: "Indivisible Westside LA weekly anti-Trump-Iran-war street protest in Venice and Santa Monica. Thu May 21, 4pm, recurring weekly.", isOnline: false, boosts: 0, spotsTotal: "Unlimited", location: "California", authorName: "Indivisible Westside LA", authorRole: "Movement Organization", authorLink: "https://www.mobilize.us/mobilize/", targetUrl: "https://www.mobilize.us/mobilize/event/893106/", topImageUrl: "https://mobilizeamerica.imgix.net/uploads/event/Screenshot%202026-03-18%20at%207.45.45%E2%80%AFPM_20260319040316650650.PNG?w=1200&h=628&fit=crop&bg=FFF", toneOverride: { anger: 3, comedy: 1, subversion: 2, hope: 2, energy: 3 }, adminApproved: false },
+  { id: 1330, category: "TRANSPORTATION", categoryColor: "#0a6e3f", actionType: "In Person Group", title: "Visit and accompany detained immigrants at Stewart Detention Center", description: "El Refugio runs hospitality, visitation, and advocacy for immigrants detained at Stewart Detention Center in Lumpkin GA — the largest ICE detention site in the U.S. Drive down, sit with someone whose family is hours away.", isOnline: false, boosts: 0, spotsTotal: "Unlimited", location: "Georgia", authorName: "El Refugio", authorRole: "Movement Organization", authorLink: "https://elrefugiostewart.org/", targetUrl: "https://elrefugiostewart.org/en/volunteers", topImageUrl: "http://static1.squarespace.com/static/5dedd42f60df274331bcd16b/t/63c0b458f5504e510924fa38/1673573464429/El+Refugio+logo+png+version_updated.png?format=1500w", toneOverride: { anger: 3, comedy: 0, subversion: 2, hope: 3, energy: 2 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1331, category: "TRANSPORTATION", categoryColor: "#0a6e3f", actionType: "In Person Group", title: "Volunteer for visitation at Elizabeth Detention Center (NJ)", description: "First Friends of NJ & NY runs an ongoing visitation program at Elizabeth Detention Center (NJ) and Orange County Correctional (NY) — apply to visit, write letters, or run the hotline.", isOnline: false, boosts: 0, spotsTotal: "Unlimited", location: "New Jersey", authorName: "First Friends of NJ and NY", authorRole: "Movement Organization", authorLink: "https://firstfriendsnjny.org/", targetUrl: "https://firstfriendsnjny.org/volunteer/", topImageUrl: "http://jonaswebsitedesign.com/firstfriends/wp-content/uploads/2020/09/ff-web-logo.png", toneOverride: { anger: 3, comedy: 0, subversion: 2, hope: 3, energy: 2 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1332, category: "FUNDING", categoryColor: "#127f05", actionType: "Online", title: "Donate to RAICES — free legal defense for ICE detainees (TX)", description: "RAICES Texas provides free or low-cost legal representation for immigrants in detention (Karnes, Dilley, Pearsall) and just filed a habeas/class-action against ICE for unlawful detention. Most ICE-detained people face deportation court without a lawyer.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", location: "Texas", authorName: "RAICES Texas", authorRole: "Movement Organization", authorLink: "https://raicestexas.org/", targetUrl: "https://raicestexas.org/?form=unite-against-hate", topImageUrl: "http://static1.squarespace.com/static/63b4656c9f96340195a2ff05/t/66c434381f80aa0d1a602193/1724134456615/raices_social.png?format=1500w", toneOverride: { anger: 3, comedy: 0, subversion: 2, hope: 3, energy: 2 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1333, category: "FUNDING", categoryColor: "#127f05", actionType: "Online", title: "Donate to the NBFN Immigration Bond Freedom Fund", description: "One donation, distributed by the National Bail Fund Network to community-led immigration bail funds nationwide — buys release for immigrants caught in Trump's deportation surge.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "National Bail Fund Network", authorRole: "Movement Organization", authorLink: "https://www.communityjusticeexchange.org/en/nbfn-directory", targetUrl: "https://secure.actblue.com/donate/immbondfreedom", topImageUrl: "https://images.squarespace-cdn.com/content/v1/60db97fe88031352b829d032/1625004042861-LZNYQYNOB9ZPQ817266J/NBFNlogo_3x2.7.jpg", toneOverride: { anger: 3, comedy: 0, subversion: 2, hope: 3, energy: 2 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1334, category: "FUNDING", categoryColor: "#127f05", actionType: "Online", title: "Donate to the NBFN Pretrial Bail Freedom Fund", description: "NBFN's pretrial freedom fund pools donations across 90+ local bail funds to free people held pretrial — disproportionately Black, Brown, poor, and increasingly people swept up at Trump-era protests.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "National Bail Fund Network", authorRole: "Movement Organization", authorLink: "https://www.communityjusticeexchange.org/en/nbfn-directory", targetUrl: "https://secure.actblue.com/donate/pretrialfreedom", topImageUrl: "https://images.squarespace-cdn.com/content/v1/60db97fe88031352b829d032/1625004042861-LZNYQYNOB9ZPQ817266J/NBFNlogo_3x2.7.jpg", toneOverride: { anger: 3, comedy: 0, subversion: 2, hope: 3, energy: 2 }, adminApproved: false },
+  { id: 1335, category: "FUNDING", categoryColor: "#127f05", actionType: "Online", title: "Donate to NDLON's Immigrant Defense Fund", description: "NDLON's Immigrant Defense Fund underwrites legal defense, organizing, and rapid-response infrastructure for day-laborer and immigrant-worker communities under Trump-administration raids.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "National Day Laborer Organizing Network", authorRole: "Movement Organization", authorLink: "https://ndlon.org/", targetUrl: "https://ndlon.org/donate/", topImageUrl: "https://ndlon.org/wp-content/uploads/2018/04/Facebook-OG-Image.png", toneOverride: { anger: 3, comedy: 0, subversion: 2, hope: 3, energy: 2 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+
+  // ── Grassroots-Fun spreadsheet batch (May 17): 21 irreverent / crafty
+  // protest objects + content-creator boost cards. 1 row (UncorkedLabels wine
+  // label) skipped as duplicate of 1314. Etsy product images scraped via
+  // Chrome; TikTok cards reuse the local org_tiktok asset; the 3 Instagram
+  // cards land image-less (the no-image-review guard keeps them off the
+  // public feed until an admin uploads a header).
+  { id: 1336, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Burn a \"Smells Like F*ck Trump\" Soy Candle", description: "A scented soy candle whose label is a cathartic anti-Trump joke — light it, sniff it, dare guests not to ask. Great gateway for liberal-leaning fence-sitters who want a subtle protest object at home.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Luminva (Etsy)", authorRole: "Resistance Merch", authorLink: "https://www.etsy.com/shop/Luminva", targetUrl: "https://www.etsy.com/listing/1822852555/smells-like-fck-trump-candle-not-my", topImageUrl: "https://i.etsystatic.com/24115390/r/il/afc632/6462657815/il_1080xN.6462657815_dk11.jpg", toneOverride: { anger: 1, comedy: 3, subversion: 2, hope: 1, energy: 2 }, adminApproved: false },
+  { id: 1337, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Light the \"Light Me When He's Dead\" No Kings Candle", description: "A pitch-dark soy candle satire built around the No Kings movement — buy it now, light it… eventually. Bestseller-level demand suggests strong cohort signal.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Independent (Etsy)", authorRole: "Resistance Merch", authorLink: "https://www.etsy.com/", targetUrl: "https://www.etsy.com/listing/4435012382/light-me-when-hes-dead-candle-o-no-kings", topImageUrl: "https://i.etsystatic.com/62168565/r/il/2b42c2/7563999026/il_1080xN.7563999026_2vho.jpg", toneOverride: { anger: 2, comedy: 3, subversion: 3, hope: 1, energy: 2 }, adminApproved: false },
+  { id: 1338, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Wear the \"Waiting for the Big Beautiful Obituary\" Shirt (MeloraTShirts)", description: "Subtle anti-MAGA dark-satire tee referencing Trump's \"big beautiful bill\" rhetoric. Conversation-starter without being explicit; reads as a soft FDT to people who get it.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "MeloraTShirts (Etsy)", authorRole: "Resistance Merch", authorLink: "https://www.etsy.com/shop/MeloraTShirts", targetUrl: "https://www.etsy.com/listing/4438139548/anti-trump-t-shirt-waiting-for-big", topImageUrl: "https://i.etsystatic.com/54455758/r/il/1c1a6e/7630931827/il_1080xN.7630931827_t1zw.jpg", toneOverride: { anger: 2, comedy: 3, subversion: 2, hope: 1, energy: 2 }, adminApproved: false },
+  { id: 1339, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Stick a \"Let's Go Blood Clot\" Anti-Dictator Sticker Anywhere", description: "Set of 5 vinyl glossy stickers leaning into the dictator-health-rumor news cycle. Water-resistant, ready for laptops, car bumpers, gas pumps.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "YaBoiHatesTikTok (Etsy)", authorRole: "Resistance Merch", authorLink: "https://www.etsy.com/shop/YaBoiHatesTikTok", targetUrl: "https://www.etsy.com/listing/4361557773/lets-go-blood-clot-set-of-5-vinyl-glossy", topImageUrl: "https://i.etsystatic.com/25456288/r/il/aa26ef/7206475637/il_1080xN.7206475637_dge1.jpg", toneOverride: { anger: 2, comedy: 3, subversion: 3, hope: 1, energy: 2 }, adminApproved: false },
+  { id: 1340, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Wear a 3D-Printed \"FUCK TRUMP\" Lapel Pin from a Maker Shop", description: "Tiny 3D-printed handmade pin — wear it everywhere. Independent maker, recyclable PLA plastic, unmistakable to anyone who reads it up close.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "WokeandBespokeShop (Etsy)", authorRole: "Resistance Merch", authorLink: "https://www.etsy.com/shop/WokeandBespokeShop", targetUrl: "https://www.etsy.com/listing/1822887706/fuck-trump-small-lapel-pin-3d-printed-in", topImageUrl: "https://i.etsystatic.com/14701224/r/il/0b4fd9/6531386599/il_1080xN.6531386599_p1lz.jpg", toneOverride: { anger: 2, comedy: 2, subversion: 3, hope: 1, energy: 2 }, adminApproved: false },
+  { id: 1341, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Pin the Decode-the-Numbers \"86 47\" Anti-Trump Button", description: "Numeric subversive code pin — 86 47 means \"get rid of #47.\" Plausibly deniable in mixed company, decodable by the in-group. Subversion-by-cipher.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "ButtonRepublic (Etsy)", authorRole: "Resistance Merch", authorLink: "https://www.etsy.com/shop/ButtonRepublic", targetUrl: "https://www.etsy.com/listing/4484781251/anti-trump-protest-buttons-impeach-trump", topImageUrl: "https://i.etsystatic.com/21374020/r/il/046821/7998550050/il_1080xN.7998550050_g7up.jpg", toneOverride: { anger: 1, comedy: 2, subversion: 3, hope: 2, energy: 2 }, adminApproved: false },
+  { id: 1342, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Pin: Grumpy Cat with Mug Says \"First Of All, Fuck Trump\"", description: "A cat-holding-coffee-mug pin that opens any conversation with the right energy. Independent maker, sized for jackets and tote bags.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "AntiTrumpResistance (Etsy)", authorRole: "Resistance Merch", authorLink: "https://www.etsy.com/shop/AntiTrumpResistance", targetUrl: "https://www.etsy.com/listing/4343898613/first-of-all-fuck-trump-pins-buttons", topImageUrl: "https://i.etsystatic.com/57506905/r/il/65b55e/7066739838/il_1080xN.7066739838_e6ji.jpg", toneOverride: { anger: 2, comedy: 3, subversion: 2, hope: 1, energy: 2 }, adminApproved: false },
+  { id: 1343, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Wear an \"Epstein Files Protest\" Pin", description: "Pin specifically calling out the Trump–Epstein files coverup; pairs with the broader Epstein-truth subway-poster and walk campaigns.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "KindSpeech (Etsy)", authorRole: "Resistance Merch", authorLink: "https://www.etsy.com/shop/KindSpeech", targetUrl: "https://www.etsy.com/listing/4495679448/anti-trump-epstein-button-anti-trump", topImageUrl: "https://i.etsystatic.com/51124327/r/il/b53f82/7958667724/il_1080xN.7958667724_rk6i.jpg", toneOverride: { anger: 3, comedy: 1, subversion: 2, hope: 1, energy: 2 }, adminApproved: false },
+  { id: 1344, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Stick the \"RESIST\" Decal Built from the Tesla T Badge", description: "Decal that hijacks the Tesla \"T\" badge to spell RESIST — most punishing on the cars Elon expects to be brand ambassadors. Great for Tesla Takedown rally signage and laptop stickers.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Independent (Etsy)", authorRole: "Resistance Merch", authorLink: "https://www.etsy.com/", targetUrl: "https://www.etsy.com/listing/4298432541/resist-decal-using-tesla-t-badge-resis", topImageUrl: "https://i.etsystatic.com/56118203/r/il/056da6/6827047560/il_1080xN.6827047560_ax1w.jpg", toneOverride: { anger: 2, comedy: 3, subversion: 3, hope: 1, energy: 2 }, adminApproved: false },
+  { id: 1345, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Magnet: \"I Bought This Before We Knew Elon Was Crazy\"", description: "A car magnet that lets reluctant Tesla owners distance themselves from Musk without giving up the car. Funny, self-deprecating, and immediately legible at a parking lot.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Independent (Etsy)", authorRole: "Resistance Merch", authorLink: "https://www.etsy.com/", targetUrl: "https://www.etsy.com/listing/1848107294/i-bought-this-before-we-knew-elon-was", topImageUrl: "https://i.etsystatic.com/56939346/r/il/b5204b/6585705442/il_1080xN.6585705442_57j5.jpg", toneOverride: { anger: 1, comedy: 3, subversion: 3, hope: 1, energy: 2 }, adminApproved: false },
+  { id: 1346, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Burn the \"Peace President, My Ass!\" Soy Candle", description: "Blood-orange-scented soy candle directly mocking Trump's self-styled \"peace president\" branding over the Iran strikes. The label IS the protest.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Independent (Etsy)", authorRole: "Resistance Merch", authorLink: "https://www.etsy.com/", targetUrl: "https://www.etsy.com/listing/4481440997/the-peace-president-my-ass-exclusive", topImageUrl: "https://i.etsystatic.com/14878984/r/il/9fbd21/7915610157/il_1080xN.7915610157_kfcd.jpg", toneOverride: { anger: 2, comedy: 3, subversion: 3, hope: 1, energy: 2 }, adminApproved: false },
+  { id: 1347, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Pin: \"Trump Is The Worst President Since Trump\"", description: "A perfectly recursive button that does its own joke. Independent button maker, low-stakes purchase, very rewardingly absurd.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "ShopImpressiveThings (Etsy)", authorRole: "Resistance Merch", authorLink: "https://www.etsy.com/shop/ShopImpressiveThings", targetUrl: "https://www.etsy.com/listing/4319736881/trump-is-the-worst-president-since-trump", topImageUrl: "https://i.etsystatic.com/57450745/r/il/e1c078/6935784130/il_1080xN.6935784130_18ir.jpg", toneOverride: { anger: 2, comedy: 3, subversion: 2, hope: 1, energy: 2 }, adminApproved: false },
+  { id: 1348, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Sticker Set: \"Hold Trump Accountable — Tired Democrat Activist\"", description: "Self-aware sticker/pin for the exhausted-but-still-showing-up cohort. Independent button shop, taps the \"this is hard but I'm doing it\" energy that drives sustained engagement.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "OneHorseShyHandmade (Etsy)", authorRole: "Resistance Merch", authorLink: "https://www.etsy.com/shop/OneHorseShyHandmade", targetUrl: "https://www.etsy.com/listing/1181078926/hold-trump-accountable-pin-button-tired", topImageUrl: "https://i.etsystatic.com/7045127/r/il/4449b9/7588514985/il_1080xN.7588514985_jy7k.jpg", toneOverride: { anger: 2, comedy: 2, subversion: 1, hope: 2, energy: 2 }, adminApproved: false },
+  { id: 1349, category: "SPREAD POSITIVITY", categoryColor: "#d97706", actionType: "Online", title: "Boost Randy Rainbow's Anti-Trump Musical Parodies on TikTok", description: "Randy Rainbow's weekly Trump-skewering musical parodies (Rent, Sound of Music) translate political fury into shareable joyful satire. Pick the freshest one and share to your story.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Randy Rainbow", authorRole: "Independent Creator", authorLink: "https://www.tiktok.com/@randyrainbowofficial", targetUrl: "https://www.tiktok.com/@randyrainbowofficial", topImageUrl: "https://p19-common-sign.tiktokcdn-us.com/tos-useast5-avt-0068-tx/7310292839806533678~tplv-tiktokx-cropcenter:720:720.jpeg?dr=9640&refresh_token=3449dd17&x-expires=1779199200&x-signature=oj1bdRJXMR%2BdenJDO3hwZ1k3iKg%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=81f88b70&idc=useast5", toneOverride: { anger: 1, comedy: 3, subversion: 3, hope: 3, energy: 2 }, adminApproved: false },
+  { id: 1350, category: "ART PIECE", categoryColor: "#896312", actionType: "Online", title: "Play \"Secret Handshake\" — the satirical browser game mocking Trump's Iran war", description: "Activist group \"Secret Handshake\" released a satirical browser-style video game lampooning Trump's handling of the Iran strikes — featured on Rachel Maddow. Share it, play it, post your high score.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Secret Handshake", authorRole: "Movement Organization", authorLink: "https://www.tiktok.com/@msnow", targetUrl: "https://www.tiktok.com/@msnow", topImageUrl: "https://p19-common-sign.tiktokcdn-us.com/tos-useast5-avt-0068-tx/287f7ee7bbefefc0d2f49bc210487d43~tplv-tiktokx-cropcenter:720:720.jpeg?dr=9640&refresh_token=a3b92e30&x-expires=1779199200&x-signature=ZPtNz4UtPpbTrJGQ6rlF2wyl%2Fy4%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=81f88b70&idc=useast8", toneOverride: { anger: 2, comedy: 3, subversion: 3, hope: 1, energy: 2 }, adminApproved: false },
+  { id: 1351, category: "FLASH MOB", categoryColor: "#ff00d5", actionType: "In Person Group", title: "Sing With \"Songs for Liberation\" Outside an ICE Facility", description: "Coalition of ministers and singers running coordinated protest-hymn flash mobs at ICE facilities (Chicago, Twin Cities). Find a local chapter via #SongsForLiberation or join a sing-along where you live.", isOnline: false, boosts: 0, spotsTotal: "Unlimited", location: "National", authorName: "Songs for Liberation", authorRole: "Movement Organization", authorLink: "https://www.tiktok.com/tag/protestsong", targetUrl: "https://www.tiktok.com/tag/protestsong", topImageKey: "org_tiktok", imageContain: true, toneOverride: { anger: 2, comedy: 1, subversion: 2, hope: 3, energy: 3 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1352, category: "SPREAD POSITIVITY", categoryColor: "#d97706", actionType: "Online", title: "Spread the \"TACO\" Meme — Trump Always Chickens Out", description: "FT's Robert Armstrong coined \"TACO\" (Trump Always Chickens Out) for the tariff-threaten-then-retreat pattern. Make stickers, post taco emojis under tariff threats, mock the pattern publicly so it sticks.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Independent creators", authorRole: "Citizen Activist", authorLink: "https://www.tiktok.com/tag/trumpparody", targetUrl: "https://www.tiktok.com/tag/trumpparody", topImageKey: "org_tiktok", imageContain: true, toneOverride: { anger: 1, comedy: 3, subversion: 3, hope: 2, energy: 2 }, adminApproved: false },
+  { id: 1353, category: "ART PIECE", categoryColor: "#896312", actionType: "Online", title: "Stage or Boost the \"Trump Parody Opera\" — Hamburg Premiere", description: "An actual Trump-parody opera premiering in Hamburg, Germany. Boost the trailer, organize a watch party, or write a reaction post — turn an opera into resistance content.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Really American", authorRole: "Movement Organization", authorLink: "https://www.tiktok.com/@reallyamerican", targetUrl: "https://www.tiktok.com/@reallyamerican", topImageUrl: "https://p16-common-sign.tiktokcdn-us.com/tos-maliva-avt-0068/8b2fe06062597bbc77b170723d75ea7b~tplv-tiktokx-cropcenter:720:720.jpeg?dr=9640&refresh_token=e4b7a631&x-expires=1779199200&x-signature=8F5iZUNtHcHXVMBD4btdQkobPT4%3D&t=4d5b0474&ps=13740610&shp=a5d48078&shcp=81f88b70&idc=useast8", toneOverride: { anger: 1, comedy: 3, subversion: 3, hope: 2, energy: 2 }, adminApproved: false },
+  { id: 1354, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Cross-Stitch a Resistance Slogan with Subversive Cross Stitch", description: "Use Subversive Cross Stitch's pattern catalog (Julie Jackson's shop has been doing this since the 2010s) to make a Trump-era cross-stitch — frame it, gift it, post the WIP. Distinct from the existing TikTok stitch/duet card — this is literal needlework, not video stitching.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Subversive Cross Stitch", authorRole: "Independent Creator", authorLink: "https://www.instagram.com/subversivecrossstitch/", targetUrl: "https://www.instagram.com/subversivecrossstitch/", topImageUrl: "https://scontent.cdninstagram.com/v/t51.2885-19/199306322_514541513021942_7756897236030600423_n.jpg?stp=dst-jpg_s100x100_tt6&_nc_cat=103&ccb=7-5&_nc_sid=bf7eb4&_nc_ohc=LqyEUHic0_gQ7kNvwHUIZNi&_nc_oc=Adpod_8XEKCikLOFo89IHj5IC2tTzXfMHQA0HiBGP5zknuB9GWDEnyd2ADBOc-D3Qsk&_nc_zt=24&_nc_ht=scontent.cdninstagram.com&_nc_ss=73689&oh=00_Af7KBs3ih9nt1fcALCR84OacWLaLeL8sWJ6VtjZDa0st6g&oe=6A0FBB20", toneOverride: { anger: 2, comedy: 3, subversion: 3, hope: 2, energy: 2 }, adminApproved: false },
+  { id: 1355, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Stitch Along with Badass Cross Stitch's Anti-Trump Patterns", description: "Shannon Downey's @badasscrossstitch runs free-pattern drops + group stitch-ins targeting MAGA-era issues. Download a current pattern, finish a piece, and post it.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Badass Cross Stitch", authorRole: "Independent Creator", authorLink: "https://www.instagram.com/badasscrossstitch/", targetUrl: "https://www.instagram.com/badasscrossstitch/", topImageUrl: "https://scontent.cdninstagram.com/v/t51.2885-19/15043801_336957816688365_8365540907474223104_a.jpg?stp=dst-jpg_s100x100_tt6&_nc_cat=109&ccb=7-5&_nc_sid=bf7eb4&_nc_ohc=34iJMqqlsSgQ7kNvwFsZ_Ck&_nc_oc=AdouHfIFvB626TQQU_h-VIKMfXIo9UqAB3Z0NdDZXIO8DaEgrCy5mpsi2Mm7TpzW33c&_nc_zt=24&_nc_ht=scontent.cdninstagram.com&_nc_ss=70689&oh=00_Af6myQ9P9IwK-3HEmui9QiOoNAHzR7wnTmhdBfRoI9XDsQ&oe=6A0F92ED", toneOverride: { anger: 2, comedy: 2, subversion: 2, hope: 3, energy: 2 }, adminApproved: false },
+  { id: 1356, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Make a Craftivist Collective \"Gentle Protest\" Mini-Banner", description: "The Craftivist Collective publishes \"gentle protest\" mini-banner tutorials — small, embroidered statements you leave in public space. Pick a Trump-era theme and leave one.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Craftivist Collective", authorRole: "Movement Organization", authorLink: "https://www.instagram.com/craftivist_collective/", targetUrl: "https://www.instagram.com/craftivist_collective/", topImageUrl: "https://static.cdninstagram.com/rsrc.php/v4/yD/r/R0fBIMurK8v.png", toneOverride: { anger: 1, comedy: 2, subversion: 2, hope: 3, energy: 2 }, adminApproved: false },
+
+  // ── Grassroots-Fun batch addendum (May 17, second paste): 5 net-new cards.
+  // The other 19 rows in the second paste were already in the database from
+  // the previous batch (1336–1356) — silently skipped as exact dupes.
+  { id: 1357, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Browse Dissent Pins — Including the \"Swastikar\" Tesla Pin", description: "Independent pin maker with a full catalog of Trump/MAGA-era dissent pins, including the now-famous \"Swastikar\" pin riffing on the Tesla logo. Wholesale and ACLU collabs available — browse the full collection.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Dissent Pins", authorRole: "Resistance Merch", authorLink: "https://dissentpins.com/", targetUrl: "https://dissentpins.com/collections/", topImageUrl: "https://cdn.shopify.com/s/files/1/1746/4337/files/Stand_With_Ukraine_Pin_on_denim_1200x628_2e311cf1-9d19-432d-85f8-cafbd9866161.jpg?v=1738503135", toneOverride: { anger: 2, comedy: 2, subversion: 3, hope: 2, energy: 2 }, adminApproved: false },
+  { id: 1358, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Join the Resistance Knitters Bluesky Group", description: "Active craftivist knitting group that fought during Trump 1.0 on FB and is now organizing on Bluesky — knits hats and protest objects, shares patterns, surfaces fact-based news. Plug into the community and pick a project.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Resistance Knitters", authorRole: "Independent Creator", authorLink: "https://bsky.app/profile/resistanceknitters.bsky.social", targetUrl: "https://bsky.app/profile/resistanceknitters.bsky.social", topImageUrl: "https://cdn.bsky.app/img/banner/plain/did:plc:fldpue6iblblysw6tk4eptvz/bafkreidr2rhwv7nanxglbw3fxf76l37rwopjqixbue5nuivbnzsfe4wqkq", toneOverride: { anger: 1, comedy: 2, subversion: 2, hope: 3, energy: 2 }, adminApproved: false },
+  { id: 1359, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Stitch Feline and Floss's Free Anti-ICE Cross Stitch Pattern", description: "Feline and Floss publishes free cross-stitch patterns on Ko-fi — current drop is explicitly anti-ICE/Fuck ICE. Download, stitch, frame, gift, repeat.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Feline and Floss", authorRole: "Independent Creator", authorLink: "https://ko-fi.com/felineandfloss", targetUrl: "https://ko-fi.com/felineandfloss", topImageUrl: "https://storage.ko-fi.com/cdn/generated/lyflmrusgjymi/2026-05-11_rest-973b09129414d2335f7e561b753bf0ee-v4e73jqn.jpg", toneOverride: { anger: 2, comedy: 2, subversion: 3, hope: 2, energy: 2 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1360, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Color Your Way Through Trump 2.0 with Fresh Prints' Anti-Trump Resistance Coloring Book", description: "Indie coloring book full of anti-Trump pages — calming, shareable craft for tense news days. Pages are also sold as standalone prints.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "FreshPrintsHandmade (Etsy)", authorRole: "Resistance Merch", authorLink: "https://www.etsy.com/shop/FreshPrintsHandmade", targetUrl: "https://freshprintshandmade.etsy.com", topImageUrl: "https://i.etsystatic.com/56615728/r/isla/b30f8f/74796492/isla_500x500.74796492_b2qer1xw.jpg", toneOverride: { anger: 1, comedy: 2, subversion: 2, hope: 3, energy: 2 }, adminApproved: false },
+  { id: 1361, category: "FLASH MOB", categoryColor: "#ff00d5", actionType: "In Person Group", title: "Join a \"Honk to Dump Trump\" + \"Trump ❤️ Epstein\" Banner Drop", description: "Indivisible chapters are running overpass banner drops with the \"Honk to Dump Trump\" and \"Trump ❤️ Epstein\" twin-banner format. Search your local Indivisible chapter for the next slot.", isOnline: false, boosts: 0, spotsTotal: "Unlimited", location: "National", authorName: "Indivisible", authorRole: "Movement Organization", authorLink: "https://indivisible.org/", targetUrl: "https://www.mobilize.us/indivisible/", topImageUrl: "https://mobilizeamerica.imgix.net/uploads/organization_social/Indivisible%20Protest_20220613182827829964.png?w=1200&h=628&fit=crop&bg=FFF", toneOverride: { anger: 2, comedy: 2, subversion: 3, hope: 2, energy: 3 }, adminApproved: false },
+
+  // ── Grassroots-Fun batch 3 (May 17): 12 net-new cards. 9 rows from the
+  // user's paste were exact-URL duplicates of cards already in the database
+  // and were silently skipped.
+  { id: 1362, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Pin: \"Unpaid Protester, Hating For Free\"", description: "A 2.25\" pin for tired-but-still-fighting Democrats: \"Unpaid Protester, Hating For Free.\" Wear it to the next No Kings rally or pin it on a tote.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "HUGRco (Etsy)", authorRole: "Resistance Merch", authorLink: "https://www.etsy.com/shop/HUGRco", targetUrl: "https://www.etsy.com/listing/4463726967/not-paid-hate-for-free-anti-trump-pin", topImageUrl: "https://i.etsystatic.com/36342593/r/il/f41707/7817044311/il_1080xN.7817044311_smdg.jpg", toneOverride: { anger: 1, comedy: 3, subversion: 2, hope: 1, energy: 2 }, adminApproved: false },
+  { id: 1363, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Pin: \"Crows Against Kings\" — Corvid Solidarity for No Kings Era", description: "Hand-illustrated pinback button of a flock of crows ganging up on a tossed crown — corvid solidarity for the No Kings era. Wear it loud or tuck it on a denim jacket.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "PencilIsland (Etsy)", authorRole: "Resistance Merch", authorLink: "https://www.etsy.com/shop/PencilIsland", targetUrl: "https://www.etsy.com/listing/4366381414/crows-against-kings-pinback-button-no", topImageUrl: "https://i.etsystatic.com/14793879/r/il/198027/7703767710/il_1080xN.7703767710_siqr.jpg", toneOverride: { anger: 1, comedy: 2, subversion: 3, hope: 1, energy: 2 }, adminApproved: false },
+  { id: 1364, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Retro \"Suburban Housewives Against Trump\" Buttons", description: "A 1950s-inspired button reclaiming the \"suburban housewife\" trope Trump kept campaigning to — wear it to a knit-in, pin it on a tote, or hand them out at PTA.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "CafeChaCha (Etsy)", authorRole: "Resistance Merch", authorLink: "https://www.etsy.com/shop/CafeChaCha", targetUrl: "https://www.etsy.com/listing/855158042/retro-suburban-housewives-against-trump", topImageUrl: "https://i.etsystatic.com/8327952/r/il/e051fb/2520953040/il_1080xN.2520953040_rqb8.jpg", toneOverride: { anger: 1, comedy: 3, subversion: 2, hope: 1, energy: 2 }, amplifiesGroups: ["woman"], adminApproved: false },
+  { id: 1365, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Pin: \"86 47\" Botanical (Subtle Anti-Trump)", description: "Botanical-illustrated take on the \"86 47\" anti-Trump number code — subtle enough for the office, sharp enough to be unmistakable to anyone who knows.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "BlueWaveInk (Etsy)", authorRole: "Resistance Merch", authorLink: "https://www.etsy.com/shop/BlueWaveInk", targetUrl: "https://www.etsy.com/listing/4306542331/8647-floral-button-subtle-anti-trump-pin", topImageUrl: "https://i.etsystatic.com/22550025/r/il/fd0b03/6915660471/il_1080xN.6915660471_ken4.jpg", toneOverride: { anger: 1, comedy: 2, subversion: 3, hope: 1, energy: 2 }, adminApproved: false },
+  { id: 1366, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Stitch the \"Abolish ICE\" Pin (Shannon Downey Tutorial)", description: "Free DIY needlepoint tutorial from craftivist Shannon Downey for stitching your own Abolish ICE pin — turn rage at the deportation raids into something you can pin on a denim jacket.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Badass Cross Stitch (Shannon Downey)", authorRole: "Independent Creator", authorLink: "https://linktr.ee/BadassCrossStitch", targetUrl: "https://linktr.ee/BadassCrossStitch", topImageUrl: "https://linktr.ee/og/image/BadassCrossStitch.jpg", toneOverride: { anger: 3, comedy: 1, subversion: 2, hope: 2, energy: 2 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1367, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Stitch Your Own Anti-Trump Voodoo Doll (Free Pattern)", description: "Cathartic free needlepoint pattern from Shannon Downey — stitch a tiny effigy and stick the pins yourself. Therapy plus craftivism.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Badass Cross Stitch (Shannon Downey)", authorRole: "Independent Creator", authorLink: "https://linktr.ee/BadassCrossStitch", targetUrl: "https://linktr.ee/BadassCrossStitch", topImageUrl: "https://linktr.ee/og/image/BadassCrossStitch.jpg", toneOverride: { anger: 3, comedy: 3, subversion: 3, hope: 1, energy: 2 }, adminApproved: false },
+  { id: 1368, category: "JOIN A GROUP", categoryColor: "#9c2779", actionType: "Online", title: "Join the Joyful Menace Society", description: "Shannon Downey's monthly craftivist community: stitch-along assignments, harm-reduction zines, and a low-key plan for menacing the regime with fabric.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Badass Cross Stitch (Shannon Downey)", authorRole: "Independent Creator", authorLink: "https://linktr.ee/BadassCrossStitch", targetUrl: "https://linktr.ee/BadassCrossStitch", topImageUrl: "https://linktr.ee/og/image/BadassCrossStitch.jpg", toneOverride: { anger: 1, comedy: 2, subversion: 2, hope: 3, energy: 2 }, adminApproved: false },
+  { id: 1369, category: "SPREAD POSITIVITY", categoryColor: "#d97706", actionType: "Online", title: "Make a \"Yay!\" Flag for Your Window", description: "Sew or paper-craft a Yay! flag to celebrate every protest, court win, or canceled deportation — tiny visible joy in the windows of a fascist-curious neighborhood.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Badass Cross Stitch (Shannon Downey)", authorRole: "Independent Creator", authorLink: "https://linktr.ee/BadassCrossStitch", targetUrl: "https://linktr.ee/BadassCrossStitch", topImageUrl: "https://linktr.ee/og/image/BadassCrossStitch.jpg", toneOverride: { anger: 0, comedy: 2, subversion: 1, hope: 3, energy: 2 }, adminApproved: false },
+  { id: 1370, category: "CRAFTING", categoryColor: "#c34e00", actionType: "Online", title: "Free \"No Kings\" Cross-Stitch PDF", description: "Free instant-download No Kings cross-stitch pattern from the OG snarky-sampler shop — stitch one for your kitchen wall before the next No Kings Day.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Subversive Cross Stitch (Julie Jackson)", authorRole: "Independent Creator", authorLink: "https://linktr.ee/subversivecrossstitch", targetUrl: "https://linktr.ee/subversivecrossstitch", topImageUrl: "https://linktr.ee/og/image/subversivecrossstitch.jpg", toneOverride: { anger: 1, comedy: 2, subversion: 3, hope: 2, energy: 2 }, adminApproved: false },
+  { id: 1371, category: "ART PIECE", categoryColor: "#896312", actionType: "Online", title: "Watch & Share: Tom Morello Sings \"This Land Is Your Land\" at NYC Anti-ICE Protest", description: "Tom Morello broke out the Woody Guthrie at a Hands Off NYC rally against ICE raids — share the clip to keep this protest's song alive in the algorithm.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Consequence Sound (via Tom Morello)", authorRole: "Independent Creator", authorLink: "https://www.tiktok.com/@consequence", targetUrl: "https://www.tiktok.com/@consequence/video/7639124680695106829", topImageUrl: "https://p16-common-sign.tiktokcdn-us.com/tos-useast5-p-0068-tx/oYIlgkQez1BgbeErPPBUnKLxkf0GNoAHAlSyHC~tplv-tiktokx-origin.image?dr=9636&x-expires=1779202800&x-signature=an0tOdUQmbI3xuzdtqJyzDlX5vg%3D&t=4d5b0474&ps=13740610&shp=81f88b70&shcp=43f4a2f9&idc=useast5", toneOverride: { anger: 2, comedy: 1, subversion: 2, hope: 3, energy: 3 }, amplifiesGroups: ["immigrant"], adminApproved: false },
+  { id: 1372, category: "SOCIAL MEDIA", categoryColor: "#e44b4b", actionType: "Online", title: "Boost This Hour Has 22 Minutes' Trump Book Sketch", description: "Canadian sketch show 22 Minutes is gleefully roasting Trump from across the border — re-post their parody bits so more people hear the laugh-from-Canada take on MAGA.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "This Hour Has 22 Minutes", authorRole: "Independent Creator", authorLink: "https://www.tiktok.com/@thishourhas22minutes", targetUrl: "https://www.tiktok.com/@thishourhas22minutes/video/7576736715587472660", topImageUrl: "https://p16-common-sign.tiktokcdn-us.com/tos-alisg-p-0037/o0BQf4mEDD8So4gLH6FhAlQEjAsFCQWfI6CSPf~tplv-tiktokx-origin.image?dr=9636&x-expires=1779202800&x-signature=%2FPzBiIwlVygkqqD%2FnEVWBD9WPNw%3D&t=4d5b0474&ps=13740610&shp=81f88b70&shcp=43f4a2f9&idc=useast5", toneOverride: { anger: 1, comedy: 3, subversion: 2, hope: 1, energy: 2 }, adminApproved: false },
+  { id: 1373, category: "SOCIAL MEDIA", categoryColor: "#e44b4b", actionType: "Online", title: "Re-Share the Iranian Embassy AI Memes Mocking Trump", description: "Iranian embassies are flooding social with AI-generated memes ridiculing Trump's war posture — a strange-bedfellows trolling moment worth reposting for the absurdity alone.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "CNN (reporting on Iranian embassies)", authorRole: "Independent Creator", authorLink: "https://www.tiktok.com/@cnn", targetUrl: "https://www.tiktok.com/@cnn/video/7628912004643753230", topImageUrl: "https://p16-common-sign.tiktokcdn-us.com/tos-useast5-p-0068-tx/o0kHx4Tge6vGfCXrADkjqeIALIAjtEvw5YUENg~tplv-tiktokx-origin.image?dr=9636&x-expires=1779202800&x-signature=kmkl6YMcM%2Bs%2F6%2FizN8Uc7LwgcrA%3D&t=4d5b0474&ps=13740610&shp=81f88b70&shcp=43f4a2f9&idc=useast5", toneOverride: { anger: 1, comedy: 3, subversion: 3, hope: 0, energy: 2 }, adminApproved: false },
+];
+
+// ─── Seed receipts (The Smacks) ───────────────────────────────────────────────
+// IDs start at 5001 to avoid collisions with admin-created receipts.
+// Bump seed:receipts version key whenever you add/edit entries here.
+const SEED_RECEIPTS = [
+  {
+    id: 5001,
+    title: "Impeach Trump Again",
+    tags: ["Trump", "MAGA", "Fascism"],
+    imageUrl: "/Smacks/impeach.png",
+    caption: "He was impeached twice and should have been removed. Twice wasn't enough — the country deserves accountability. Share this. #ImpeachTrump #ResistAct",
+    adminApproved: true,
+  },
+  {
+    id: 5002,
+    title: "Rock the Vote",
+    tags: ["Voting Rights"],
+    imageUrl: "/Smacks/rock-the-vote.webp",
+    caption: "Your vote is your most powerful tool. Use it. Share it. Protect it. #RockTheVote #ResistAct",
+    adminApproved: true,
+  },
 ];
 
 // ─── Health check ─────────────────────────────────────────────────────────────
@@ -627,11 +766,112 @@ app.get("/make-server-9eb1ae04/admin/users", async (c) => {
 
     const users = await kv.getByPrefix("user:approval:");
     const list = (users as any[]).filter((u) => u && typeof u === "object" && u.userId);
-    list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    return c.json({ users: list });
+
+    // One direct table scan over the complete:* prefix avoids N round-trips
+    // and exposes the key (the kv helper hides it). Build per-user totals
+    // and the most-recent completedAt so the admin list can show a tier chip
+    // + "active 3 days ago" inline without a follow-up request.
+    const sb = adminClient();
+    const { data: completionRows } = await sb
+      .from("kv_store_9eb1ae04")
+      .select("key, value")
+      .like("key", "complete:%");
+
+    const totalByUser:      Record<string, number> = {};
+    const lastActiveByUser: Record<string, string> = {};
+    for (const row of completionRows ?? []) {
+      // Key format: `complete:{userId}:{actionId}`
+      const parts = String(row.key).split(":");
+      if (parts.length < 3) continue;
+      const uid = parts[1];
+      totalByUser[uid] = (totalByUser[uid] ?? 0) + 1;
+      const t = row.value?.completedAt;
+      if (t && (!lastActiveByUser[uid] || String(t).localeCompare(lastActiveByUser[uid]) > 0)) {
+        lastActiveByUser[uid] = String(t);
+      }
+    }
+
+    // Fetch email consent from auth user metadata (stored at sign-up).
+    const consentByUser: Record<string, boolean | null> = {};
+    try {
+      const { data: authUsers } = await sb.auth.admin.listUsers({ perPage: 1000 });
+      for (const u of authUsers?.users ?? []) {
+        consentByUser[u.id] = u.user_metadata?.emailConsent ?? null;
+      }
+    } catch { /* non-fatal — consent column stays null */ }
+
+    const enriched = list.map((u) => ({
+      ...u,
+      totalActions: totalByUser[u.userId] ?? 0,
+      lastActiveAt: lastActiveByUser[u.userId] ?? null,
+      emailConsent: consentByUser[u.userId] ?? null,
+    }));
+
+    // Sort by last-active DESC by default; users with no activity fall to the
+    // bottom but stay in original signup order.
+    enriched.sort((a, b) => {
+      if (a.lastActiveAt && b.lastActiveAt) return b.lastActiveAt.localeCompare(a.lastActiveAt);
+      if (a.lastActiveAt) return -1;
+      if (b.lastActiveAt) return 1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+    return c.json({ users: enriched });
   } catch (err) {
     console.log("Admin users error:", err);
     return c.json({ error: `Failed to list users: ${err}` }, 500);
+  }
+});
+
+// ─── ADMIN: Who's online right now ────────────────────────────────────────────
+// Reads `user:last-seen:*` (written by `getUser` on every authenticated
+// request) and joins with `user:approval:{userId}` for display fields.
+// "Online" = last-seen within `windowMinutes` (default 1440 = 24h). Cap is
+// 1 week (10 080 min) so an admin can scan recent-but-not-current activity.
+app.get("/make-server-9eb1ae04/admin/online-users", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const windowMinutes = Math.max(1, Math.min(10_080, parseInt(c.req.query("windowMinutes") ?? "1440", 10) || 1440));
+    const cutoffMs = Date.now() - windowMinutes * 60_000;
+
+    const sb = adminClient();
+    const { data: rows } = await sb
+      .from("kv_store_9eb1ae04")
+      .select("key, value")
+      .like("key", "user:last-seen:%");
+
+    const online: Array<{ userId: string; lastSeenAt: string }> = [];
+    for (const row of rows ?? []) {
+      const userId = String(row.key).slice("user:last-seen:".length);
+      const iso = typeof row.value === "string" ? row.value : row.value?.at;
+      if (!iso) continue;
+      const ms = Date.parse(iso);
+      if (isNaN(ms) || ms < cutoffMs) continue;
+      online.push({ userId, lastSeenAt: iso });
+    }
+
+    // Hydrate with display fields from the approval record.
+    const enriched = await Promise.all(online.map(async (entry) => {
+      const record = await kv.get(`user:approval:${entry.userId}`) as any;
+      return {
+        userId: entry.userId,
+        lastSeenAt: entry.lastSeenAt,
+        name: record?.name ?? "Resistor",
+        email: record?.email ?? "",
+        avatar: record?.avatar ?? null,
+        isAdmin: !!record?.isAdmin,
+        status: record?.status ?? "pending",
+      };
+    }));
+
+    enriched.sort((a, b) => b.lastSeenAt.localeCompare(a.lastSeenAt));
+    return c.json({ users: enriched, windowMinutes, count: enriched.length });
+  } catch (err) {
+    console.log("Admin online-users error:", err);
+    return c.json({ error: `Failed to list online users: ${err}` }, 500);
   }
 });
 
@@ -927,13 +1167,13 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       console.log("Set boosts = 950 on action:1 (Spread the Word).");
     }
 
-    const orgsSeeded = await kv.get("seed:org-actions:v17");
+    const orgsSeeded = await kv.get("seed:org-actions:v24");
     if (!orgsSeeded) {
       // Mark the seed as done UP FRONT — if the request times out partway
       // through the 260-card loop, the next request still skips the loop
       // instead of dying again. The cards already written stay; missing ones
       // get filled in on the next version bump.
-      await kv.set("seed:org-actions:v17", true);
+      await kv.set("seed:org-actions:v24", true);
       let count = 0;
       for (const card of SEED_CARDS) {
         // Seed every card in SEED_CARDS (no longer skipping ids <1000).
@@ -1143,6 +1383,1071 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       console.log(`link→targetUrl migration: fixed ${fixed} user-submitted cards.`);
     }
 
+    // One-time: any card with no image (no topImageUrl, no topImageKey, no
+    // topImage) gets adminApproved:false so it lands in the admin review queue
+    // instead of leaking to anon users. The create endpoint requires an image
+    // up front; this migration cleans up cards admitted before that rule.
+    const noImageReviewDone = await kv.get("migration:no-image-review:v1");
+    if (!noImageReviewDone) {
+      let demoted = 0;
+      for (const prefix of ["action:", "user-action:"]) {
+        for (const c of (await kv.getByPrefix(prefix)) as any[]) {
+          if (!c || typeof c !== "object" || typeof c.id !== "number") continue;
+          const hasImage = Boolean(c.topImageUrl) || Boolean(c.topImageKey) || Boolean(c.topImage);
+          if (hasImage) continue;
+          if (c.adminApproved === false) continue; // already in the review queue
+          await kv.set(`${prefix}${c.id}`, { ...c, adminApproved: false });
+          demoted++;
+        }
+      }
+      await kv.set("migration:no-image-review:v1", true);
+      console.log(`No-image review migration: demoted ${demoted} cards to adminApproved=false.`);
+    }
+
+    // One-time: bulk-mark PETITION cards as "5–10 minutes" and strip any
+    // `quickAction: true` so the matcher classifies them as the new `10min`
+    // bucket (not `5min` via the quickAction shortcut). Touches both `action:*`
+    // (org seeds) and `user-action:*` (admin-added / user-submitted).
+    const petitions10minDone = await kv.get("migration:petitions-10min:v1");
+    if (!petitions10minDone) {
+      let updated = 0;
+      for (const prefix of ["action:", "user-action:"]) {
+        for (const c of (await kv.getByPrefix(prefix)) as any[]) {
+          if (!c || typeof c !== "object" || typeof c.id !== "number") continue;
+          const cat = String(c.category ?? "").toUpperCase();
+          if (cat !== "PETITION") continue;
+          const next: any = { ...c, timeCommitment: "5–10 minutes" };
+          if (next.quickAction === true) delete next.quickAction;
+          await kv.set(`${prefix}${c.id}`, next);
+          updated++;
+        }
+      }
+      await kv.set("migration:petitions-10min:v1", true);
+      console.log(`Petitions 10-min migration: updated ${updated} cards.`);
+    }
+
+    // One-time: import 16 Etsy/Bluesky/TikTok creator-shop cards. 4 have
+    // source images we can fetch (Bluesky public API + CrimethInc CDN); the
+    // other 12 land without a header image (Etsy 429s scrapers, TikTok needs
+    // JS, Facebook search URL has no stable asset) and need images attached
+    // via Admin → Edit. All inserted with adminApproved=true.
+    const etsyCreatorsImportDone = await kv.get("migration:etsy-creators-import-2026-05:v1");
+    if (!etsyCreatorsImportDone) {
+      type NewCard = {
+        category: string;
+        categoryColor: string;
+        title: string;
+        description: string;
+        authorName: string;
+        authorRole: string;
+        authorLink: string;
+        targetUrl: string;
+        toneOverride: { anger: number; comedy: number; subversion: number; hope: number; energy: number };
+        sourceImageUrl?: string;
+      };
+      const incoming: NewCard[] = [
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Wear the "No Kings" Anti-Trump Protest Pin Button Set`,
+          description: `Pack of anti-fascism "No Kings" pin buttons from indie Etsy shop CraftedVibeStudioCo — wear them stacked on a jacket or hand them out at the next visibility brigade.`,
+          authorName: "CraftedVibeStudioCo", authorRole: "Etsy shop",
+          authorLink: "https://www.etsy.com/shop/CraftedVibeStudioCo",
+          targetUrl: "https://www.etsy.com/listing/4505083806/anti-trump-protest-pin-button-set",
+          toneOverride: { anger: 2, comedy: 1, subversion: 2, hope: 2, energy: 2 } },
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Slap FendywitchDesigns' witchy "MAGA Parody" anti-Trump vinyl sticker on everything`,
+          description: `Hand-drawn parody sticker mocking MAGA from a witchy/pagan/environmentalist angle — sticks on laptops, water bottles, lamp posts, your neighbor's mailbox.`,
+          authorName: "FendywitchDesigns", authorRole: "Etsy shop",
+          authorLink: "https://www.etsy.com/shop/FendywitchDesigns",
+          targetUrl: "https://www.etsy.com/listing/742494439/maga-parody-vinyl-sticker-anti-trump",
+          toneOverride: { anger: 2, comedy: 3, subversion: 3, hope: 1, energy: 2 } },
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Sport the "Is He Dead Yet?" Black Cat Dad Hat (subtle FDT)`,
+          description: `Deadpan grumpy-cat dad hat reading "Is He Dead Yet?" — a sotto-voce FDT statement disguised as a cat hat, wearable at family dinners and PTA meetings alike.`,
+          authorName: "ElifGiftsUs", authorRole: "Etsy shop",
+          authorLink: "https://www.etsy.com/shop/ElifGiftsUs",
+          targetUrl: "https://www.etsy.com/listing/4506217910/is-he-dead-yet-black-cat-hat-anti-trump",
+          toneOverride: { anger: 3, comedy: 3, subversion: 3, hope: 1, energy: 2 } },
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Pin a "Stop Project 2025" 1.25" Button or Magnet`,
+          description: `Tiny but mighty 1.25-inch button or magnet calling out Project 2025 — pin it on your tote, stick it on your fridge, hand them out at neighborhood meetings.`,
+          authorName: "ButtonRepublic", authorRole: "Etsy shop",
+          authorLink: "https://www.etsy.com/shop/ButtonRepublic",
+          targetUrl: "https://www.etsy.com/listing/1856171148/stop-project-2025-pin-anti-trump",
+          toneOverride: { anger: 2, comedy: 0, subversion: 2, hope: 2, energy: 2 } },
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Stick an "ICE OUT" Magnet or Bumper Decal on your car`,
+          description: `Bold "ICE OUT" car magnet / bumper sticker calling for ICE abolition under Trump — turns every traffic jam into a visibility action.`,
+          authorName: "DaisyBlueDesignsCo", authorRole: "Etsy shop",
+          authorLink: "https://www.etsy.com/shop/DaisyBlueDesignsCo",
+          targetUrl: "https://www.etsy.com/listing/4442526838/ice-out-magnet-or-decal-anti-ice-protest",
+          toneOverride: { anger: 3, comedy: 0, subversion: 2, hope: 1, energy: 2 } },
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Wear the "No Kings — Republican Oligarchy" Anti-MAGA Pin`,
+          description: `Bold "No Kings / Republican Oligarchy" resist button — a conversation-starter at school pickup, the office, or the next protest line.`,
+          authorName: "BewitchingBetties", authorRole: "Etsy shop",
+          authorLink: "https://www.etsy.com/shop/BewitchingBetties",
+          targetUrl: "https://www.etsy.com/listing/4329164263/no-kings-button-pin-anti-trump-pin",
+          toneOverride: { anger: 2, comedy: 1, subversion: 2, hope: 2, energy: 2 } },
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Order a Subversive Cross-Stitch Kit from Hartford Yarn Works`,
+          description: `Hartford Yarn Works just restocked their subversive cross-stitch kits (plus their book and new styles) — turn rage at Trump/MAGA into hours of meditative stabby thread-work.`,
+          authorName: "Hartford Yarn Works", authorRole: "Independent shop",
+          authorLink: "https://bsky.app/profile/hartfordyarnworks.bsky.social",
+          targetUrl: "https://hartfordyarnworks.com/",
+          toneOverride: { anger: 2, comedy: 2, subversion: 3, hope: 2, energy: 2 } },
+        { category: "SOCIAL MEDIA", categoryColor: "#e44b4b",
+          title: `Boost Eric Champnella's "Donny / 8647 Ain't a Crime" Trump parody song`,
+          description: `Eric Champnella's parody of Tommy Tutone's "Jenny/867-5309" recasts it as "Donny / 8647 Ain't a Crime" — a singable response to Trump DOJ's bogus seashell charges against Comey. Reshare widely.`,
+          authorName: "Eric Champnella", authorRole: "Bluesky creator",
+          authorLink: "https://bsky.app/profile/echamp.bsky.social",
+          targetUrl: "https://bsky.app/profile/echamp.bsky.social",
+          toneOverride: { anger: 2, comedy: 3, subversion: 3, hope: 1, energy: 2 },
+          sourceImageUrl: "https://cdn.bsky.app/img/banner/plain/did:plc:aixsk56es7lwhmva54ghdqdi/bafkreihjgwu6jssrvn6zvjvb5baphrgofnzjoz2hm3aduxsjfl5getozcq" },
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Print + share Emily K's "One Simple Act" anti-fascism zine`,
+          description: `Artist Emily K's printable zine "One Simple Act" gives concrete small steps for resisting fascism — print at home, fold, leave stacks in coffee shops, laundromats, and libraries.`,
+          authorName: "Art by Emily K", authorRole: "Bluesky creator",
+          authorLink: "https://bsky.app/profile/museum.of.emilyk.art",
+          targetUrl: "https://bsky.app/profile/museum.of.emilyk.art",
+          toneOverride: { anger: 1, comedy: 1, subversion: 3, hope: 3, energy: 2 },
+          sourceImageUrl: "https://cdn.bsky.app/img/banner/plain/did:plc:l2bvlovg53aahtytp32r7mqe/bafkreih2ijenpyxetgtwo6z6zzagw5tqjedegymcqlelpjkbkkgilgr63i" },
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Print + distribute CrimethInc's Security Culture zine for the Trump era`,
+          description: `CrimethInc's printable zine on security culture for activists organizing under Trump's pledged federal-agency attacks on anti-fascists — print, staple, leave in spaces where organizers gather.`,
+          authorName: "CrimethInc. Ex-Workers' Collective", authorRole: "Bluesky creator",
+          authorLink: "https://bsky.app/profile/crimethinc.com",
+          targetUrl: "https://crimethinc.com/zines",
+          toneOverride: { anger: 2, comedy: 1, subversion: 3, hope: 2, energy: 2 },
+          sourceImageUrl: "https://cdn.crimethinc.com/assets/share/crimethinc-site-share.png" },
+        { category: "ART PIECE", categoryColor: "#896312",
+          title: `Boost First Amendment Troop's "ResistDance" Lincoln Memorial / Kennedy Center protest dance`,
+          description: `Twelve teen dancers staged "ResistDance" / "Resistadance vs Redaction" at the Lincoln Memorial and Kennedy Center — leotards displayed Jane Doe 4's Epstein-file testimony as protest against Trump-era redactions. Share the TikTok.`,
+          authorName: "First Amendment Troop", authorRole: "TikTok creator",
+          authorLink: "https://www.tiktok.com/@firstamendmenttroop",
+          targetUrl: "https://www.tiktok.com/@firstamendmenttroop",
+          toneOverride: { anger: 3, comedy: 1, subversion: 3, hope: 3, energy: 3 } },
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Stitch along with The Morning Crafter's free anti-Trump-era craftivism patterns`,
+          description: `@the_morningcrafter releases free craftivism patterns on TikTok (kept off Etsy, free on her site) for people compelled to make things while resisting Trump.`,
+          authorName: "The Morning Crafter", authorRole: "TikTok creator",
+          authorLink: "https://www.tiktok.com/@the_morningcrafter",
+          targetUrl: "https://www.tiktok.com/@the_morningcrafter",
+          toneOverride: { anger: 1, comedy: 2, subversion: 2, hope: 3, energy: 2 } },
+        { category: "SPREAD POSITIVITY", categoryColor: "#d97706",
+          title: `Share This Hour Has 22 Minutes' "A New Book by Donald Trump" sketch`,
+          description: `CBC's This Hour Has 22 Minutes dropped a deadpan sketch-comedy parody of "A New Book by Donald Trump." Reshare to fill a feed with something that lands a laugh AND a punchline.`,
+          authorName: "This Hour Has 22 Minutes (CBC)", authorRole: "TikTok creator",
+          authorLink: "https://www.tiktok.com/@thishourhas22minutes",
+          targetUrl: "https://www.tiktok.com/@thishourhas22minutes",
+          toneOverride: { anger: 0, comedy: 3, subversion: 2, hope: 2, energy: 2 } },
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Boost Yarn Sisters / Guardian "Weapons of Mass Construction" anti-Trump craftivism feature`,
+          description: `Yarn Sisters' FB community is amplifying the Guardian feature on US craftivists fighting Trump with yarn — embroidered pistols, slogan quilts, knitted protest banners. Share, then pick up a needle.`,
+          authorName: "Yarn Sisters (Facebook community)", authorRole: "Facebook community",
+          authorLink: "https://www.facebook.com/search/top/?q=craftivism%20trump",
+          targetUrl: "https://www.facebook.com/search/top/?q=craftivism%20trump",
+          toneOverride: { anger: 1, comedy: 2, subversion: 3, hope: 3, energy: 2 } },
+        { category: "ART PIECE", categoryColor: "#896312",
+          title: `Drop a "Tesla T Party" Anti-Musk Protest Banner (Bruce S.'s craftivist template)`,
+          description: `Bruce S. (@bmschech.bsky.social) is circulating "Tesla T Party" protest-art and banner-drop visuals tying Musk-DOGE to anti-Trump street action — DIY-replicable for your own bridge or overpass.`,
+          authorName: "Bruce S. / ActivistArt", authorRole: "Bluesky creator",
+          authorLink: "https://bsky.app/profile/bmschech.bsky.social",
+          targetUrl: "https://bsky.app/profile/bmschech.bsky.social",
+          toneOverride: { anger: 2, comedy: 2, subversion: 3, hope: 2, energy: 2 },
+          sourceImageUrl: "https://cdn.bsky.app/img/avatar/plain/did:plc:ptzl2hqpetxgk2xnudzsbiim/bafkreibqplcarfena2hbirjlrh47jeiav3gj3ws5cc6cmojh27xnrq2isu" },
+        { category: "SPREAD POSITIVITY", categoryColor: "#d97706",
+          title: `Reshare Tom Morello's "This Land is Your Land" at Hands Off NYC anti-ICE protest`,
+          description: `Tom Morello covered Woody Guthrie's "This Land is Your Land" at a Hands Off NYC protest against Trump-era ICE abuses targeting immigrant New Yorkers — share the clip as a singalong for your own local action.`,
+          authorName: "Consequence / Tom Morello", authorRole: "TikTok creator",
+          authorLink: "https://www.tiktok.com/@consequence",
+          targetUrl: "https://www.tiktok.com/@consequence",
+          toneOverride: { anger: 2, comedy: 0, subversion: 2, hope: 3, energy: 3 } },
+      ];
+
+      // Helper: fetch external image, upload to the action-images bucket, return
+      // the stable Supabase public URL. Falls back to the external URL on error
+      // so the card still shows *something* — admin can re-upload via Edit.
+      async function importImage(srcUrl: string): Promise<string> {
+        try {
+          const res = await fetch(srcUrl, { headers: { "User-Agent": "Mozilla/5.0 ResistActMigration" } });
+          if (!res.ok) { console.log(`Image fetch ${res.status} for ${srcUrl}`); return srcUrl; }
+          const contentType = res.headers.get("content-type") ?? "image/jpeg";
+          const buf = await res.arrayBuffer();
+          const ext = contentType.includes("png") ? "png" : contentType.includes("webp") ? "webp" : contentType.includes("gif") ? "gif" : "jpg";
+          const key = `etsy-creators-import-${crypto.randomUUID()}.${ext}`;
+          const supabase = adminClient();
+          const BUCKET = "action-images";
+          const { error: upErr } = await supabase.storage.from(BUCKET).upload(key, buf, { contentType, upsert: false });
+          if (upErr) { console.log(`Image upload failed for ${srcUrl}:`, upErr.message); return srcUrl; }
+          const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(key);
+          return urlData.publicUrl;
+        } catch (err) {
+          console.log(`Image error for ${srcUrl}:`, err);
+          return srcUrl;
+        }
+      }
+
+      const currentIds = ((await kv.get("user-action:ids")) ?? []) as number[];
+      const base = Math.max(...(currentIds.length ? currentIds : [1305]), 1305);
+      const nowIso = new Date().toISOString();
+      const newIds = [...currentIds];
+      let added = 0;
+      for (let i = 0; i < incoming.length; i++) {
+        const c = incoming[i];
+        const id = base + 1 + i;
+        const topImageUrl = c.sourceImageUrl ? await importImage(c.sourceImageUrl) : undefined;
+        const card: any = {
+          id,
+          category: c.category,
+          categoryColor: c.categoryColor,
+          actionType: "Online",
+          isOnline: true,
+          timeCommitment: "5–10 minutes",
+          title: c.title,
+          description: c.description,
+          spotsTotal: "Unlimited",
+          boosts: 0,
+          authorName: c.authorName,
+          authorRole: c.authorRole,
+          authorLink: c.authorLink,
+          targetUrl: c.targetUrl,
+          ...(topImageUrl ? { topImageUrl } : {}),
+          toneOverride: c.toneOverride,
+          // Only auto-approve if we actually resolved an image. Image-less
+          // cards must go through the manual Admin → Edit → upload-image →
+          // Approve flow, same as any other pending card. This makes the
+          // migration safe to re-run on a fresh KV without recreating the
+          // approved-without-image situation.
+          adminApproved: !!topImageUrl,
+          createdAt: nowIso,
+        };
+        await kv.set(`user-action:${id}`, card);
+        newIds.push(id);
+        added++;
+      }
+      await kv.set("user-action:ids", newIds);
+      await kv.set("migration:etsy-creators-import-2026-05:v1", true);
+      console.log(`Etsy creators import: added ${added} cards (ids ${base + 1}..${base + added}).`);
+    }
+
+    // One-time: defensive cleanup for approved-without-image cards.
+    //
+    // The etsy-creators import on 2026-05 hard-coded adminApproved=true for
+    // all 25 cards, including 12 that landed without a header image (Etsy
+    // 429s scrapers, TikTok needs JS, etc). The approval-time image gate in
+    // /admin/approve-action/:id was bypassed because those cards were
+    // written directly to KV from inside the migration.
+    //
+    // This migration walks every action:* and user-action:* record and, for
+    // any record with adminApproved=true but no topImage* field, flips
+    // adminApproved back to false so the card re-appears in Admin → Pending.
+    // From there an admin can upload an image and approve through the proper
+    // gate, or delete the card.
+    //
+    // The PUT-leak and migration source-code holes are closed in this same
+    // release, so this cleanup is one-shot — bad state can't recur.
+    const approvedNoImageCleanupDone = await kv.get("migration:approved-without-image-cleanup:v1");
+    if (!approvedNoImageCleanupDone) {
+      let flipped = 0;
+      const flippedIds: number[] = [];
+      for (const prefix of ["action:", "user-action:"]) {
+        for (const c of (await kv.getByPrefix(prefix)) as any[]) {
+          if (!c || typeof c !== "object" || typeof c.id !== "number") continue;
+          if (c.adminApproved !== true) continue;
+          const hasImage = Boolean(c.topImageUrl) || Boolean(c.topImageKey) || Boolean(c.topImage);
+          if (hasImage) continue;
+          await kv.set(`${prefix}${c.id}`, { ...c, adminApproved: false });
+          flipped++;
+          flippedIds.push(c.id);
+        }
+      }
+      await kv.set("migration:approved-without-image-cleanup:v1", true);
+      console.log(`Approved-without-image cleanup: flipped ${flipped} cards back to pending. IDs: ${flippedIds.join(", ")}`);
+    }
+
+    // One-time: bulk-mark "Cancel your …" boycott cards as "5–10 minutes".
+    // They were stored as "Ongoing" but the actual cancel step is a few clicks.
+    const cancelYour10minDone = await kv.get("migration:cancel-your-10min:v1");
+    if (!cancelYour10minDone) {
+      let updated = 0;
+      for (const prefix of ["action:", "user-action:"]) {
+        for (const c of (await kv.getByPrefix(prefix)) as any[]) {
+          if (!c || typeof c !== "object" || typeof c.id !== "number") continue;
+          if (typeof c.title !== "string") continue;
+          if (!/^cancel your/i.test(c.title)) continue;
+          await kv.set(`${prefix}${c.id}`, { ...c, timeCommitment: "5–10 minutes" });
+          updated++;
+        }
+      }
+      await kv.set("migration:cancel-your-10min:v1", true);
+      console.log(`Cancel-your 10-min migration: updated ${updated} cards.`);
+    }
+
+    // Seed The Smacks receipts. Bump the version key whenever SEED_RECEIPTS changes.
+    const receiptsSeeded = await kv.get("seed:receipts:v1");
+    if (!receiptsSeeded) {
+      await kv.set("seed:receipts:v1", true);
+      const existingIds = ((await kv.get("receipt:ids")) ?? []) as number[];
+      const idSet = new Set(existingIds);
+      const newIds = [...existingIds];
+      for (const r of SEED_RECEIPTS) {
+        const existing = (await kv.get(`receipt:${r.id}`)) as any;
+        const merged: any = { boosts: 0, createdAt: new Date().toISOString(), ...r };
+        if (existing && typeof existing === "object") {
+          if (typeof existing.boosts === "number") merged.boosts = existing.boosts;
+        }
+        await kv.set(`receipt:${r.id}`, merged);
+        if (!idSet.has(r.id)) { idSet.add(r.id); newIds.push(r.id); }
+      }
+      await kv.set("receipt:ids", newIds);
+      console.log(`Seeded ${SEED_RECEIPTS.length} receipts into The Smacks.`);
+    }
+
+    // One-time: add three Common Cause actions as approved user-action cards.
+    const commonCauseDone = await kv.get("migration:common-cause-actions:v1");
+    if (!commonCauseDone) {
+      const currentIds = ((await kv.get("user-action:ids")) ?? []) as number[];
+      const base = Math.max(...(currentIds.length ? currentIds : [1305]), 1305);
+      const now = new Date().toISOString();
+      const newCards = [
+        {
+          id: base + 1,
+          category: "PETITION",
+          categoryColor: "#05737f",
+          actionType: "Online",
+          isOnline: true,
+          timeCommitment: "5–10 minutes",
+          title: "Reject Trump’s “War First, People Last” budget",
+          description: "Trump’s $1.5 trillion budget slashes food assistance, healthcare, and education while boosting Pentagon spending. Tell Congress to reject it.",
+          spotsTotal: "Unlimited",
+          boosts: 0,
+          authorName: "Common Cause",
+          authorRole: "Movement Organization",
+          targetUrl: "https://www.commoncause.org/actions/reject-trumps-1-5-trillion-war-first-people-last-budget/",
+          topImageKey: "org_common-cause",
+          adminApproved: true,
+          createdAt: now,
+        },
+        {
+          id: base + 2,
+          category: "PETITION",
+          categoryColor: "#05737f",
+          actionType: "Online",
+          isOnline: true,
+          timeCommitment: "5–10 minutes",
+          title: "Reject funding for ICE and Trump’s ballroom",
+          description: "Congress is being asked to fund mass deportations and Trump’s private ballroom in the same bill. Tell your reps to vote no.",
+          spotsTotal: "Unlimited",
+          boosts: 0,
+          authorName: "Common Cause",
+          authorRole: "Movement Organization",
+          targetUrl: "https://www.commoncause.org/actions/reject-funding-for-ice-and-trumps-ballroom/",
+          topImageKey: "org_common-cause",
+          adminApproved: true,
+          createdAt: now,
+        },
+        {
+          id: base + 3,
+          category: "PETITION",
+          categoryColor: "#05737f",
+          actionType: "Online",
+          isOnline: true,
+          timeCommitment: "5–10 minutes",
+          title: "Tell Congress: block Trump’s mail voting executive order",
+          description: "Trump’s executive order targets mail voting — a cornerstone of election access. Urge Congress to push back before this takes effect.",
+          spotsTotal: "Unlimited",
+          boosts: 0,
+          authorName: "Common Cause",
+          authorRole: "Movement Organization",
+          targetUrl: "https://www.commoncause.org/actions/tell-congress-block-trumps-mail-voting-eo/",
+          topImageKey: "org_common-cause",
+          adminApproved: true,
+          createdAt: now,
+          amplifiesGroups: ["voter"],
+        },
+      ];
+      const updatedIds = [...currentIds, ...newCards.map((c) => c.id)];
+      for (const card of newCards) {
+        await kv.set(`user-action:${card.id}`, card);
+      }
+      await kv.set("user-action:ids", updatedIds);
+      await kv.set("migration:common-cause-actions:v1", true);
+      console.log(`Added ${newCards.length} Common Cause action cards (ids ${base + 1}–${base + 3}).`);
+    }
+
+    // One-time migration: add local/Mobilize action cards sourced from spreadsheet
+    const mobilizeLocalDone = await kv.get("migration:mobilize-local-actions:v1");
+    if (!mobilizeLocalDone) {
+      const currentIds = ((await kv.get("user-action:ids")) ?? []) as number[];
+      const base = Math.max(...(currentIds.length ? currentIds : [1400]), 1400);
+      const now = new Date().toISOString();
+      const newCards = [
+        {
+          id: base + 1,
+          category: "PROTEST", categoryColor: "#23297e",
+          actionType: "In Person Group", isOnline: false, location: "Washington",
+          timeCommitment: "1–3 hours",
+          title: "Sabey Corp: Cancel Your New ICE Office Lease",
+          description: "Trump's $45B ICE expansion requires private landlords to take the contracts — Sabey Corp signed a new Tukwila WA lease. Indivisible Southend rallies outside the property every other Wednesday, 4pm PDT. Show up, make the lease politically toxic.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Southend Indivisible", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/952561/",
+          toneOverride: { anger: 3, comedy: 1, subversion: 2, hope: 2, energy: 2 },
+          amplifiesGroups: ["immigrant"],
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 2,
+          category: "PROTEST", categoryColor: "#23297e",
+          actionType: "In Person Group", isOnline: false, location: "Washington",
+          timeCommitment: "1–3 hours",
+          title: "Eastside Bucket Drum for Democracy",
+          description: "Indivisible Bellevue's weekly Saturday bucket drum protest — bring a 5-gallon bucket and sticks, make noise outside the Bellevue federal-office corridor against Trump regime corruption and ICE escalation.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Indivisible Bellevue", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/954905/",
+          eventDate: "2026-05-23",
+          toneOverride: { anger: 2, comedy: 3, subversion: 2, hope: 2, energy: 3 },
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 3,
+          category: "PROTEST", categoryColor: "#23297e",
+          actionType: "In Person Group", isOnline: false, location: "Washington",
+          timeCommitment: "1–3 hours",
+          title: "Federal Building Fridays — Protest Trump Regime",
+          description: "Recurring Friday 11:30am PDT protest at the Seattle Federal Building organized by Southend Indivisible. Visibility against Trump-administration corruption, ICE raids, and rule-of-law violations.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Southend Indivisible", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/944909/",
+          toneOverride: { anger: 3, comedy: 1, subversion: 1, hope: 2, energy: 2 },
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 4,
+          category: "PROTEST", categoryColor: "#23297e",
+          actionType: "In Person Group", isOnline: false, location: "Washington",
+          timeCommitment: "1–3 hours",
+          title: "Good Trouble — John Lewis Bridge #TeslaTakedownTuesday Northgate",
+          description: "Tuesday morning 9am PDT Tesla Takedown overpass action at the John Lewis Memorial Bridge in Seattle's Northgate. Anti-Musk-DOGE signage. Pairs Lewis legacy with anti-Trump-administration messaging.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Seattle Indivisible", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/810382/",
+          toneOverride: { anger: 2, comedy: 2, subversion: 2, hope: 2, energy: 3 },
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 5,
+          category: "PROTEST", categoryColor: "#23297e",
+          actionType: "In Person Group", isOnline: false, location: "Delaware",
+          timeCommitment: "1–3 hours",
+          title: "Honk and Wave Rallies vs. Trump Regime Corruption — Wilmington DE",
+          description: "Indivisible Highlands and Beyond runs a Thursday 4:30pm EDT honk-and-wave rally in Wilmington DE specifically calling out Trump administration corruption, ICE expansion, and authoritarian creep. Low-barrier visibility action.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Indivisible Highlands and Beyond", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/950956/",
+          toneOverride: { anger: 3, comedy: 1, subversion: 1, hope: 2, energy: 2 },
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 6,
+          category: "PROTEST", categoryColor: "#23297e",
+          actionType: "In Person Group", isOnline: false, location: "California",
+          timeCommitment: "1–3 hours",
+          title: "Citrus Heights Resists ICE!",
+          description: "Sunrise Solidarity + Coalition Against Project 2025 host a Saturday 10am PDT visibility rally in Citrus Heights CA explicitly opposing ICE raids and Project 2025 implementation. Every Saturday.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Sunrise Solidarity / Coalition Against Project 2025", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/892133/",
+          toneOverride: { anger: 3, comedy: 1, subversion: 2, hope: 2, energy: 3 },
+          amplifiesGroups: ["immigrant"],
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 7,
+          category: "EMAIL CAMPAIGN", categoryColor: "#c2185b",
+          actionType: "Online", isOnline: true,
+          timeCommitment: "5–10 minutes",
+          title: "Sign up for Washington for All's ICE Mobilization Alerts",
+          description: "Washington Indivisible Network's text/email alert list — 12,000+ supporters get pinged when ICE moves in Washington State so volunteers can deploy as legal observers and family-notification callers against Trump's mass deportation operation.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Washington Indivisible Network", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/868208/",
+          toneOverride: { anger: 3, comedy: 0, subversion: 2, hope: 3, energy: 2 },
+          amplifiesGroups: ["immigrant"],
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 8,
+          category: "MEETING", categoryColor: "#5a3e9e",
+          actionType: "In Person Group", isOnline: false, location: "Illinois",
+          timeCommitment: "1–3 hours",
+          title: "BloNo IL — Shut the Flock Off In-Person Meeting",
+          description: "Bloomington-Normal organizing meeting to campaign against Flock ALPR camera-surveillance network that Trump-administration ICE uses for warrantless tracking. Anti-surveillance organizing as direct counter-infrastructure to deportation raids.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Shut The Flock Off BLoNo/MC", authorRole: "Movement Organization",
+          targetUrl: "https://events.pol-rev.com/",
+          eventDate: "2026-05-20",
+          toneOverride: { anger: 3, comedy: 1, subversion: 3, hope: 2, energy: 2 },
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 9,
+          category: "JOIN A GROUP", categoryColor: "#9c2779",
+          actionType: "In Person Group", isOnline: false, location: "New York",
+          timeCommitment: "1–3 hours",
+          title: "ICE Out For Good — Know Your Rights Canvass, Greenwich Village NYC",
+          description: "Friday canvass in Greenwich Village to hand Know Your Rights red cards to immigrant workers and document ICE lawyers' walking routes. Trump-era ICE buildout meets street-level legal-education counter-pressure. Volunteer-organized via Indivisible.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Indivisible NY", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/956018/",
+          eventDate: "2026-05-29",
+          toneOverride: { anger: 2, comedy: 1, subversion: 2, hope: 3, energy: 2 },
+          amplifiesGroups: ["immigrant"],
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 10,
+          category: "JOIN A GROUP", categoryColor: "#9c2779",
+          actionType: "In Person Group", isOnline: false, location: "New York",
+          timeCommitment: "1–3 hours",
+          title: "Know Your Rights Canvass — South Bronx",
+          description: "Saturday canvass in the South Bronx with Target Majority NYC and Swing Left — direct neighborhood outreach to protect immigrants and workers from Trump-era ICE raids. Recurring Saturday action.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Swing Left / Target Majority NYC", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/859108/",
+          eventDate: "2026-05-23",
+          toneOverride: { anger: 2, comedy: 1, subversion: 2, hope: 3, energy: 2 },
+          amplifiesGroups: ["immigrant"],
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 11,
+          category: "MENTAL HEALTH", categoryColor: "#6b5b95",
+          actionType: "Online", isOnline: true,
+          timeCommitment: "1–3 hours",
+          title: "Cat-Lady-Palooza Twooza: Revenge of the Cat Ladies",
+          description: "Free live virtual event from Cat Ladies for America — reclaiming Vance's slur, weaponizing it into an anti-MAGA fundraising spectacle. Comedy, music, organizing announcements. RSVP now.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Cat Ladies for America", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/945793/",
+          eventDate: "2026-09-13",
+          toneOverride: { anger: 1, comedy: 3, subversion: 3, hope: 3, energy: 3 },
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 12,
+          category: "JOIN A GROUP", categoryColor: "#9c2779",
+          actionType: "In Person Group", isOnline: false, location: "New York",
+          timeCommitment: "1–3 hours",
+          title: "Hands Off NYC Small Business Canvass for Immigrant Safety",
+          description: "Canvass with Indivisible Harlem + Neighbors United for Immigrant Safety. Visit small businesses in immigrant-heavy NYC neighborhoods with sanctuary-policy materials and Know Your Rights packets. Direct counter-organizing against Trump deportation raids.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Indivisible Harlem", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/838849/",
+          eventDate: "2026-05-20",
+          toneOverride: { anger: 2, comedy: 1, subversion: 2, hope: 3, energy: 2 },
+          amplifiesGroups: ["immigrant"],
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 13,
+          category: "PROTEST", categoryColor: "#23297e",
+          actionType: "In Person Group", isOnline: false, location: "California",
+          timeCommitment: "1–3 hours",
+          title: "Venice & Santa Monica NO WARS! Weekly Protest",
+          description: "Indivisible Westside LA's weekly Thursday 4pm PDT visibility action in Venice/Santa Monica targeting Trump's Iran escalation and broader Middle East military buildup.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Indivisible Westside Los Angeles", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/893106/",
+          toneOverride: { anger: 3, comedy: 1, subversion: 1, hope: 2, energy: 2 },
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 14,
+          category: "CRAFTING", categoryColor: "#c34e00",
+          actionType: "In Person Group", isOnline: false, location: "Washington",
+          timeCommitment: "1–3 hours",
+          title: "Whistle Kit Making Party — Indivisible Eastside Redmond",
+          description: "Crafting party in Redmond WA to assemble emergency whistle kits for neighbors to use when ICE is spotted. Practical mutual-aid prep dressed up as a party.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Indivisible Eastside", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/877951/",
+          eventDate: "2026-05-19",
+          toneOverride: { anger: 2, comedy: 3, subversion: 3, hope: 3, energy: 2 },
+          amplifiesGroups: ["immigrant"],
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 15,
+          category: "SPREAD POSITIVITY", categoryColor: "#d97706",
+          actionType: "In Person Group", isOnline: false, location: "Illinois",
+          timeCommitment: "1–3 hours",
+          title: "We The People: Popsicle & Ice Cream Social — Chicago",
+          description: "Indivisible Greater West Loop's block party: free popsicles + ice cream + voter-protection sign-ups + Know Your Rights info against Trump-era ICE raids. Pun-titled summer recruitment event.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Indivisible Greater West Loop", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/952624/",
+          eventDate: "2026-06-06",
+          toneOverride: { anger: 1, comedy: 3, subversion: 2, hope: 3, energy: 2 },
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 16,
+          category: "PROTEST", categoryColor: "#23297e",
+          actionType: "In Person Group", isOnline: false, location: "Washington, DC",
+          timeCommitment: "1–3 hours",
+          title: "Petworth ICE Out: No Cooperation With the Occupation",
+          description: "DC visibility action in Petworth — explicit anti-ICE messaging framing Trump's deportation campaign as occupation. Indivisible DC volunteer-organized. Recurring monthly.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Indivisible DC", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/955498/",
+          eventDate: "2026-06-07",
+          toneOverride: { anger: 3, comedy: 1, subversion: 2, hope: 2, energy: 2 },
+          amplifiesGroups: ["immigrant"],
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 17,
+          category: "PROTEST", categoryColor: "#23297e",
+          actionType: "In Person Group", isOnline: false, location: "Maryland",
+          timeCommitment: "1–3 hours",
+          title: "Bad Ass Bridge Brigade Overpass Wave — Gaithersburg MD",
+          description: "DC-metro overpass wave with Indivisible Gaithersburg. Anti-Trump-corruption signage on commuter bridges. Visibility builds across MD/DC commuters.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Indivisible Gaithersburg", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/853172/",
+          eventDate: "2026-05-19",
+          toneOverride: { anger: 2, comedy: 2, subversion: 1, hope: 2, energy: 2 },
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 18,
+          category: "PROTEST", categoryColor: "#23297e",
+          actionType: "In Person Group", isOnline: false, location: "Florida",
+          timeCommitment: "Ongoing",
+          title: "Krome Vigil with Chinga La Migra — Miami",
+          description: "Chinga La Migra crew runs ongoing demonstrations and candlelight vigils at Krome Service Processing Center — the Miami ICE detention site where Trump-era overcrowding has produced documented medical neglect. Show up; in-person presence shifts press coverage.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Chinga La Migra Crew", authorRole: "Movement Organization",
+          targetUrl: "https://www.instagram.com/chingalamigracrew/",
+          toneOverride: { anger: 3, comedy: 0, subversion: 2, hope: 2, energy: 2 },
+          amplifiesGroups: ["immigrant"],
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 19,
+          category: "PROTEST", categoryColor: "#23297e",
+          actionType: "In Person Group", isOnline: false, location: "Washington",
+          timeCommitment: "Ongoing",
+          title: "Join La Resistencia Evening Vigils at Northwest ICE Processing Center",
+          description: "La Resistencia runs frequent evening vigils outside the GEO-Group-run Tacoma facility — especially during hunger strikes and deportation-flight observations. Bring candles, witness names of people detained under Trump's expanded enforcement.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "La Resistencia", authorRole: "Movement Organization",
+          targetUrl: "https://laresistencianw.org/",
+          toneOverride: { anger: 3, comedy: 0, subversion: 2, hope: 2, energy: 2 },
+          amplifiesGroups: ["immigrant"],
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 20,
+          category: "EMAIL CAMPAIGN", categoryColor: "#c2185b",
+          actionType: "Online", isOnline: true,
+          timeCommitment: "5–10 minutes",
+          title: "Tell Tacoma City Council: Revoke NWDC's Business License",
+          description: "La Resistencia's pressure campaign — Washington State health inspectors are still being denied entry to NWDC. Email Tacoma councilmembers to revoke the facility's business license.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "La Resistencia", authorRole: "Movement Organization",
+          targetUrl: "https://laresistencianw.org/",
+          toneOverride: { anger: 3, comedy: 0, subversion: 3, hope: 3, energy: 2 },
+          amplifiesGroups: ["immigrant"],
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 21,
+          category: "JOIN A GROUP", categoryColor: "#9c2779",
+          actionType: "In Person Group", isOnline: false, location: "California",
+          timeCommitment: "Ongoing",
+          title: "Volunteer for LA Rapid Response Network ICE Hotline",
+          description: "CHIRLA's LA Rapid Response Network needs more dispatchers and verifiers — when neighbors call the hotline reporting ICE activity, RRN volunteers verify, document, and notify families. Direct counter-infrastructure to Trump's deportation surge.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "CHIRLA / LA Rapid Response Network", authorRole: "Movement Organization",
+          targetUrl: "https://www.chirla.org/",
+          toneOverride: { anger: 2, comedy: 0, subversion: 3, hope: 3, energy: 2 },
+          amplifiesGroups: ["immigrant"],
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 22,
+          category: "FUNDING", categoryColor: "#127f05",
+          actionType: "Online", isOnline: true, location: "Multi-State",
+          timeCommitment: "5–10 minutes",
+          title: "Donate to CASA — Frontline Defense for MD/VA/PA Immigrants",
+          description: "CASA defends immigrants across Maryland, Virginia, and Pennsylvania with deportation defense legal teams, member organizing, and Know Your Rights clinics. Recurring donations fund the lawyers who fight Trump-era ICE detentions case-by-case.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "CASA", authorRole: "Movement Organization",
+          targetUrl: "https://wearecasa.org/",
+          toneOverride: { anger: 2, comedy: 0, subversion: 2, hope: 3, energy: 2 },
+          amplifiesGroups: ["immigrant"],
+          adminApproved: false, createdAt: now,
+        },
+      ];
+      const updatedIds = [...currentIds, ...newCards.map((c) => c.id)];
+      for (const card of newCards) {
+        await kv.set(`user-action:${card.id}`, card);
+      }
+      await kv.set("user-action:ids", updatedIds);
+      await kv.set("migration:mobilize-local-actions:v1", true);
+      console.log(`Added ${newCards.length} local/Mobilize action cards (ids ${base + 1}–${base + 22}).`);
+    }
+
+    // One-time migration: add second batch of Mobilize/50501 action cards
+    const mobilizeV2Done = await kv.get("migration:mobilize-actions-v2:v1");
+    if (!mobilizeV2Done) {
+      const currentIds = ((await kv.get("user-action:ids")) ?? []) as number[];
+      const base = Math.max(...(currentIds.length ? currentIds : [1500]), 1500);
+      const now = new Date().toISOString();
+      const newCards = [
+        {
+          id: base + 1,
+          category: "EMAIL CAMPAIGN", categoryColor: "#c2185b",
+          actionType: "Online", isOnline: true,
+          timeCommitment: "5–10 minutes",
+          title: "Vote YES on War Powers Resolution to Stop Trump's Iran War",
+          description: "50501 letter campaign urging your member of Congress to vote YES on the War Powers Resolution blocking Trump's unauthorized military escalation against Iran. Targets the actual upcoming roll-call vote.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "50501 Movement", authorRole: "Movement Organization",
+          targetUrl: "https://actionnetwork.org/letters/e8187bd3c13d6812ad7e41897d096f8d3ae76f60",
+          toneOverride: { anger: 3, comedy: 0, subversion: 2, hope: 2, energy: 3 },
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 2,
+          category: "JOIN A GROUP", categoryColor: "#9c2779",
+          actionType: "Online", isOnline: true,
+          timeCommitment: "5–10 minutes",
+          title: "Plug into 50501's Virtual Actions Hub",
+          description: "50501's central page for digital direct actions you can do from home — signal-boost campaigns, virtual call days, and online resistance against the Trump administration. One-stop entry point that updates weekly.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "50501 Movement", authorRole: "Movement Organization",
+          targetUrl: "https://www.fiftyfifty.one/virtual-actions",
+          toneOverride: { anger: 2, comedy: 1, subversion: 2, hope: 2, energy: 2 },
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 3,
+          category: "PETITION", categoryColor: "#7b3f00",
+          actionType: "Online", isOnline: true,
+          timeCommitment: "5–10 minutes",
+          title: "Tell Republicans: Not One Penny More for ICE Brutality",
+          description: "Indivisible petition to GOP Members of Congress demanding they stop funding Trump's ICE brutality — targeted at GOP votes on the upcoming appropriations bill.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Indivisible", authorRole: "Movement Organization",
+          targetUrl: "https://act.indivisible.org/sign/tell-your-republican-members-of-congress-not-one-penny-more-for-ice/",
+          toneOverride: { anger: 3, comedy: 0, subversion: 2, hope: 2, energy: 3 },
+          amplifiesGroups: ["immigrant"],
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 4,
+          category: "EMAIL CAMPAIGN", categoryColor: "#c2185b",
+          actionType: "Online", isOnline: true,
+          timeCommitment: "5–10 minutes",
+          title: "Urge Democrats to Oppose Shoveling Billions More to ICE",
+          description: "Indivisible action urging Democratic members of Congress to fiercely oppose the new GOP push to dump billions more into ICE and Border Patrol expansion under Trump's deportation surge.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Indivisible", authorRole: "Movement Organization",
+          targetUrl: "https://act.indivisible.org/sign/urge-democrats-fiercely-oppose-new-gop-effort-shovel-billions-more-dollars-ice-and-border-patrol/",
+          toneOverride: { anger: 3, comedy: 0, subversion: 2, hope: 2, energy: 3 },
+          amplifiesGroups: ["immigrant"],
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 5,
+          category: "PROTEST", categoryColor: "#23297e",
+          actionType: "In Person Group", isOnline: false, location: "Massachusetts",
+          timeCommitment: "1–3 hours",
+          title: "NO KINGS, STOP WAR WITH IRAN — 4th of July Standout, Beverly MA",
+          description: "July 4 Beverly MA standout combining No Kings anti-Trump messaging with anti-Iran-war demand. Held by local 50501-aligned organizers on Independence Day for maximum visibility.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "50501 Affiliate", authorRole: "Movement Organization",
+          targetUrl: "https://events.pol-rev.com/events/6d4fbb73-d6b4-44d5-8379-37338fece86d",
+          eventDate: "2026-07-04",
+          toneOverride: { anger: 2, comedy: 1, subversion: 2, hope: 2, energy: 3 },
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 6,
+          category: "PROTEST", categoryColor: "#23297e",
+          actionType: "In Person Group", isOnline: false, location: "Missouri",
+          timeCommitment: "1–3 hours",
+          title: "TOGETHER ACROSS JOPLIN — Hands Across America 2.0",
+          description: "50501 Joplin MO chapter organizing a Hands-Across-America-style human chain action themed around mutual aid and standing together against the Trump administration. Bring a friend, bring snacks.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Joplin 50501", authorRole: "Movement Organization",
+          targetUrl: "https://events.pol-rev.com/events/2e05238c-3a49-4c94-b91e-53255de8c71e",
+          eventDate: "2026-05-25",
+          toneOverride: { anger: 2, comedy: 1, subversion: 2, hope: 3, energy: 3 },
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 7,
+          category: "PROTEST", categoryColor: "#23297e",
+          actionType: "In Person Group", isOnline: false, location: "Florida",
+          timeCommitment: "1–3 hours",
+          title: "All of U.S. 250 — Fort Myers Visibility Brigade Standout",
+          description: "Fort Myers Visibility Brigade standout at U.S. 250 — visibility action against the Trump administration with handmade signs, banners and honk-and-wave. Recurring brigade format.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Fort Myers Visibility Brigade", authorRole: "Movement Organization",
+          targetUrl: "https://events.pol-rev.com/events/787666e6-592e-43e5-85f9-0cf0131663d2",
+          toneOverride: { anger: 2, comedy: 1, subversion: 2, hope: 2, energy: 2 },
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 8,
+          category: "PROTEST", categoryColor: "#23297e",
+          actionType: "In Person Group", isOnline: false, location: "Washington",
+          timeCommitment: "1–3 hours",
+          title: "NO KINGS. NO OLIGARCHS: Seattle Yesler Overpass Banner Drop",
+          description: "Seattle Indivisible Tuesday-morning overpass banner action at the Yesler Way overpass denouncing Trump and the oligarchy he leads. Recurring slot, drop in any week.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Seattle Indivisible", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/791326/",
+          toneOverride: { anger: 2, comedy: 1, subversion: 2, hope: 2, energy: 2 },
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 9,
+          category: "PROTEST", categoryColor: "#23297e",
+          actionType: "In Person Group", isOnline: false, location: "Washington",
+          timeCommitment: "1–3 hours",
+          title: "NO ICE EXPANSION: Rally at Sabey Corp HQ (Tukwila WA)",
+          description: "Southend Indivisible rally at Sabey Corp HQ demanding they cancel the new office lease they signed with ICE. Direct corporate pressure to deny ICE the physical space to expand operations.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Southend Indivisible", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/933915/",
+          toneOverride: { anger: 3, comedy: 1, subversion: 3, hope: 2, energy: 3 },
+          amplifiesGroups: ["immigrant"],
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 10,
+          category: "PROTEST", categoryColor: "#23297e",
+          actionType: "In Person Group", isOnline: false, location: "Washington",
+          timeCommitment: "1–3 hours",
+          title: "Protest ICE Terror at ICE HQ — Tukwila WA Friday Morning Rally",
+          description: "Recurring Friday-morning protest outside the Seattle-area ICE HQ in Tukwila, organized by Southend Indivisible. Direct sustained pressure on the agency carrying out Trump's mass deportation surge.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Southend Indivisible", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/944898/",
+          toneOverride: { anger: 3, comedy: 0, subversion: 2, hope: 2, energy: 3 },
+          amplifiesGroups: ["immigrant"],
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 11,
+          category: "PROTEST", categoryColor: "#23297e",
+          actionType: "In Person Group", isOnline: false, location: "New York",
+          timeCommitment: "1–3 hours",
+          title: "De-ICE Citizens Bank Yonkers — National Day of Action",
+          description: "National Day of Action targeting Citizens Bank in Yonkers for its banking relationship with ICE detention contractors. Boycott + on-site rally combo at 2195 Central Park Ave.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "De-ICE Citizens Bank", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/954480/",
+          eventDate: "2026-06-06",
+          toneOverride: { anger: 3, comedy: 1, subversion: 3, hope: 2, energy: 3 },
+          amplifiesGroups: ["immigrant"],
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 12,
+          category: "JOIN A GROUP", categoryColor: "#9c2779",
+          actionType: "In Person Group", isOnline: false, location: "California",
+          timeCommitment: "1–3 hours",
+          title: "Aida4LA Canvassing — LA Immigrant Defense Brigade",
+          description: "Daily morning canvass with Aida4LA in Los Angeles, signing up residents for ICE-watch deployment alerts and door-knocking on Trump's deportation policies. Multiple shifts per week.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Aida 4 LA", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/932835/",
+          toneOverride: { anger: 3, comedy: 0, subversion: 2, hope: 2, energy: 3 },
+          amplifiesGroups: ["immigrant"],
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 13,
+          category: "PROTEST", categoryColor: "#23297e",
+          actionType: "In Person Group", isOnline: false, location: "Oregon",
+          timeCommitment: "1–3 hours",
+          title: "PDX Car Caravan Protest: Flag Day / DJT's Unhappy Birthday Party",
+          description: "Portland car-caravan protest framed as Trump's unhappy-birthday party — rolling visibility action with decorated cars, satirical signage, and a parade route through the city.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "PDX Car Caravan Protest", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/916101/",
+          eventDate: "2026-06-14",
+          toneOverride: { anger: 2, comedy: 3, subversion: 3, hope: 2, energy: 3 },
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 14,
+          category: "PROTEST", categoryColor: "#23297e",
+          actionType: "In Person Group", isOnline: false, location: "Oregon",
+          timeCommitment: "1–3 hours",
+          title: "Stand Together — Boycott Bezos, ICE Out, No War, NO KINGS! (Portland)",
+          description: "Portland District 2 Neighbors Indivisible recurring Sunday rally combining four targets: boycott Bezos, ICE out, no war on Iran, no kings. Multi-issue intersectional anti-Trump action.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Portland District 2 Neighbors Indivisible", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/950119/",
+          toneOverride: { anger: 3, comedy: 1, subversion: 2, hope: 2, energy: 3 },
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 15,
+          category: "PROTEST", categoryColor: "#23297e",
+          actionType: "In Person Group", isOnline: false, location: "Washington",
+          timeCommitment: "1–3 hours",
+          title: "Banners Over I-5: No War In Iran (Vancouver WA)",
+          description: "Indivisible Greater Vancouver freeway-overpass banner drop on I-5 demanding no war with Iran. High-visibility weekday rush-hour action against Trump's military escalation.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Indivisible Greater Vancouver", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/823132/",
+          toneOverride: { anger: 2, comedy: 1, subversion: 2, hope: 2, energy: 2 },
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 16,
+          category: "TRAINING", categoryColor: "#1a6b3c",
+          actionType: "In Person Group", isOnline: false, location: "California",
+          timeCommitment: "1–3 hours",
+          title: "Volunteer Training: Rapid Response to ICE Actions (Fremont CA)",
+          description: "Indivisible Fremont's volunteer training on how to respond when ICE shows up — legal observer protocols, recording, hotline workflow, and de-escalation. Mandatory for new rapid-response volunteers.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Indivisible Fremont CA", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/943590/",
+          toneOverride: { anger: 2, comedy: 0, subversion: 2, hope: 3, energy: 2 },
+          amplifiesGroups: ["immigrant"],
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 17,
+          category: "TRAINING", categoryColor: "#1a6b3c",
+          actionType: "Online", isOnline: true,
+          timeCommitment: "1–3 hours",
+          title: "BLAG: \"CommUNITY Melts ICE\" — Panel with Twin Cities Organizers",
+          description: "Biggest Little Action Group hosts a virtual panel with Wes Burdine and Twin Cities organizers on how communities can \"melt ICE\" — practical chapter-organizing strategies, mass mobilization, and direct action against Trump's deportation infrastructure.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Biggest Little Action Group", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/951961/",
+          toneOverride: { anger: 2, comedy: 1, subversion: 2, hope: 3, energy: 3 },
+          amplifiesGroups: ["immigrant"],
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 18,
+          category: "JOIN A GROUP", categoryColor: "#9c2779",
+          actionType: "Online", isOnline: true, location: "Multi-State",
+          timeCommitment: "Ongoing",
+          title: "NDLON Adopt-A-School: ICE Watch at K-12 Schools",
+          description: "National Day Laborer Organizing Network's program assigning volunteer 'adopters' to specific schools to maintain ICE-presence watch at student arrival/dismissal. Direct response to Trump-administration ICE raids at K-12 schools.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "National Day Laborer Organizing Network", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/942116/",
+          toneOverride: { anger: 2, comedy: 0, subversion: 3, hope: 3, energy: 2 },
+          amplifiesGroups: ["immigrant"],
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 19,
+          category: "PROTEST", categoryColor: "#23297e",
+          actionType: "In Person Group", isOnline: false, location: "California",
+          timeCommitment: "1–3 hours",
+          title: "Tesla Takedown — Stanford Mall, Palo Alto",
+          description: "The Wolves' recurring Saturday Tesla Takedown action at the Stanford Shopping Center Tesla showroom — Bay Area location targeting Musk-DOGE and the Trump administration's tech-billionaire alliance.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "The Wolves", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/879712/",
+          toneOverride: { anger: 2, comedy: 2, subversion: 2, hope: 2, energy: 3 },
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 20,
+          category: "PROTEST", categoryColor: "#23297e",
+          actionType: "In Person Group", isOnline: false, location: "Washington, DC",
+          timeCommitment: "1–3 hours",
+          title: "Let's Get Free! March & Concert — Washington DC",
+          description: "Popular Democracy's July 9 march and concert in Washington DC demanding freedom from Trump's deportation, detention, and policing surge. Mass mobilization with cultural programming.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Popular Democracy", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/942279/",
+          eventDate: "2026-07-09",
+          toneOverride: { anger: 3, comedy: 1, subversion: 2, hope: 3, energy: 3 },
+          amplifiesGroups: ["immigrant"],
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 21,
+          category: "JOIN A GROUP", categoryColor: "#9c2779",
+          actionType: "In Person Group", isOnline: false, location: "Georgia",
+          timeCommitment: "Ongoing",
+          title: "Volunteer with El Refugio at Stewart Detention Center (Lumpkin GA)",
+          description: "El Refugio provides hospitality and visitation to immigrants detained at Stewart Detention Center — one of the largest ICE facilities in Trump's expanded detention system. Shifts include visiting detained people, hosting families, and accompaniment.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "El Refugio", authorRole: "Movement Organization",
+          targetUrl: "https://elrefugiostewart.org/en/volunteers",
+          toneOverride: { anger: 2, comedy: 0, subversion: 2, hope: 3, energy: 2 },
+          amplifiesGroups: ["immigrant"],
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 22,
+          category: "JOIN A GROUP", categoryColor: "#9c2779",
+          actionType: "Online", isOnline: true,
+          timeCommitment: "Ongoing",
+          title: "#NoTechForIce: Join Mijente's Tech-Worker Campaign",
+          description: "Mijente's flagship campaign pressuring tech companies (Palantir, Amazon, Microsoft) to stop building surveillance and ICE tooling that powers Trump's deportation machine. Sign on as a tech worker, student, or ally.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Mijente", authorRole: "Movement Organization",
+          targetUrl: "https://mijente.net/notechforice/",
+          toneOverride: { anger: 3, comedy: 0, subversion: 3, hope: 2, energy: 2 },
+          amplifiesGroups: ["immigrant"],
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 23,
+          category: "PROTEST", categoryColor: "#23297e",
+          actionType: "In Person Group", isOnline: false, location: "Washington",
+          timeCommitment: "1–3 hours",
+          title: "NO WAR. NO KINGS: Tacoma Rally",
+          description: "Seattle Indivisible regional rally in Tacoma combining No-Kings anti-Trump messaging with anti-Iran-war demands. Covers the Pierce County / South Sound corridor.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Seattle Indivisible", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/795854/",
+          eventDate: "2026-05-23",
+          toneOverride: { anger: 2, comedy: 1, subversion: 2, hope: 2, energy: 2 },
+          adminApproved: false, createdAt: now,
+        },
+        {
+          id: base + 24,
+          category: "PROTEST", categoryColor: "#23297e",
+          actionType: "In Person Group", isOnline: false, location: "Washington",
+          timeCommitment: "1–3 hours",
+          title: "Spot Protests — Seattle Wedgwood (Recurring)",
+          description: "Volunteer-organized recurring Saturday corner-protest in the Seattle Wedgwood neighborhood targeting the Trump administration. Drop-in slot every weekend, low barrier to entry.",
+          spotsTotal: "Unlimited", boosts: 0,
+          authorName: "Indivisible Volunteer", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/mobilize/event/939498/",
+          toneOverride: { anger: 2, comedy: 0, subversion: 2, hope: 2, energy: 2 },
+          adminApproved: false, createdAt: now,
+        },
+      ];
+      const updatedIds = [...currentIds, ...newCards.map((c) => c.id)];
+      for (const card of newCards) {
+        await kv.set(`user-action:${card.id}`, card);
+      }
+      await kv.set("user-action:ids", updatedIds);
+      await kv.set("migration:mobilize-actions-v2:v1", true);
+      console.log(`Added ${newCards.length} Mobilize/50501 action cards (v2) (ids ${base + 1}–${base + 24}).`);
+    }
+
     // Fetch ALL action:* cards from the KV store (real cards only after purge)
     const allActionCards = await kv.getByPrefix("action:");
     const seenIds = new Set<number>();
@@ -1206,10 +2511,16 @@ app.get("/make-server-9eb1ae04/stats", async (c) => {
 
     // Count approved/pending/all users
     const users = await kv.getByPrefix("user:approval:");
-    const usersCount = (users as any[]).filter((u) => u && typeof u === "object" && u.userId).length;
+    const validUsers = (users as any[]).filter((u) => u && typeof u === "object" && u.userId);
+    const usersCount = validUsers.length;
+    const pendingUsersCount = validUsers.filter((u) => u.status === "pending").length;
 
-    console.log(`Stats: ${allCards.length} acts, ${citiesCount} cities, ${usersCount} users`);
-    return c.json({ citiesCount, usersCount, actsCount: allCards.length });
+    const pendingActsCount = allCards.filter((c: any) => c.adminApproved === false).length;
+
+    const siteUpdating = (await kv.get("system:site-updating")) === true;
+
+    console.log(`Stats: ${allCards.length} acts (${pendingActsCount} pending), ${citiesCount} cities, ${usersCount} users (${pendingUsersCount} pending)`);
+    return c.json({ citiesCount, usersCount, pendingUsersCount, pendingActsCount, actsCount: allCards.length, siteUpdating });
   } catch (err) {
     console.log("Stats error:", err);
     return c.json({ error: `Failed to fetch stats: ${err}` }, 500);
@@ -1357,6 +2668,44 @@ app.post("/make-server-9eb1ae04/notifications", async (c) => {
 // clearly off-topic for an anti-Trump / MAGA-resistance site.
 // Logic: award points for resistance signals, penalise for red-flag signals.
 // If red flags outweigh resistance signals by enough, flag as not-on-topic.
+// ─── URL safety validator ────────────────────────────────────────────────────
+// Public-feed cards expose targetUrl / authorLink / topImageUrl through
+// <a href> and <img src>. React auto-escapes text content, but it CANNOT
+// neutralize an `href="javascript:..."` — clicking the link would run the
+// payload as the victim's browser. We reject any non-http(s)/mailto scheme
+// on submission, edit, AND admin approval so dirty data can't slip through
+// any path.
+//
+// Returns { ok: true } for empty / null / undefined (URLs are optional);
+// returns { ok: false, reason } for any URL with a disallowed scheme.
+function validateSubmittedUrl(value: unknown, field: string): { ok: true } | { ok: false; reason: string } {
+  if (value == null) return { ok: true };
+  const raw = String(value).trim();
+  if (raw === "") return { ok: true };
+
+  // Allow protocol-relative (//host/path) — browsers infer http(s) at runtime.
+  if (raw.startsWith("//")) return { ok: true };
+  // Allow site-relative paths.
+  if (raw.startsWith("/") || raw.startsWith("./") || raw.startsWith("../")) return { ok: true };
+
+  // Anything with a scheme prefix must match the allowlist. Note: scheme
+  // matching is case-insensitive AND tolerates whitespace + tab control
+  // chars between letters ("java\tscript:") because some browsers do too.
+  const schemeMatch = raw.match(/^\s*([a-zA-Z][a-zA-Z0-9+.\-]*)\s*:/);
+  if (schemeMatch) {
+    const scheme = schemeMatch[1].toLowerCase();
+    const ALLOWED = new Set(["http", "https", "mailto", "sms", "tel"]);
+    if (!ALLOWED.has(scheme)) {
+      return { ok: false, reason: `${field}: \"${scheme}:\" URLs are not allowed.` };
+    }
+    return { ok: true };
+  }
+
+  // No scheme + not a relative path → treat as bare host (e.g. "example.com").
+  // Browsers will follow it as http://example.com, which is safe.
+  return { ok: true };
+}
+
 function looksOffTopic(title: string, description: string, category: string): boolean {
   const text = `${title} ${description} ${category}`.toLowerCase();
 
@@ -1430,10 +2779,22 @@ app.post("/make-server-9eb1ae04/actions/create", async (c) => {
       return c.json({ error: "title, description and category are required" }, 400);
     }
 
+    // URL safety — block javascript:/data:/file:/vbscript: schemes on any
+    // user-facing link or image. React doesn't escape `href=` or `src=`, so
+    // these are the only XSS vector once admins approve a card.
+    for (const [field, value] of [
+      ["targetUrl", targetUrlField ?? link],
+      ["authorLink", authorLink],
+      ["topImageUrl", topImageUrl],
+    ] as Array<[string, unknown]>) {
+      const check = validateSubmittedUrl(value, field);
+      if (!check.ok) return c.json({ error: check.reason }, 400);
+    }
+
     // Auto-increment ID, always staying above the max seed card ID (1301)
     // to avoid collisions between user-submitted cards and seed cards
     const currentIds = (await kv.get("user-action:ids") ?? []) as number[];
-    const nextId = Math.max(...currentIds, 1301) + 1;
+    const nextId = Math.max(...currentIds, 1305) + 1;
 
     const offTopic = looksOffTopic(title, description, category);
 
@@ -1553,6 +2914,69 @@ app.get("/make-server-9eb1ae04/me/completions", async (c) => {
   }
 });
 
+// ─── ADMIN: GET /admin/users/:id/activity — full activity dashboard ────────
+// Returns the same shape as /me/completions (total, byCategory, completedIds)
+// plus the user's approval record AND a reverse-chronological list of their
+// last N completions enriched with the action title. The client computes the
+// tier from `total` via getUserTier() — keeps the math in one place.
+app.get("/make-server-9eb1ae04/admin/users/:id/activity", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const targetId = c.req.param("id");
+    const approval = await kv.get(`user:approval:${targetId}`) as any;
+    if (!approval) return c.json({ error: "User not found" }, 404);
+
+    const records = ((await kv.getByPrefix(`complete:${targetId}:`)) ?? []) as any[];
+
+    // Aggregate the counts.
+    const byCategory: Record<string, number> = {};
+    const completedIds: number[] = [];
+    for (const r of records) {
+      if (!r) continue;
+      const cat = (r.category ?? "OTHER").toString().toUpperCase();
+      byCategory[cat] = (byCategory[cat] ?? 0) + 1;
+      if (typeof r.actionId === "number") completedIds.push(r.actionId);
+    }
+
+    // Build the recent-activity timeline (last 50). Resolve action titles by
+    // doing a single batch fetch — most cards live under `action:*` but a
+    // handful are user-submitted under `user-action:*`, so try both.
+    const sorted = [...records]
+      .filter((r) => r?.completedAt)
+      .sort((a, b) => String(b.completedAt).localeCompare(String(a.completedAt)))
+      .slice(0, 50);
+
+    const timeline = await Promise.all(sorted.map(async (r) => {
+      let card = await kv.get(`action:${r.actionId}`) as any;
+      if (!card) card = await kv.get(`user-action:${r.actionId}`) as any;
+      return {
+        actionId: r.actionId,
+        category: r.category ?? "OTHER",
+        completedAt: r.completedAt,
+        title: card?.title ?? `Action #${r.actionId}`,
+        targetUrl: card?.targetUrl ?? null,
+      };
+    }));
+
+    const lastActiveAt = sorted[0]?.completedAt ?? null;
+
+    return c.json({
+      user: approval,
+      total: records.length,
+      byCategory,
+      completedIds,
+      lastActiveAt,
+      timeline,
+    });
+  } catch (err) {
+    console.log("Admin user activity error:", err);
+    return c.json({ error: `Failed: ${err}` }, 500);
+  }
+});
+
 // ─── GET /me/boosts — card IDs this user has boosted ─────────────────────────
 app.get("/make-server-9eb1ae04/me/boosts", async (c) => {
   try {
@@ -1652,10 +3076,27 @@ app.put("/make-server-9eb1ae04/actions/:id", async (c) => {
 
     const body = await c.req.json();
 
+    // URL safety on edit too — admins are usually trustworthy but the QA
+    // probe showed this is exactly the kind of field a careless paste could
+    // poison. Validate every URL-bearing field present in the body.
+    for (const field of ["targetUrl", "authorLink", "topImageUrl"]) {
+      if (body[field] !== undefined) {
+        const check = validateSubmittedUrl(body[field], field);
+        if (!check.ok) return c.json({ error: check.reason }, 400);
+      }
+    }
+
     // Strip immutable fields. Admins can additionally set `boosts` directly
     // (used for moderation / corrections); non-admins cannot.
+    //
+    // SECURITY: `adminApproved` is also stripped here. Approval has a hard
+    // image-presence requirement (enforced in /admin/approve-action/:id), and
+    // the PUT endpoint has no such check — so accepting `adminApproved: true`
+    // in a free-form edit body was a bypass for the image rule. Approval
+    // must go through /admin/approve-action/:id only.
     const { id: _id, createdBy: _createdBy, createdAt: _createdAt,
             authorAvatarKey: _avatarKey, topImageKey: _topImageKey,
+            adminApproved: _adminApproved,
             boosts: bodyBoosts, ...safeUpdates } = body;
 
     const updated: any = {
@@ -1729,6 +3170,22 @@ app.post("/make-server-9eb1ae04/admin/approve-action/:id", async (c) => {
       card = await kv.get(cardKey) as any;
     }
     if (!card) return c.json({ error: `Card ${id} not found` }, 404);
+
+    // Hard rule: a card cannot be approved without an image. Imageless cards
+    // render as half-blank tiles in the public feed and look broken — admins
+    // must upload one before they can flip approval on.
+    const hasImage = Boolean(card.topImageUrl) || Boolean(card.topImageKey) || Boolean(card.topImage);
+    if (!hasImage) {
+      return c.json({ error: "Card has no image. Upload a header image before approving." }, 400);
+    }
+
+    // Defense-in-depth: even if dirty URLs slipped past create-time validation
+    // (older records pre-dating that guard), block them here at the last gate
+    // before the card goes public.
+    for (const field of ["targetUrl", "authorLink", "topImageUrl"]) {
+      const check = validateSubmittedUrl(card[field], field);
+      if (!check.ok) return c.json({ error: `${check.reason} Edit the card to fix it before approving.` }, 400);
+    }
 
     card.adminApproved = true;
     card.approvedBy = admin.user.id;
@@ -1896,6 +3353,75 @@ app.post("/make-server-9eb1ae04/admin/bulk-import", async (c) => {
   } catch (err) {
     console.log("Bulk import error:", err);
     return c.json({ error: `Bulk import failed: ${err}` }, 500);
+  }
+});
+
+// ─── POST /admin/bulk-update-time-commitment — audit-driven time fixes ───────
+// Same auth pattern as bulk-import (static admin token, NOT a user JWT). Built
+// for the 2026-05-17 time-commitment audit and reusable for future passes.
+// Only `timeCommitment` and `quickAction` are touched; everything else on the
+// card is preserved. Supports dryRun:true to preview without writing.
+const VALID_TIME_COMMITMENTS = new Set([
+  "< 1 hour", "5–10 minutes", "1–3 hours", "Full day", "Ongoing",
+]);
+
+app.post("/make-server-9eb1ae04/admin/bulk-update-time-commitment", async (c) => {
+  try {
+    const token = c.req.header("X-Admin-Import-Token");
+    const expected = Deno.env.get("ADMIN_IMPORT_TOKEN");
+    if (!expected) return c.json({ error: "ADMIN_IMPORT_TOKEN not configured on server" }, 500);
+    if (!token || token !== expected) return c.json({ error: "Forbidden" }, 403);
+
+    const body = await c.req.json<{ updates?: any[]; dryRun?: boolean }>();
+    const updates = Array.isArray(body.updates) ? body.updates : [];
+    const dryRun = body.dryRun === true;
+    if (updates.length === 0) return c.json({ error: "updates array required" }, 400);
+
+    const updated: any[] = [];
+    const notFound: any[] = [];
+    const errors:   any[] = [];
+
+    for (const u of updates) {
+      try {
+        const id = Number(u.id);
+        const tc = String(u.timeCommitment ?? "");
+        const qa = u.quickAction === true;
+        if (!Number.isFinite(id)) { errors.push({ id: u.id, error: "id must be a number" }); continue; }
+        if (!VALID_TIME_COMMITMENTS.has(tc)) {
+          errors.push({ id, error: `invalid timeCommitment: "${tc}"` }); continue;
+        }
+
+        let cardKey = `action:${id}`;
+        let card = await kv.get(cardKey) as any;
+        if (!card) {
+          cardKey = `user-action:${id}`;
+          card = await kv.get(cardKey) as any;
+        }
+        if (!card) { notFound.push({ id }); continue; }
+
+        const before = { timeCommitment: card.timeCommitment ?? null, quickAction: card.quickAction ?? null };
+        const after  = { timeCommitment: tc, quickAction: qa };
+
+        if (!dryRun) {
+          await kv.set(cardKey, {
+            ...card,
+            timeCommitment: tc,
+            quickAction: qa,
+            updatedAt: new Date().toISOString(),
+            updatedBy: "bulk-update-time",
+          });
+        }
+        updated.push({ id, title: card.title, before, after });
+      } catch (rowErr) {
+        errors.push({ id: u?.id, error: String(rowErr) });
+      }
+    }
+
+    console.log(`bulk-update-time: updated=${updated.length} notFound=${notFound.length} errors=${errors.length} dryRun=${dryRun}`);
+    return c.json({ updated, notFound, errors, dryRun });
+  } catch (err) {
+    console.log("Bulk update time error:", err);
+    return c.json({ error: `Bulk update failed: ${err}` }, 500);
   }
 });
 
@@ -2289,6 +3815,194 @@ app.get("/make-server-9eb1ae04/admin/url-health", async (c) => {
     });
   } catch (err) {
     return c.json({ error: `Failed: ${err}` }, 500);
+  }
+});
+
+// ─── POST /receipts/:id/boost — toggle-boost a receipt (no auth required) ────
+app.post("/make-server-9eb1ae04/receipts/:id/boost", async (c) => {
+  try {
+    const id = Number(c.req.param("id"));
+    const { delta } = await c.req.json<{ delta: number }>();
+    const receipt = (await kv.get(`receipt:${id}`)) as any;
+    if (!receipt) return c.json({ error: `Receipt ${id} not found` }, 404);
+    receipt.boosts = Math.max(0, (receipt.boosts ?? 0) + (delta ?? 1));
+    await kv.set(`receipt:${id}`, receipt);
+    return c.json({ boosts: receipt.boosts });
+  } catch (err) {
+    return c.json({ error: `Boost failed: ${err}` }, 500);
+  }
+});
+
+// ─── GET /receipts — public list of approved receipts (admin sees all) ───────
+app.get("/make-server-9eb1ae04/receipts", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    let isAdmin = false;
+    if (token) {
+      const admin = await requireAdmin(token).catch(() => null);
+      isAdmin = !!admin;
+    }
+
+    const receiptIds = ((await kv.get("receipt:ids")) ?? []) as number[];
+    const receipts: any[] = [];
+    for (const id of receiptIds) {
+      const r = (await kv.get(`receipt:${id}`)) as any;
+      if (!r) continue;
+      if (!isAdmin && r.adminApproved !== true) continue;
+      receipts.push(r);
+    }
+    // Newest first
+    receipts.sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+    return c.json({ receipts });
+  } catch (err) {
+    return c.json({ error: `Failed to fetch receipts: ${err}` }, 500);
+  }
+});
+
+// ─── POST /receipts/submit — approved user submits a receipt for review ──────
+app.post("/make-server-9eb1ae04/receipts/submit", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    if (!token) return c.json({ error: "Unauthorized" }, 401);
+    const user = await getUser(token);
+    if (!user) return c.json({ error: "Invalid or expired token" }, 401);
+    const approval = await kv.get(`user:approval:${user.id}`) as any;
+    if (!approval || approval.status !== "approved") {
+      return c.json({ error: "Account not approved" }, 403);
+    }
+
+    const body = await c.req.json<{
+      title?: string;
+      caption?: string;
+      imageUrl: string;
+      sourceUrl?: string;
+      sourceLabel?: string;
+      tags?: string[];
+    }>();
+    if (!body.imageUrl) return c.json({ error: "imageUrl is required" }, 400);
+
+    const ids = ((await kv.get("receipt:ids")) ?? []) as number[];
+    const newId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
+    const receipt = {
+      id: newId,
+      title: body.title ?? "",
+      caption: body.caption ?? "",
+      imageUrl: body.imageUrl,
+      sourceUrl: body.sourceUrl ?? "",
+      sourceLabel: body.sourceLabel ?? "",
+      tags: body.tags ?? [],
+      adminApproved: false,
+      createdBy: user.id,
+      createdAt: new Date().toISOString(),
+    };
+    await kv.set(`receipt:${newId}`, receipt);
+    await kv.set("receipt:ids", [...ids, newId]);
+    console.log(`User ${approval.name} submitted receipt #${newId}: "${receipt.title}" (pending review)`);
+    return c.json({ receipt }, 201);
+  } catch (err) {
+    return c.json({ error: `Failed to submit receipt: ${err}` }, 500);
+  }
+});
+
+// ─── POST /admin/receipts/create — admin adds a receipt ──────────────────────
+app.post("/make-server-9eb1ae04/admin/receipts/create", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const body = await c.req.json<{
+      title?: string;
+      caption?: string;
+      imageUrl: string;
+      sourceUrl?: string;
+      sourceLabel?: string;
+      tags?: string[];
+    }>();
+
+    if (!body.imageUrl) return c.json({ error: "imageUrl is required" }, 400);
+
+    // Allocate a new ID
+    const ids = ((await kv.get("receipt:ids")) ?? []) as number[];
+    const newId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
+    const receipt = {
+      id: newId,
+      title: body.title ?? "",
+      caption: body.caption ?? "",
+      imageUrl: body.imageUrl,
+      sourceUrl: body.sourceUrl ?? "",
+      sourceLabel: body.sourceLabel ?? "",
+      tags: body.tags ?? [],
+      adminApproved: true,
+      createdBy: admin.user.id,
+      createdAt: new Date().toISOString(),
+    };
+    await kv.set(`receipt:${newId}`, receipt);
+    await kv.set("receipt:ids", [...ids, newId]);
+    console.log(`Admin ${admin.record.name} created receipt #${newId}: "${receipt.title}"`);
+    return c.json({ receipt }, 201);
+  } catch (err) {
+    return c.json({ error: `Failed to create receipt: ${err}` }, 500);
+  }
+});
+
+// ─── POST /admin/approve-receipt/:id — approve a pending receipt ──────────────
+app.post("/make-server-9eb1ae04/admin/approve-receipt/:id", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const id = Number(c.req.param("id"));
+    const receipt = (await kv.get(`receipt:${id}`)) as any;
+    if (!receipt) return c.json({ error: `Receipt ${id} not found` }, 404);
+
+    receipt.adminApproved = true;
+    receipt.approvedBy = admin.user.id;
+    receipt.approvedAt = new Date().toISOString();
+    await kv.set(`receipt:${id}`, receipt);
+    console.log(`Admin ${admin.record.name} approved receipt #${id}: "${receipt.title}"`);
+    return c.json({ receipt });
+  } catch (err) {
+    return c.json({ error: `Approval failed: ${err}` }, 500);
+  }
+});
+
+// ─── POST /admin/site-updating — toggle the "site updating" banner ────────────
+app.post("/make-server-9eb1ae04/admin/site-updating", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const body = await c.req.json().catch(() => ({}));
+    const enabled = body.enabled === true;
+    await kv.set("system:site-updating", enabled);
+    console.log(`Admin ${admin.record.name} set site-updating = ${enabled}`);
+    return c.json({ siteUpdating: enabled });
+  } catch (err) {
+    return c.json({ error: `Toggle failed: ${err}` }, 500);
+  }
+});
+
+// ─── DELETE /admin/receipts/:id — delete a receipt ───────────────────────────
+app.delete("/make-server-9eb1ae04/admin/receipts/:id", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const id = Number(c.req.param("id"));
+    const receipt = await kv.get(`receipt:${id}`);
+    if (!receipt) return c.json({ error: `Receipt ${id} not found` }, 404);
+
+    await kv.del(`receipt:${id}`);
+    const ids = ((await kv.get("receipt:ids")) ?? []) as number[];
+    await kv.set("receipt:ids", ids.filter((x) => x !== id));
+    console.log(`Admin ${admin.record.name} deleted receipt #${id}`);
+    return c.json({ ok: true });
+  } catch (err) {
+    return c.json({ error: `Delete failed: ${err}` }, 500);
   }
 });
 

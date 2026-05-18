@@ -25,4 +25,12 @@ export interface UserApproval {
   provider: string;
   createdAt: string;
   approvedAt?: string;
+  /** Total "I did this" completions — populated by the /admin/users endpoint
+   *  for the admin panel. Undefined elsewhere. */
+  totalActions?: number;
+  /** ISO timestamp of the user's most recent completion. Null if they've
+   *  never marked anything done. Populated by /admin/users. */
+  lastActiveAt?: string | null;
+  /** Whether the user opted in to receive emails at registration. */
+  emailConsent?: boolean | null;
 }

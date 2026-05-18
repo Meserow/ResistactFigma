@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp, ExternalLink, MessageSquareQuote } from "lucide-react";
+import { ChevronDown, ChevronUp, ExternalLink, MessageSquare, MessageSquareQuote } from "lucide-react";
 import type { FactCard as FactCardData } from "../data/factCards";
+import { FactShareModal } from "./FactShareModal";
 
 // ─── Category colors ──────────────────────────────────────────────────────────
 const CATEGORY_COLORS: Record<string, string> = {
@@ -41,6 +42,7 @@ interface FactCardProps {
 
 export function FactCard({ card, onBoost, isBoosted, boostCount = 0 }: FactCardProps) {
   const [proofOpen, setProofOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const color = CATEGORY_COLORS[card.category] ?? "#475569";
   const image = CATEGORY_IMAGES[card.category];
 
@@ -137,22 +139,40 @@ export function FactCard({ card, onBoost, isBoosted, boostCount = 0 }: FactCardP
         </div>
       </div>
 
-      {/* Boost row */}
+      {/* Boost + Reply row */}
       <div className="px-4 pb-3 flex items-center justify-between gap-2">
         <p className="font-['Poppins',sans-serif] font-semibold text-[12px] text-[#de7c2d]">
           🔥 {boostCount.toLocaleString()} boost{boostCount === 1 ? "" : "s"}
         </p>
-        <button
-          onClick={() => onBoost?.(card.id)}
-          className={`flex items-center gap-1 px-3 py-1.5 rounded-xl font-['Poppins',sans-serif] font-bold text-[12px] transition-all ${
-            isBoosted
-              ? "bg-[#fd8e33]/80 text-white"
-              : "bg-[#fd8e33] hover:bg-[#e07a28] text-white shadow-sm"
-          }`}
-        >
-          🔥 {isBoosted ? "Boosted!" : "Boost"}
-        </button>
+        <div className="flex items-center gap-1.5">
+          {/* Push back — opens a pre-written comment to paste on someone
+              else's social-media post. Not a reply *to* ResistAct — it's
+              ammunition for the comments section out in the wild. */}
+          <button
+            onClick={() => setShareOpen(true)}
+            aria-label="Push back — get a pre-written comment to paste on someone else's post"
+            title="Get a pre-written comment to paste on someone else's post"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-xl font-['Poppins',sans-serif] font-bold text-[12px] transition-all bg-white hover:bg-gray-50 text-gray-700 border border-gray-200"
+          >
+            <MessageSquare size={12} strokeWidth={2.5} />
+            Push back
+          </button>
+          <button
+            onClick={() => onBoost?.(card.id)}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-xl font-['Poppins',sans-serif] font-bold text-[12px] transition-all ${
+              isBoosted
+                ? "bg-[#fd8e33]/80 text-white"
+                : "bg-[#fd8e33] hover:bg-[#e07a28] text-white shadow-sm"
+            }`}
+          >
+            🔥 {isBoosted ? "Boosted!" : "Boost"}
+          </button>
+        </div>
       </div>
+
+      {shareOpen && (
+        <FactShareModal card={card} color={color} onClose={() => setShareOpen(false)} />
+      )}
 
       {/* Proof accordion */}
       <div className="border-t border-gray-100">
