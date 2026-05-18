@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useDeferredValue } from "react";
 import { initAnalytics, analytics } from "./lib/analytics";
+import { GAMIFICATION_KEYFRAMES } from "./lib/animations";
+import { burstConfetti } from "./lib/confetti";
 import { Navbar } from "./components/Navbar";
 import { ActionCard, ActionCardData } from "./components/ActionCard";
 import { FactCard } from "./components/FactCard";
@@ -280,6 +282,11 @@ export default function App() {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   /** Active match prefs — when set, the feed re-ranks by `rankCards`. */
   const [matchPrefs, setMatchPrefs] = useState<Preferences | null>(null);
+  // Incremented every time the user applies a new Match config. Used to
+  // re-key the first 12 cards in the Acts grid so they stagger-fade in,
+  // giving the "we just built this lineup for you" feel — without animating
+  // every card on every infinite-scroll page.
+  const [staggerKey, setStaggerKey] = useState(0);
   const [editCardId, setEditCardId] = useState<number | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -1192,6 +1199,9 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-['Poppins',sans-serif]">
+      {/* Gamification keyframes injected once. Centralised in lib/animations.ts
+          so individual components only need to add a class name to opt in. */}
+      <style>{GAMIFICATION_KEYFRAMES}</style>
       <Navbar
         approval={approval}
         myCompletions={myCompletions ?? localCompletions}
@@ -1404,22 +1414,31 @@ export default function App() {
                 hope:       { icon: "🌅", label: "Hopeful",         stops: ["None", "Some", "Uplifting", "Full hope"] },
                 energy:     { icon: "⚡", label: "Motivation",      stops: ["Low",  "Mild",  "Engaged", "On fire"] },
               };
-              // Only surface tone dims the user moved off the default (1). The
-              // banner is supposed to be a digest of what's *interesting* about
-              // the current preferences — listing every dim at its default
-              // value buries the actually-set ones in noise.
+              // Show all 5 tone dims always, but visually distinguish dims at
+              // the default (1) from ones the user has moved off. Defaults
+              // render greyed-out + slimmer so they read as "background", and
+              // bumped ones get an orange accent so they pop. This gives the
+              // user a complete at-a-glance view of their match config without
+              // having to open the Match wizard, while still calling out
+              // what's been customised.
               const toneChips = (Object.keys(toneStops) as Array<keyof typeof toneStops>)
-                .filter((k) => (matchPrefs.tone[k] ?? 1) !== 1)
                 .map((k) => {
-                  const v = Math.max(0, Math.min(3, matchPrefs.tone[k] ?? 1));
-                  return { icon: toneStops[k].icon, label: toneStops[k].label, value: toneStops[k].stops[v] };
+                  const raw = matchPrefs.tone[k] ?? 1;
+                  const v = Math.max(0, Math.min(3, raw));
+                  return {
+                    icon: toneStops[k].icon,
+                    label: toneStops[k].label,
+                    value: toneStops[k].stops[v],
+                    isDefault: raw === 1,
+                  };
                 });
               const groupCount = matchPrefs.vulnerableGroups?.length ?? 0;
               return (
                 <div className="mb-4 flex flex-col gap-2 rounded-lg border border-[#fd8e33] bg-[#fd8e33]/5 px-4 py-2.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="font-['Poppins',sans-serif] text-sm text-gray-700">
-                      ✨ <strong className="text-[#23297e]">Matched for you.</strong>{" "}
+                      <span className="resistact-anim-twinkle" aria-hidden>✨</span>{" "}
+                      <strong className="text-[#23297e]">Matched for you.</strong>{" "}
                       Showing <strong className="text-[#23297e]">{displayedCards.length}</strong> {displayedCards.length === 1 ? "action" : "actions"}.
                     </p>
                     {/* Chip strip — wraps on narrow viewports. */}
@@ -1433,7 +1452,15 @@ export default function App() {
                         🗺 {settingLabel}
                       </span>
                       {toneChips.map((c) => (
-                        <span key={c.icon} className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5">
+                        <span
+                          key={c.icon}
+                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 border ${
+                            c.isDefault
+                              ? "bg-gray-50 border-gray-100 text-gray-400"
+                              : "bg-[#fd8e33]/10 border-[#fd8e33]/30 text-[#23297e] font-semibold"
+                          }`}
+                          title={c.isDefault ? `${c.label} — default (not set)` : `${c.label} bumped to ${c.value}`}
+                        >
                           {c.icon} {c.label}: {c.value}
                         </span>
                       ))}
@@ -1479,8 +1506,19 @@ export default function App() {
             ) : (
             <>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
-              {(hasActiveFilters || showPendingActsOnly ? visibleActsCards : visibleActsCards.slice(0, displayLimit)).map((card) => (
-                <div key={card.id} id={`card-${card.id}`}>
+              {(hasActiveFilters || showPendingActsOnly ? visibleActsCards : visibleActsCards.slice(0, displayLimit)).map((card, idx) => (
+                // First 12 cards get a stagger-in animation, keyed by
+                // `staggerKey` so it re-fires whenever the user applies a new
+                // Match config. Cards past index 11 don't animate — keeps
+                // infinite scroll quiet. The `key={...}-${staggerKey}` forces
+                // React to re-mount the wrapper on key change so the CSS
+                // keyframe runs from the start.
+                <div
+                  key={idx < 12 ? `${card.id}-${staggerKey}` : card.id}
+                  id={`card-${card.id}`}
+                  className={idx < 12 ? "resistact-anim-stagger" : undefined}
+                  style={idx < 12 ? { animationDelay: `${idx * 40}ms` } : undefined}
+                >
                 <ActionCard
                   card={card.isFeatured ? { ...card, featuredIllustration: <FeaturedIllustration /> } : card}
                   onBoost={handleBoost}
@@ -1606,7 +1644,19 @@ export default function App() {
             setMatchPrefs(prefs);
             savePreferences(prefs);
             setMatchOpen(false);
+            setStaggerKey((k) => k + 1);
             analytics.matchSet(prefs.time, prefs.tone);
+            // First-match-ever confetti. The flag is per-browser (localStorage)
+            // so a user who's switched devices may see it again — that's fine,
+            // the moment is "you finished the wizard for the first time HERE".
+            // Wrapped in try/catch because localStorage can throw in private
+            // browsing on some Safaris, and we never want to break the apply.
+            try {
+              if (!localStorage.getItem("resistact_first_match_done")) {
+                burstConfetti({ pieces: 180, duration: 3600 });
+                localStorage.setItem("resistact_first_match_done", "1");
+              }
+            } catch {}
             // Sync to the user's profile so prefs follow them across devices.
             // Anonymous users skip the push — their prefs stay in localStorage
             // until they sign up, at which point syncMatchPreferencesOnLogin

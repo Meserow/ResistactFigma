@@ -1,5 +1,6 @@
 import { memo, useEffect, useState } from "react";
 import { Bookmark, BookmarkCheck, CheckCircle2, Clock, Flame, Globe, MapPin, Pencil, Share2 } from "lucide-react";
+import { useAnimatedNumber, useHasChanged } from "../lib/animations";
 import { ShareModal } from "./ShareModal";
 import { SpreadTheWordModal } from "./SpreadTheWordModal";
 import { CardDetailsModal } from "./CardDetailsModal";
@@ -112,6 +113,17 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
   const isDescriptionLong = (card.description?.length ?? 0) > (compact ? 90 : READ_MORE_THRESHOLD);
 
   const completionsCount = card.completions ?? 0;
+  // Effective count for display — same logic the inline span used, lifted out
+  // so the animated-number hook can read it consistently.
+  const effectiveCount = Math.max(completionsCount, isCompleted ? 1 : 0);
+  // Tween the integer toward effectiveCount on every change. On first render
+  // it just shows the current value (no tween from 0) because
+  // useAnimatedNumber seeds its "from" ref to the initial target.
+  const animatedCount = useAnimatedNumber(effectiveCount);
+  // `pop` is true after the user has caused at least one change to the count
+  // (i.e., they clicked the button). We use it to add a one-shot pop class
+  // to the button — but keyed so it re-fires on each new change.
+  const countHasChanged = useHasChanged(effectiveCount);
 
   // ── "I did this" pill — overlaid on the header image so it reads on any
   //    background. Uses a translucent white capsule with a green check.
@@ -127,16 +139,25 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
         onClick={(e) => { e.stopPropagation(); onComplete?.(card.id); }}
         title={isCompleted ? 'Undo "I did this"' : 'Mark as done'}
         aria-label={isCompleted ? "Undo I did this" : "I did this"}
+        // `key={effectiveCount}` on the pop wrapper re-mounts that span when
+        // the count changes, so the CSS animation re-fires every click rather
+        // than only on the first one. The outer button stays stable so React
+        // doesn't tear down the click handler.
         className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] font-bold text-[12px] whitespace-nowrap shrink-0 transition-all ${
           isCompleted ? completedClasses : (onImage ? idleOnImageClasses : idleOffImageClasses)
         }`}
       >
         {isCompleted && <span aria-hidden>✓</span>}
         <span>{isCompleted ? "DONE!" : "I did this"}</span>
-        {(() => {
-          const n = Math.max(completionsCount, isCompleted ? 1 : 0);
-          return n > 0 ? <span className="opacity-80">· {n.toLocaleString()}</span> : null;
-        })()}
+        {effectiveCount > 0 && (
+          <span
+            key={effectiveCount}
+            className={`opacity-80 ${countHasChanged ? "resistact-anim-pop" : ""}`}
+            style={{ display: "inline-block" }}
+          >
+            · {animatedCount.toLocaleString()}
+          </span>
+        )}
       </button>
     );
   }
@@ -203,6 +224,12 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
     );
   }
 
+  // Bookmark icon: fire a spring-pop animation on tap. `useHasChanged` gates
+  // the first-mount case so the bounce only happens when the user actually
+  // toggles the bookmark, not when the card renders with an already-saved
+  // state.
+  const bookmarkHasChanged = useHasChanged(!!isBookmarked);
+
   // ── Shared top-right controls (pencil + bookmark) ──────────────────────────
   // On image (`light`), the icons sit inside a translucent dark pill so they
   // stay legible regardless of the photo behind them — bright/light images
@@ -227,7 +254,16 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           aria-label={isBookmarked ? "Remove bookmark" : "Bookmark"}
           className={btnCls}
         >
-          {isBookmarked ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
+          {/* `key={String(isBookmarked)}` re-mounts the icon wrapper on toggle
+              so the CSS pop animation re-fires each time, not just on first
+              mount. Gated by `bookmarkHasChanged` so a card that loads with
+              isBookmarked=true doesn't pop on page load. */}
+          <span
+            key={String(isBookmarked)}
+            className={bookmarkHasChanged ? "resistact-anim-bookmark inline-block" : "inline-block"}
+          >
+            {isBookmarked ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
+          </span>
         </button>
       </div>
     );
@@ -247,7 +283,11 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           onClick={card.pinToTop ? () => setShareOpen(true) : undefined}
         >
           {/* Illustration — use uploaded image if available, else navy illustration */}
-          <div className={`relative ${compact ? "h-[70px]" : "h-[160px]"} shrink-0 bg-[#23297e] flex items-center justify-center overflow-hidden`}>
+          {/* `resistact-anim-shimmer` overlays a diagonal highlight sweep on
+              top of the navy hero image, every 5.5s. Featured cards are the
+              ones we want to draw the eye to — the shimmer says "look here"
+              without flashing or strobing. */}
+          <div className={`resistact-anim-shimmer relative ${compact ? "h-[70px]" : "h-[160px]"} shrink-0 bg-[#23297e] flex items-center justify-center overflow-hidden`}>
             {card.topImage
               ? <img src={card.topImage} alt={card.title} className="absolute inset-0 w-full h-full object-cover object-top" />
               : card.featuredIllustration

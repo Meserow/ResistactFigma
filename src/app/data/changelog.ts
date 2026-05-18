@@ -16,6 +16,60 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.0.7",
+    date: "2026-05-17",
+    title: "Gamification animations — counters roll, bookmarks bounce, streaks burn, avatars get XP rings",
+    sections: [
+      {
+        heading: "What's new (all gated behind prefers-reduced-motion)",
+        items: [
+          "Action-count roll-up — the \"I did this · 6\" number now tweens up from 6 → 7 over 600ms with a brief scale-pop on the count, instead of snapping. Feels like the click did something.",
+          "Bookmark spring-bounce — clicking the bookmark icon pops it (scale 1 → 1.45 → back) with cubic-bezier overshoot. Only fires on a real toggle, not on the page-load render that paints already-bookmarked cards.",
+          "Streak flame — at Day 7+ a flickering 🔥 appears next to your day counter in the hero. Subtle skew + drop-shadow keyframe makes it look like it's breathing. Day 1–6 stays clean so the flame is something earned.",
+          "Sparkle twinkle — the ✨ in \"✨ Matched for you\" now twinkles (scale + rotate + opacity wobble on a 2.2s loop). Says \"this is fresh\" without being neon.",
+          "Match results stagger-in — when you apply a new Match config, the first 12 cards fade up with 40ms stagger so the lineup looks built rather than just appeared. Infinite-scroll loads stay silent.",
+          "Featured card shimmer — Boosted ⭐ cards get a diagonal highlight sweep across their navy hero image every ~5.5s. Soft, single pass, easy to ignore but draws the eye.",
+          "Avatar XP ring — your tier-colored progress ring now wraps your profile photo in the mobile menu, filling clockwise toward the next tier. Apple Watch / Strava energy.",
+          "First-match-wizard confetti — the very first time you finish the Match wizard (ever, per browser), a 180-piece confetti burst rains down. Once. Then never again.",
+        ],
+      },
+      {
+        heading: "Already in the app from before",
+        items: [
+          "The big celebration modal that fires when you mark an action DONE — full-screen fireworks, three waves of bursts, color pulses on tier-up, count-up of your total action count — has been around for a while. We didn't replace any of that; the new animations layer in around it for the smaller moments that didn't have feedback yet.",
+        ],
+      },
+      {
+        heading: "Accessibility",
+        items: [
+          "Everything in this release respects `prefers-reduced-motion`. The shared `lib/animations.ts` module exports a `prefersReducedMotion()` check, and the CSS keyframes are gated by `@media (prefers-reduced-motion: reduce) { animation: none !important; }`. So if your OS has \"Reduce motion\" on, the streak flame just sits there, the sparkle just sits there, the bookmark just toggles instantly — no movement at all.",
+          "The confetti helper also returns immediately for reduced-motion users — no DOM created, no work done.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.0.6",
+    date: "2026-05-17",
+    title: "Match banner: all 5 tone chips visible at all times, with bumped ones highlighted",
+    sections: [
+      {
+        heading: "What changed",
+        items: [
+          "The match banner under \"✨ Matched for you\" used to hide tone chips (Confrontational, Humor, Subversive, Hopeful, Motivation) when they were sitting at the default value — so all-defaults users saw just ⏱ time and 🗺 setting. Confusing if you wanted a quick \"what are my settings right now?\" check.",
+          "Now: all 5 tone chips are visible at all times. Ones at the default render greyed out + thin border (background context). Ones you've bumped off the default render in orange-accent + bold + navy text — so anything you've customised pops at a glance.",
+          "Hover any chip for a tooltip that says whether it's at default or what value it's been bumped to.",
+        ],
+      },
+      {
+        heading: "Why",
+        items: [
+          "Earlier today we'd flipped the logic the other way (only show bumped chips) because we'd briefly had a version where every tone dim showed up loudly even when nothing was set — felt like noise. This is the middle path: always show everything, but make the customised stuff visually louder than the defaults.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.0.5",
     date: "2026-05-17",
     title: "Facebook share preview now matches the new Spread the Word illustration",
