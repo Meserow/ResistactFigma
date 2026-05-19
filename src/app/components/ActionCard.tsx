@@ -417,7 +417,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
             <ImageWithFallback
               src={card.topImage}
               alt={card.title}
-              className={`w-full h-full ${card.imageContain ? "object-contain p-2" : "object-cover"}`}
+              className={`w-full h-full ${card.imageContain ? "object-contain p-2" : "object-cover object-top"}`}
               onError={() => setImageFailed(true)}
             />
             {/* Gradient overlay for readability — skipped for logo-fit cards. */}
