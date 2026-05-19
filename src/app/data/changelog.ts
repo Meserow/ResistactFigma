@@ -16,6 +16,53 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.1.9",
+    date: "2026-05-18",
+    title: "Refreshed Open Graph image, Smacks filter row in the navbar, Spread the Word card branding fix",
+    sections: [
+      {
+        heading: "New Facebook share preview",
+        items: [
+          "Swapped `og-image-v3.jpg` and `og-image.webp` for a freshly designed 1200×630 share preview (Facebook's exact 1.91:1 recommended aspect ratio, ~253 KB JPG / ~228 KB WebP). No more awkward cropping at the bottom inside the FB share popup.",
+          "Cropped to keep the JOIN-THE-RESISTANCE logo, capitol illustration, URL band, and the four-icon 'tool for everyone' panel all front-and-center; the decorative footer strip is trimmed off.",
+        ],
+      },
+      {
+        heading: "Smacks filter row moved into the navbar",
+        items: [
+          "The tag chips (Corruption, Economy, Fascism, MAGA, ResistAct, Trump, Voting Rights, …) and the Top / New / Pending sort toggle used to live in their own row below the 'What's a Smack?' intro card — making two filter rows stacked on top of each other.",
+          "Lifted the smacks filter state (active tags + sort) up to App so both Navbar and SmacksPage can read it. Navbar now renders the chips + sort inline in its filter bar when you're on The Smacks tab, sitting on one row with the act/fact/smack counts.",
+          "Hid the generic 'SORT Popular' dropdown on The Facts and The Smacks since it only ever drove The Acts feed — having it on the other tabs was a dead button.",
+        ],
+      },
+      {
+        heading: "Spread the Word card image fix",
+        items: [
+          "The pinned 'Spread the Word about ResistAct' card was still showing the old 'RESISTACT — CITIZEN ACTION' illustration because that image URL was baked into the server-side KV record. `resolveCard()` now overrides the topImage for any pinToTop card with the canonical `/og-image-v3.jpg`, same pattern as the description override that was already there.",
+          "Add to The Smacks / Submit to The Smacks button now lives in the top-right corner of the 'What's a Smack?' intro card — putting the submission affordance right next to the explanation of what users are creating.",
+        ],
+      },
+      {
+        heading: "Per-Smack share previews (the saga)",
+        items: [
+          "Tried hard to get Facebook to render a different OG preview for each smack share URL (`/s/<id>.html` static stubs with per-smack og:image). Removed the `<meta http-equiv=\"refresh\">` redirect after discovering FB follows it and then re-reads the destination's OG tags. Stripped the stub down to bare minimum HTML to rule out structural parser issues. Tested with WebP images, JPG images, the homepage og-image, fresh cache-bust URLs FB had never seen — every scrape still returned 'Could not resolve hostname / Response Code 0' on the `/s/<id>.html` path while the homepage URL scraped fine.",
+          "Conclusion: something at the AWS / CloudFront layer is blocking Facebook's specific scraper IPs on the `/s/*` path. The HTML is correct, the file is reachable from every other source. Investigation paused for now — clipboard-copy + paste into Facebook's composer remains the working share path for individual smacks.",
+        ],
+      },
+      {
+        heading: "Polish",
+        items: [
+          "Quick Match Tool modal tightened up vertically — title + subtitle on one row, slider gaps reduced from 0.5 to 0, less padding around the section divider. Modal should now fit on most screens without scrolling.",
+          "Match-results banner chips (`5–10 min`, `Confrontational: High`, etc.) now use simple navy line-icons from lucide-react instead of the previous mix of colourful emojis, so the strip reads as one unified UI element.",
+          "Welcome line on the logged-in hero changed from 'Welcome back, [name]' to 'Welcome back to the resistance, [name]'.",
+          "Hero match button renamed from 'Quick Acts for Me' to 'Quick Act Matching Tool', subtitle from 'Click here to tailor the options' to 'Let's tailor the options'.",
+          "Feedback button now opens a mailto: link AND copies the message to the clipboard, with the success screen explaining both paths — works whether your default mail handler is Apple Mail or Gmail-in-the-browser.",
+          "Smack share clipboard-write fixed: PNG canvas conversion (Chrome rejects WebP from clipboard), Promise-based ClipboardItem so the user-gesture context isn't lost, clipboard write before window.open so focus doesn't move first.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.1.6",
     date: "2026-05-18",
     title: "Smack share — stripped-down OG stubs to isolate why Facebook scraper kept failing",
