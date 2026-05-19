@@ -634,6 +634,57 @@ app.post("/make-server-9eb1ae04/admin/sweep", async (c) => {
   }
 });
 
+// ─── ADMIN: Sync Supabase auth users → KV approval records ───────────────────
+// Lists every Supabase auth user and seeds a pending KV record for anyone who
+// signed up but whose /auth/status call never completed (network blip, cold
+// start, etc.). Safe to run repeatedly — skips users who already have a record.
+app.post("/make-server-9eb1ae04/admin/sync-auth-users", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const sb = adminClient();
+
+    // Fetch all Supabase auth users (up to 1000)
+    const { data: authData, error: authErr } = await sb.auth.admin.listUsers({ perPage: 1000 });
+    if (authErr) return c.json({ error: `Failed to list auth users: ${authErr.message}` }, 500);
+    const authUsers = authData?.users ?? [];
+
+    // Fetch existing KV records
+    const existing = await kv.getByPrefix("user:approval:") as any[];
+    const knownIds = new Set(existing.filter(Boolean).map((r: any) => r.userId));
+
+    const seeded: { email: string; name: string }[] = [];
+    const alreadyHad: number = knownIds.size;
+
+    for (const u of authUsers) {
+      if (knownIds.has(u.id)) continue;
+      const record = {
+        userId: u.id,
+        email: u.email ?? "",
+        name:
+          u.user_metadata?.full_name ??
+          u.user_metadata?.name ??
+          u.email?.split("@")[0] ??
+          "Resistor",
+        avatar: u.user_metadata?.avatar_url ?? null,
+        status: isAdminEmail(u.email) ? "approved" : "pending",
+        isAdmin: isAdminEmail(u.email),
+        provider: u.app_metadata?.provider ?? "email",
+        createdAt: u.created_at ?? new Date().toISOString(),
+      };
+      await kv.set(`user:approval:${u.id}`, record);
+      seeded.push({ email: record.email, name: record.name });
+    }
+
+    console.log(`Auth sync by ${admin.record.name}: ${authUsers.length} auth users, ${alreadyHad} already in KV, ${seeded.length} seeded`);
+    return c.json({ authTotal: authUsers.length, alreadyHad, seeded });
+  } catch (err) {
+    return c.json({ error: `Sync failed: ${err}` }, 500);
+  }
+});
+
 // ─── ADMIN: Scan all KV cards for truncated descriptions ─────────────────────
 app.get("/make-server-9eb1ae04/admin/scan-truncated", async (c) => {
   try {

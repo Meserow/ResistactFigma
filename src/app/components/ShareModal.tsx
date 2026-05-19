@@ -78,21 +78,7 @@ function buildPlatforms(cardId: number, title: string, description: string) {
       bg: "#1877F2",
       fg: "#fff",
       icon: <FacebookIcon />,
-      action: () => {
-        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-        const fbUrl = `https://${isIOS ? "m.facebook.com" : "www.facebook.com"}/sharer/sharer.php?u=${enc(url)}&quote=${enc(title)}`;
-        if (isIOS) {
-          const a = document.createElement("a");
-          a.href = fbUrl;
-          a.target = "_blank";
-          a.rel = "noopener,noreferrer";
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-        } else {
-          window.open(fbUrl, "_blank");
-        }
-      },
+      action: () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${enc(url)}&quote=${enc(title)}`, "_blank"),
     },
     {
       id: "threads",
@@ -108,7 +94,9 @@ function buildPlatforms(cardId: number, title: string, description: string) {
       bg: "#0085FF",
       fg: "#fff",
       icon: <BlueSkyIcon />,
-      action: () => window.open(`https://bsky.app/intent/compose?text=${enc(text)}`, "_blank"),
+      ...(/iPhone|iPad|iPod/i.test(navigator.userAgent)
+        ? { copyText: text, copyNote: "Text copied — paste it into Bluesky!" }
+        : { action: () => window.open(`https://bsky.app/intent/compose?text=${enc(text)}`, "_blank") }),
     },
     {
       id: "whatsapp",

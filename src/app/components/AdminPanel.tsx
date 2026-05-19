@@ -280,6 +280,25 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
     }
   }
 
+  const [syncing, setSyncing] = useState(false);
+  async function syncAuthUsers() {
+    setSyncing(true);
+    try {
+      const res = await fetch(`${API}/admin/sync-auth-users`, { method: "POST", headers: authHeaders });
+      const data = await res.json();
+      if (!res.ok) { alert(data.error ?? "Sync failed"); return; }
+      const msg = data.seeded.length === 0
+        ? `All ${data.authTotal} Supabase users already have records.`
+        : `Seeded ${data.seeded.length} missing user(s): ${data.seeded.map((u: any) => u.email).join(", ")}`;
+      alert(msg);
+      await fetchUsers();
+    } catch {
+      alert("Network error during sync.");
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   async function fetchPendingCards() {
     setCardsLoading(true);
     setCardsError(null);
@@ -759,6 +778,15 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
                     <p className="font-['Poppins',sans-serif] text-[10px] text-gray-400 uppercase tracking-wide">{label}</p>
                   </div>
                 ))}
+                <button
+                  onClick={syncAuthUsers}
+                  disabled={syncing}
+                  title="Seed KV records for any Supabase auth users who slipped through signup"
+                  className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-['Poppins',sans-serif] font-semibold rounded-lg bg-[#23297e]/10 text-[#23297e] hover:bg-[#23297e]/20 disabled:opacity-50 transition-colors whitespace-nowrap"
+                >
+                  <RefreshCw size={11} className={syncing ? "animate-spin" : ""} />
+                  Sync from Supabase
+                </button>
               </div>
 
               {/* User tabs */}
