@@ -64,6 +64,8 @@ interface MatchMeModalProps {
   completedIds?: number[];
   /** Cards the user has boosted — ranked higher in match results. */
   boostedIds?: number[];
+  /** Which wizard step to open on. 0 = tone/time/setting, 1 = groups. */
+  initialStep?: 0 | 1;
 }
 
 // 4-stop slider for the "where" preference.
@@ -160,8 +162,8 @@ function ProgressDots({ step, total }: { step: number; total: number }) {
   );
 }
 
-export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJoinResistance, completedIds, boostedIds }: MatchMeModalProps) {
-  const [step, setStep] = useState<Step>(0);
+export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJoinResistance, completedIds, boostedIds, initialStep = 0 }: MatchMeModalProps) {
+  const [step, setStep] = useState<Step>(initialStep);
   const [prefs, setPrefs] = useState<Preferences>(() => loadPreferences() ?? DEFAULT_PREFERENCES);
   const cardRef = useRef<HTMLDivElement>(null);
 

@@ -193,6 +193,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
   const actsInlinePills = [...actsTopVisible, ...actsExtraVisible];
   const actsMoreOpen = openFilter === "acts-more";
   const actsMoreSelectedCount = actsOverflow.filter((c) => actsCatsSelected.includes(c)).length;
+  const actsCategoryOpen = openFilter === "Category";
   const locOptions = actsLocations ?? [];
   const locSelected = activeFilters["Location"] ?? [];
   const locOpen = openFilter === "Location";

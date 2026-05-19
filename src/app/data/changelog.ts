@@ -292,6 +292,26 @@ export const CHANGELOG: ChangelogEntry[] = [
     ],
   },
   {
+    version: "1.1.21",
+    date: "2026-05-18",
+    title: "Quick-time filter rename, category dropdown, orange match-me toast",
+    sections: [
+      {
+        heading: "Filters",
+        items: [
+          "Renamed the 'Quick Actions' filter chip to 'I only have 5 minutes tops!' — reads less like a category and more like the user's actual situation.",
+          "Acts category filter is now a single dropdown button next to Location. The inline category pills (top-N plus a 'more' overflow) are gone — every category lives inside the dropdown together, so the filter row stays tidy regardless of how many categories are in the dataset.",
+        ],
+      },
+      {
+        heading: "Toast polish",
+        items: [
+          "Scroll-nudge match-me toast redesigned: orange background, larger two-line copy ('Finding it hard to choose?' + 'Let us match you in 30 seconds.'), white CTA button with orange text. Wider (92 vw capped at 480 px) and positioned slightly higher so it clears the footer.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.1.1",
     date: "2026-05-18",
     title: "Always-on navy footer, lower-right match-me toast, bolder hero callout",
