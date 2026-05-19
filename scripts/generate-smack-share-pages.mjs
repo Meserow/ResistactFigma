@@ -124,9 +124,20 @@ function escapeHtml(s) {
 }
 
 function pageFor(smack) {
-  const absoluteImage = smack.imageUrl.startsWith("http")
-    ? smack.imageUrl
-    : `${SITE}${smack.imageUrl}`;
+  // Prefer the WebP sibling for og:image when one likely exists, because
+  // Facebook's scraper has aggressive timeouts and rejects oversized images
+  // — a multi-MB PNG can fail to scrape (response code 0 in the FB debug
+  // tool). The webp sibling pattern matches what fetchImageBlob does in
+  // SmacksPage. Falls back to the original URL for absolute URLs or for
+  // formats other than png/jpg.
+  function webpSibling(src) {
+    if (!/^\/[^/]/.test(src)) return null;          // only root-relative paths
+    if (!/\.(jpe?g|png)(\?|#|$)/i.test(src)) return null;
+    return src.replace(/\.(jpe?g|png)(\?|#|$)/i, ".webp$2");
+  }
+  const webp = webpSibling(smack.imageUrl);
+  const ogPath = webp ?? smack.imageUrl;
+  const absoluteImage = ogPath.startsWith("http") ? ogPath : `${SITE}${ogPath}`;
   const title = `${smack.title} — ResistAct`;
   const description = smack.caption
     ? smack.caption.slice(0, 280)
