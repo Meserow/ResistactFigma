@@ -16,6 +16,35 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.1.15",
+    date: "2026-05-19",
+    title: "Spread the Word always-on, Smacks Facebook share fix, OG image cache-bust to v4, title update",
+    sections: [
+      {
+        heading: "Spread the Word always shows first",
+        items: [
+          "The 'Spread the Word about ResistAct' card is now pinned to position 1 of the Acts feed UNCONDITIONALLY — search, category filter, location filter, Quick Actions toggle, Match Me preferences, the 'Newest' / 'A–Z' sort orders, even after you mark it 'I did this' or run a Match Me with zero results. The pinned card is now pulled out of the working set BEFORE any filter / scorer runs and prepended back at the end, so nothing in the pipeline can drop it.",
+          "Same behaviour whether you're logged in, logged out, an admin, or an anonymous visitor.",
+        ],
+      },
+      {
+        heading: "Smacks Facebook share fixed",
+        items: [
+          "The Smacks Facebook share button now opens FB's `sharer.php` popup with each smack's per-smack share URL (`/s/<id>.html`) — and those per-smack pages now correctly point og:image at the smack's actual image (the diagnostic that hard-coded them to the homepage OG was finally reverted, after burning many hours wondering why every smack preview was the homepage image).",
+          "After deploy, sharing a smack on Facebook will show that specific smack as the FB post preview — no clipboard paste needed. The smack image is also copied to your clipboard as a belt-and-suspenders backup if you'd rather use it in a regular FB post or DM.",
+          "Note: existing FB caches for previously-shared smacks need a one-time refresh in the FB Sharing Debugger (paste the `/s/<id>.html` URL and click Scrape Again twice) — after that, new shares of the same smack auto-preview correctly.",
+        ],
+      },
+      {
+        heading: "Open Graph image cache-bust + title update",
+        items: [
+          "Renamed the homepage OG image file from `og-image-v3.jpg` to `og-image-v4.jpg`. The `v3` filename had been cached by Facebook with the OLD blue-URL artwork; even after the file's bytes on prod were swapped for the new orange-URL design, FB kept returning the cached blue version because it keys its image cache by URL. Same trick we used going v2→v3 — fresh filename forces FB to re-fetch.",
+          "Updated `<title>`, `og:title`, and `twitter:title` from 'ResistAct — Citizen Action' to 'ResistAct — Join The Resistance' so the FB share card's title matches the new branding.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.1.10",
     date: "2026-05-18",
     title: "Updated Open Graph image, category dropdown deduplication, Spread the Word card polish",

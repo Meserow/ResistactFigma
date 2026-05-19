@@ -528,17 +528,26 @@ export default function App() {
       return true;
     });
 
-    const filtered = applyFilters(gated);
+    // The "Spread the Word about ResistAct" card (pinToTop) must show up at
+    // the very top of the feed UNCONDITIONALLY — filters, search query,
+    // Quick Actions, Match Me preferences, sort orders, login state — none
+    // of them should be able to push it down or hide it. Pull pinToTop cards
+    // OUT of the working set before any filtering / ranking happens, then
+    // prepend them to whatever the rest of the pipeline produces.
+    const pinnedAlwaysShow = gated.filter((c) => c.pinToTop);
+    const unpinnedGated = gated.filter((c) => !c.pinToTop);
 
-    // Hoist any `pinToTop` cards to the top of the resulting feed regardless
-    // of which sort or match mode produced the rest. Reserved for the
-    // canonical "Spread the Word about ResistAct" card so it's always the
-    // user's first impression.
-    const pinFirst = (arr: ActionCardData[]): ActionCardData[] => {
-      const pinned = arr.filter((c) => c.pinToTop);
-      if (pinned.length === 0) return arr;
-      return [...pinned, ...arr.filter((c) => !c.pinToTop)];
-    };
+    const filtered = applyFilters(unpinnedGated);
+
+    // Helper: prepend the always-show pinned card(s) to any result array.
+    // Filters and match-me operate only on `filtered` / `rankable` below,
+    // so the pinned card never gets dropped by category/location/Match Me/etc.
+    const withPinned = (arr: ActionCardData[]): ActionCardData[] =>
+      pinnedAlwaysShow.length === 0
+        ? arr
+        : [...pinnedAlwaysShow, ...arr.filter((c) => !c.pinToTop)];
+    // Backwards-compat alias used further down — same behaviour now.
+    const pinFirst = withPinned;
 
     // Push completed cards to the bottom while preserving relative order
     // within each group. Applied AFTER sort/rank but BEFORE pinFirst so a
@@ -602,7 +611,9 @@ export default function App() {
         }
         return pinFirst(completedLast(combined));
       }
-      return [];
+      // No matches AND no pending — still show the pinned Spread the Word
+      // card so it's never the case that an empty match-result hides it.
+      return withPinned([]);
     }
 
     if (sortBy === "az") {
