@@ -109,6 +109,16 @@ interface ActionCardProps {
 function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdit, onApprove, onInfoClick, isBoosted, isCompleted, isBookmarked, canEdit, isPending, compact = false, accessToken }: ActionCardProps) {
   const [shareOpen, setShareOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
+
+  function openShare() {
+    const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+    if (isMobile && typeof navigator.share === "function") {
+      const url = `${window.location.origin}?act=${card.id}`;
+      navigator.share({ title: card.title, text: `${card.title} — Join the resistance!`, url }).catch(() => {});
+    } else {
+      setShareOpen(true);
+    }
+  }
   const [flagOpen, setFlagOpen] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
   useEffect(() => { setImageFailed(false); }, [card.topImage]);
@@ -213,7 +223,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           </button>
         )}
         <button
-          onClick={(e) => { e.stopPropagation(); setShareOpen(true); }}
+          onClick={(e) => { e.stopPropagation(); card.pinToTop ? setShareOpen(true) : openShare(); }}
           title={card.pinToTop ? "Spread the word!" : "Share"}
           aria-label={`Share ${card.title}`}
           className={`w-7 h-7 flex items-center justify-center rounded-full backdrop-blur-sm transition-colors ${
