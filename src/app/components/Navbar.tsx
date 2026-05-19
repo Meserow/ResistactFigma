@@ -2,7 +2,7 @@ import logoImg from "../../assets/resistact-logo-horizontal.webp";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import type { ReactNode } from "react";
 import { FACT_CARDS } from "../data/factCards";
-import { Bell, Bookmark, ChevronDown, Clock, Flag, Flame, Info, LogOut, MapPin, Menu, MessageCircle, Search, ShieldCheck, SlidersHorizontal, Sparkles, X, Zap } from "lucide-react";
+import { Bell, Bookmark, ChevronDown, Clock, Flag, Flame, Info, LogOut, MapPin, Menu, MessageCircle, Search, ShieldCheck, SlidersHorizontal, Sparkles, Tag, X, Zap } from "lucide-react";
 import type { UserApproval } from "../lib/supabase";
 import { TierProgress } from "./TierProgress";
 import { getUserTier } from "../lib/tiers";
@@ -70,9 +70,19 @@ interface NavbarProps {
   siteUpdating?: boolean;
   onToggleSiteUpdating?: (enabled: boolean) => void;
   pendingUsersCount?: number;
+  // ── Smacks filter / sort, surfaced in the navbar's filter bar so chips and
+  //   sort sit on one row with the stats counts (instead of a second row
+  //   below the "What's a Smack" intro card). ──
+  smacksAvailableTags?: string[];
+  smacksActiveTags?: string[];
+  onSmacksTagToggle?: (tag: string) => void;
+  onSmacksTagsClear?: () => void;
+  smacksSortBy?: "top" | "new" | "pending";
+  onSmacksSortChange?: (s: "top" | "new" | "pending") => void;
+  smacksIsAdmin?: boolean;
 }
 
-export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick, onPendingSmacksClick, onPendingActsClick, onFlaggedActsClick, pendingActsCount, pendingSmacksCount, flagsCount = 0, pendingUsersCount = 0, onTierClick, siteUpdating, onToggleSiteUpdating }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
+export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick, onPendingSmacksClick, onPendingActsClick, onFlaggedActsClick, pendingActsCount, pendingSmacksCount, flagsCount = 0, pendingUsersCount = 0, onTierClick, siteUpdating, onToggleSiteUpdating, smacksAvailableTags, smacksActiveTags, onSmacksTagToggle, onSmacksTagsClear, smacksSortBy, onSmacksSortChange, smacksIsAdmin }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
   // Acts filters in render order: Location dropdown first, Category pills second.
   // Used for "Clear all" and the mobile filter row that shows just the names.
   const ACTS_FILTER_OPTIONS: Record<string, string[]> = {
@@ -590,9 +600,74 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
         )}
 
         {activeTab === "receipts" ? (
-          /* ── Smacks: no filters in the navbar. The SmacksPage shows its own
-                tag chips + sort toggle, and the intro lives inline above. */
-          null
+          /* ── Smacks: tag chips + Top/New/Pending sort, rendered here in the
+                navbar's filter row so they sit on a single line with the
+                stats counts. SmacksPage no longer renders its own copy of
+                this row — state is lifted to App and threaded through. */
+          <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
+            {(smacksAvailableTags ?? []).map((tag) => {
+              const selected = smacksActiveTags?.includes(tag);
+              return (
+                <button
+                  key={tag}
+                  onClick={() => onSmacksTagToggle?.(tag)}
+                  className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-semibold transition-all border whitespace-nowrap ${
+                    selected
+                      ? "bg-[#23297e] text-white border-[#23297e]"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-[#23297e] hover:text-[#23297e]"
+                  }`}
+                >
+                  <Tag size={10} />
+                  {tag}
+                </button>
+              );
+            })}
+            {smacksActiveTags && smacksActiveTags.length > 0 && (
+              <button
+                onClick={onSmacksTagsClear}
+                className="px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] text-gray-500 hover:text-gray-700 border border-dashed border-gray-300 hover:border-gray-400 transition-all"
+              >
+                Clear
+              </button>
+            )}
+            {/* Smacks sort — Top / New / Pending(admin). Renders inline so the
+                chips and the sort live in the same flex row. */}
+            <div className="ml-auto flex items-center gap-1 p-1 rounded-xl bg-gray-100 shrink-0">
+              <button
+                onClick={() => onSmacksSortChange?.("top")}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-['Poppins',sans-serif] font-bold text-xs transition-all ${
+                  smacksSortBy === "top"
+                    ? "bg-white text-[#ed6624] shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <Flame size={12} />
+                Top
+              </button>
+              <button
+                onClick={() => onSmacksSortChange?.("new")}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-['Poppins',sans-serif] font-bold text-xs transition-all ${
+                  smacksSortBy === "new"
+                    ? "bg-white text-[#23297e] shadow-sm"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                New
+              </button>
+              {smacksIsAdmin && (
+                <button
+                  onClick={() => onSmacksSortChange?.("pending")}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-['Poppins',sans-serif] font-bold text-xs transition-all ${
+                    smacksSortBy === "pending"
+                      ? "bg-white text-red-500 shadow-sm"
+                      : "text-gray-500 hover:text-red-500"
+                  }`}
+                >
+                  Pending
+                </button>
+              )}
+            </div>
+          </div>
         ) : activeTab === "facts" ? (
           /* ── Facts: top-N category pills + "More" dropdown ───────────── */
           <div ref={factsPillsRef} className="flex-1 min-w-0 flex items-center gap-1">
@@ -783,7 +858,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
         {/* RIGHT GROUP — fixed width, always visible on the right */}
         <div className="shrink-0 flex items-center gap-3 pl-3 border-l border-gray-200">
           {/* Sort by dropdown */}
-          {onSortChange && (
+          {onSortChange && activeTab === "acts" && (
             <div className="relative">
               <button
                 onClick={() => setOpenFilter(openFilter === "sort" ? null : "sort")}

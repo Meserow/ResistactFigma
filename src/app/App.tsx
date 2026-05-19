@@ -79,17 +79,26 @@ const HEADERS = { "Content-Type": "application/json", Authorization: `Bearer ${p
 const SPREAD_THE_WORD_DESCRIPTION =
   "Resistance grows one share at a time — but only if you actually share. Pick a friend who's been doomscrolling and send this their way. If everyone here invites two friends, ResistAct doubles by Tuesday. That's how movements actually scale — not virally, but two-by-two, through people who trust each other.";
 
+// Canonical image for the pinToTop "Spread the Word" card. Server-side cards
+// still have the old "RESISTACT — CITIZEN ACTION" illustration cached at a
+// Supabase storage URL; we override it here so the card always picks up the
+// current branding (`/og-image-v3.jpg` with the JOIN THE RESISTANCE logo).
+const SPREAD_THE_WORD_TOP_IMAGE = "/og-image-v3.jpg";
+
 function resolveCard(raw: ServerCard): ActionCardData {
+  // Compute the topImage with the normal priority order (explicit URL beats
+  // key beats undefined), THEN clobber it for the pinned Spread-the-Word
+  // card so the latest branded image always shows regardless of what's in
+  // the DB. Same idea as the description override below.
+  const baseTopImage = (raw.topImageUrl && raw.topImageUrl.length > 0)
+    ? raw.topImageUrl
+    : (raw.topImageKey ? IMAGE_MAP[raw.topImageKey] : undefined);
   return {
     ...raw,
     boosts:       raw.boosts ?? raw.spotsUsed ?? 0,
     completions:  raw.completions ?? 0,
     targetUrl:    raw.targetUrl ?? undefined,
-    // Explicit topImageUrl wins over topImageKey so admin edits to the image
-    // override the seed-provided org logo. Empty/null URL falls back to the key.
-    topImage:     (raw.topImageUrl && raw.topImageUrl.length > 0)
-                    ? raw.topImageUrl
-                    : (raw.topImageKey ? IMAGE_MAP[raw.topImageKey] : undefined),
+    topImage:     raw.pinToTop ? SPREAD_THE_WORD_TOP_IMAGE : baseTopImage,
     authorAvatar: raw.authorAvatarKey ? IMAGE_MAP[raw.authorAvatarKey] : (raw.authorAvatarUrl ?? undefined),
     // Override description for the pinToTop card so it's always current.
     description:  raw.pinToTop ? SPREAD_THE_WORD_DESCRIPTION : raw.description,
@@ -317,6 +326,11 @@ export default function App() {
   const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>({});
   const [activeTab, setActiveTab] = useState<"facts" | "acts" | "receipts">("acts");
   const [smacksPendingVersion, setSmacksPendingVersion] = useState(0);
+  // ── Smacks filter / sort state lifted up so the navbar can render the same
+  //   chips + sort toggle as the SmacksPage. Keeping a single source of truth
+  //   here means both places stay in sync without prop-callbacks dance. ──
+  const [smacksActiveTags, setSmacksActiveTags] = useState<string[]>([]);
+  const [smacksSortBy, setSmacksSortBy] = useState<"top" | "new" | "pending">("top");
   const [pendingActsVersion, setPendingActsVersion] = useState(0);
   const [showPendingActsOnly, setShowPendingActsOnly] = useState(false);
   const [deepLinkId, setDeepLinkId] = useState<number | null>(() => {
@@ -325,6 +339,15 @@ export default function App() {
     return isNaN(id) ? null : id;
   });
   const [receipts, setReceipts] = useState<ReceiptCard[]>([]);
+  // Derived once per `receipts` change so the navbar's chip rendering doesn't
+  // recompute on every render. Must be declared AFTER `receipts` (temporal
+  // dead zone — referencing receipts earlier crashed with "Cannot access
+  // 'receipts' before initialization"). STATIC_SMACKS is constant so it's
+  // safe to fold in here. Tags sorted alphabetically for stable chip order.
+  const smacksAvailableTags = useMemo(
+    () => Array.from(new Set([...receipts, ...STATIC_SMACKS].flatMap((r) => r.tags))).sort(),
+    [receipts],
+  );
   const [searchQuery, setSearchQuery] = useState("");
   // useDeferredValue lets React keep the input responsive: keystrokes update
   // `searchQuery` synchronously (so the textbox shows them instantly), while
@@ -1309,6 +1332,15 @@ export default function App() {
         onQuickActionsChange={setQuickActionsOnly}
         sortBy={sortBy}
         onSortChange={setSortBy}
+        smacksAvailableTags={smacksAvailableTags}
+        smacksActiveTags={smacksActiveTags}
+        onSmacksTagToggle={(t) => setSmacksActiveTags((prev) =>
+          prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]
+        )}
+        onSmacksTagsClear={() => setSmacksActiveTags([])}
+        smacksSortBy={smacksSortBy}
+        onSmacksSortChange={setSmacksSortBy}
+        smacksIsAdmin={isAdminUser}
         heroSlot={
           approval
             ? activeTab === "acts"
@@ -1365,6 +1397,10 @@ export default function App() {
             pendingFilterVersion={smacksPendingVersion}
             onComplete={handleComplete}
             completedSmackIds={completedCards}
+            activeTags={smacksActiveTags}
+            onActiveTagsChange={setSmacksActiveTags}
+            sortBy={smacksSortBy}
+            onSortByChange={setSmacksSortBy}
           />
         ) : activeTab === "facts" ? (
           /* ── Facts view ── */

@@ -66,7 +66,7 @@ export function LoggedInHero({ userId, name, newActionsToday, onMatchClick, onAs
   }, [userId]);
 
   const firstName = name.split(/\s+/)[0] || name;
-  const greeting = isFirstVisit ? "Welcome" : "Welcome back";
+  const greeting = isFirstVisit ? "Welcome to the resistance" : "Welcome back to the resistance";
   const subline =
     newActionsToday > 0
       ? `${newActionsToday} new action${newActionsToday === 1 ? "" : "s"} today.`
