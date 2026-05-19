@@ -124,14 +124,21 @@ function escapeHtml(s) {
 }
 
 function pageFor(smack) {
-  // DIAGNOSTIC: temporarily use the homepage og-image (which FB has
-  // successfully scraped) for every smack, to test whether FB's failure
-  // is the per-smack /Smacks/*.webp images vs the HTML page itself.
-  // If FB starts scraping smack share pages successfully with this in
-  // place, we know the issue is the smack images (format, path, etc.)
-  // and we'll switch back to per-smack images with a fix. If it still
-  // fails, the issue isn't the og:image at all.
-  const absoluteImage = `${SITE}/og-image-v3.jpg`;
+  // Use the SMACK's own image as og:image so each per-smack share page
+  // shows that specific smack as the FB preview (not the homepage OG).
+  // Prefer the WebP sibling if the original is a PNG/JPG — FB scrapers
+  // are happiest with smaller files. (An earlier diagnostic version of
+  // this script swapped this for `${SITE}/og-image-v3.jpg` while we were
+  // debugging FB's stuck cache — left in only as a comment so the
+  // history of that experiment isn't lost.)
+  function webpSibling(src) {
+    if (!/^\/[^/]/.test(src)) return null;
+    if (!/\.(jpe?g|png)(\?|#|$)/i.test(src)) return null;
+    return src.replace(/\.(jpe?g|png)(\?|#|$)/i, ".webp$2");
+  }
+  const webp = webpSibling(smack.imageUrl);
+  const ogPath = webp ?? smack.imageUrl;
+  const absoluteImage = ogPath.startsWith("http") ? ogPath : `${SITE}${ogPath}`;
   const title = `${smack.title} — ResistAct`;
   const description = smack.caption
     ? smack.caption.slice(0, 280)

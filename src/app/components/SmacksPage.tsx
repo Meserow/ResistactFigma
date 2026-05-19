@@ -507,24 +507,25 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
   }
 
   async function handleFacebookShare(r: ReceiptCard) {
-    // Use the per-smack share page (e.g. /s/5001.html) so Facebook's scraper
-    // pulls the smack's OWN og:image. Each `/s/<id>.html` is a tiny static
-    // HTML stub generated at build time by scripts/generate-smack-share-pages.mjs
-    // with the smack's image as og:image. Clicking the link in Facebook
-    // bounces the user to /?smack=<id> on the main app via meta-refresh.
+    // Open Facebook's sharer.php popup with the per-smack share page URL.
+    // Each `/s/<id>.html` has og:image set to that smack's actual image
+    // (see scripts/generate-smack-share-pages.mjs), so the FB share dialog
+    // shows the smack itself as the preview — no clipboard paste needed.
+    // For user-submitted smacks (id < 5000) that don't have static pages
+    // yet, fall back to the homepage URL.
     //
-    // Note: only STATIC_SMACKS (id ≥ 5000) have per-smack pages today —
-    // user-submitted smacks fall back to the homepage URL until the edge
-    // function gains a /s/<id> handler.
+    // We still copy the image to the clipboard as belt-and-suspenders —
+    // if the user closes the share dialog and wants to paste into a regular
+    // post or DM, the image is right there.
+    //
+    // CRITICAL ORDER (Chrome clipboard rules):
+    //   1. Start clipboard write SYNCHRONOUSLY (preserves user-gesture).
+    //   2. Open the Facebook sharer popup synchronously (popup-blocker rule).
+    //   3. Await the clipboard promise.
     const hasStaticPage = r.id >= 5000;
     const sharedUrl = hasStaticPage
       ? `https://www.resistact.org/s/${r.id}.html`
       : "https://www.resistact.org";
-
-    // CRITICAL ORDER (Chrome clipboard rules):
-    //   1. Start clipboard write SYNCHRONOUSLY (preserves user-gesture).
-    //   2. Open the Facebook sharer dialog synchronously (popup-blocker rule).
-    //   3. Await the clipboard promise.
     const clipboardPromise = startClipboardWrite(r);
     const fbShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(sharedUrl)}`;
     window.open(fbShareUrl, "_blank", "noopener,noreferrer");
