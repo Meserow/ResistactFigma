@@ -16,6 +16,51 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.1.2",
+    date: "2026-05-18",
+    title: "New ResistAct logo lockup, ACT-orange rebrand, smoother Smacks sharing",
+    sections: [
+      {
+        heading: "New logo + brand color",
+        items: [
+          "New ResistAct logo lockup with the fist + flame, italicised 'ResistAct' wordmark, and 'JOIN THE RESISTANCE' tagline. Replaces the older horizontal logo in the navbar and homepage hero.",
+          "Repainted the entire UI's accent orange from the old peach (#fd8e33) to the deeper, more saturated ACT-orange (#ed6624) that lives inside the new logo — applied to 130 spots across 30 files, including the 'Join The Resistance' button, hero pills, focus rings, tier flames, and link hovers. Hover shades darkened to match.",
+          "Tightened the hero panel: smaller logo, less vertical padding above and below, and the social pills sit closer to the wordmark so the page reaches the first action card sooner.",
+        ],
+      },
+      {
+        heading: "Smacks sharing fixes",
+        items: [
+          "Facebook share button now opens the actual Facebook composer (sharer.php) instead of dumping you on facebook.com — landing in an active 'create post' box with the image already copied to your clipboard so you can paste with ⌘V.",
+          "Instagram share used to silently download the image to disk; now it copies the image to your clipboard first (same as Facebook), then opens Instagram in a new tab. One paste in the post composer and you're done.",
+          "The 'Shared' badge on a smack card used to replace the Share button entirely — once you shared once, you couldn't open the modal again. It's now a green 'Share again' button so you can keep going across platforms.",
+          "Swapped the Smacks filter chips and sort toggle so the chips sit on the left and the sort sits on the right — matches every other tab and stops the chips from wrapping under the 'What is a Smack' header.",
+        ],
+      },
+      {
+        heading: "Social-share preview",
+        items: [
+          "New 1200×800 Open Graph image (og-image-v3.jpg) with the new ResistAct logo, Margaret Mead quote, feature icons, and 'Together, We Act' footer — replaces the old illustrated preview that Facebook had cached. Filename bumped from v2 to v3 to force every social platform to re-scrape.",
+        ],
+      },
+      {
+        heading: "Report-a-problem modal",
+        items: [
+          "Shortened the flag reason labels from full sentences ('Description or details are wrong') to short single-line phrases ('Details are wrong') so the radio options fit on one row each instead of wrapping to three.",
+          "The modal now sizes to your viewport with an internal scroll region — the Cancel / Send report buttons stay pinned at the bottom even on tiny phones, and the radio options no longer push them off-screen.",
+          "Radio button labels are no longer bold — they're regular weight so the section headers stay visually distinct.",
+        ],
+      },
+      {
+        heading: "Polish",
+        items: [
+          "The navbar 'Join The Resistance' button now reads 'Sign in or Create an Account…' on the second line, signalling that the flow handles both returning members and new founding-cohort signups.",
+          "Site-updating banner copy changed from 'PLEASE BE PATIENT (2 minutes!)' to 'Please be patient if you see any oddities!' — less alarming during quick deploys. The 🔧 emoji bookends are now monochrome white wrench icons (lucide-react) so they don't clash with the navy bar.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.1.1",
     date: "2026-05-18",
     title: "Always-on navy footer, lower-right match-me toast, bolder hero callout",

@@ -378,6 +378,33 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
     return `https://twitter.com/intent/tweet?text=${text}`;
   }
 
+  /** Universal image-to-clipboard helper. Tries the modern ClipboardItem API
+   *  and, on failure, attempts a native share with just the file (mobile).
+   *  Returns true if SOMETHING happened (clipboard or share sheet); false only
+   *  if neither path worked, in which case the caller should surface an error
+   *  message instead of silently downloading the file to disk. */
+  async function putImageOnClipboard(r: ReceiptCard): Promise<boolean> {
+    try {
+      const blob = await fetchImageBlob(r.imageUrl);
+      await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+      return true;
+    } catch { /* fall through to native share */ }
+    try {
+      const blob = await fetchImageBlob(r.imageUrl);
+      const ext = blob.type.split("/")[1] || "jpg";
+      const file = new File(
+        [blob],
+        `${r.title.replace(/[^a-z0-9]/gi, "-").toLowerCase()}.${ext}`,
+        { type: blob.type }
+      );
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], text: r.caption ?? r.title });
+        return true;
+      }
+    } catch { /* fall through */ }
+    return false;
+  }
+
   async function handleFacebookShare(r: ReceiptCard) {
     // Open the Facebook *sharer* dialog (not the home page) synchronously,
     // before any await — popup blockers require the window.open to happen
@@ -387,23 +414,26 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
     // (Facebook intentionally doesn't allow programmatic image attachment.)
     const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent("https://resistact.org")}`;
     window.open(shareUrl, "_blank", "noopener,noreferrer");
-    // Copy image to clipboard so the user can paste directly into a FB post.
-    try {
-      const blob = await fetchImageBlob(r.imageUrl);
-      await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
-      setFbInstruction("copied");
-    } catch {
-      // Clipboard not available — fall back to downloading the file.
-      await handleDownload(r);
-      setFbInstruction("downloaded");
-    }
+    const ok = await putImageOnClipboard(r);
+    setFbInstruction(ok ? "copied" : "downloaded");
+    // On the rare path where clipboard AND native share both fail, fall back
+    // to download as a true last resort so the user still has the file.
+    if (!ok) await handleDownload(r);
     setTimeout(() => setFbInstruction("idle"), 8000);
   }
 
   async function handleInstagramShare(r: ReceiptCard) {
-    // Same pattern — open the app first, then trigger the download.
+    // Copy the image to clipboard BEFORE opening Instagram so the user can
+    // immediately paste into a new post / story / DM. (Instagram has no web
+    // share API, so this is the closest we can get to a "one-click" share.)
+    // Open the Instagram tab synchronously to dodge popup blockers, then do
+    // the async clipboard write — Instagram opens fast enough that the paste
+    // is ready by the time the user reaches the composer.
     window.open("https://www.instagram.com/", "_blank");
-    await handleDownload(r);
+    const ok = await putImageOnClipboard(r);
+    setFbInstruction(ok ? "copied" : "downloaded");
+    if (!ok) await handleDownload(r);
+    setTimeout(() => setFbInstruction("idle"), 8000);
   }
 
   function threadsUrl(r: ReceiptCard) {
@@ -774,14 +804,14 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
                   {copyImageState === "copying" ? "Copying…" : copyImageState === "done" ? "Image copied! Paste anywhere." : "Copy image to clipboard"}
                 </button>
 
-                {/* Facebook paste instruction — appears after clicking Facebook */}
+                {/* Paste instruction — appears after clicking Facebook or Instagram */}
                 {fbInstruction !== "idle" && (
                   <div className="col-span-4 flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2.5 text-[11px] text-blue-800 font-['Poppins',sans-serif] leading-snug">
-                    <span className="text-base leading-none mt-0.5">📘</span>
+                    <span className="text-base leading-none mt-0.5">📋</span>
                     <span>
                       {fbInstruction === "copied"
-                        ? <><strong>Image copied!</strong> In your Facebook post, click "Photo/Video" then paste with <strong>⌘V</strong> (Mac) or <strong>Ctrl+V</strong> (PC).</>
-                        : <><strong>Image downloaded!</strong> In your Facebook post, click "Photo/Video" and upload it from your Downloads folder.</>}
+                        ? <><strong>Image copied to clipboard!</strong> In the post composer, click "Photo/Video" (or attach) and paste with <strong>⌘V</strong> (Mac) or <strong>Ctrl+V</strong> (PC).</>
+                        : <><strong>Image downloaded.</strong> In the post composer, click "Photo/Video" and upload it from your Downloads folder.</>}
                     </span>
                   </div>
                 )}
