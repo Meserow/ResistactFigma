@@ -528,7 +528,24 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
       : "https://www.resistact.org";
     const clipboardPromise = startClipboardWrite(r);
     const fbShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(sharedUrl)}`;
-    window.open(fbShareUrl, "_blank", "noopener,noreferrer");
+    // iOS Safari silently blocks `window.open` from inside a modal's button
+    // handler. The reliable workaround: build a real <a> and click it —
+    // Safari treats programmatic anchor clicks as legit link navigation
+    // and skips the popup blocker. Desktop keeps the popup window.open
+    // behaviour so users don't lose their place on resistact.org.
+    const isIOS = typeof navigator !== "undefined"
+      && /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isIOS) {
+      const a = document.createElement("a");
+      a.href = fbShareUrl;
+      a.target = "_blank";
+      a.rel = "noopener,noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else {
+      window.open(fbShareUrl, "_blank", "noopener,noreferrer");
+    }
     const ok = await clipboardPromise;
     setFbInstruction(ok ? "copied" : "downloaded");
     if (!ok) await handleDownload(r);
@@ -1232,11 +1249,14 @@ function ReceiptTile({
         >
           <X size={18} />
         </button>
-        <img
+        <ImageWithFallback
           src={receipt.imageUrl}
           alt={receipt.title}
+          // Use ImageWithFallback so the lightbox picks up the WebP sibling
+          // when only the WebP variant ships on disk — the raw <img src> path
+          // was 404-ing for smacks where we'd dropped the original PNG/JPG.
           className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e: React.MouseEvent<HTMLImageElement>) => e.stopPropagation()}
         />
       </div>
     )}

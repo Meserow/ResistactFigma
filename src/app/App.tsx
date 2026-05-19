@@ -1415,7 +1415,7 @@ export default function App() {
         </div>
       )}
 
-      <main className="px-4 md:px-8 py-8 pb-20">
+      <main className="px-4 md:px-8 pt-3 pb-20">
         <ErrorBoundary>
         {activeTab === "receipts" ? (
           /* ── Receipts view ── */

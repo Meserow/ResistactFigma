@@ -734,24 +734,39 @@ app.get("/make-server-9eb1ae04/admin/actions/no-url", async (c) => {
     const admin = await requireAdmin(token);
     if (!admin) return c.json({ error: "Forbidden" }, 403);
 
-    const noUrl: any[] = [];
+    // Despite the endpoint name, this returns cards missing EITHER:
+    //   • an action link (`targetUrl`), OR
+    //   • a top image (no `topImageUrl` AND no `topImageKey`).
+    // Both kinds need admin attention before they're really publishable —
+    // a card with no URL has no action to take, and a card with no image
+    // looks broken in the feed grid. Grouping them in the same admin tab
+    // keeps the "things to fix" surface small.
+    const isMissing = (card: any) => {
+      if (!card || typeof card !== "object") return false;
+      if (card.adminApproved !== true) return false;
+      const noUrl = !card.targetUrl;
+      const noImage = !card.topImageUrl && !card.topImageKey;
+      return noUrl || noImage;
+    };
+
+    const missing: any[] = [];
 
     for (const card of (await kv.getByPrefix("action:")) as any[]) {
-      if (card && typeof card === "object" && card.adminApproved === true && !card.targetUrl && !card.pinToTop) {
-        noUrl.push({ ...card, _store: "action" });
+      if (isMissing(card) && !card.pinToTop) {
+        missing.push({ ...card, _store: "action" });
       }
     }
 
     const userCardIds = (await kv.get("user-action:ids") ?? []) as number[];
     for (const id of userCardIds) {
       const card = await kv.get(`user-action:${id}`) as any;
-      if (card && typeof card === "object" && card.adminApproved === true && !card.targetUrl) {
-        noUrl.push({ ...card, _store: "user-action" });
+      if (isMissing(card)) {
+        missing.push({ ...card, _store: "user-action" });
       }
     }
 
-    noUrl.sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
-    return c.json({ cards: noUrl });
+    missing.sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+    return c.json({ cards: missing });
   } catch (err) {
     return c.json({ error: `Failed to fetch no-url cards: ${err}` }, 500);
   }

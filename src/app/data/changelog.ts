@@ -16,6 +16,40 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.1.20",
+    date: "2026-05-19",
+    title: "iOS share fix, 'Incomplete' admin tab, View Larger fix, tighter feed top padding",
+    sections: [
+      {
+        heading: "iOS Facebook share — fixed for both Spread the Word and Smacks",
+        items: [
+          "iOS Safari was silently blocking `window.open` AND `window.location.assign` when fired from inside a modal's button handler — which is why tapping the Facebook button on iPhone literally did nothing. Switched both share buttons (Spread the Word modal AND the per-Smack share modal) to use programmatic anchor-click: build a real `<a>` element, click it, remove it. Safari treats that exactly like a tapped link, so the popup blocker stays out of the way.",
+          "Desktop behaviour intentionally untouched — desktop still uses `window.open` so users don't lose their place on the ResistAct page when sharing.",
+        ],
+      },
+      {
+        heading: "Admin 'Incomplete' tab",
+        items: [
+          "Renamed the 'No URL' admin tab to 'Incomplete'. Same tab, broader filter — it now lists any approved card missing EITHER an action link (`targetUrl`) OR a top image (no `topImageUrl` and no `topImageKey`). Cards that need either piece of info before they can really publish all sit in one place instead of being scattered.",
+          "Edge function endpoint `/admin/actions/no-url` updated to match (returns missing-link + missing-image cards). Endpoint path kept as `no-url` for backwards compatibility; only the label changed.",
+        ],
+      },
+      {
+        heading: "Smacks 'View larger' fix",
+        items: [
+          "Clicking 'View larger' on a smack thumbnail was showing a broken-image icon on many smacks. The tile lightbox used a raw `<img src>` while the thumbnail used `<ImageWithFallback>` — so when only the WebP variant shipped on disk (and the PNG/JPG path in the data was stale), the thumbnail still rendered via its `<source srcSet=webp>` while the lightbox 404-ed on the missing original.",
+          "Swapped the lightbox to use `ImageWithFallback` so it picks up the same WebP sibling. View larger now works on every smack.",
+        ],
+      },
+      {
+        heading: "Polish",
+        items: [
+          "Removed 32 px of empty whitespace below the navbar filter bar — `<main>` was rendering with `py-8` (32 px top and bottom). Top padding is now `pt-3` so the feed sits right under the filter row; bottom padding kept at `pb-20` so the last card clears the always-on footer.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.1.15",
     date: "2026-05-19",
     title: "Spread the Word always-on, Smacks Facebook share fix, OG image cache-bust to v4, title update",
