@@ -124,20 +124,14 @@ function escapeHtml(s) {
 }
 
 function pageFor(smack) {
-  // Prefer the WebP sibling for og:image when one likely exists, because
-  // Facebook's scraper has aggressive timeouts and rejects oversized images
-  // — a multi-MB PNG can fail to scrape (response code 0 in the FB debug
-  // tool). The webp sibling pattern matches what fetchImageBlob does in
-  // SmacksPage. Falls back to the original URL for absolute URLs or for
-  // formats other than png/jpg.
-  function webpSibling(src) {
-    if (!/^\/[^/]/.test(src)) return null;          // only root-relative paths
-    if (!/\.(jpe?g|png)(\?|#|$)/i.test(src)) return null;
-    return src.replace(/\.(jpe?g|png)(\?|#|$)/i, ".webp$2");
-  }
-  const webp = webpSibling(smack.imageUrl);
-  const ogPath = webp ?? smack.imageUrl;
-  const absoluteImage = ogPath.startsWith("http") ? ogPath : `${SITE}${ogPath}`;
+  // DIAGNOSTIC: temporarily use the homepage og-image (which FB has
+  // successfully scraped) for every smack, to test whether FB's failure
+  // is the per-smack /Smacks/*.webp images vs the HTML page itself.
+  // If FB starts scraping smack share pages successfully with this in
+  // place, we know the issue is the smack images (format, path, etc.)
+  // and we'll switch back to per-smack images with a fix. If it still
+  // fails, the issue isn't the og:image at all.
+  const absoluteImage = `${SITE}/og-image-v3.jpg`;
   const title = `${smack.title} — ResistAct`;
   const description = smack.caption
     ? smack.caption.slice(0, 280)

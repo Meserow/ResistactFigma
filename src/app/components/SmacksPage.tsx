@@ -698,18 +698,12 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
 
   return (
     <div className="min-h-screen">
-      {/* ── Intro: what is a Smack? ── */}
-      <div className="mb-5 rounded-2xl border border-[#23297e]/15 bg-gradient-to-br from-[#ed6624]/5 via-white to-[#23297e]/5 px-4 py-3.5 sm:px-5 sm:py-4">
-        <p className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-sm sm:text-base mb-1.5 flex items-center gap-1.5">
-          <span aria-hidden="true">💥</span> What's a Smack?
-        </p>
-        <p className="font-['Poppins',sans-serif] text-xs sm:text-sm text-gray-700 leading-snug">
-          The president is a cartoon villain. So is the Supreme Court. So is half of Congress. You don't fight a cartoon with a footnoted essay — you fight it with a meme that lands in two seconds. <strong className="text-[#23297e]">Smacks</strong> are shareable images that meet their grift, corruption, and stupidity with the simplicity those deserve. <span className="text-[#ed6624] font-semibold">Save it. Post it. Move on.</span>
-        </p>
-      </div>
-
-      {/* ── Top bar: filter chips + sort toggle ── */}
-      <div className="flex items-start gap-3 flex-wrap mb-6">
+      {/* ── Top bar: filter chips + sort toggle ──
+          Moved ABOVE the "What's a Smack" intro card so the chips sit up
+          next to the sort dropdown at the top of the page (same vertical
+          position as the navbar's filter row on other tabs). The intro
+          card then sits below for new visitors. */}
+      <div className="flex items-start gap-3 flex-wrap mb-4">
         {/* Tag chips */}
         <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
           {availableTags.map((tag) => (
@@ -783,6 +777,18 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
             {isAdmin ? "Add to The Smacks" : "Submit to The Smacks"}
           </button>
         )}
+      </div>
+
+      {/* ── Intro: what is a Smack? — moved below the filter row so the
+          chips + sort dropdown sit at the top of the page (consistent
+          with the navbar's filter bar on The Acts / The Facts tabs). ── */}
+      <div className="mb-5 rounded-2xl border border-[#23297e]/15 bg-gradient-to-br from-[#ed6624]/5 via-white to-[#23297e]/5 px-4 py-3.5 sm:px-5 sm:py-4">
+        <p className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-sm sm:text-base mb-1.5 flex items-center gap-1.5">
+          <span aria-hidden="true">💥</span> What's a Smack?
+        </p>
+        <p className="font-['Poppins',sans-serif] text-xs sm:text-sm text-gray-700 leading-snug">
+          The president is a cartoon villain. So is the Supreme Court. So is half of Congress. You don't fight a cartoon with a footnoted essay — you fight it with a meme that lands in two seconds. <strong className="text-[#23297e]">Smacks</strong> are shareable images that meet their grift, corruption, and stupidity with the simplicity those deserve. <span className="text-[#ed6624] font-semibold">Save it. Post it. Move on.</span>
+        </p>
       </div>
 
       {/* ── Empty state ── */}
