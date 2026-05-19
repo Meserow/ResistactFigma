@@ -318,6 +318,7 @@ export default function App() {
   const [celebration, setCelebration] = useState<{ prev: number; next: number } | null>(null);
   const [askOpen, setAskOpen] = useState(false);
   const [matchOpen, setMatchOpen] = useState(false);
+  const [matchInitialStep, setMatchInitialStep] = useState<0 | 1>(0);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [scrollNudgeDismissed, setScrollNudgeDismissed] = useState(
     () => localStorage.getItem("resistact_nudge_dismissed") === "1"
@@ -1608,49 +1609,50 @@ export default function App() {
                         UI element rather than a row of disparate emoji. */}
                     <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-gray-600 font-['Poppins',sans-serif]">
                       {timeLabel && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5">
+                        <button onClick={() => { setMatchInitialStep(0); setMatchOpen(true); }} className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5 hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
                           <Clock size={11} className="text-[#23297e] shrink-0" strokeWidth={2} />
                           {timeLabel}
-                        </span>
+                        </button>
                       )}
-                      <span className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5">
+                      <button onClick={() => { setMatchInitialStep(0); setMatchOpen(true); }} className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5 hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
                         <Globe size={11} className="text-[#23297e] shrink-0" strokeWidth={2} />
                         {settingLabel}
-                      </span>
+                      </button>
                       {toneChips.map((c) => {
                         const Icon = c.Icon;
                         return (
-                          <span
+                          <button
                             key={c.label}
-                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 border ${
+                            onClick={() => { setMatchInitialStep(0); setMatchOpen(true); }}
+                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 border transition-colors ${
                               c.isDefault
-                                ? "bg-gray-50 border-gray-100 text-gray-400"
-                                : "bg-[#ed6624]/10 border-[#ed6624]/30 text-[#23297e] font-semibold"
+                                ? "bg-gray-50 border-gray-100 text-gray-400 hover:border-[#ed6624] hover:bg-[#ed6624]/5"
+                                : "bg-[#ed6624]/10 border-[#ed6624]/30 text-[#23297e] font-semibold hover:border-[#ed6624] hover:bg-[#ed6624]/20"
                             }`}
                             title={c.isDefault ? `${c.label} — default (not set)` : `${c.label} bumped to ${c.value}`}
                           >
                             <Icon size={11} className={`shrink-0 ${c.isDefault ? "text-gray-400" : "text-[#23297e]"}`} strokeWidth={2} />
                             {c.label}: {c.value}
-                          </span>
+                          </button>
                         );
                       })}
                       {matchPrefs.state && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5">
+                        <button onClick={() => { setMatchInitialStep(0); setMatchOpen(true); }} className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5 hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
                           <MapPin size={11} className="text-[#23297e] shrink-0" strokeWidth={2} />
                           {matchPrefs.state}
-                        </span>
+                        </button>
                       )}
                       {groupCount > 0 && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5">
+                        <button onClick={() => { setMatchInitialStep(1); setMatchOpen(true); }} className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5 hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
                           <Users size={11} className="text-[#23297e] shrink-0" strokeWidth={2} />
                           Amplifies {groupCount} {groupCount === 1 ? "group" : "groups"}
-                        </span>
+                        </button>
                       )}
                       {matchPrefs.focusDonations && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5">
+                        <button onClick={() => { setMatchInitialStep(1); setMatchOpen(true); }} className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5 hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
                           <DollarSign size={11} className="text-[#23297e] shrink-0" strokeWidth={2} />
                           Donation focus
-                        </span>
+                        </button>
                       )}
                     </div>
                   </div>
@@ -1868,7 +1870,8 @@ export default function App() {
           isLoggedIn={!!approval}
           completedIds={[...completedCards]}
           boostedIds={[...boostedCards]}
-          onClose={() => setMatchOpen(false)}
+          initialStep={matchInitialStep}
+          onClose={() => { setMatchOpen(false); setMatchInitialStep(0); }}
           onApply={(prefs) => {
             setMatchPrefs(prefs);
             savePreferences(prefs);

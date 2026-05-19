@@ -78,7 +78,21 @@ function buildPlatforms(cardId: number, title: string, description: string) {
       bg: "#1877F2",
       fg: "#fff",
       icon: <FacebookIcon />,
-      action: () => window.open(`https://www.facebook.com/sharer/sharer.php?u=${enc(url)}&quote=${enc(title)}`, "_blank"),
+      action: () => {
+        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+        const fbUrl = `https://${isIOS ? "m.facebook.com" : "www.facebook.com"}/sharer/sharer.php?u=${enc(url)}&quote=${enc(title)}`;
+        if (isIOS) {
+          const a = document.createElement("a");
+          a.href = fbUrl;
+          a.target = "_blank";
+          a.rel = "noopener,noreferrer";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } else {
+          window.open(fbUrl, "_blank");
+        }
+      },
     },
     {
       id: "threads",
