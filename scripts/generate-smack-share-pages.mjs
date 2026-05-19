@@ -153,11 +153,11 @@ function pageFor(smack) {
   <meta charset="utf-8">
   <title>${escapeHtml(title)}</title>
   <meta name="description" content="${escapeHtml(description)}">
-  <link rel="canonical" href="${SITE}/s/${smack.id}">
+  <link rel="canonical" href="${SITE}/s/${smack.id}.html">
 
   <!-- Open Graph -->
   <meta property="og:type"        content="article">
-  <meta property="og:url"         content="${SITE}/s/${smack.id}">
+  <meta property="og:url"         content="${SITE}/s/${smack.id}.html">
   <meta property="og:title"       content="${escapeHtml(title)}">
   <meta property="og:description" content="${escapeHtml(description)}">
   <meta property="og:image"       content="${escapeHtml(absoluteImage)}">
@@ -166,7 +166,7 @@ function pageFor(smack) {
 
   <!-- Twitter -->
   <meta name="twitter:card"        content="summary_large_image">
-  <meta name="twitter:url"         content="${SITE}/s/${smack.id}">
+  <meta name="twitter:url"         content="${SITE}/s/${smack.id}.html">
   <meta name="twitter:title"       content="${escapeHtml(title)}">
   <meta name="twitter:description" content="${escapeHtml(description)}">
   <meta name="twitter:image"       content="${escapeHtml(absoluteImage)}">
