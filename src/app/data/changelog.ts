@@ -16,6 +16,55 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.1.3",
+    date: "2026-05-18",
+    title: "Per-Smack share previews, working feedback email, reliable image-to-clipboard",
+    sections: [
+      {
+        heading: "Per-Smack share previews on Facebook",
+        items: [
+          "Built a new build-time script (`scripts/generate-smack-share-pages.mjs`) that writes one small static HTML stub per curated Smack into `public/s/<id>.html`. Each stub carries its own `og:image`, `og:title`, and `og:description` pointing at the Smack — so when someone shares a Smack to Facebook, the preview now shows the Smack itself, not the generic homepage card.",
+          "Wired the Facebook share button in The Smacks to send `resistact.org/s/<id>.html` to FB's sharer, rather than the bare homepage URL — that's what makes the per-Smack preview appear.",
+          "Each share stub does a meta-refresh + JS redirect so anyone clicking the link in a Facebook post lands at the right Smack on the main app (`/?smack=<id>`).",
+          "Switched `og:image` to use the smaller WebP sibling (~350 KB vs 2.7 MB PNG) so Facebook's scraper doesn't time out fetching the big seed image.",
+          "Added a `prebuild` npm hook so the share pages regenerate automatically every time we build for production. Run `npm run gen:smacks` manually if you just want to update them.",
+          "User-submitted Smacks still fall back to the homepage URL — they live in the KV store and would need a server-side `/s/:id` route on the edge function to get per-Smack previews.",
+        ],
+      },
+      {
+        heading: "Smacks share — image-to-clipboard fix",
+        items: [
+          "The 'Copy image to clipboard' button used to silently fail on most browsers because Chrome's clipboard API rejects WebP and our Smacks are served as WebP. We now round-trip the image through a canvas to produce PNG before writing, so the clipboard actually receives the bytes.",
+          "Chrome enforces a 'user-gesture' window for clipboard.write — if you await ANY async work first, the gesture is treated as expired and the write is rejected. Rewrote both the Copy and Facebook/Instagram handlers to kick off `clipboard.write` synchronously inside the click event, passing a Promise to ClipboardItem that resolves the PNG blob in the background.",
+          "Reordered the Facebook/Instagram flow so the clipboard write fires BEFORE `window.open` — opening the new tab steals focus from the originator, and Chrome refuses clipboard.write once focus is lost. Old order had this backwards, which is why the button felt like it 'did nothing' on desktop.",
+          "Removed the 'Share image via…' button on desktop. Browsers like Chrome on Mac do support `navigator.share`, but the macOS share sheet that pops up usually only offers 'Save to Files' — which downloaded the image and made users think the share was broken. Native share now only renders on iOS / Android, where the share sheet actually goes to social apps.",
+          "Updated the post-click banner to a loud orange callout that tells users exactly where to paste in Facebook ('What's on your mind?') instead of the previous subtle blue note that people were missing.",
+        ],
+      },
+      {
+        heading: "Feedback button now actually emails you",
+        items: [
+          "The Share Feedback form was POSTing to a Supabase edge-function endpoint that had no email integration — every submission landed in a dead letterbox. Now the form opens a `mailto:` link pre-filled with the user's message, type, and reply address, sent to ellen@meserow.com.",
+          "Belt-and-suspenders: the same content is ALSO copied to the clipboard, so users whose default mail handler is Gmail-in-the-browser (which doesn't always honour `mailto:`) can paste straight into a new Gmail tab.",
+          "Success state now explains both paths: 'Two ways to send — check your email app, or paste from clipboard into your webmail.'",
+        ],
+      },
+      {
+        heading: "Matcher chips — navy line icons",
+        items: [
+          "The 'Matched for you' banner's preference chips used a mix of colourful emojis (🔥, 😄, 🎭, 🌅, ⚡, etc.) which read as a row of inconsistent Unicode glyphs. Replaced all ten with simple navy line-icons from lucide-react (Clock, Globe, Flame, Smile, VenetianMask, Sun, Zap, MapPin, Users, DollarSign) so the strip reads as one unified UI element.",
+        ],
+      },
+      {
+        heading: "Open Graph image — correct aspect ratio for Facebook",
+        items: [
+          "The previous og-image was 1200×800 (1.5:1), but Facebook's preview window crops to 1.91:1 — which was chopping the bottom of the design off. Regenerated `og-image-v3.jpg` at FB's recommended 1200×630, cropping 30% off the top and 70% off the bottom (losing only the decorative 'Together, We Act' star band).",
+          "Also overwrote `og-image.webp` with the same image at the new dimensions for any place that references the WebP variant.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.1.2",
     date: "2026-05-18",
     title: "New ResistAct logo lockup, ACT-orange rebrand, smoother Smacks sharing",
