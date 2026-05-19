@@ -132,6 +132,7 @@ function resolveCard(raw: ServerCard): ActionCardData {
 
 // ─── Featured illustration ────────────────────────────────────────────────────
 import diagramImg from "../assets/3a930cb92932029145f5289a4b745deaa43e0aa6.png";
+import fistImg from "../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
 
 function FeaturedIllustration() {
   return (
@@ -1761,22 +1762,26 @@ export default function App() {
         </p>
       </div>
 
-      {/* Scroll nudge — lower-right toast after scrolling past ~8 cards.
+      {/* Scroll nudge — lower-right orange toast after scrolling past ~8 cards.
           Auto-expires after 30s (see useEffect above). Sits well clear of the
           always-on tagline footer so it doesn't cover it. */}
       {scrollNudgeVisible && !scrollNudgeDismissed && (
-        <div className="fixed bottom-16 right-4 md:bottom-20 md:right-6 z-40 max-w-[340px] flex items-start gap-2 bg-[#23297e] rounded-xl shadow-xl px-4 py-3 animate-[slide-in-up_220ms_ease-out]">
-          <img src={fistIcon} alt="" aria-hidden="true" className="h-8 w-auto shrink-0 mt-0.5" />
-          <div className="min-w-0 flex-1 flex flex-col items-end">
-            <p className="font-['Poppins',sans-serif] text-[13px] text-white/90 leading-snug mb-2 self-stretch">
-              Finding it hard to choose? <span className="font-semibold text-white">Let us match you in 30 seconds.</span>
+        <div className="toast-pop-in fixed bottom-16 right-4 md:bottom-24 md:right-8 z-40 w-[min(92vw,480px)] flex items-start gap-3 bg-[#fd8e33] rounded-2xl shadow-2xl px-5 py-4 ring-2 ring-white/20">
+          <div className="min-w-0 flex-1">
+            <p className="font-['Poppins',sans-serif] font-black text-[18px] md:text-[20px] text-white leading-snug mb-2">
+              Finding it hard to choose?
             </p>
-            <button
-              onClick={() => { setScrollNudgeVisible(false); setMatchOpen(true); }}
-              className="px-3.5 py-1.5 bg-[#ed6624] hover:bg-[#e07a28] text-white font-['Poppins',sans-serif] font-bold text-[13px] rounded-lg transition-colors whitespace-nowrap"
-            >
-              ✨ Quick Match Tool
-            </button>
+            <p className="font-['Poppins',sans-serif] text-[13px] md:text-[14px] text-white/90 leading-snug mb-3">
+              Let us match you in 30 seconds.
+            </p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => { setScrollNudgeVisible(false); setMatchOpen(true); }}
+                className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-white hover:bg-gray-50 text-[#fd8e33] font-['Poppins',sans-serif] font-extrabold text-[15px] rounded-xl shadow-sm transition-colors whitespace-nowrap"
+              >
+                ✨ Open Quick Acts for Me Tool →
+              </button>
+            </div>
           </div>
           <button
             onClick={() => {
@@ -1784,7 +1789,7 @@ export default function App() {
               setScrollNudgeDismissed(true);
               localStorage.setItem("resistact_nudge_dismissed", "1");
             }}
-            className="text-white/50 hover:text-white transition-colors shrink-0 -mr-1"
+            className="text-white/70 hover:text-white transition-colors shrink-0"
             aria-label="Dismiss"
           >
             ✕
