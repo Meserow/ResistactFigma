@@ -74,6 +74,26 @@ interface ServerCard {
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
 const HEADERS = { "Content-Type": "application/json", Authorization: `Bearer ${publicAnonKey}` };
 
+// Normalise a category string to a single canonical Title-Case form so we
+// don't end up with both "FUNDING" and "Funding" in the category dropdown
+// (which happened when some server seeds were uppercased and the client UI
+// uses Title Case). Treats common short prepositions / articles as lowercase
+// so "Letter to Editor" stays correct rather than becoming "Letter To Editor".
+const TITLE_CASE_STOPWORDS = new Set(["of", "to", "a", "the", "and", "or", "in", "on", "for", "at"]);
+function normaliseCategory(s: string | undefined | null): string {
+  const trimmed = (s ?? "").trim();
+  if (!trimmed) return "";
+  return trimmed
+    .toLowerCase()
+    .split(/\s+/)
+    .map((w, i) =>
+      i === 0 || !TITLE_CASE_STOPWORDS.has(w)
+        ? w.charAt(0).toUpperCase() + w.slice(1)
+        : w
+    )
+    .join(" ");
+}
+
 // Canonical description for the pinToTop "Spread the Word" card — kept in
 // code so it's always current regardless of what's stored in the database.
 const SPREAD_THE_WORD_DESCRIPTION =
@@ -82,8 +102,10 @@ const SPREAD_THE_WORD_DESCRIPTION =
 // Canonical image for the pinToTop "Spread the Word" card. Server-side cards
 // still have the old "RESISTACT — CITIZEN ACTION" illustration cached at a
 // Supabase storage URL; we override it here so the card always picks up the
-// current branding (`/og-image-v3.jpg` with the JOIN THE RESISTANCE logo).
-const SPREAD_THE_WORD_TOP_IMAGE = "/og-image-v3.jpg";
+// current branding. Uses the WebP variant of the OG image (smaller than the
+// JPG that the og:image meta tag references) since browsers all support it
+// and the in-card render benefits from the smaller payload.
+const SPREAD_THE_WORD_TOP_IMAGE = "/og-image.webp";
 
 function resolveCard(raw: ServerCard): ActionCardData {
   // Compute the topImage with the normal priority order (explicit URL beats
@@ -95,6 +117,9 @@ function resolveCard(raw: ServerCard): ActionCardData {
     : (raw.topImageKey ? IMAGE_MAP[raw.topImageKey] : undefined);
   return {
     ...raw,
+    // Normalise category casing so "FUNDING" and "Funding" don't both
+    // appear as separate entries in the navbar's category dropdown.
+    category:     normaliseCategory(raw.category) || raw.category,
     boosts:       raw.boosts ?? raw.spotsUsed ?? 0,
     completions:  raw.completions ?? 0,
     targetUrl:    raw.targetUrl ?? undefined,

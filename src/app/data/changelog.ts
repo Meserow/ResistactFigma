@@ -16,6 +16,35 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.1.10",
+    date: "2026-05-18",
+    title: "Updated Open Graph image, category dropdown deduplication, Spread the Word card polish",
+    sections: [
+      {
+        heading: "Open Graph image refreshed (again)",
+        items: [
+          "Swapped in a brand-new 1500×1000 ResistAct OG image (logo + JOIN THE RESISTANCE + capitol scene + URL + feature icons + Together-We-Act footer) — full uncropped composition this time so nothing gets cut off in the Spread the Word card body.",
+          "Same image used for both `og-image-v3.jpg` (Facebook scrape target) and `og-image.webp` (in-app card render). The card uses `object-cover object-top` so the top of the image is always anchored to the top of the card, regardless of available height.",
+          "Updated the og:image:width / og:image:height meta tags in index.html to match the new dimensions so Facebook doesn't try to scale based on stale values.",
+        ],
+      },
+      {
+        heading: "Category dropdown deduplication",
+        items: [
+          "Server-side seed cards mixed uppercase ('FUNDING', 'EMAIL CAMPAIGN', 'BOOST') with the client UI's Title Case ('Funding', 'Email Campaign', 'Boost'). The result: the navbar Category dropdown showed BOTH 'Funding' and 'FUNDING' as separate filter options.",
+          "Added a `normaliseCategory()` helper in resolveCard() that converts every card's category string to canonical Title Case (with stopwords like 'of', 'to', 'and' staying lowercase — so 'Letter to Editor' stays correct). Both the dropdown and the filter comparison now use the same normalized form, so duplicates collapse.",
+        ],
+      },
+      {
+        heading: "Spread the Word card polish",
+        items: [
+          "The 'Spread the Word about ResistAct' card image now anchors to the top of its container (`object-top`) so the logo + JOIN THE RESISTANCE tagline + Margaret Mead quote are always visible at a glance instead of being scaled out of the crop.",
+          "Pulled the canonical card image into a `SPREAD_THE_WORD_TOP_IMAGE` constant so the override has a single source of truth alongside the existing `SPREAD_THE_WORD_DESCRIPTION`.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.1.9",
     date: "2026-05-18",
     title: "Refreshed Open Graph image, Smacks filter row in the navbar, Spread the Word card branding fix",
