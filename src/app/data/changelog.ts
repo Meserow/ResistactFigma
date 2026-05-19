@@ -16,6 +16,21 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.1.4",
+    date: "2026-05-18",
+    title: "Fix Smack share canonical URL (Facebook scrape was returning 403)",
+    sections: [
+      {
+        heading: "Per-Smack share previews — canonical URL fix",
+        items: [
+          "The 1.1.3 generator wrote a canonical URL of `/s/<id>` (no `.html`) into each Smack share stub, but the actual file on S3 only exists at `/s/<id>.html`. When Facebook tried to validate the canonical URL it got a 403, bailed on the whole scrape, and reported a confusing 'Could not resolve hostname' error in the FB debugger — making the share dialog show the homepage card instead of the Smack image.",
+          "Fixed the generator so canonical, og:url, and twitter:url all end in `.html` matching the actual file. Regenerated all 28 share stubs.",
+          "After deploying, force-scrape via the FB debugger with a cache-busting query string (e.g. `?v=4`) — FB caches errors aggressively and may need a different URL to re-fetch.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.1.3",
     date: "2026-05-18",
     title: "Per-Smack share previews, working feedback email, reliable image-to-clipboard",
