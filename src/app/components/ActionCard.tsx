@@ -111,13 +111,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
   const [detailsOpen, setDetailsOpen] = useState(false);
 
   function openShare() {
-    const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-    if (isMobile && typeof navigator.share === "function") {
-      const url = `${window.location.origin}?act=${card.id}`;
-      navigator.share({ title: card.title, text: `${card.title} — Join the resistance!`, url }).catch(() => {});
-    } else {
-      setShareOpen(true);
-    }
+    setShareOpen(true);
   }
   const [flagOpen, setFlagOpen] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
