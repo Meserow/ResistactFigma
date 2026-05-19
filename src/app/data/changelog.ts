@@ -16,6 +16,21 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.1.5",
+    date: "2026-05-18",
+    title: "Smack share — remove meta-refresh so Facebook actually scrapes the per-Smack OG tags",
+    sections: [
+      {
+        heading: "Per-Smack share previews — meta-refresh fix",
+        items: [
+          "The Smack share stubs (`/s/<id>.html`) had a `<meta http-equiv=\"refresh\">` to bounce users to the main app. Facebook's scraper, unlike most, FOLLOWS that meta-refresh — landing on `/?smack=<id>`, which is the SPA's index.html with the homepage og:* tags. That's why every per-Smack share preview was coming out as 'RESISTACT.ORG / www.resistact.org' even after the canonical-URL fix in 1.1.4.",
+          "Removed the meta-refresh. Redirect is now JS-only (window.location.replace) — Facebook doesn't execute JavaScript, so its scraper reads only the per-Smack og:image / og:title / og:description we wrote and never follows. Real users still get bounced to the right Smack instantly.",
+          "After deploy, re-scrape `https://www.resistact.org/s/5001.html` (or any smack) in the FB Sharing Debugger — og:title should now show the smack title and og:image should be the smack image.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.1.4",
     date: "2026-05-18",
     title: "Fix Smack share canonical URL (Facebook scrape was returning 403)",

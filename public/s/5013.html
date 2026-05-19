@@ -22,10 +22,13 @@
   <meta name="twitter:description" content="A ResistAct Smack: Richer. Save it. Post it. Move on.">
   <meta name="twitter:image"       content="https://www.resistact.org/Smacks/richer.webp">
 
-  <!-- Send humans straight to the main app, but only AFTER scrapers have a
-       chance to read the meta tags above. The 1-second meta-refresh delay
-       and the JS redirect both work; the noscript fallback covers the rest. -->
-  <meta http-equiv="refresh" content="1;url=/?smack=5013">
+  <!-- IMPORTANT: NO meta-refresh here. Facebook's scraper follows
+       <meta http-equiv="refresh"> redirects and re-reads og:* tags from
+       the destination — which is the SPA's index.html with the homepage
+       OG tags. That sent every Smack share preview back to "RESISTACT.ORG /
+       www.resistact.org". JS redirect only — FB doesn't execute JS, so
+       scrapers see only the per-Smack OG tags we wrote above. Real users
+       (browsers) run the script below and bounce to the main app instantly. -->
   <script>window.location.replace("/?smack=5013");</script>
 </head>
 <body style="margin:0;background:#faf6f0;font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;color:#23297e;text-align:center;padding:48px 16px;">
