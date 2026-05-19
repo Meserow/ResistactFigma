@@ -360,17 +360,32 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
   async function handleCopyImage() {
     if (!shareReceipt) return;
     setCopyImageState("copying");
-    try {
-      const blob = await fetchImageBlob(shareReceipt.imageUrl);
-      await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
-      setCopyImageState("done");
-      setTimeout(() => setCopyImageState("idle"), 2000);
-    } catch {
-      // Fallback: copy URL
-      await navigator.clipboard.writeText(shareReceipt.imageUrl).catch(() => {});
-      setCopyImageState("done");
-      setTimeout(() => setCopyImageState("idle"), 2000);
+    // Capture the receipt up-front — `shareReceipt` is closed over but the
+    // async work below may outlive the modal being closed.
+    const receipt = shareReceipt;
+    if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
+      try {
+        // CRITICAL: call clipboard.write synchronously inside the click
+        // handler so the user-gesture context is preserved. Earlier code
+        // awaited the fetch + canvas conversion FIRST, which Chrome treats
+        // as gesture-expired and rejects — making this button feel broken.
+        const pngPromise = (async () => {
+          const src = await fetchImageBlob(receipt.imageUrl);
+          return blobToPngBlob(src);
+        })();
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": pngPromise })]);
+        setCopyImageState("done");
+        setTimeout(() => setCopyImageState("idle"), 2000);
+        return;
+      } catch (err) {
+        console.warn("[Smacks copy] clipboard.write failed:", err);
+      }
     }
+    // Last-resort fallback: copy URL as text. Better than silently doing
+    // nothing — at least the user gets *something* on the clipboard.
+    await navigator.clipboard.writeText(receipt.imageUrl).catch(() => {});
+    setCopyImageState("done");
+    setTimeout(() => setCopyImageState("idle"), 2000);
   }
 
   function twitterUrl(r: ReceiptCard) {
@@ -378,32 +393,142 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
     return `https://twitter.com/intent/tweet?text=${text}`;
   }
 
-  async function handleFacebookShare(r: ReceiptCard) {
-    // Open the Facebook *sharer* dialog (not the home page) synchronously,
-    // before any await — popup blockers require the window.open to happen
-    // inside the click handler. The sharer URL pre-fills the post with a
-    // link to resistact.org so users land in an active compose box. We then
-    // copy the image to clipboard so they can paste it into that compose box.
-    // (Facebook intentionally doesn't allow programmatic image attachment.)
-    const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent("https://resistact.org")}`;
-    window.open(shareUrl, "_blank", "noopener,noreferrer");
-    // Copy image to clipboard so the user can paste directly into a FB post.
+  /** Decode any blob (WebP / JPG / PNG / etc.) into a PNG blob via a canvas.
+   *  Chrome's clipboard API only reliably supports `image/png` (and `image/jpeg`)
+   *  — pushing a WebP blob silently fails, which used to land users on the
+   *  "downloaded" fallback. Round-tripping through a canvas gives us PNG. */
+  async function blobToPngBlob(blob: Blob): Promise<Blob> {
+    const url = URL.createObjectURL(blob);
+    try {
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const i = new Image();
+        i.onload = () => resolve(i);
+        i.onerror = reject;
+        i.src = url;
+      });
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("canvas 2d unavailable");
+      ctx.drawImage(img, 0, 0);
+      const pngBlob: Blob = await new Promise((resolve, reject) => {
+        canvas.toBlob((b) => b ? resolve(b) : reject(new Error("toBlob null")), "image/png");
+      });
+      return pngBlob;
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  /** Universal image-to-clipboard helper.
+   *
+   *  CRITICAL detail: Chrome's clipboard.write() only honours the user-gesture
+   *  context if the call itself happens synchronously inside the click handler.
+   *  Earlier versions of this helper `await`-ed fetch + canvas conversion
+   *  BEFORE calling clipboard.write — which Chrome treats as "user gesture
+   *  expired" and rejects, silently sending us into the download fallback.
+   *
+   *  The fix is the Promise form of ClipboardItem: we call clipboard.write
+   *  immediately with a Promise that resolves to the PNG blob later. Chrome
+   *  preserves the gesture for the entire promise chain.
+   *
+   *  Returns true on success (clipboard or, on mobile, native share sheet);
+   *  false only when nothing worked, so the caller can decide whether to
+   *  surface an error or fall back to download. */
+  async function putImageOnClipboard(r: ReceiptCard): Promise<boolean> {
+    if (typeof ClipboardItem !== "undefined" && navigator.clipboard?.write) {
+      try {
+        // Build the Promise BEFORE calling clipboard.write so the
+        // synchronous call happens inside the user-gesture window.
+        const pngPromise = (async () => {
+          const src = await fetchImageBlob(r.imageUrl);
+          return blobToPngBlob(src);
+        })();
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": pngPromise })]);
+        return true;
+      } catch (err) {
+        console.warn("[Smacks share] clipboard.write failed:", err);
+      }
+    }
+    // Fallback path — mobile native share sheet with file attached.
     try {
       const blob = await fetchImageBlob(r.imageUrl);
-      await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
-      setFbInstruction("copied");
-    } catch {
-      // Clipboard not available — fall back to downloading the file.
-      await handleDownload(r);
-      setFbInstruction("downloaded");
+      const ext = blob.type.split("/")[1] || "jpg";
+      const file = new File(
+        [blob],
+        `${r.title.replace(/[^a-z0-9]/gi, "-").toLowerCase()}.${ext}`,
+        { type: blob.type }
+      );
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], text: r.caption ?? r.title });
+        return true;
+      }
+    } catch (err) {
+      console.warn("[Smacks share] native share failed:", err);
     }
-    setTimeout(() => setFbInstruction("idle"), 8000);
+    return false;
+  }
+
+  /** Kick off a clipboard-image write SYNCHRONOUSLY from a click handler,
+   *  before any focus-stealing window.open. Returns a promise that resolves to
+   *  the success/failure state — call this *first*, then open the platform
+   *  tab, then await the promise. Reversing this order causes Chrome to drop
+   *  the user-gesture context and reject the clipboard write, sending users
+   *  to the download fallback. */
+  function startClipboardWrite(r: ReceiptCard): Promise<boolean> {
+    if (typeof ClipboardItem === "undefined" || !navigator.clipboard?.write) {
+      return Promise.resolve(false);
+    }
+    const pngPromise = (async () => {
+      const src = await fetchImageBlob(r.imageUrl);
+      return blobToPngBlob(src);
+    })();
+    return navigator.clipboard
+      .write([new ClipboardItem({ "image/png": pngPromise })])
+      .then(() => true)
+      .catch((err) => { console.warn("[Smacks share] clipboard.write failed:", err); return false; });
+  }
+
+  async function handleFacebookShare(r: ReceiptCard) {
+    // Use the per-smack share page (e.g. /s/5001.html) so Facebook's scraper
+    // pulls the smack's OWN og:image. Each `/s/<id>.html` is a tiny static
+    // HTML stub generated at build time by scripts/generate-smack-share-pages.mjs
+    // with the smack's image as og:image. Clicking the link in Facebook
+    // bounces the user to /?smack=<id> on the main app via meta-refresh.
+    //
+    // Note: only STATIC_SMACKS (id ≥ 5000) have per-smack pages today —
+    // user-submitted smacks fall back to the homepage URL until the edge
+    // function gains a /s/<id> handler.
+    const hasStaticPage = r.id >= 5000;
+    const sharedUrl = hasStaticPage
+      ? `https://www.resistact.org/s/${r.id}.html`
+      : "https://www.resistact.org";
+
+    // CRITICAL ORDER (Chrome clipboard rules):
+    //   1. Start clipboard write SYNCHRONOUSLY (preserves user-gesture).
+    //   2. Open the Facebook sharer dialog synchronously (popup-blocker rule).
+    //   3. Await the clipboard promise.
+    const clipboardPromise = startClipboardWrite(r);
+    const fbShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(sharedUrl)}`;
+    window.open(fbShareUrl, "_blank", "noopener,noreferrer");
+    const ok = await clipboardPromise;
+    setFbInstruction(ok ? "copied" : "downloaded");
+    if (!ok) await handleDownload(r);
+    setTimeout(() => setFbInstruction("idle"), 12000);
   }
 
   async function handleInstagramShare(r: ReceiptCard) {
-    // Same pattern — open the app first, then trigger the download.
+    // Same critical order as handleFacebookShare — clipboard.write first
+    // (sync), then open the Instagram tab, then await. Instagram has no web
+    // share API, so the image-on-clipboard + manual paste is the only way to
+    // get a Smack into an IG post / story / DM from the desktop browser.
+    const clipboardPromise = startClipboardWrite(r);
     window.open("https://www.instagram.com/", "_blank");
-    await handleDownload(r);
+    const ok = await clipboardPromise;
+    setFbInstruction(ok ? "copied" : "downloaded");
+    if (!ok) await handleDownload(r);
+    setTimeout(() => setFbInstruction("idle"), 8000);
   }
 
   function threadsUrl(r: ReceiptCard) {
@@ -752,10 +877,19 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
                 </div>
               )}
 
-              {/* Share buttons — shown immediately on open */}
+              {/* Share buttons — shown immediately on open. The native-share
+                  button is ONLY shown on touch devices (iOS / Android), because
+                  on Mac/Windows desktop `navigator.share` opens the OS share
+                  sheet which usually only offers "Save to Files" (= download)
+                  rather than social-app targets — which made users think the
+                  Share button was downloading the image. On desktop, the
+                  orange "Copy image" button becomes the primary action and
+                  the platform tiles below copy the image to clipboard before
+                  opening the platform tab. */}
               <div className="grid grid-cols-4 gap-2">
-                {/* Native share with image file — mobile gets full share sheet */}
-                {typeof navigator !== "undefined" && "share" in navigator && (
+                {/* Native share with image file — mobile only */}
+                {typeof navigator !== "undefined" && "share" in navigator
+                    && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && (
                   <button
                     onClick={() => { trackShare(shareReceipt.id, "native"); handleNativeShare(); }}
                     className="col-span-4 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#23297e] hover:bg-[#1a2060] text-white font-['Poppins',sans-serif] font-bold text-sm transition-colors"
@@ -765,7 +899,7 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
                   </button>
                 )}
 
-                {/* Copy image to clipboard — paste directly into any platform */}
+                {/* Copy image to clipboard — primary action on desktop */}
                 <button
                   onClick={() => { trackShare(shareReceipt.id, "copy_image"); handleCopyImage(); }}
                   className="col-span-4 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#ed6624] hover:bg-[#c2521b] text-white font-['Poppins',sans-serif] font-bold text-sm transition-colors"
@@ -774,14 +908,25 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
                   {copyImageState === "copying" ? "Copying…" : copyImageState === "done" ? "Image copied! Paste anywhere." : "Copy image to clipboard"}
                 </button>
 
-                {/* Facebook paste instruction — appears after clicking Facebook */}
+                {/* Paste instruction — appears after clicking Facebook or
+                    Instagram. The smack image is on the clipboard as a
+                    backup; the FB share dialog will also show the smack
+                    image directly thanks to the per-smack /s/<id>.html
+                    pages with proper og:image meta tags. */}
                 {fbInstruction !== "idle" && (
-                  <div className="col-span-4 flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2.5 text-[11px] text-blue-800 font-['Poppins',sans-serif] leading-snug">
-                    <span className="text-base leading-none mt-0.5">📘</span>
+                  <div className="col-span-4 flex items-start gap-3 bg-[#ed6624]/10 border-2 border-[#ed6624] rounded-xl px-4 py-3 text-[12px] text-[#23297e] font-['Poppins',sans-serif] leading-snug">
+                    <span className="text-xl leading-none mt-0.5">✅</span>
                     <span>
                       {fbInstruction === "copied"
-                        ? <><strong>Image copied!</strong> In your Facebook post, click "Photo/Video" then paste with <strong>⌘V</strong> (Mac) or <strong>Ctrl+V</strong> (PC).</>
-                        : <><strong>Image downloaded!</strong> In your Facebook post, click "Photo/Video" and upload it from your Downloads folder.</>}
+                        ? <>
+                            <strong className="block text-[13px] mb-1">Ready to share!</strong>
+                            The Facebook share dialog will show this Smack as the preview — just add a comment and hit Share.
+                            <span className="block mt-1 text-[11px] text-gray-600 italic">Backup: the image is also on your clipboard (⌘V / Ctrl+V) if you'd rather paste it into a regular post or DM.</span>
+                          </>
+                        : <>
+                            <strong className="block text-[13px] mb-1">Image downloaded.</strong>
+                            In the post composer, click "Photo/Video" and upload it from your Downloads folder.
+                          </>}
                     </span>
                   </div>
                 )}

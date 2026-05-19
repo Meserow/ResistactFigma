@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useDeferredValue } from "react";
+import { Wrench, Clock, Globe, Flame, Smile, VenetianMask, Sun, Zap, MapPin, Users, DollarSign } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { initAnalytics, analytics } from "./lib/analytics";
 import { GAMIFICATION_KEYFRAMES } from "./lib/animations";
 import { burstConfetti } from "./lib/confetti";
@@ -1339,9 +1341,9 @@ export default function App() {
       {/* Site-updating banner */}
       {siteUpdating && (
         <div className="w-full bg-[#23297e] text-white text-center px-4 py-3 font-['Poppins',sans-serif] font-bold text-sm flex items-center justify-center gap-2">
-          <span>🔧</span>
-          <span>SITE UPDATING — PLEASE BE PATIENT (2 minutes!)</span>
-          <span>🔧</span>
+          <Wrench size={16} strokeWidth={2.25} className="text-white" />
+          <span>SITE UPDATING — Please be patient if you see any oddities!</span>
+          <Wrench size={16} strokeWidth={2.25} className="text-white" />
         </div>
       )}
 
@@ -1490,13 +1492,16 @@ export default function App() {
                 return "Remote + In-person";
               })();
               // Tone-stop names — must match MatchMeModal TONE_LABELS so the
-              // banner chip says exactly what the user picked.
-              const toneStops: Record<"anger" | "comedy" | "subversion" | "hope" | "energy", { icon: string; label: string; stops: string[] }> = {
-                anger:      { icon: "🔥", label: "Confrontational", stops: ["None", "Low", "Bold", "High"] },
-                comedy:     { icon: "😄", label: "Humor",           stops: ["None", "Light", "Irreverent", "Full mockery"] },
-                subversion: { icon: "🎭", label: "Subversive",      stops: ["None", "Mild", "Edgy", "Radical"] },
-                hope:       { icon: "🌅", label: "Hopeful",         stops: ["None", "Some", "Uplifting", "Full hope"] },
-                energy:     { icon: "⚡", label: "Motivation",      stops: ["Low",  "Mild",  "Engaged", "On fire"] },
+              // banner chip says exactly what the user picked. Icons render as
+              // simple navy line-icons (lucide-react) — replaced the older
+              // colourful emoji set so the strip reads as one unified UI
+              // element rather than a row of disparate Unicode glyphs.
+              const toneStops: Record<"anger" | "comedy" | "subversion" | "hope" | "energy", { Icon: LucideIcon; label: string; stops: string[] }> = {
+                anger:      { Icon: Flame,         label: "Confrontational", stops: ["None", "Low", "Bold", "High"] },
+                comedy:     { Icon: Smile,         label: "Humor",           stops: ["None", "Light", "Irreverent", "Full mockery"] },
+                subversion: { Icon: VenetianMask,  label: "Subversive",      stops: ["None", "Mild", "Edgy", "Radical"] },
+                hope:       { Icon: Sun,           label: "Hopeful",         stops: ["None", "Some", "Uplifting", "Full hope"] },
+                energy:     { Icon: Zap,           label: "Motivation",      stops: ["Low",  "Mild",  "Engaged", "On fire"] },
               };
               // Show all 5 tone dims always, but visually distinguish dims at
               // the default (1) from ones the user has moved off. Defaults
@@ -1510,7 +1515,7 @@ export default function App() {
                   const raw = matchPrefs.tone[k] ?? 1;
                   const v = Math.max(0, Math.min(3, raw));
                   return {
-                    icon: toneStops[k].icon,
+                    Icon: toneStops[k].Icon,
                     label: toneStops[k].label,
                     value: toneStops[k].stops[v],
                     isDefault: raw === 1,
@@ -1525,42 +1530,53 @@ export default function App() {
                       <strong className="text-[#23297e]">Matched for you.</strong>{" "}
                       Showing <strong className="text-[#23297e]">{displayedCards.length}</strong> {displayedCards.length === 1 ? "action" : "actions"}.
                     </p>
-                    {/* Chip strip — wraps on narrow viewports. */}
+                    {/* Chip strip — wraps on narrow viewports. All icons are
+                        simple navy line-icons so the strip reads as one unified
+                        UI element rather than a row of disparate emoji. */}
                     <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-gray-600 font-['Poppins',sans-serif]">
                       {timeLabel && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5">
-                          ⏱ {timeLabel}
+                          <Clock size={11} className="text-[#23297e] shrink-0" strokeWidth={2} />
+                          {timeLabel}
                         </span>
                       )}
                       <span className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5">
-                        🗺 {settingLabel}
+                        <Globe size={11} className="text-[#23297e] shrink-0" strokeWidth={2} />
+                        {settingLabel}
                       </span>
-                      {toneChips.map((c) => (
-                        <span
-                          key={c.icon}
-                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 border ${
-                            c.isDefault
-                              ? "bg-gray-50 border-gray-100 text-gray-400"
-                              : "bg-[#ed6624]/10 border-[#ed6624]/30 text-[#23297e] font-semibold"
-                          }`}
-                          title={c.isDefault ? `${c.label} — default (not set)` : `${c.label} bumped to ${c.value}`}
-                        >
-                          {c.icon} {c.label}: {c.value}
-                        </span>
-                      ))}
+                      {toneChips.map((c) => {
+                        const Icon = c.Icon;
+                        return (
+                          <span
+                            key={c.label}
+                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 border ${
+                              c.isDefault
+                                ? "bg-gray-50 border-gray-100 text-gray-400"
+                                : "bg-[#ed6624]/10 border-[#ed6624]/30 text-[#23297e] font-semibold"
+                            }`}
+                            title={c.isDefault ? `${c.label} — default (not set)` : `${c.label} bumped to ${c.value}`}
+                          >
+                            <Icon size={11} className={`shrink-0 ${c.isDefault ? "text-gray-400" : "text-[#23297e]"}`} strokeWidth={2} />
+                            {c.label}: {c.value}
+                          </span>
+                        );
+                      })}
                       {matchPrefs.state && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5">
-                          📍 {matchPrefs.state}
+                          <MapPin size={11} className="text-[#23297e] shrink-0" strokeWidth={2} />
+                          {matchPrefs.state}
                         </span>
                       )}
                       {groupCount > 0 && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5">
-                          🤝 Amplifies {groupCount} {groupCount === 1 ? "group" : "groups"}
+                          <Users size={11} className="text-[#23297e] shrink-0" strokeWidth={2} />
+                          Amplifies {groupCount} {groupCount === 1 ? "group" : "groups"}
                         </span>
                       )}
                       {matchPrefs.focusDonations && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5">
-                          💵 Donation focus
+                          <DollarSign size={11} className="text-[#23297e] shrink-0" strokeWidth={2} />
+                          Donation focus
                         </span>
                       )}
                     </div>
