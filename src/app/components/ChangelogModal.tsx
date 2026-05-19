@@ -62,7 +62,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
                 <h4 className="font-['Poppins',sans-serif] text-[13px] font-bold text-[#23297e] mb-1">
                   {section.heading}
                 </h4>
-                <ul className="space-y-1 pl-4 list-disc marker:text-[#fd8e33]">
+                <ul className="space-y-1 pl-4 list-disc marker:text-[#ed6624]">
                   {section.items.map((item, j) => (
                     <li
                       key={j}

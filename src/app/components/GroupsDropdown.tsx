@@ -53,7 +53,7 @@ export function GroupsDropdown({ value, onToggle, onClear, placeholder = "Select
                     e.stopPropagation();
                     onToggle(g);
                   }}
-                  className="inline-flex items-center gap-1 rounded-full bg-[#fd8e33]/10 px-2.5 py-1 font-['Poppins',sans-serif] text-[12px] font-medium text-[#23297e] hover:bg-[#fd8e33]/20"
+                  className="inline-flex items-center gap-1 rounded-full bg-[#ed6624]/10 px-2.5 py-1 font-['Poppins',sans-serif] text-[12px] font-medium text-[#23297e] hover:bg-[#ed6624]/20"
                   title="Remove"
                 >
                   {label}
@@ -101,7 +101,7 @@ export function GroupsDropdown({ value, onToggle, onClear, placeholder = "Select
                       >
                         <span
                           className={`mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
-                            checked ? "border-[#fd8e33] bg-[#fd8e33]" : "border-gray-400"
+                            checked ? "border-[#ed6624] bg-[#ed6624]" : "border-gray-400"
                           }`}
                           aria-hidden="true"
                         >

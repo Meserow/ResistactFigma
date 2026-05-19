@@ -371,7 +371,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
                 <Clock size={14} strokeWidth={2} className="text-[#23297e] mr-1.5 shrink-0" />
                 <strong className="font-['Poppins',sans-serif] font-semibold text-xs text-[#23297e]">Time</strong>
                 <span className="ml-1.5 font-['Poppins',sans-serif] text-[11px] text-gray-500">
-                  · <span className="font-medium text-[#fd8e33]">{tLevel.title}</span> — {tLevel.desc}
+                  · <span className="font-medium text-[#ed6624]">{tLevel.title}</span> — {tLevel.desc}
                 </span>
               </div>
               <ToneRangeSlider value={tIdx} onChange={(v) => setInvolvement(TIME_STOPS[v].key)} max={4} />
@@ -409,7 +409,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
                           <strong className="font-['Poppins',sans-serif] font-semibold text-xs text-[#23297e]">{label}</strong>
                           {stop && (
                             <span className="ml-1.5 font-['Poppins',sans-serif] text-[11px] text-gray-500 truncate">
-                              · <span className="font-medium text-[#fd8e33]">{stop.label}</span> — {stop.desc}
+                              · <span className="font-medium text-[#ed6624]">{stop.label}</span> — {stop.desc}
                             </span>
                           )}
                           <button
@@ -437,7 +437,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className="flex items-center gap-1.5 px-3 py-2 bg-[#fd8e33] hover:bg-[#d96612] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-semibold text-xs rounded-lg transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 bg-[#ed6624] hover:bg-[#c2521b] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-semibold text-xs rounded-lg transition-colors"
               >
                 {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
                 {uploading ? "Uploading…" : "Upload from computer"}
@@ -447,7 +447,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
                 <input
                   type="checkbox" checked={imageContain}
                   onChange={(e) => setImageContain(e.target.checked)}
-                  className="w-3.5 h-3.5 rounded accent-[#fd8e33]"
+                  className="w-3.5 h-3.5 rounded accent-[#ed6624]"
                 />
                 <span className="font-['Poppins',sans-serif] text-[11.5px] text-gray-500">Fit logo (don't crop)</span>
               </label>

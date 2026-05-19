@@ -48,16 +48,16 @@ export function BookmarksPanel({ cards, bookmarkedIds, onBookmark, onClose, isLo
 
         {/* Anonymous sync nudge */}
         {!isLoggedIn && bookmarked.length > 0 && (
-          <div className="px-4 py-3 bg-[#fd8e33]/10 border-b border-[#fd8e33]/20 flex items-start gap-3">
+          <div className="px-4 py-3 bg-[#ed6624]/10 border-b border-[#ed6624]/20 flex items-start gap-3">
             <span className="text-lg leading-none mt-0.5">⚡</span>
             <div className="flex-1 min-w-0">
               <p className="font-['Poppins',sans-serif] text-[12px] text-gray-700 leading-snug">
-                <strong className="text-[#fd8e33]">Sign in</strong> to sync bookmarks across devices and never lose them.
+                <strong className="text-[#ed6624]">Sign in</strong> to sync bookmarks across devices and never lose them.
               </p>
             </div>
             <button
               onClick={() => { onClose(); onLoginClick(); }}
-              className="shrink-0 px-3 py-1 rounded-full bg-[#fd8e33] text-white font-['Poppins',sans-serif] font-bold text-xs hover:bg-[#d96612] transition-colors"
+              className="shrink-0 px-3 py-1 rounded-full bg-[#ed6624] text-white font-['Poppins',sans-serif] font-bold text-xs hover:bg-[#c2521b] transition-colors"
             >
               Sign in
             </button>

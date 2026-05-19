@@ -71,7 +71,7 @@ export function FlagCardModal({ cardId, cardTitle, accessToken, onClose }: FlagC
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div className="flex items-center gap-2">
-            <Flag size={18} className="text-[#fd8e33]" />
+            <Flag size={18} className="text-[#ed6624]" />
             <p className="font-['Poppins',sans-serif] font-bold text-gray-900 text-[16px] leading-tight">
               Report a problem
             </p>
@@ -106,7 +106,7 @@ export function FlagCardModal({ cardId, cardTitle, accessToken, onClose }: FlagC
                   value={r.value}
                   checked={reason === r.value}
                   onChange={() => setReason(r.value)}
-                  className="accent-[#fd8e33]"
+                  className="accent-[#ed6624]"
                 />
                 <span className="font-['Poppins',sans-serif] text-[13px] text-gray-800">
                   {r.label}
@@ -125,7 +125,7 @@ export function FlagCardModal({ cardId, cardTitle, accessToken, onClose }: FlagC
               maxLength={500}
               rows={2}
               placeholder="Anything an admin should know."
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-1.5 font-['Poppins',sans-serif] text-[13px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#fd8e33] focus:border-transparent"
+              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-1.5 font-['Poppins',sans-serif] text-[13px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#ed6624] focus:border-transparent"
             />
           </label>
         </div>
@@ -150,7 +150,7 @@ export function FlagCardModal({ cardId, cardTitle, accessToken, onClose }: FlagC
           <button
             onClick={submit}
             disabled={submitting || status === "ok"}
-            className="px-4 py-2 font-['Poppins',sans-serif] text-sm font-bold bg-[#fd8e33] hover:bg-[#e07a28] disabled:opacity-60 text-white rounded-lg transition-colors"
+            className="px-4 py-2 font-['Poppins',sans-serif] text-sm font-bold bg-[#ed6624] hover:bg-[#e07a28] disabled:opacity-60 text-white rounded-lg transition-colors"
           >
             {submitting ? "Sending…" : "Send report"}
           </button>

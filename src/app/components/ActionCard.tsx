@@ -172,11 +172,11 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
   //    overlay (translucent white pill) and as the inline action when there
   //    is no header image.
   function BoostButton({ onImage = false }: { onImage?: boolean }) {
-    const boostedClasses = "bg-[#fd8e33]/80 text-white shadow-md";
+    const boostedClasses = "bg-[#ed6624]/80 text-white shadow-md";
     const idleOnImageClasses =
-      "bg-white/85 backdrop-blur-sm text-[#fd8e33] shadow-sm hover:bg-white";
+      "bg-white/85 backdrop-blur-sm text-[#ed6624] shadow-sm hover:bg-white";
     const idleOffImageClasses =
-      "bg-[#fd8e33]/10 text-[#fd8e33] hover:bg-[#fd8e33]/20";
+      "bg-[#ed6624]/10 text-[#ed6624] hover:bg-[#ed6624]/20";
 
     return (
       <button
@@ -218,8 +218,8 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           aria-label={`Share ${card.title}`}
           className={`w-7 h-7 flex items-center justify-center rounded-full backdrop-blur-sm transition-colors ${
             card.pinToTop
-              ? "bg-[#fd8e33] text-white hover:bg-[#d96612]"
-              : "bg-white/90 text-gray-500 hover:text-[#fd8e33] hover:bg-white"
+              ? "bg-[#ed6624] text-white hover:bg-[#c2521b]"
+              : "bg-white/90 text-gray-500 hover:text-[#ed6624] hover:bg-white"
           }`}
         >
           {card.pinToTop ? <Flame size={13} /> : <Share2 size={13} />}
@@ -346,7 +346,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
             {isDescriptionLong && (
               <button
                 onClick={(e) => { e.stopPropagation(); setDetailsOpen(true); }}
-                className="self-end font-['Poppins',sans-serif] italic text-[12px] font-normal text-[#fd8e33] underline underline-offset-2 decoration-[#fd8e33]/40 hover:decoration-[#fd8e33]"
+                className="self-end font-['Poppins',sans-serif] italic text-[12px] font-normal text-[#ed6624] underline underline-offset-2 decoration-[#ed6624]/40 hover:decoration-[#ed6624]"
               >
                 Read more →
               </button>

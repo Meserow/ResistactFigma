@@ -85,10 +85,10 @@ export const GAMIFICATION_KEYFRAMES = `
   }
   /* Flicker: a flame that breathes — subtle scale + skew so it feels organic. */
   @keyframes resistact-flicker {
-    0%, 100% { transform: scale(1)    skewX(0deg);    filter: drop-shadow(0 0 4px #fd8e33aa); }
-    20%      { transform: scale(1.1)  skewX(-2deg);   filter: drop-shadow(0 0 8px #fd8e33cc); }
-    50%      { transform: scale(0.95) skewX(1.5deg);  filter: drop-shadow(0 0 3px #fd8e3399); }
-    75%      { transform: scale(1.08) skewX(-1deg);   filter: drop-shadow(0 0 7px #fd8e33bb); }
+    0%, 100% { transform: scale(1)    skewX(0deg);    filter: drop-shadow(0 0 4px #ed6624aa); }
+    20%      { transform: scale(1.1)  skewX(-2deg);   filter: drop-shadow(0 0 8px #ed6624cc); }
+    50%      { transform: scale(0.95) skewX(1.5deg);  filter: drop-shadow(0 0 3px #ed662499); }
+    75%      { transform: scale(1.08) skewX(-1deg);   filter: drop-shadow(0 0 7px #ed6624bb); }
   }
   /* Shimmer: a diagonal highlight sweeps across the element every 6s. */
   @keyframes resistact-shimmer {

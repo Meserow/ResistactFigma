@@ -114,7 +114,7 @@ export function CardDetailsModal({ card, onClose, onShare }: CardDetailsModalPro
           {onShare ? (
             <button
               onClick={() => { onClose(); onShare(); }}
-              className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-[#fd8e33] px-5 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#d96612]"
+              className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-[#ed6624] px-5 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#c2521b]"
             >
               <Flame size={14} /> Spread the Word!
             </button>
@@ -123,7 +123,7 @@ export function CardDetailsModal({ card, onClose, onShare }: CardDetailsModalPro
               href={link}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-[#fd8e33] px-5 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#d96612]"
+              className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-[#ed6624] px-5 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#c2521b]"
             >
               I want to ResistAct! <ExternalLink size={14} />
             </a>

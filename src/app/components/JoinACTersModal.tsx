@@ -68,7 +68,7 @@ export function JoinACTersModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative bg-[#fd8e33] rounded-2xl shadow-2xl w-full max-w-[560px] overflow-hidden"
+        className="relative bg-[#ed6624] rounded-2xl shadow-2xl w-full max-w-[560px] overflow-hidden"
       >
         {/* Close */}
         <button

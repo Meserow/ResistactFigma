@@ -28,7 +28,7 @@ interface ConfettiOpts {
 }
 
 const DEFAULT_COLORS = [
-  "#fd8e33", // ResistAct orange
+  "#ed6624", // ResistAct orange
   "#23297e", // ResistAct navy
   "#FCD34D", // yellow
   "#10B981", // emerald

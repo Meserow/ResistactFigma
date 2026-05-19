@@ -83,7 +83,7 @@ export function LoggedInHero({ userId, name, newActionsToday, onMatchClick, onAs
       <div className="max-w-[880px] mx-auto px-5 py-3 text-center">
         <p className="font-['Poppins',sans-serif] text-[#23297e] text-[20px] md:text-[24px] font-bold leading-[1.2] m-0">
           {greeting}, {firstName}.{" "}
-          <em className="italic font-semibold text-[#fd8e33]">
+          <em className="italic font-semibold text-[#ed6624]">
             {showStreakFlame && (
               <span className="resistact-anim-flicker mr-1" aria-hidden title={`${streak}-day streak — keep it lit!`}>🔥</span>
             )}

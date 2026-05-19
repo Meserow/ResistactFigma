@@ -1009,8 +1009,8 @@ export default function App() {
       const el = document.getElementById(`card-${deepLinkId}`);
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "center" });
-        el.classList.add("ring-2", "ring-[#fd8e33]", "ring-offset-2");
-        setTimeout(() => el.classList.remove("ring-2", "ring-[#fd8e33]", "ring-offset-2"), 2500);
+        el.classList.add("ring-2", "ring-[#ed6624]", "ring-offset-2");
+        setTimeout(() => el.classList.remove("ring-2", "ring-[#ed6624]", "ring-offset-2"), 2500);
         setDeepLinkId(null);
         // Clean the param from the URL bar without triggering a reload.
         const url = new URL(window.location.href);
@@ -1384,12 +1384,12 @@ export default function App() {
             return (
               <>
                 {/* ── Facts hero panel ── */}
-                <div className="mb-5 rounded-2xl border border-[#23297e]/15 bg-gradient-to-br from-[#23297e]/5 via-white to-[#fd8e33]/5 px-4 py-3.5 sm:px-5 sm:py-4">
+                <div className="mb-5 rounded-2xl border border-[#23297e]/15 bg-gradient-to-br from-[#23297e]/5 via-white to-[#ed6624]/5 px-4 py-3.5 sm:px-5 sm:py-4">
                   <p className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-sm sm:text-base mb-1.5 flex items-center gap-1.5">
                     <span aria-hidden="true">🧠</span> What's a Fact?
                   </p>
                   <p className="font-['Poppins',sans-serif] text-xs sm:text-sm text-gray-700 leading-snug">
-                    MAGA spreads lies faster than you can look them up. <strong className="text-[#23297e]">The Facts</strong> gives you pre-loaded rebuttals — the claim, the truth, and a question to ask back that puts them on defense. <span className="text-[#fd8e33] font-semibold">Read one. Use it. Win the argument.</span>
+                    MAGA spreads lies faster than you can look them up. <strong className="text-[#23297e]">The Facts</strong> gives you pre-loaded rebuttals — the claim, the truth, and a question to ask back that puts them on defense. <span className="text-[#ed6624] font-semibold">Read one. Use it. Win the argument.</span>
                   </p>
                 </div>
                 <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-5">
@@ -1435,7 +1435,7 @@ export default function App() {
                 </p>
                 <button
                   onClick={() => setMatchOpen(true)}
-                  className="shrink-0 font-['Poppins',sans-serif] text-xs font-bold text-[#fd8e33] hover:text-[#e07a28] hover:underline transition-colors whitespace-nowrap"
+                  className="shrink-0 font-['Poppins',sans-serif] text-xs font-bold text-[#ed6624] hover:text-[#e07a28] hover:underline transition-colors whitespace-nowrap"
                 >
                   ✨ Find my match →
                 </button>
@@ -1518,7 +1518,7 @@ export default function App() {
                 });
               const groupCount = matchPrefs.vulnerableGroups?.length ?? 0;
               return (
-                <div className="mb-4 flex flex-col gap-2 rounded-lg border border-[#fd8e33] bg-[#fd8e33]/5 px-4 py-2.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                <div className="mb-4 flex flex-col gap-2 rounded-lg border border-[#ed6624] bg-[#ed6624]/5 px-4 py-2.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="font-['Poppins',sans-serif] text-sm text-gray-700">
                       <span className="resistact-anim-twinkle" aria-hidden>✨</span>{" "}
@@ -1541,7 +1541,7 @@ export default function App() {
                           className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 border ${
                             c.isDefault
                               ? "bg-gray-50 border-gray-100 text-gray-400"
-                              : "bg-[#fd8e33]/10 border-[#fd8e33]/30 text-[#23297e] font-semibold"
+                              : "bg-[#ed6624]/10 border-[#ed6624]/30 text-[#23297e] font-semibold"
                           }`}
                           title={c.isDefault ? `${c.label} — default (not set)` : `${c.label} bumped to ${c.value}`}
                         >
@@ -1574,7 +1574,7 @@ export default function App() {
                     </button>
                     <button
                       onClick={() => { setMatchPrefs(null); clearPreferences(); }}
-                      className="font-['Poppins',sans-serif] text-xs font-semibold text-gray-600 hover:text-[#fd8e33]"
+                      className="font-['Poppins',sans-serif] text-xs font-semibold text-gray-600 hover:text-[#ed6624]"
                     >
                       Clear
                     </button>
@@ -1668,8 +1668,8 @@ export default function App() {
           (not full-width) so it no longer covers this. */}
       <div className="fixed bottom-0 inset-x-0 z-30 bg-white border-t border-gray-200 shadow-[0_-1px_3px_rgba(0,0,0,0.08)]">
         <p className="font-['Poppins',sans-serif] text-center text-[14px] md:text-base py-5 px-4 leading-tight">
-          <strong className="font-bold text-[#23297e]">Pick one. <span className="text-[#fd8e33]">Do it.</span> Share it.</strong>{" "}
-          <em className="italic font-bold text-[#fd8e33]">Come back tomorrow.</em>
+          <strong className="font-bold text-[#23297e]">Pick one. <span className="text-[#ed6624]">Do it.</span> Share it.</strong>{" "}
+          <em className="italic font-bold text-[#ed6624]">Come back tomorrow.</em>
         </p>
       </div>
 
@@ -1685,7 +1685,7 @@ export default function App() {
             </p>
             <button
               onClick={() => { setScrollNudgeVisible(false); setMatchOpen(true); }}
-              className="px-3.5 py-1.5 bg-[#fd8e33] hover:bg-[#e07a28] text-white font-['Poppins',sans-serif] font-bold text-[13px] rounded-lg transition-colors whitespace-nowrap"
+              className="px-3.5 py-1.5 bg-[#ed6624] hover:bg-[#e07a28] text-white font-['Poppins',sans-serif] font-bold text-[13px] rounded-lg transition-colors whitespace-nowrap"
             >
               ✨ Quick Match Tool
             </button>
@@ -1792,7 +1792,7 @@ export default function App() {
                 burstConfetti({
                   pieces: 180,
                   duration: 3600,
-                  colors: ["#fd8e33", "#ffb066", "#ffcc8c", "#e07a28", "#c4661f", "#ffe0bf"],
+                  colors: ["#ed6624", "#ffb066", "#ffcc8c", "#e07a28", "#c4661f", "#ffe0bf"],
                 });
                 localStorage.setItem("resistact_first_match_done", "1");
               }

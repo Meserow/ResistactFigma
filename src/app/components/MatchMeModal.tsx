@@ -152,7 +152,7 @@ function ProgressDots({ step, total }: { step: number; total: number }) {
         <div
           key={i}
           className={`h-1.5 rounded-full transition-all ${
-            i === step ? "w-8 bg-[#fd8e33]" : i < step ? "w-1.5 bg-[#fd8e33]" : "w-1.5 bg-gray-300"
+            i === step ? "w-8 bg-[#ed6624]" : i < step ? "w-1.5 bg-[#ed6624]" : "w-1.5 bg-gray-300"
           }`}
         />
       ))}
@@ -545,7 +545,7 @@ function StepToneAndPreview({
                   Time Commitment
                 </span>
                 <span className="font-['Poppins',sans-serif] text-[10.5px] text-gray-500 truncate">
-                  · <span className="font-medium text-[#fd8e33]">{tLevel.title}</span> — {tLevel.desc}
+                  · <span className="font-medium text-[#ed6624]">{tLevel.title}</span> — {tLevel.desc}
                 </span>
               </div>
               {/* Slider track starts at pl-5 — same offset as Location + tone sliders.
@@ -579,7 +579,7 @@ function StepToneAndPreview({
                   Location
                 </span>
                 <span className="font-['Poppins',sans-serif] text-[10.5px] text-gray-500 truncate">
-                  · <span className="font-medium text-[#fd8e33]">{sStop.label}</span> — online/at home or in person
+                  · <span className="font-medium text-[#ed6624]">{sStop.label}</span> — online/at home or in person
                 </span>
               </div>
               <div className="pl-5">
@@ -605,7 +605,7 @@ function StepToneAndPreview({
                   {label}
                 </span>
                 <span className="font-['Poppins',sans-serif] text-[10.5px] text-gray-500 truncate">
-                  · <span className="font-medium text-[#fd8e33]">{stop.label}</span> — {stop.desc}
+                  · <span className="font-medium text-[#ed6624]">{stop.label}</span> — {stop.desc}
                 </span>
               </div>
               <div className="pl-5">
@@ -654,7 +654,7 @@ function StepToneAndPreview({
                           className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-['Poppins',sans-serif] text-xs transition ${
                             isFlagged
                               ? "border-gray-200 text-gray-400 opacity-60 cursor-default"
-                              : "border-[#fd8e33] text-gray-700 hover:bg-[#fd8e33]/10 hover:text-[#fd8e33]"
+                              : "border-[#ed6624] text-gray-700 hover:bg-[#ed6624]/10 hover:text-[#ed6624]"
                           }`}
                         >
                           <ThumbsDown size={14} strokeWidth={2} className="shrink-0" />
@@ -814,7 +814,7 @@ function StepGroups({
                 type="checkbox"
                 checked={includeAnywhere}
                 onChange={(e) => onIncludeAnywhereChange(e.target.checked)}
-                className="w-4 h-4 rounded accent-[#fd8e33]"
+                className="w-4 h-4 rounded accent-[#ed6624]"
               />
               <span className="font-['Poppins',sans-serif] text-sm text-gray-600">
                 Show all states, prioritize mine
@@ -850,8 +850,8 @@ function StepGroups({
             aria-pressed={focusDonations}
             className={`inline-flex flex-col items-start rounded-2xl border px-4 py-2 font-['Poppins',sans-serif] text-left transition-colors ${
               focusDonations
-                ? "border-[#fd8e33] bg-[#fd8e33] text-white"
-                : "border-gray-300 bg-white text-gray-700 hover:border-[#fd8e33] hover:text-[#fd8e33]"
+                ? "border-[#ed6624] bg-[#ed6624] text-white"
+                : "border-gray-300 bg-white text-gray-700 hover:border-[#ed6624] hover:text-[#ed6624]"
             }`}
           >
             <span className="text-[13px] font-semibold leading-tight">

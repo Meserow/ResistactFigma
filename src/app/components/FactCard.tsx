@@ -161,8 +161,8 @@ export function FactCard({ card, onBoost, isBoosted, boostCount = 0 }: FactCardP
             onClick={() => onBoost?.(card.id)}
             className={`flex items-center gap-1 px-3 py-1.5 rounded-xl font-['Poppins',sans-serif] font-bold text-[12px] transition-all ${
               isBoosted
-                ? "bg-[#fd8e33]/80 text-white"
-                : "bg-[#fd8e33] hover:bg-[#e07a28] text-white shadow-sm"
+                ? "bg-[#ed6624]/80 text-white"
+                : "bg-[#ed6624] hover:bg-[#e07a28] text-white shadow-sm"
             }`}
           >
             🔥 {isBoosted ? "Boosted!" : "Boost"}

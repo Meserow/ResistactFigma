@@ -1223,7 +1223,7 @@ function MatcherTuning({ accessToken }: { accessToken: string }) {
                   {label}
                 </strong>
                 <span className="ml-2 font-['Poppins',sans-serif] text-xs text-gray-500 truncate">
-                  · <span className="font-medium text-[#fd8e33]">{stop.label}</span> — {stop.desc}
+                  · <span className="font-medium text-[#ed6624]">{stop.label}</span> — {stop.desc}
                 </span>
                 {isModified && (
                   <span className="ml-auto shrink-0 font-['Poppins',sans-serif] text-[10px] text-gray-400">
@@ -1268,7 +1268,7 @@ function MatcherTuning({ accessToken }: { accessToken: string }) {
         <button
           onClick={save}
           disabled={!dirty || saving}
-          className="ml-auto flex items-center gap-1.5 px-4 py-2 text-xs font-['Poppins',sans-serif] font-bold text-white bg-[#fd8e33] hover:bg-[#e07a28] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed rounded-lg transition-colors"
+          className="ml-auto flex items-center gap-1.5 px-4 py-2 text-xs font-['Poppins',sans-serif] font-bold text-white bg-[#ed6624] hover:bg-[#e07a28] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed rounded-lg transition-colors"
         >
           {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
           {saving ? "Saving…" : dirty ? "Save changes" : "Saved"}

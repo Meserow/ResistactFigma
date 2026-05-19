@@ -35,18 +35,18 @@ export function HomeHero({ onMatchClick, onAskClick, onHowClick }: HomeHeroProps
 
   return (
     <div className="bg-white relative overflow-hidden border-b border-[#f0e8de]">
-      <div className="relative z-10 max-w-[880px] mx-auto px-5 pt-3 pb-3 text-center">
-        <div className="flex items-center justify-center h-[92px] md:h-[120px]">
+      <div className="relative z-10 max-w-[880px] mx-auto px-5 pt-1 pb-2 text-center">
+        <div className="flex items-center justify-center">
           {phase < 2 && (
-            <div key="text">
-              <h1 className="hero-line-fade-in font-['Poppins',sans-serif] text-[#2a2a2a] text-[18px] md:text-[22px] font-bold leading-[1.2]">
+            <div key="text" className="py-1">
+              <h1 className="hero-line-fade-in font-['Poppins',sans-serif] text-[#2a2a2a] text-[14px] md:text-[17px] font-bold leading-[1.2]">
                 America is being run by cartoon villains. MAGA is nuts.
               </h1>
               {phase >= 1 && (
                 <p
                   key="orange"
-                  className="hero-orange-slide-in font-['Rock_Salt',cursive] not-italic font-bold text-[#fd8e33] text-[22px] md:text-[30px] leading-none mt-3 md:mt-4"
-                  style={{ WebkitTextStroke: "1.25px #fd8e33", paintOrder: "stroke fill" }}
+                  className="hero-orange-slide-in font-['Rock_Salt',cursive] not-italic font-bold text-[#ed6624] text-[17px] md:text-[22px] leading-none mt-2 md:mt-3"
+                  style={{ WebkitTextStroke: "1.25px #ed6624", paintOrder: "stroke fill" }}
                 >
                   But what can one person do?
                 </p>
@@ -58,10 +58,7 @@ export function HomeHero({ onMatchClick, onAskClick, onHowClick }: HomeHeroProps
               <img
                 src={logoImg}
                 alt="ResistAct"
-                className="h-16 md:h-24 w-auto block"
-                style={{
-                  clipPath: "polygon(0 0, 100% 0, 100% 85%, 14% 85%, 14% 100%, 0 100%)",
-                }}
+                className="h-[68px] md:h-[95px] w-auto block"
               />
             </div>
           )}
