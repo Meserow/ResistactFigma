@@ -13,11 +13,11 @@ interface FlagCardModalProps {
 }
 
 const REASONS = [
-  { value: "broken-link", label: "Link is broken / 404" },
-  { value: "out-of-date", label: "Event is past or info is stale" },
-  { value: "wrong-info", label: "Description or details are wrong" },
-  { value: "not-on-topic", label: "Not actually a resistance action" },
-  { value: "duplicate", label: "Duplicate of another card" },
+  { value: "broken-link", label: "Link is broken" },
+  { value: "wrong-info", label: "Details are wrong" },
+  { value: "duplicate", label: "Duplicate" },
+  { value: "out-of-date", label: "Info is stale" },
+  { value: "not-on-topic", label: "Not a resistance act" },
   { value: "other", label: "Something else" },
 ];
 
@@ -67,12 +67,12 @@ export function FlagCardModal({ cardId, cardTitle, accessToken, onClose }: FlagC
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden"
+        className="w-full max-w-md max-h-[calc(100dvh-1.5rem)] bg-white rounded-2xl shadow-xl flex flex-col overflow-hidden"
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 shrink-0">
           <div className="flex items-center gap-2">
-            <Flag size={18} className="text-[#fd8e33]" />
-            <p className="font-['Poppins',sans-serif] font-bold text-gray-900 text-[16px] leading-tight">
+            <Flag size={16} className="text-[#ed6624]" />
+            <p className="font-['Poppins',sans-serif] font-bold text-gray-900 text-[15px] leading-tight">
               Report a problem
             </p>
           </div>
@@ -81,20 +81,20 @@ export function FlagCardModal({ cardId, cardTitle, accessToken, onClose }: FlagC
             aria-label="Close"
             className="text-gray-400 hover:text-gray-600 transition-colors"
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
-        <div className="px-5 py-3">
-          <p className="font-['Poppins',sans-serif] text-[13px] text-gray-600 mb-2.5 leading-snug">
+        <div className="px-4 py-2.5 overflow-y-auto flex-1">
+          <p className="font-['Poppins',sans-serif] text-[12px] text-gray-600 mb-2 leading-snug">
             Flagging <span className="font-semibold text-gray-900">"{cardTitle}"</span>
             {" "}for admin review.
           </p>
 
-          <p className="font-['Poppins',sans-serif] font-semibold text-[11px] uppercase tracking-wider text-gray-500 mb-1">
+          <p className="font-['Poppins',sans-serif] font-semibold text-[10px] uppercase tracking-wider text-gray-500 mb-1">
             What's wrong?
           </p>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-1 mb-3">
+          <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 mb-2.5">
             {REASONS.map((r) => (
               <label
                 key={r.value}
@@ -106,9 +106,9 @@ export function FlagCardModal({ cardId, cardTitle, accessToken, onClose }: FlagC
                   value={r.value}
                   checked={reason === r.value}
                   onChange={() => setReason(r.value)}
-                  className="accent-[#fd8e33]"
+                  className="accent-[#ed6624] shrink-0"
                 />
-                <span className="font-['Poppins',sans-serif] text-[13px] text-gray-800">
+                <span className="font-['Poppins',sans-serif] font-normal text-[12px] text-gray-800 leading-tight">
                   {r.label}
                 </span>
               </label>
@@ -116,7 +116,7 @@ export function FlagCardModal({ cardId, cardTitle, accessToken, onClose }: FlagC
           </div>
 
           <label className="block">
-            <span className="font-['Poppins',sans-serif] font-semibold text-[11px] uppercase tracking-wider text-gray-500">
+            <span className="font-['Poppins',sans-serif] font-semibold text-[10px] uppercase tracking-wider text-gray-500">
               Detail (optional)
             </span>
             <textarea
@@ -125,12 +125,12 @@ export function FlagCardModal({ cardId, cardTitle, accessToken, onClose }: FlagC
               maxLength={500}
               rows={2}
               placeholder="Anything an admin should know."
-              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-1.5 font-['Poppins',sans-serif] text-[13px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#fd8e33] focus:border-transparent"
+              className="mt-0.5 w-full rounded-lg border border-gray-300 px-2.5 py-1.5 font-['Poppins',sans-serif] text-[12px] text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#ed6624] focus:border-transparent"
             />
           </label>
         </div>
 
-        <div className="px-5 py-3 bg-gray-50 flex items-center justify-end gap-2">
+        <div className="px-4 py-2.5 bg-gray-50 flex items-center justify-end gap-2 shrink-0">
           {status === "ok" && (
             <p className="font-['Poppins',sans-serif] text-sm text-[#0d8c6e] mr-auto">
               ✓ Sent — thanks.
@@ -150,7 +150,7 @@ export function FlagCardModal({ cardId, cardTitle, accessToken, onClose }: FlagC
           <button
             onClick={submit}
             disabled={submitting || status === "ok"}
-            className="px-4 py-2 font-['Poppins',sans-serif] text-sm font-bold bg-[#fd8e33] hover:bg-[#e07a28] disabled:opacity-60 text-white rounded-lg transition-colors"
+            className="px-4 py-2 font-['Poppins',sans-serif] text-sm font-bold bg-[#ed6624] hover:bg-[#e07a28] disabled:opacity-60 text-white rounded-lg transition-colors"
           >
             {submitting ? "Sending…" : "Send report"}
           </button>

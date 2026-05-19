@@ -379,8 +379,14 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
   }
 
   async function handleFacebookShare(r: ReceiptCard) {
-    // Open Facebook synchronously before any await (popup blocker rule).
-    window.open("https://www.facebook.com/", "_blank");
+    // Open the Facebook *sharer* dialog (not the home page) synchronously,
+    // before any await — popup blockers require the window.open to happen
+    // inside the click handler. The sharer URL pre-fills the post with a
+    // link to resistact.org so users land in an active compose box. We then
+    // copy the image to clipboard so they can paste it into that compose box.
+    // (Facebook intentionally doesn't allow programmatic image attachment.)
+    const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent("https://resistact.org")}`;
+    window.open(shareUrl, "_blank", "noopener,noreferrer");
     // Copy image to clipboard so the user can paste directly into a FB post.
     try {
       const blob = await fetchImageBlob(r.imageUrl);
@@ -391,7 +397,7 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
       await handleDownload(r);
       setFbInstruction("downloaded");
     }
-    setTimeout(() => setFbInstruction("idle"), 6000);
+    setTimeout(() => setFbInstruction("idle"), 8000);
   }
 
   async function handleInstagramShare(r: ReceiptCard) {
@@ -568,24 +574,50 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
   return (
     <div className="min-h-screen">
       {/* ── Intro: what is a Smack? ── */}
-      <div className="mb-5 rounded-2xl border border-[#23297e]/15 bg-gradient-to-br from-[#fd8e33]/5 via-white to-[#23297e]/5 px-4 py-3.5 sm:px-5 sm:py-4">
+      <div className="mb-5 rounded-2xl border border-[#23297e]/15 bg-gradient-to-br from-[#ed6624]/5 via-white to-[#23297e]/5 px-4 py-3.5 sm:px-5 sm:py-4">
         <p className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-sm sm:text-base mb-1.5 flex items-center gap-1.5">
           <span aria-hidden="true">💥</span> What's a Smack?
         </p>
         <p className="font-['Poppins',sans-serif] text-xs sm:text-sm text-gray-700 leading-snug">
-          The president is a cartoon villain. So is the Supreme Court. So is half of Congress. You don't fight a cartoon with a footnoted essay — you fight it with a meme that lands in two seconds. <strong className="text-[#23297e]">Smacks</strong> are shareable images that meet their grift, corruption, and stupidity with the simplicity those deserve. <span className="text-[#fd8e33] font-semibold">Save it. Post it. Move on.</span>
+          The president is a cartoon villain. So is the Supreme Court. So is half of Congress. You don't fight a cartoon with a footnoted essay — you fight it with a meme that lands in two seconds. <strong className="text-[#23297e]">Smacks</strong> are shareable images that meet their grift, corruption, and stupidity with the simplicity those deserve. <span className="text-[#ed6624] font-semibold">Save it. Post it. Move on.</span>
         </p>
       </div>
 
-      {/* ── Top bar: sort toggle + filter chips ── */}
+      {/* ── Top bar: filter chips + sort toggle ── */}
       <div className="flex items-start gap-3 flex-wrap mb-6">
+        {/* Tag chips */}
+        <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
+          {availableTags.map((tag) => (
+            <button
+              key={tag}
+              onClick={() => toggleTag(tag)}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-['Poppins',sans-serif] font-semibold transition-all border ${
+                activeTags.includes(tag)
+                  ? "bg-[#23297e] text-white border-[#23297e]"
+                  : "bg-white text-gray-600 border-gray-200 hover:border-[#23297e] hover:text-[#23297e]"
+              }`}
+            >
+              <Tag size={10} />
+              {tag}
+            </button>
+          ))}
+          {activeTags.length > 0 && (
+            <button
+              onClick={() => setActiveTags([])}
+              className="px-3 py-1.5 rounded-full text-xs font-['Poppins',sans-serif] text-gray-500 hover:text-gray-700 border border-dashed border-gray-300 hover:border-gray-400 transition-all"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
         {/* Sort toggle */}
         <div className="flex items-center gap-1 p-1 rounded-xl bg-gray-100 shrink-0 self-start">
           <button
             onClick={() => setSortBy("top")}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-['Poppins',sans-serif] font-bold text-xs transition-all ${
               sortBy === "top"
-                ? "bg-white text-[#fd8e33] shadow-sm"
+                ? "bg-white text-[#ed6624] shadow-sm"
                 : "text-gray-500 hover:text-gray-700"
             }`}
           >
@@ -616,37 +648,11 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
           )}
         </div>
 
-        {/* Tag chips */}
-        <div className="flex items-center gap-2 flex-wrap flex-1">
-          {availableTags.map((tag) => (
-            <button
-              key={tag}
-              onClick={() => toggleTag(tag)}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-['Poppins',sans-serif] font-semibold transition-all border ${
-                activeTags.includes(tag)
-                  ? "bg-[#23297e] text-white border-[#23297e]"
-                  : "bg-white text-gray-600 border-gray-200 hover:border-[#23297e] hover:text-[#23297e]"
-              }`}
-            >
-              <Tag size={10} />
-              {tag}
-            </button>
-          ))}
-          {activeTags.length > 0 && (
-            <button
-              onClick={() => setActiveTags([])}
-              className="px-3 py-1.5 rounded-full text-xs font-['Poppins',sans-serif] text-gray-500 hover:text-gray-700 border border-dashed border-gray-300 hover:border-gray-400 transition-all"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-
         {/* Any approved user can submit */}
         {canSubmit && (
           <button
             onClick={() => setAddOpen(true)}
-            className="shrink-0 flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#fd8e33] hover:bg-[#d96612] text-white font-['Poppins',sans-serif] font-bold text-xs transition-colors self-start"
+            className="shrink-0 flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#ed6624] hover:bg-[#c2521b] text-white font-['Poppins',sans-serif] font-bold text-xs transition-colors self-start"
           >
             <Plus size={13} />
             {isAdmin ? "Add to The Smacks" : "Submit to The Smacks"}
@@ -762,7 +768,7 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
                 {/* Copy image to clipboard — paste directly into any platform */}
                 <button
                   onClick={() => { trackShare(shareReceipt.id, "copy_image"); handleCopyImage(); }}
-                  className="col-span-4 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#fd8e33] hover:bg-[#d96612] text-white font-['Poppins',sans-serif] font-bold text-sm transition-colors"
+                  className="col-span-4 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#ed6624] hover:bg-[#c2521b] text-white font-['Poppins',sans-serif] font-bold text-sm transition-colors"
                 >
                   {copyImageState === "done" ? <Check size={15} className="text-white" /> : <Copy size={15} />}
                   {copyImageState === "copying" ? "Copying…" : copyImageState === "done" ? "Image copied! Paste anywhere." : "Copy image to clipboard"}
@@ -903,7 +909,7 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
                   rows={3}
                   value={captionDraft}
                   onChange={(e) => setCaptionDraft(e.target.value)}
-                  className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-[#fd8e33]/30 focus:border-[#fd8e33]"
+                  className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm text-gray-800 resize-none focus:outline-none focus:ring-2 focus:ring-[#ed6624]/30 focus:border-[#ed6624]"
                 />
                 <div className="flex items-center justify-between mt-1">
                   <span className={`font-['Poppins',sans-serif] text-[11px] ${captionDraft.length > 280 ? "text-red-500" : "text-gray-400"}`}>
@@ -911,7 +917,7 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
                   </span>
                   <button
                     onClick={handleCopyCaption}
-                    className="flex items-center gap-1 text-[11px] font-['Poppins',sans-serif] font-semibold text-[#23297e] hover:text-[#fd8e33] transition-colors"
+                    className="flex items-center gap-1 text-[11px] font-['Poppins',sans-serif] font-semibold text-[#23297e] hover:text-[#ed6624] transition-colors"
                   >
                     {copied ? <Check size={12} className="text-green-600" /> : <Copy size={12} />}
                     {copied ? "Copied!" : "Copy text"}
@@ -1042,8 +1048,8 @@ function ReceiptTile({
             aria-label={isBoosted ? "Boosted" : "Boost"}
             className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] font-bold text-[12px] whitespace-nowrap shrink-0 transition-all ${
               isBoosted
-                ? "bg-[#fd8e33]/80 text-white shadow-md"
-                : "bg-white/85 backdrop-blur-sm text-[#fd8e33] shadow-sm hover:bg-white"
+                ? "bg-[#ed6624]/80 text-white shadow-md"
+                : "bg-white/85 backdrop-blur-sm text-[#ed6624] shadow-sm hover:bg-white"
             }`}
           >
             <span aria-hidden>🔥</span>
@@ -1085,23 +1091,23 @@ function ReceiptTile({
           {receipt.title}
         </p>
 
-        {/* Footer: Share button → replaced by Shared badge once shared */}
+        {/* Footer: Share button — stays clickable after sharing so users
+            can share again to different platforms. The "Shared ✓" state is
+            just a visual confirmation, not a lockout. */}
         <div className="flex items-center justify-end gap-2 mt-auto">
-          {isShared ? (
-            <span className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-green-600 text-white font-['Poppins',sans-serif] font-bold text-xs">
-              <Check size={12} strokeWidth={3} />
-              Shared
-            </span>
-          ) : (
-            <button
-              type="button"
-              onClick={onShare}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#23297e] hover:bg-[#1a2060] text-white font-['Poppins',sans-serif] font-bold text-xs transition-colors"
-            >
-              <Share2 size={12} />
-              Share
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={onShare}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-['Poppins',sans-serif] font-bold text-xs transition-colors ${
+              isShared
+                ? "bg-green-600 hover:bg-green-700 text-white"
+                : "bg-[#23297e] hover:bg-[#1a2060] text-white"
+            }`}
+            title={isShared ? "Share again to another platform" : "Share this Smack"}
+          >
+            {isShared ? <Check size={12} strokeWidth={3} /> : <Share2 size={12} />}
+            {isShared ? "Share again" : "Share"}
+          </button>
         </div>
       </div>
     </div>
@@ -1217,7 +1223,7 @@ function AddReceiptModal({
     finally { setSaving(false); }
   }
 
-  const inputCls = "w-full px-3.5 py-2.5 border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#fd8e33]/30 focus:border-[#fd8e33] placeholder:text-gray-400 placeholder:italic";
+  const inputCls = "w-full px-3.5 py-2.5 border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#ed6624]/30 focus:border-[#ed6624] placeholder:text-gray-400 placeholder:italic";
 
   return (
     <div
@@ -1255,7 +1261,7 @@ function AddReceiptModal({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className="flex items-center gap-1.5 px-3 py-2 bg-[#fd8e33] hover:bg-[#d96612] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-semibold text-xs rounded-lg transition-colors"
+                className="flex items-center gap-1.5 px-3 py-2 bg-[#ed6624] hover:bg-[#c2521b] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-semibold text-xs rounded-lg transition-colors"
               >
                 {uploading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
                 {uploading ? "Uploading…" : "Upload image"}

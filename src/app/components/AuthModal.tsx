@@ -259,7 +259,7 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
         {/* Header */}
         <div className="mb-5">
           <div className="flex items-center gap-2 mb-1">
-            <Flame size={20} className="text-[#fd8e33]" strokeWidth={2.5} />
+            <Flame size={20} className="text-[#ed6624]" strokeWidth={2.5} />
             <h2 className="font-['Poppins',sans-serif] font-bold text-gray-900 text-[17px] leading-tight">
               Apply for founding access
             </h2>
@@ -299,14 +299,14 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
               required
               autoFocus
               placeholder="you@example.com"
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#fd8e33]/30 focus:border-[#fd8e33] transition-colors"
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ed6624]/30 focus:border-[#ed6624] transition-colors"
             />
           </div>
 
           <button
             type="submit"
             disabled={!email.trim()}
-            className="w-full py-3 bg-[#fd8e33] hover:bg-[#d96612] disabled:opacity-50 text-white font-['Poppins',sans-serif] font-bold text-sm rounded-full transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3 bg-[#ed6624] hover:bg-[#c2521b] disabled:opacity-50 text-white font-['Poppins',sans-serif] font-bold text-sm rounded-full transition-colors flex items-center justify-center gap-2"
           >
             Continue
             <ArrowRight size={16} />
@@ -327,14 +327,14 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
       {/* Header */}
       <div className="mb-5">
         <div className="flex items-center gap-2 mb-1">
-          <Flame size={20} className="text-[#fd8e33]" strokeWidth={2.5} />
+          <Flame size={20} className="text-[#ed6624]" strokeWidth={2.5} />
           <h2 className="font-['Poppins',sans-serif] font-bold text-gray-900 text-[22px] leading-tight">
             Join the Resistance
           </h2>
         </div>
         <button
           onClick={() => { setStep("email"); setError(null); }}
-          className="font-['Poppins',sans-serif] text-[12px] text-gray-400 hover:text-[#fd8e33] transition-colors flex items-center gap-1"
+          className="font-['Poppins',sans-serif] text-[12px] text-gray-400 hover:text-[#ed6624] transition-colors flex items-center gap-1"
         >
           ← {email}
         </button>
@@ -351,7 +351,7 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
             value={name}
             onChange={e => { setName(e.target.value); setPendingSignUp(false); }}
             placeholder="Jane Doe"
-            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#fd8e33]/30 focus:border-[#fd8e33] transition-colors"
+            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ed6624]/30 focus:border-[#ed6624] transition-colors"
           />
         </div>
 
@@ -368,7 +368,7 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
               required
               autoFocus
               placeholder="••••••••"
-              className="w-full px-4 py-3 pr-11 border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#fd8e33]/30 focus:border-[#fd8e33] transition-colors"
+              className="w-full px-4 py-3 pr-11 border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ed6624]/30 focus:border-[#ed6624] transition-colors"
             />
             <button
               type="button"
@@ -394,7 +394,7 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
               type="checkbox"
               checked={emailConsent}
               onChange={e => setEmailConsent(e.target.checked)}
-              className="mt-0.5 w-4 h-4 rounded border-gray-300 accent-[#fd8e33] shrink-0 cursor-pointer"
+              className="mt-0.5 w-4 h-4 rounded border-gray-300 accent-[#ed6624] shrink-0 cursor-pointer"
             />
             <span className="font-['Poppins',sans-serif] text-xs text-gray-500 leading-snug">
               Yes, ResistAct can email me about new actions, updates, and resistance news.{" "}
@@ -412,7 +412,7 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
         <button
           type="submit"
           disabled={loading || (!!TURNSTILE_SITE_KEY && !captchaToken)}
-          className="w-full py-3 bg-[#fd8e33] hover:bg-[#d96612] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-bold text-sm rounded-full transition-colors flex items-center justify-center gap-2 mt-1"
+          className="w-full py-3 bg-[#ed6624] hover:bg-[#c2521b] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-bold text-sm rounded-full transition-colors flex items-center justify-center gap-2 mt-1"
         >
           {loading && <Loader2 size={16} className="animate-spin" />}
           Continue

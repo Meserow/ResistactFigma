@@ -226,7 +226,7 @@ export function SpreadTheWordModal({ onClose }: { onClose: () => void }) {
       >
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#fd8e33] text-white">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#ed6624] text-white">
             <Flame size={18} strokeWidth={2} />
           </div>
           <div className="flex-1 min-w-0">
@@ -305,12 +305,12 @@ export function SpreadTheWordModal({ onClose }: { onClose: () => void }) {
             </label>
             <div
               onClick={() => inputRef.current?.focus()}
-              className="min-h-[42px] w-full flex flex-wrap gap-1.5 rounded-lg border border-gray-300 px-3 py-2 cursor-text focus-within:border-[#fd8e33] focus-within:ring-1 focus-within:ring-[#fd8e33]/30 transition-colors"
+              className="min-h-[42px] w-full flex flex-wrap gap-1.5 rounded-lg border border-gray-300 px-3 py-2 cursor-text focus-within:border-[#ed6624] focus-within:ring-1 focus-within:ring-[#ed6624]/30 transition-colors"
             >
               {tags.map(tag => (
                 <span
                   key={tag}
-                  className="inline-flex items-center gap-1 bg-[#fd8e33]/10 text-[#c96a15] rounded-full px-2.5 py-0.5 font-['Poppins',sans-serif] text-[11px] font-medium"
+                  className="inline-flex items-center gap-1 bg-[#ed6624]/10 text-[#c96a15] rounded-full px-2.5 py-0.5 font-['Poppins',sans-serif] text-[11px] font-medium"
                 >
                   {tag}
                   <button
@@ -347,7 +347,7 @@ export function SpreadTheWordModal({ onClose }: { onClose: () => void }) {
               value={note}
               onChange={e => setNote(e.target.value)}
               rows={7}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 font-['Poppins',sans-serif] text-[13px] text-gray-700 leading-relaxed resize-none focus:border-[#fd8e33] focus:ring-1 focus:ring-[#fd8e33]/30 focus:outline-none transition-colors"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 font-['Poppins',sans-serif] text-[13px] text-gray-700 leading-relaxed resize-none focus:border-[#ed6624] focus:ring-1 focus:ring-[#ed6624]/30 focus:outline-none transition-colors"
             />
           </div>
 
@@ -372,7 +372,7 @@ export function SpreadTheWordModal({ onClose }: { onClose: () => void }) {
             <button
               onClick={sendInvites}
               disabled={sendState === "sending" || sendState === "sent" || tags.length === 0}
-              className="ml-auto flex items-center gap-2 rounded-lg bg-[#fd8e33] px-4 py-2 font-['Poppins',sans-serif] text-[13px] font-bold text-white transition-colors hover:bg-[#d96612] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="ml-auto flex items-center gap-2 rounded-lg bg-[#ed6624] px-4 py-2 font-['Poppins',sans-serif] text-[13px] font-bold text-white transition-colors hover:bg-[#c2521b] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {sendState === "sending" ? (
                 <><Loader2 size={14} className="animate-spin" /> Sending…</>

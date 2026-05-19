@@ -32,7 +32,7 @@ export function UserAvatar({
   sizeClasses = "w-10 h-10",
   className = "ring-1 ring-gray-100",
   progressPct,
-  ringColor = "#fd8e33",
+  ringColor = "#ed6624",
   ringSizePx = 40,
 }: UserAvatarProps) {
   const [errored, setErrored] = useState(false);

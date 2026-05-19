@@ -43,18 +43,18 @@ export function HeroPills({ onMatchClick, onAskClick, onHowClick, hasMatchPrefs 
           onClick={() => onHowClick ? onHowClick() : setOpenModal("how")}
           aria-haspopup="dialog"
           aria-expanded={openModal === "how"}
-          className="shrink-0 inline-flex items-center gap-2 rounded-full border border-gray-400 px-4 py-2 font-['Poppins',sans-serif] transition-colors hover:border-[#fd8e33] hover:bg-[#fd8e33]/5 hover:text-[#fd8e33] group"
+          className="shrink-0 inline-flex items-center gap-2 rounded-full border border-gray-400 px-4 py-1.5 font-['Poppins',sans-serif] transition-colors hover:border-[#ed6624] hover:bg-[#ed6624]/5 hover:text-[#ed6624] group"
         >
-          <Zap size={14} strokeWidth={2.5} className="text-gray-600 group-hover:text-[#fd8e33]" />
+          <Zap size={14} strokeWidth={2.5} className="text-gray-600 group-hover:text-[#ed6624]" />
           <span className="flex flex-col items-start text-left leading-tight whitespace-nowrap">
-            <span className="text-[13px] font-bold text-gray-600 group-hover:text-[#fd8e33]">How This Works</span>
-            <span className="text-[10.5px] font-normal text-gray-400 italic group-hover:text-[#fd8e33]/70">What is this site about?</span>
+            <span className="text-[13px] font-bold text-gray-600 group-hover:text-[#ed6624]">How This Works</span>
+            <span className="text-[10.5px] font-normal text-gray-400 italic group-hover:text-[#ed6624]/70">What is this site about?</span>
           </span>
         </button>
         {onMatchClick && (
           <button
             onClick={onMatchClick}
-            className="shrink-0 inline-flex items-center gap-2.5 rounded-full bg-[#fd8e33] px-5 py-2.5 font-['Poppins',sans-serif] shadow-md ring-1 ring-[#fd8e33] transition-all hover:bg-[#e6792a] hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#fd8e33]/40 focus:ring-offset-2"
+            className="shrink-0 inline-flex items-center gap-2.5 rounded-full bg-[#ed6624] px-5 py-2 font-['Poppins',sans-serif] shadow-md ring-1 ring-[#ed6624] transition-all hover:bg-[#d35a1d] hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#ed6624]/40 focus:ring-offset-2"
           >
             <Sparkles size={16} strokeWidth={2.75} className="text-white" />
             <span className="flex flex-col items-start text-left leading-tight whitespace-nowrap">
@@ -75,7 +75,7 @@ export function HeroPills({ onMatchClick, onAskClick, onHowClick, hasMatchPrefs 
         {onAskClick && (
           <button
             onClick={onAskClick}
-            className="shrink-0 inline-flex items-center gap-2 rounded-full border border-[#23297e] bg-white px-4 py-2 font-['Poppins',sans-serif] transition-colors hover:bg-[#23297e]/5"
+            className="shrink-0 inline-flex items-center gap-2 rounded-full border border-[#23297e] bg-white px-4 py-1.5 font-['Poppins',sans-serif] transition-colors hover:bg-[#23297e]/5"
           >
             <Megaphone size={14} strokeWidth={2.5} className="text-[#23297e]" />
             <span className="flex flex-col items-start text-left leading-tight whitespace-nowrap">

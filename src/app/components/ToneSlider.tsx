@@ -42,7 +42,7 @@ export function ToneRangeSlider({
         />
         {/* Filled portion of the track */}
         <div
-          className="absolute top-1/2 left-0 -translate-y-1/2 h-1.5 rounded-full bg-[#fd8e33] pointer-events-none"
+          className="absolute top-1/2 left-0 -translate-y-1/2 h-1.5 rounded-full bg-[#ed6624] pointer-events-none"
           style={{ width: `${pct}%` }}
         />
         {/* Visible thumb with value inside. NB: we set both `top` and the
@@ -53,7 +53,7 @@ export function ToneRangeSlider({
             avoids that. */}
         <div
           className={`tone-slider-thumb absolute w-6 h-6 rounded-full ${
-            unset ? "bg-gray-300" : "bg-[#fd8e33]"
+            unset ? "bg-gray-300" : "bg-[#ed6624]"
           } flex items-center justify-center text-white pointer-events-none transition-shadow`}
           style={{
             top: "50%",

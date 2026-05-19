@@ -79,7 +79,7 @@ export function InfoModal({ onClose }: InfoModalProps) {
               </div>
 
               <div className="flex gap-3 items-start">
-                <div className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center mt-0.5" style={{ backgroundColor: "#fd8e33" }}>
+                <div className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center mt-0.5" style={{ backgroundColor: "#ed6624" }}>
                   <Flame size={14} strokeWidth={2.5} className="text-white" />
                 </div>
                 <p className="font-['Poppins',sans-serif] text-gray-600 text-[12.5px] leading-relaxed">
@@ -102,7 +102,7 @@ export function InfoModal({ onClose }: InfoModalProps) {
             {/* Tier ladder — frosted panel over the legs area */}
             <div className="absolute bottom-0 left-0 right-0 px-5 pt-4 pb-5 bg-white/75 backdrop-blur-md">
               <div className="flex items-center gap-1.5 mb-1">
-                <Flame size={12} strokeWidth={2.5} className="text-[#fd8e33]" />
+                <Flame size={12} strokeWidth={2.5} className="text-[#ed6624]" />
                 <p className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-[11px] uppercase tracking-widest">
                   Earn your resistance tier
                 </p>

@@ -188,7 +188,7 @@ export function TierModal({ actionCount, byCategory, onClose }: TierModalProps) 
                           className="flex items-center justify-between font-['Poppins',sans-serif] text-[12px] py-0.5"
                         >
                           <span className="text-gray-600 font-medium">{cat}</span>
-                          <span className="text-[#fd8e33] font-bold tabular-nums">{n}</span>
+                          <span className="text-[#ed6624] font-bold tabular-nums">{n}</span>
                         </div>
                       ))}
                   </div>

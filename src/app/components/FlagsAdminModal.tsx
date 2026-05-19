@@ -100,7 +100,7 @@ export function FlagsAdminModal({ accessToken, onClose, onFlagsChange }: FlagsAd
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
           <div className="flex items-center gap-2">
-            <Flag size={18} className="text-[#fd8e33]" />
+            <Flag size={18} className="text-[#ed6624]" />
             <p className="font-['Poppins',sans-serif] font-bold text-gray-900 text-[16px] leading-tight">
               Flagged acts {flags ? `(${flags.length})` : ""}
             </p>
@@ -144,7 +144,7 @@ export function FlagsAdminModal({ accessToken, onClose, onFlagsChange }: FlagsAd
                           <ExternalLink size={12} />
                         </a>
                       </div>
-                      <p className="font-['Poppins',sans-serif] text-[11px] uppercase tracking-wider font-semibold text-[#fd8e33] mt-1">
+                      <p className="font-['Poppins',sans-serif] text-[11px] uppercase tracking-wider font-semibold text-[#ed6624] mt-1">
                         {REASON_LABELS[f.reason] ?? f.reason}
                       </p>
                       {f.detail && (

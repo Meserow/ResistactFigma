@@ -81,14 +81,14 @@ export function InvolvementPicker({ value, onChange, question, hint, variant = "
               aria-pressed={isSelected}
               className={`text-left px-3 py-2.5 rounded-xl border-2 transition-colors ${
                 isSelected
-                  ? "border-[#fd8e33] bg-[#fd8e33]/5"
+                  ? "border-[#ed6624] bg-[#ed6624]/5"
                   : "border-gray-200 bg-white hover:border-gray-300"
               }`}
             >
               <p className="font-['Poppins',sans-serif] font-bold text-gray-900 text-sm leading-tight">
                 {title}
               </p>
-              <p className="font-['Poppins',sans-serif] font-semibold text-[10px] uppercase tracking-wider text-[#fd8e33] mt-1">
+              <p className="font-['Poppins',sans-serif] font-semibold text-[10px] uppercase tracking-wider text-[#ed6624] mt-1">
                 {subtitle}
               </p>
               <p className="font-['Poppins',sans-serif] text-xs text-gray-500 mt-1.5 leading-snug">

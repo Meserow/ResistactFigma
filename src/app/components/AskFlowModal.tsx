@@ -327,7 +327,7 @@ export function AskFlowModal({
             <div
               key={i}
               className={`h-1.5 rounded-full transition-all ${
-                i === step ? "w-8 bg-[#fd8e33]" : i < step ? "w-1.5 bg-[#fd8e33]" : "w-1.5 bg-gray-300"
+                i === step ? "w-8 bg-[#ed6624]" : i < step ? "w-1.5 bg-[#ed6624]" : "w-1.5 bg-gray-300"
               }`}
             />
           ))}
@@ -428,7 +428,7 @@ export function AskFlowModal({
                       <Clock size={14} strokeWidth={2} className="text-[#23297e] mr-1.5 shrink-0" />
                       <strong className="font-['Poppins',sans-serif] font-semibold text-xs text-[#23297e]">Time</strong>
                       <span className="ml-1.5 font-['Poppins',sans-serif] text-[11px] text-gray-500">
-                        · <span className="font-medium text-[#fd8e33]">{tLevel.title}</span> — {tLevel.desc}
+                        · <span className="font-medium text-[#ed6624]">{tLevel.title}</span> — {tLevel.desc}
                       </span>
                     </div>
                     <ToneRangeSlider
@@ -450,7 +450,7 @@ export function AskFlowModal({
                               {label}
                             </strong>
                             <span className="ml-1.5 font-['Poppins',sans-serif] text-[11px] text-gray-500 truncate">
-                              · <span className="font-medium text-[#fd8e33]">{stop.label}</span> — {stop.desc}
+                              · <span className="font-medium text-[#ed6624]">{stop.label}</span> — {stop.desc}
                             </span>
                           </div>
                           <ToneRangeSlider
@@ -546,7 +546,7 @@ export function AskFlowModal({
                 <button
                   type="button"
                   onClick={onLoginRequired}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-[#fd8e33] hover:bg-[#e07a28] text-white font-['Poppins',sans-serif] font-bold text-sm rounded-2xl transition-colors shadow-sm"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-[#ed6624] hover:bg-[#e07a28] text-white font-['Poppins',sans-serif] font-bold text-sm rounded-2xl transition-colors shadow-sm"
                 >
                   Sign in or create account
                 </button>
@@ -575,7 +575,7 @@ export function AskFlowModal({
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={uploading}
-                      className="flex items-center gap-1.5 px-3 py-2 bg-[#fd8e33] hover:bg-[#d96612] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-semibold text-xs rounded-lg transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-2 bg-[#ed6624] hover:bg-[#c2521b] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-semibold text-xs rounded-lg transition-colors"
                     >
                       {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
                       {uploading ? "Uploading…" : "Upload from computer"}
@@ -585,7 +585,7 @@ export function AskFlowModal({
                       <input
                         type="checkbox" checked={formImageContain}
                         onChange={(e) => setFormImageContain(e.target.checked)}
-                        className="w-3.5 h-3.5 rounded accent-[#fd8e33]"
+                        className="w-3.5 h-3.5 rounded accent-[#ed6624]"
                       />
                       <span className="font-['Poppins',sans-serif] text-[11.5px] text-gray-500">
                         Fit logo (don't crop)
@@ -655,7 +655,7 @@ export function AskFlowModal({
                   type="button"
                   onClick={() => { if (!isApproved) return; handleCreateAsk(); }}
                   disabled={createLoading || !isApproved || missingForStep(0).length > 0 || missingForStep(1).length > 0 || missingForStep(imageStep).length > 0}
-                  className="ml-3 px-5 py-2.5 bg-[#fd8e33] hover:bg-[#e07a28] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-['Poppins',sans-serif] font-bold text-sm rounded-xl transition-colors flex items-center gap-2"
+                  className="ml-3 px-5 py-2.5 bg-[#ed6624] hover:bg-[#e07a28] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white font-['Poppins',sans-serif] font-bold text-sm rounded-xl transition-colors flex items-center gap-2"
                 >
                   {createLoading ? (
                     <><Loader2 size={14} className="animate-spin" /> Submitting…</>
@@ -676,7 +676,7 @@ export function AskFlowModal({
 
 // ─── Sub-components & helpers ──────────────────────────────────────────────────
 const inputBase =
-  "w-full px-4 py-3 bg-white border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm focus:outline-none focus:ring-2 focus:ring-[#fd8e33]/30 focus:border-[#fd8e33] transition-colors";
+  "w-full px-4 py-3 bg-white border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm focus:outline-none focus:ring-2 focus:ring-[#ed6624]/30 focus:border-[#ed6624] transition-colors";
 const inputCls = `${inputBase} text-gray-800 placeholder-gray-400 placeholder:italic`;
 const selectCls = (val: string | null | undefined) =>
   `${inputBase} !pr-10 ${val ? "text-gray-800" : "text-gray-400 italic"}`;
@@ -708,7 +708,7 @@ function Field({
     <div>
       <label className="block font-['Poppins',sans-serif] text-[12px] font-semibold text-gray-700 mb-1.5">
         {label}
-        {required && <span className="text-[#fd8e33] ml-1">*</span>}
+        {required && <span className="text-[#ed6624] ml-1">*</span>}
       </label>
       {children}
     </div>

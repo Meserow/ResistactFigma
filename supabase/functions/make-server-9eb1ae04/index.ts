@@ -2448,6 +2448,46 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       console.log(`Added ${newCards.length} Mobilize/50501 action cards (v2) (ids ${base + 1}–${base + 24}).`);
     }
 
+    // One-time migration: add Resistbot "Empower States to Undo Citizens United" petition card
+    const resistbotCitizensDone = await kv.get("migration:resistbot-citizens-united:v1");
+    if (!resistbotCitizensDone) {
+      const card = {
+        id: 1374,
+        category: "EMAIL CAMPAIGN",
+        categoryColor: "#c2185b",
+        actionType: "Online",
+        title: "Sign: Empower States to Undo Citizens United",
+        description: "States don't need the Supreme Court or Congress to fight Citizens United — they can limit corporate spending in elections right now by amending state constitutions and corporate charter laws. Montana's Transparent Elections Initiative shows how. Text SIGN PKFEPT to 50409 or sign via Resistbot to urge your governor and legislature to follow.",
+        isOnline: true,
+        boosts: 8,
+        spotsTotal: "Unlimited",
+        authorName: "Resistbot",
+        authorRole: "Civic Action Platform",
+        authorLink: "https://resist.bot/",
+        targetUrl: "https://resist.bot/petitions/PKFEPT",
+        timeCommitment: "< 5 minutes",
+        quickAction: true,
+        firstTimerFriendly: true,
+        adminApproved: true,
+        createdAt: new Date().toISOString(),
+      };
+      await kv.set(`action:${card.id}`, card);
+      await kv.set("migration:resistbot-citizens-united:v1", true);
+      console.log("Added Resistbot Citizens United petition card (id 1374).");
+    }
+
+    // v2: update description to mention Hawaii's success
+    const resistbotCitizensV2Done = await kv.get("migration:resistbot-citizens-united:v2");
+    if (!resistbotCitizensV2Done) {
+      const existing: any = await kv.get("action:1374");
+      if (existing) {
+        existing.description = "Hawaii just did it — became the first state to pass legislation rolling back Citizens United. Now we need every state to follow. Text SIGN PKFEPT to 50409 or sign via Resistbot to urge your governor and legislature to use state authority to limit corporate spending in elections. Montana's Transparent Elections Initiative showed the way. Hawaii proved it works. Let's go.";
+        await kv.set("action:1374", existing);
+      }
+      await kv.set("migration:resistbot-citizens-united:v2", true);
+      console.log("Updated Resistbot Citizens United card with Hawaii success (id 1374).");
+    }
+
     // Fetch ALL action:* cards from the KV store (real cards only after purge)
     const allActionCards = await kv.getByPrefix("action:");
     const seenIds = new Set<number>();

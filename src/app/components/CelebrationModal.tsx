@@ -102,7 +102,7 @@ function useCountUp(target: number, durationMs = 700) {
 // (ExplosiveFireworks below) so particles can fly past the modal edges and
 // across the whole viewport.
 function HeroBurst({ tierColor, glowColor }: { tierColor: string; glowColor: string }) {
-  const ringColors = ["#fd8e33", "#23297e", tierColor];
+  const ringColors = ["#ed6624", "#23297e", tierColor];
   const particlesPerRing = 22;
 
   return (
@@ -170,7 +170,7 @@ function ExplosiveFireworks({
   const data = useMemo(() => {
     const rand = (a: number, b: number) => a + Math.random() * (b - a);
     const palette = [
-      "#fd8e33", "#23297e", "#FCD34D", "#EF4444",
+      "#ed6624", "#23297e", "#FCD34D", "#EF4444",
       "#10B981", "#3B82F6", "#A855F7", "#EC4899",
       "#F59E0B", "#06B6D4", "#FF6B6B",
       tierColor,
@@ -665,9 +665,9 @@ export function CelebrationModal({ prevCount, newCount, onClose, onFindMore }: C
           <button
             onClick={() => { onFindMore(); onClose(); }}
             className="flex-[1.6] flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-['Poppins',sans-serif] font-bold text-sm text-white shadow-md hover:shadow-lg transition-all"
-            style={{ background: "#fd8e33" }}
+            style={{ background: "#ed6624" }}
             onMouseEnter={(e) => (e.currentTarget.style.background = "#e07a28")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "#fd8e33")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "#ed6624")}
           >
             {actionsToNext === 1 ? "One more →" : "Find another act"}
             <ArrowRight size={14} strokeWidth={2.5} />

@@ -159,7 +159,7 @@ export function FactShareModal({ card, color, onClose }: FactShareModalProps) {
                       className={`flex items-center gap-1 px-2.5 py-1 rounded-lg font-['Poppins',sans-serif] font-bold text-[11px] transition-all ${
                         justCopied
                           ? "bg-emerald-500 text-white"
-                          : "bg-[#fd8e33] hover:bg-[#e07a28] text-white shadow-sm"
+                          : "bg-[#ed6624] hover:bg-[#e07a28] text-white shadow-sm"
                       }`}
                     >
                       {justCopied ? <Check size={12} strokeWidth={3} /> : <Copy size={12} strokeWidth={2.5} />}
