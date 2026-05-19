@@ -9,6 +9,7 @@ import { FACT_CARDS } from "./data/factCards";
 import { STATIC_CARDS, IMAGE_MAP } from "./data/actionCards";
 import { AuthModal } from "./components/AuthModal";
 import { AdminPanel } from "./components/AdminPanel";
+import { FlagsAdminModal } from "./components/FlagsAdminModal";
 import { AskFlowModal } from "./components/AskFlowModal";
 import { JoinACTersModal } from "./components/JoinACTersModal";
 import { InfoModal } from "./components/InfoModal";
@@ -280,6 +281,11 @@ export default function App() {
   const [askOpen, setAskOpen] = useState(false);
   const [matchOpen, setMatchOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [scrollNudgeDismissed, setScrollNudgeDismissed] = useState(
+    () => localStorage.getItem("resistact_nudge_dismissed") === "1"
+  );
+  const [scrollNudgeVisible, setScrollNudgeVisible] = useState(false);
+  const scrollNudgeFired = useRef(false);
   /** Active match prefs — when set, the feed re-ranks by `rankCards`. */
   const [matchPrefs, setMatchPrefs] = useState<Preferences | null>(null);
   // Incremented every time the user applies a new Match config. Used to
@@ -300,6 +306,8 @@ export default function App() {
   const [statsUsersCount, setStatsUsersCount] = useState<number | null>(null);
   const [pendingUsersCount, setPendingUsersCount] = useState<number>(0);
   const [serverPendingActsCount, setServerPendingActsCount] = useState<number>(0);
+  const [flagsCount, setFlagsCount] = useState<number>(0);
+  const [flagsAdminOpen, setFlagsAdminOpen] = useState<boolean>(false);
   const [siteUpdating, setSiteUpdating] = useState(false);
 
   // ── Filters ──
@@ -593,15 +601,26 @@ export default function App() {
     Object.values(activeFilters).some((arr) => (arr ?? []).length > 0);
 
   // Distinct categories from currently-loaded cards, sorted alphabetically.
-  // Drives the Category pills in the navbar.
+  // Approved, non-expired cards — used to drive filter pills so only
+  // categories/locations that actually have visible cards appear.
+  const approvedCards = useMemo(() =>
+    cards.filter((c) => {
+      if (c.adminApproved === false) return false;
+      if (c.eventDate && c.eventDate < todayISO) return false;
+      return true;
+    }),
+  [cards, todayISO]);
+
+  // Drives the Category pills in the navbar — built from approved cards only
+  // so no empty-result pills appear.
   const dynamicCategories = useMemo(() => {
     const set = new Set<string>();
-    for (const c of cards) {
+    for (const c of approvedCards) {
       const cat = (c.category ?? "").trim();
       if (cat) set.add(cat);
     }
     return Array.from(set).sort();
-  }, [cards]);
+  }, [approvedCards]);
 
   // Distinct locations from currently-loaded cards, ordered to match the
   // canonical `LOCATION_OPTIONS` list used by Add-an-Action and Edit. "Online"
@@ -609,12 +628,40 @@ export default function App() {
   // of the literal location string).
   const dynamicLocations = useMemo(() => {
     const set = new Set<string>(["Remote"]);
-    for (const c of cards) {
+    for (const c of approvedCards) {
       const loc = locationToState(c.location);
       if (loc) set.add(loc);
     }
     return LOCATION_OPTIONS.filter((opt) => set.has(opt));
-  }, [cards]);
+  }, [approvedCards]);
+
+  // ── Scroll nudge — fires once after user scrolls past ~8 cards ──────────────
+  useEffect(() => {
+    if (scrollNudgeDismissed || matchPrefs !== null || activeTab !== "acts") return;
+    const onScroll = () => {
+      if (scrollNudgeFired.current) return;
+      if (window.scrollY > 1600) {
+        scrollNudgeFired.current = true;
+        setScrollNudgeVisible(true);
+      }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [scrollNudgeDismissed, matchPrefs, activeTab]);
+
+  // Hide nudge if user sets match prefs
+  useEffect(() => {
+    if (matchPrefs !== null) setScrollNudgeVisible(false);
+  }, [matchPrefs]);
+
+  // Auto-dismiss the nudge toast after 30 seconds so it doesn't stick around
+  // forever. It's a soft suggestion — if the user hasn't engaged in 30s,
+  // it's clutter.
+  useEffect(() => {
+    if (!scrollNudgeVisible) return;
+    const t = setTimeout(() => setScrollNudgeVisible(false), 30_000);
+    return () => clearTimeout(t);
+  }, [scrollNudgeVisible]);
 
   // ── On mount: restore session + listen for OAuth redirects ──
   useEffect(() => {
@@ -786,22 +833,33 @@ export default function App() {
         // Cache the raw first page so the next visit hydrates instantly.
         writeCardsCache(firstBatch, total);
 
-        // Drain the rest in the background — small payload, keeps the
-        // category filter list and search complete for power users.
-        let offset = all.length;
-        while (offset < total) {
-          const res = await fetch(`${API}/actions?limit=100&offset=${offset}`, { headers: HEADERS });
-          if (!res.ok) break;
-          const data = await res.json();
-          const batch = (data.cards as ServerCard[] | undefined) ?? [];
-          if (batch.length === 0) break;
-          const resolved = batch.map(resolveCard);
-          setCards((prev) => {
-            const seen = new Set(prev.map((c) => c.id));
-            return [...prev, ...resolved.filter((c) => !seen.has(c.id))];
-          });
-          offset += batch.length;
-          setServerOffset(offset);
+        // Drain the rest in parallel — sequential fetches add up to multi-second
+        // sync on slower connections, which makes the acts count next to the
+        // sort dropdown read low (e.g. "200 acts") and silently scopes search
+        // to whatever's loaded so far. Fire all remaining pages at once and
+        // commit them in offset order.
+        const remainingOffsets: number[] = [];
+        for (let o = all.length; o < total; o += 100) remainingOffsets.push(o);
+        if (remainingOffsets.length > 0) {
+          const results = await Promise.all(
+            remainingOffsets.map(async (o) => {
+              const res = await fetch(`${API}/actions?limit=100&offset=${o}`, { headers: HEADERS });
+              if (!res.ok) return { offset: o, cards: [] as ServerCard[] };
+              const data = await res.json();
+              return { offset: o, cards: (data.cards as ServerCard[] | undefined) ?? [] };
+            }),
+          );
+          const ordered = results
+            .sort((a, b) => a.offset - b.offset)
+            .flatMap((r) => r.cards);
+          if (ordered.length > 0) {
+            const resolved = ordered.map(resolveCard);
+            setCards((prev) => {
+              const seen = new Set(prev.map((c) => c.id));
+              return [...prev, ...resolved.filter((c) => !seen.has(c.id))];
+            });
+            setServerOffset(all.length + ordered.length);
+          }
         }
       } catch (err) {
         console.error("Network error syncing cards:", err);
@@ -855,6 +913,7 @@ export default function App() {
         if (typeof data.usersCount === "number") setStatsUsersCount(data.usersCount);
         if (typeof data.pendingUsersCount === "number") setPendingUsersCount(data.pendingUsersCount);
         if (typeof data.pendingActsCount === "number") setServerPendingActsCount(data.pendingActsCount);
+        if (typeof data.flagsCount === "number") setFlagsCount(data.flagsCount);
         if (typeof data.siteUpdating === "boolean") setSiteUpdating(data.siteUpdating);
       } catch (err) {
         console.error("Network error fetching stats:", err);
@@ -1214,9 +1273,11 @@ export default function App() {
         onAdminClick={() => setAdminPanelOpen(true)}
         onPendingActsClick={() => { handleTabChange("acts"); setPendingActsVersion((v) => v + 1); }}
         onPendingSmacksClick={() => { handleTabChange("receipts"); setSmacksPendingVersion((v) => v + 1); }}
+        onFlaggedActsClick={() => setFlagsAdminOpen(true)}
         pendingActsCount={pendingActsCount}
         pendingSmacksCount={pendingSmacksCount}
         pendingUsersCount={pendingUsersCount}
+        flagsCount={isAdminUser ? flagsCount : 0}
         onInfoClick={() => setInfoOpen(true)}
         onActClick={() => setActOpen(true)}
         onBookmarksClick={() => setBookmarksOpen(true)}
@@ -1246,8 +1307,8 @@ export default function App() {
         sortBy={sortBy}
         onSortChange={setSortBy}
         heroSlot={
-          activeTab === "acts"
-            ? approval
+          approval
+            ? activeTab === "acts"
               ? (() => {
                   const todayStr = new Date().toISOString().slice(0, 10);
                   const newToday = cards.filter((c: any) => {
@@ -1265,12 +1326,12 @@ export default function App() {
                     />
                   );
                 })()
-              : <HomeHero
-                  onMatchClick={() => setMatchOpen(true)}
-                  onAskClick={() => setAskOpen(true)}
-                  onHowClick={() => setInfoOpen(true)}
-                />
-            : null
+              : null
+            : <HomeHero
+                onMatchClick={() => setMatchOpen(true)}
+                onAskClick={() => setAskOpen(true)}
+                onHowClick={() => setInfoOpen(true)}
+              />
         }
       />
 
@@ -1283,7 +1344,7 @@ export default function App() {
         </div>
       )}
 
-      <main className="px-4 md:px-8 py-8">
+      <main className="px-4 md:px-8 py-8 pb-20">
         <ErrorBoundary>
         {activeTab === "receipts" ? (
           /* ── Receipts view ── */
@@ -1365,6 +1426,21 @@ export default function App() {
               : displayedCards;
             return (
           <>
+            {/* Unfiltered banner — nudges users to try the match tool */}
+            {!matchPrefs && !hasActiveFilters && activeTab === "acts" && synced && (
+              <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5">
+                <p className="font-['Poppins',sans-serif] text-sm text-gray-600">
+                  Showing all <strong className="text-[#23297e]">{displayedCards.length}</strong> actions — unfiltered.
+                </p>
+                <button
+                  onClick={() => setMatchOpen(true)}
+                  className="shrink-0 font-['Poppins',sans-serif] text-xs font-bold text-[#fd8e33] hover:text-[#e07a28] hover:underline transition-colors whitespace-nowrap"
+                >
+                  ✨ Find my match →
+                </button>
+              </div>
+            )}
+
             {/* Pending-only banner */}
             {isAdminUser && showPendingActsOnly && (
               <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-red-300 bg-red-50 px-4 py-2.5">
@@ -1540,6 +1616,7 @@ export default function App() {
                   canEdit={canEditCard(card)}
                   isPending={isAdminUser && card.adminApproved === false}
                   onApprove={isAdminUser ? handleApproveCard : undefined}
+                  accessToken={accessToken}
                 />
                 </div>
               ))}
@@ -1585,6 +1662,46 @@ export default function App() {
         </ErrorBoundary>
       </main>
 
+      {/* Always-on tagline footer: motivational reminder pinned to the bottom
+          of the viewport. The scroll nudge toast sits in the lower-right
+          (not full-width) so it no longer covers this. */}
+      <div className="fixed bottom-0 inset-x-0 z-30 bg-[#23297e] shadow-[0_-1px_3px_rgba(0,0,0,0.15)]">
+        <p className="font-['Poppins',sans-serif] text-center text-[14px] md:text-base py-2.5 px-4 leading-tight">
+          <strong className="font-bold text-white">Pick one. <span className="text-[#fd8e33]">Do it.</span> Share it.</strong>{" "}
+          <em className="italic font-bold text-[#fd8e33]">Come back tomorrow.</em>
+        </p>
+      </div>
+
+      {/* Scroll nudge — lower-right toast after scrolling past ~8 cards.
+          Auto-expires after 30s (see useEffect above). Sits well clear of the
+          always-on tagline footer so it doesn't cover it. */}
+      {scrollNudgeVisible && !scrollNudgeDismissed && (
+        <div className="fixed bottom-16 right-4 md:bottom-20 md:right-6 z-40 max-w-[340px] flex items-start gap-2 bg-[#23297e] rounded-xl shadow-xl px-4 py-3 animate-[slide-in-up_220ms_ease-out]">
+          <div className="min-w-0 flex-1">
+            <p className="font-['Poppins',sans-serif] text-[13px] text-white/90 leading-snug mb-2">
+              Finding it hard to choose? <span className="font-semibold text-white">Let us match you in 30 seconds.</span>
+            </p>
+            <button
+              onClick={() => { setScrollNudgeVisible(false); setMatchOpen(true); }}
+              className="px-3.5 py-1.5 bg-[#fd8e33] hover:bg-[#e07a28] text-white font-['Poppins',sans-serif] font-bold text-[13px] rounded-lg transition-colors whitespace-nowrap"
+            >
+              ✨ Find my match
+            </button>
+          </div>
+          <button
+            onClick={() => {
+              setScrollNudgeVisible(false);
+              setScrollNudgeDismissed(true);
+              localStorage.setItem("resistact_nudge_dismissed", "1");
+            }}
+            className="text-white/50 hover:text-white transition-colors shrink-0 -mr-1"
+            aria-label="Dismiss"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Footer */}
       <footer className="mt-12 border-t border-gray-200 py-8 px-8 text-center">
         <p className="font-['Poppins',sans-serif] text-sm text-gray-400">
@@ -1622,6 +1739,15 @@ export default function App() {
           accessToken={accessToken}
           onClose={() => setAdminPanelOpen(false)}
           imageMap={IMAGE_MAP}
+        />
+      )}
+
+      {/* Flagged Acts admin modal */}
+      {flagsAdminOpen && accessToken && (
+        <FlagsAdminModal
+          accessToken={accessToken}
+          onClose={() => setFlagsAdminOpen(false)}
+          onFlagsChange={setFlagsCount}
         />
       )}
 

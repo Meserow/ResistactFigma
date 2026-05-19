@@ -9,3 +9,6 @@ supabase/.temp/
 .env
 .env.local
 .env.*.local
+# Claude Code: local worktrees and patch backups — these never belong in develop.
+.claude/worktrees/
+.claude/worktree-changes.patch

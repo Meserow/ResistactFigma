@@ -2517,10 +2517,15 @@ app.get("/make-server-9eb1ae04/stats", async (c) => {
 
     const pendingActsCount = allCards.filter((c: any) => c.adminApproved === false).length;
 
+    // Active user-submitted flags awaiting admin review. Cheap — just a
+    // prefix scan since dismissed flags are deleted, not flagged.
+    const flagsCount = ((await kv.getByPrefix("flag:")) as any[])
+      .filter((f) => f && typeof f === "object" && f.id).length;
+
     const siteUpdating = (await kv.get("system:site-updating")) === true;
 
-    console.log(`Stats: ${allCards.length} acts (${pendingActsCount} pending), ${citiesCount} cities, ${usersCount} users (${pendingUsersCount} pending)`);
-    return c.json({ citiesCount, usersCount, pendingUsersCount, pendingActsCount, actsCount: allCards.length, siteUpdating });
+    console.log(`Stats: ${allCards.length} acts (${pendingActsCount} pending), ${citiesCount} cities, ${usersCount} users (${pendingUsersCount} pending), ${flagsCount} flags`);
+    return c.json({ citiesCount, usersCount, pendingUsersCount, pendingActsCount, flagsCount, actsCount: allCards.length, siteUpdating });
   } catch (err) {
     console.log("Stats error:", err);
     return c.json({ error: `Failed to fetch stats: ${err}` }, 500);
@@ -3815,6 +3820,98 @@ app.get("/make-server-9eb1ae04/admin/url-health", async (c) => {
     });
   } catch (err) {
     return c.json({ error: `Failed: ${err}` }, 500);
+  }
+});
+
+// ─── POST /actions/:id/flag ──────────────────────────────────────────────────
+// Lets any visitor (anonymous or signed-in) flag an act for admin review.
+// Stored under `flag:<flagId>` so kv.getByPrefix("flag:") can list them.
+// reason: one of the radio choices on the modal; detail: optional free-text.
+app.post("/make-server-9eb1ae04/actions/:id/flag", async (c) => {
+  try {
+    const cardId = Number(c.req.param("id"));
+    if (!Number.isFinite(cardId)) return c.json({ error: "Invalid card id" }, 400);
+
+    const body = await c.req.json<{ reason?: string; detail?: string }>().catch(() => ({}));
+    const reason = (body.reason ?? "other").toString().slice(0, 64);
+    const detail = (body.detail ?? "").toString().slice(0, 500);
+
+    // Confirm the card exists in either the seed-card pool or the user-submitted
+    // pool. Don't return 404 to the user even if it doesn't — a flag on a stale
+    // card id is still useful signal — but tag it on the record.
+    const seedCard = await kv.get(`action:${cardId}`);
+    const userCard = seedCard ? null : await kv.get(`user-action:${cardId}`);
+    const cardTitle = (seedCard as any)?.title ?? (userCard as any)?.title ?? null;
+
+    // Optional reporter info from auth token (works for both anon-key and user JWTs).
+    let reporterId: string | null = null;
+    let reporterName: string | null = null;
+    let reporterEmail: string | null = null;
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    if (token) {
+      const user = await getUser(token);
+      if (user) {
+        reporterId = user.id;
+        reporterEmail = user.email ?? null;
+        const approval = (await kv.get(`user:approval:${user.id}`)) as any;
+        reporterName = approval?.name ?? null;
+      }
+    }
+
+    const flagId = `${Date.now()}-${Math.floor(Math.random() * 10_000).toString().padStart(4, "0")}`;
+    const record = {
+      id: flagId,
+      cardId,
+      cardTitle,
+      reason,
+      detail,
+      reporterId,
+      reporterName,
+      reporterEmail,
+      createdAt: new Date().toISOString(),
+    };
+    await kv.set(`flag:${flagId}`, record);
+    console.log(`Flag filed on card ${cardId} ("${cardTitle ?? "unknown"}") by ${reporterEmail ?? "anonymous"}: ${reason}`);
+    return c.json({ ok: true, flagId });
+  } catch (err) {
+    console.log("Flag submit error:", err);
+    return c.json({ error: `Failed to submit flag: ${err}` }, 500);
+  }
+});
+
+// ─── GET /admin/flags ────────────────────────────────────────────────────────
+// Admin-only: returns all undismissed flags, newest first.
+app.get("/make-server-9eb1ae04/admin/flags", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    if (!token) return c.json({ error: "Unauthorized" }, 401);
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Admin only" }, 403);
+
+    const flags = (await kv.getByPrefix("flag:")) as any[];
+    const valid = flags.filter((f) => f && typeof f === "object" && f.id);
+    valid.sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
+    return c.json({ flags: valid });
+  } catch (err) {
+    console.log("List flags error:", err);
+    return c.json({ error: `Failed to list flags: ${err}` }, 500);
+  }
+});
+
+// ─── DELETE /admin/flags/:id — dismiss a single flag ─────────────────────────
+app.delete("/make-server-9eb1ae04/admin/flags/:id", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    if (!token) return c.json({ error: "Unauthorized" }, 401);
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Admin only" }, 403);
+
+    const flagId = c.req.param("id");
+    await kv.del(`flag:${flagId}`);
+    return c.json({ ok: true });
+  } catch (err) {
+    console.log("Dismiss flag error:", err);
+    return c.json({ error: `Failed to dismiss flag: ${err}` }, 500);
   }
 });
 

@@ -202,8 +202,8 @@ export function AskFlowModal({
   const isImageStep = step === imageStep;
 
   const STEP_TITLES = isLoggedIn
-    ? ["What's the Action?", "Details & Vibe", "Optional", "Header Image"]
-    : ["What's the Action?", "Details & Vibe", "Optional", "Create an Account", "Header Image"];
+    ? ["What's the Act?", "Details & Vibe", "Optional", "Header Image"]
+    : ["What's the Act?", "Details & Vibe", "Optional", "Create an Account", "Header Image"];
 
   // If the user signs in while on the auth step, totalSteps shrinks — drop back.
   useEffect(() => {
@@ -309,7 +309,7 @@ export function AskFlowModal({
           <img src={logoImg} alt="" aria-hidden="true" className="w-9 h-9 object-contain shrink-0" />
           <div className="flex-1 min-w-0">
             <h2 className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-[20px] leading-tight">
-              Add an Action
+              Add an Act
             </h2>
           </div>
           <button
@@ -340,7 +340,7 @@ export function AskFlowModal({
             {/* ── Step 0: What's the Action? ──────────────────────────────── */}
             {step === 0 && (
               <Section
-                title="What's the Action?"
+                title="What's the Act?"
                 hint="Make it clear and compelling — this is the headline people will see."
               >
                 <Field label="Title" required>

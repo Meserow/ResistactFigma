@@ -669,7 +669,7 @@ export function CelebrationModal({ prevCount, newCount, onClose, onFindMore }: C
             onMouseEnter={(e) => (e.currentTarget.style.background = "#e07a28")}
             onMouseLeave={(e) => (e.currentTarget.style.background = "#fd8e33")}
           >
-            {actionsToNext === 1 ? "One more →" : "Find another action"}
+            {actionsToNext === 1 ? "One more →" : "Find another act"}
             <ArrowRight size={14} strokeWidth={2.5} />
           </button>
         </div>
