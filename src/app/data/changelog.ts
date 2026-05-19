@@ -16,6 +16,20 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.1.23",
+    date: "2026-05-19",
+    title: "Facebook share fixed on iPhone",
+    sections: [
+      {
+        heading: "Sharing",
+        items: [
+          "Facebook sharing on iPhone now opens the mobile web share page reliably. Previous attempts used app-specific URLs that launched the Facebook app but produced no post. The share button now opens a browser-based share dialog the same way Threads does — desktop behavior unchanged.",
+          "Bluesky sharing on iPhone now copies the text to your clipboard (same as Instagram and TikTok) since the Bluesky app intercepts the web intent URL but doesn't act on it. Desktop keeps the direct web intent.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.1.20",
     date: "2026-05-19",
     title: "iOS share fix, 'Incomplete' admin tab, View Larger fix, tighter feed top padding",
