@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react";
 import logoImg from "../../assets/resistact-logo-horizontal.webp";
 import { HeroPills } from "./HeroPills";
+import { prefersReducedMotion } from "../lib/animations";
 
 interface HomeHeroProps {
   onMatchClick?: () => void;
@@ -7,26 +9,101 @@ interface HomeHeroProps {
   onHowClick?: () => void;
 }
 
+// Three-phase hero reveal (no loop).
+//   Phase 0: dark line fades in alone:
+//            "America is being run by cartoon villains. MAGA is nuts."
+//   Phase 1: dark line stays put; orange handwritten "But what can one
+//            person do?" slides in from the left, slightly tilted, below.
+//   Phase 2: both lines are replaced by the ResistAct logo, which pops in.
+const PHASE_DURATIONS_MS = [1500, 2400];
+
 export function HomeHero({ onMatchClick, onAskClick, onHowClick }: HomeHeroProps) {
+  const [phase, setPhase] = useState(0);
+
+  useEffect(() => {
+    if (prefersReducedMotion()) {
+      setPhase(2);
+      return;
+    }
+    if (phase >= 2) return;
+    const id = window.setTimeout(
+      () => setPhase((p) => p + 1),
+      PHASE_DURATIONS_MS[phase],
+    );
+    return () => window.clearTimeout(id);
+  }, [phase]);
+
   return (
     <div className="bg-white relative overflow-hidden border-b border-[#f0e8de]">
-      <div className="relative z-10 max-w-[880px] mx-auto px-5 pt-9 pb-7 text-center">
-        <div className="relative">
-          <h1 className="font-['Poppins',sans-serif] text-[#2a2a2a] text-[18px] md:text-[22px] font-bold leading-[1.2]">
-            <span className="inline-block -translate-x-20 md:-translate-x-44">America is being run by cartoon villains. MAGA is nuts.</span>
-            <br />
-            <em className="stamp-in font-['Rock_Salt',cursive] not-italic font-bold text-[#fd8e33] text-[23px] md:text-[27px] leading-none align-baseline inline-block translate-x-24 md:translate-x-52" style={{ WebkitTextStroke: "1.25px #fd8e33", paintOrder: "stroke fill" }}>But what can one person do?</em>
-          </h1>
-
-          <div className="flex items-center justify-center mt-3 mb-0">
-            <img src={logoImg} alt="ResistAct — Citizen Action" className="h-16 md:h-24 w-auto" />
-          </div>
+      <div className="relative z-10 max-w-[880px] mx-auto px-5 pt-3 pb-3 text-center">
+        <div className="flex items-center justify-center h-[92px] md:h-[120px]">
+          {phase < 2 && (
+            <div key="text">
+              <h1 className="hero-line-fade-in font-['Poppins',sans-serif] text-[#2a2a2a] text-[18px] md:text-[22px] font-bold leading-[1.2]">
+                America is being run by cartoon villains. MAGA is nuts.
+              </h1>
+              {phase >= 1 && (
+                <p
+                  key="orange"
+                  className="hero-orange-slide-in font-['Rock_Salt',cursive] not-italic font-bold text-[#fd8e33] text-[22px] md:text-[30px] leading-none mt-3 md:mt-4"
+                  style={{ WebkitTextStroke: "1.25px #fd8e33", paintOrder: "stroke fill" }}
+                >
+                  But what can one person do?
+                </p>
+              )}
+            </div>
+          )}
+          {phase >= 2 && (
+            <div key="logo" className="hero-logo-pop">
+              <img
+                src={logoImg}
+                alt="ResistAct"
+                className="h-16 md:h-24 w-auto block"
+                style={{
+                  clipPath: "polygon(0 0, 100% 0, 100% 85%, 14% 85%, 14% 100%, 0 100%)",
+                }}
+              />
+            </div>
+          )}
         </div>
 
-        <div className="mt-5 mb-5">
+        <div className="mt-4 mb-0">
           <HeroPills onMatchClick={onMatchClick} onAskClick={onAskClick} onHowClick={onHowClick} />
         </div>
       </div>
+
+      <style>{`
+        @keyframes hero-line-fade-in {
+          0%   { opacity: 0; transform: translateY(8px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes hero-orange-slide-in {
+          0%   { opacity: 0; transform: translateX(-120%) rotate(-6deg); }
+          70%  { opacity: 1; transform: translateX(2%) rotate(-2deg); }
+          100% { opacity: 1; transform: translateX(0) rotate(-3deg); }
+        }
+        @keyframes hero-logo-pop {
+          0%   { opacity: 0; transform: scale(0.6); }
+          60%  { opacity: 1; transform: scale(1.08); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+        .hero-line-fade-in {
+          animation: hero-line-fade-in 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        .hero-orange-slide-in {
+          animation: hero-orange-slide-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+          transform-origin: center;
+          display: inline-block;
+        }
+        .hero-logo-pop {
+          animation: hero-logo-pop 520ms cubic-bezier(0.22, 1.6, 0.36, 1) both;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .hero-line-fade-in,
+          .hero-orange-slide-in,
+          .hero-logo-pop { animation: none; }
+        }
+      `}</style>
     </div>
   );
 }

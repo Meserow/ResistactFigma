@@ -518,14 +518,14 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               )}
               <button
                 onClick={onLoginClick}
-                className="inline-flex flex-col items-start rounded-2xl bg-[#fd8e33] px-4 py-1.5 text-left font-['Poppins',sans-serif] text-white hover:bg-[#d96612] transition-colors whitespace-nowrap"
+                className="inline-flex flex-col items-start rounded-2xl bg-[#fd8e33] px-4 py-1.5 text-left font-['Poppins',sans-serif] text-white hover:bg-[#d96612] transition-colors"
               >
                 <span className="inline-flex items-center gap-1.5 text-sm font-semibold leading-tight">
                   <Flame size={14} strokeWidth={2.25} className="shrink-0" />
-                  #jointheresistance
+                  Join The Resistance
                 </span>
                 <span className="text-[10.5px] font-normal italic text-white/85 leading-tight mt-0.5">
-                  Sign in to continue — or join if you're new.
+                  Sign in or Create an Account
                 </span>
               </button>
             </>
@@ -579,13 +579,13 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                 ? "border-[#fd8e33] text-[#fd8e33] bg-[#fd8e33]/10"
                 : "border-transparent text-gray-600 hover:bg-white hover:shadow-sm hover:border-gray-200"
             }`}
-            title="Show only actions that take 5–10 minutes"
+            title="Show only actions that take 5 minutes or less"
           >
             <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center ${quickActionsOnly ? "bg-[#fd8e33] border-[#fd8e33]" : "border-gray-300"}`}>
               {quickActionsOnly && <X size={10} className="text-white rotate-45" strokeWidth={3} />}
             </span>
             <Zap size={13} className={quickActionsOnly ? "text-[#fd8e33]" : "text-gray-400"} fill={quickActionsOnly ? "#fd8e33" : "none"} />
-            Quick Actions
+            5 Minutes Max
           </button>
         )}
 
@@ -713,75 +713,53 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               )}
             </div>
 
-            {/* Category pills + "more" overflow — mirrors Facts UX */}
-            <span className="font-['Poppins',sans-serif] text-gray-400 text-[10px] uppercase tracking-widest font-semibold shrink-0">Category</span>
-            <div ref={actsPillsRef} className="flex-1 min-w-0 flex items-center gap-1">
-            <div className="flex-1 min-w-0 flex items-center gap-1 overflow-hidden">
-            {actsInlinePills.map((option) => {
-              const selected = actsCatsSelected.includes(option);
-              return (
-                <button
-                  key={option}
-                  onClick={() => toggleFilterOption("Category", option)}
-                  className={`px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
-                    selected
-                      ? "bg-[#23297e] text-white border-[#23297e]"
-                      : "bg-white text-gray-600 border-gray-200 hover:border-[#23297e] hover:text-[#23297e]"
-                  }`}
-                >
-                  {option}
-                </button>
-              );
-            })}
-            </div>
-            {actsOverflow.length > 0 && (
-              <div className="relative shrink-0">
-                <button
-                  onClick={() => setOpenFilter(actsMoreOpen ? null : "acts-more")}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium whitespace-nowrap border transition-all ${
-                    actsMoreSelectedCount > 0
-                      ? "border-[#23297e] text-[#23297e] bg-[#23297e]/5"
-                      : "border-gray-200 text-gray-600 bg-white hover:border-[#23297e] hover:text-[#23297e]"
-                  }`}
-                >
-                  + {actsOverflow.length - actsExtraVisible.length} more
-                  {actsMoreSelectedCount > 0 && (
-                    <span className="w-4 h-4 rounded-full bg-[#fd8e33] text-white text-[9px] flex items-center justify-center font-bold shrink-0">
-                      {actsMoreSelectedCount}
-                    </span>
-                  )}
-                  <ChevronDown size={12} className={`text-[#5a5a5a] transition-transform duration-150 ${actsMoreOpen ? "rotate-180" : ""}`} />
-                </button>
-                {actsMoreOpen && (
-                  <div className="absolute top-full left-0 mt-1.5 w-64 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50 flex flex-col max-h-[min(28rem,80vh)]">
-                    <p className="px-4 pt-1 pb-2 font-['Poppins',sans-serif] text-[10px] uppercase tracking-widest text-gray-400 font-semibold border-b border-gray-50 shrink-0">
-                      More categories
-                    </p>
-                    <div className="overflow-y-auto flex-1">
-                      {actsOverflow.map((option) => (
-                        <label key={option} className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
-                          <input
-                            type="checkbox"
-                            checked={actsCatsSelected.includes(option)}
-                            onChange={() => toggleFilterOption("Category", option)}
-                            className="accent-[#23297e] w-3.5 h-3.5 rounded shrink-0"
-                          />
-                          <span className="font-['Poppins',sans-serif] text-sm text-gray-700">{option}</span>
-                        </label>
-                      ))}
-                    </div>
-                    {actsMoreSelectedCount > 0 && (
-                      <button
-                        onClick={() => onFilterChange("Category", actsCatsSelected.filter((c) => !actsOverflow.includes(c)))}
-                        className="w-full text-center text-xs text-red-400 hover:text-red-600 py-2 border-t border-gray-50 mt-1 font-['Poppins',sans-serif] font-medium transition-colors shrink-0"
-                      >
-                        Clear these
-                      </button>
-                    )}
-                  </div>
+            {/* Category dropdown — mirrors Location dropdown */}
+            <div className="relative shrink-0">
+              <button
+                onClick={() => setOpenFilter(openFilter === "Category" ? null : "Category")}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
+                  actsCatsSelected.length > 0
+                    ? "border-[#23297e] text-[#23297e] bg-[#23297e]/5"
+                    : "border-transparent text-gray-600 hover:bg-white hover:shadow-sm hover:border-gray-200"
+                }`}
+              >
+                <SlidersHorizontal size={13} className={actsCatsSelected.length > 0 ? "text-[#23297e]" : "text-gray-400"} />
+                Category
+                {actsCatsSelected.length > 0 && (
+                  <span className="w-4 h-4 rounded-full bg-[#fd8e33] text-white text-[9px] flex items-center justify-center font-bold shrink-0">
+                    {actsCatsSelected.length}
+                  </span>
                 )}
-              </div>
-            )}
+                <ChevronDown size={13} className={`text-[#5a5a5a] transition-transform duration-150 ${openFilter === "Category" ? "rotate-180" : ""}`} />
+              </button>
+              {openFilter === "Category" && (
+                <div className="absolute top-full left-0 mt-1.5 w-64 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50 flex flex-col max-h-[min(28rem,80vh)]">
+                  <p className="px-4 pt-1 pb-2 font-['Poppins',sans-serif] text-[10px] uppercase tracking-widest text-gray-400 font-semibold border-b border-gray-50 shrink-0">
+                    Category
+                  </p>
+                  <div className="overflow-y-auto flex-1">
+                    {actsCats.map((option) => (
+                      <label key={option} className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={actsCatsSelected.includes(option)}
+                          onChange={() => toggleFilterOption("Category", option)}
+                          className="accent-[#23297e] w-3.5 h-3.5 rounded shrink-0"
+                        />
+                        <span className="font-['Poppins',sans-serif] text-sm text-gray-700">{option}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {actsCatsSelected.length > 0 && (
+                    <button
+                      onClick={() => onFilterChange("Category", [])}
+                      className="w-full text-center text-xs text-red-400 hover:text-red-600 py-2 border-t border-gray-50 mt-1 font-['Poppins',sans-serif] font-medium transition-colors shrink-0"
+                    >
+                      Clear filter
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </>
         )}
@@ -1019,10 +997,10 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
             >
               <span className="inline-flex items-center gap-1.5 text-sm font-semibold leading-tight">
                 <Flame size={14} strokeWidth={2.25} />
-                #jointheresistance
+                Join The Resistance
               </span>
               <span className="text-[10.5px] font-normal italic text-white/85 leading-tight mt-0.5">
-                Sign in to continue — or join if you're new.
+                Sign in or Create an Account
               </span>
             </button>
           )}

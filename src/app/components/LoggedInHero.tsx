@@ -80,7 +80,7 @@ export function LoggedInHero({ userId, name, newActionsToday, onMatchClick, onAs
 
   return (
     <div className="bg-gradient-to-b from-white to-[#faf6f0] border-b border-[#f0e8de]">
-      <div className="max-w-[880px] mx-auto px-5 py-6 text-center">
+      <div className="max-w-[880px] mx-auto px-5 py-3 text-center">
         <p className="font-['Poppins',sans-serif] text-[#23297e] text-[20px] md:text-[24px] font-bold leading-[1.2] m-0">
           {greeting}, {firstName}.{" "}
           <em className="italic font-semibold text-[#fd8e33]">
