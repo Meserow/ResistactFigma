@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "dev": "vite"
+    "dev": "vite",
+    "gen:smacks": "node scripts/generate-smack-share-pages.mjs",
+    "prebuild": "node scripts/generate-smack-share-pages.mjs"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
