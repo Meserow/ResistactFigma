@@ -236,7 +236,7 @@ export default function App() {
   // painted at once. Cards are still loaded into `cards` state for filtering.
   // Mobile (<640px) gets 20; desktop gets 100 to fill a wide screen on first load.
   function getDisplayPage() {
-    return typeof window !== "undefined" && window.innerWidth >= 640 ? 100 : 20;
+    return typeof window !== "undefined" && window.innerWidth >= 640 ? 9999 : 20;
   }
   const [displayLimit, setDisplayLimit] = useState(getDisplayPage);
   const [boostedCards, setActedCards] = useState<Set<number>>(() => {
@@ -1035,26 +1035,22 @@ export default function App() {
   // viewport on a non-mobile screen we load the next batch automatically.
   const sentinelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const isDesktop = () => window.innerWidth >= 640;
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries[0].isIntersecting) return;
-        if (!isDesktop()) return;                      // mobile keeps the button
-        if (hasActiveFilters) return;                  // filters show all, nothing to load
-        if (loadingMore) return;
-        if (displayLimit < displayedCards.length) {
-          setDisplayLimit((prev) => prev + getDisplayPage());
-        } else if (serverOffset < serverTotal) {
-          handleLoadMore();
-        }
-      },
-      { rootMargin: "200px" }                         // trigger 200px before the sentinel
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
+    if (hasActiveFilters) return;
+    function onScroll() {
+      if (loadingMore) return;
+      const distFromBottom =
+        document.documentElement.scrollHeight - window.scrollY - window.innerHeight;
+      if (distFromBottom > 1200) return;
+      if (displayLimit < displayedCards.length) {
+        setDisplayLimit((prev) => prev + getDisplayPage());
+      } else if (serverOffset < serverTotal) {
+        handleLoadMore();
+      }
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    // Fire once immediately in case the page is already short enough to show everything
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
   }, [displayLimit, displayedCards.length, hasActiveFilters, loadingMore, serverOffset, serverTotal]);
 
   // ── Deep link: ?act=<cardId> ──
@@ -1682,12 +1678,6 @@ export default function App() {
             <>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
               {(hasActiveFilters || showPendingActsOnly ? visibleActsCards : visibleActsCards.slice(0, displayLimit)).map((card, idx) => (
-                // First 12 cards get a stagger-in animation, keyed by
-                // `staggerKey` so it re-fires whenever the user applies a new
-                // Match config. Cards past index 11 don't animate — keeps
-                // infinite scroll quiet. The `key={...}-${staggerKey}` forces
-                // React to re-mount the wrapper on key change so the CSS
-                // keyframe runs from the start.
                 <div
                   key={idx < 12 ? `${card.id}-${staggerKey}` : card.id}
                   id={`card-${card.id}`}
@@ -1716,13 +1706,16 @@ export default function App() {
             </>
             )}
 
-            {/* Sentinel for desktop infinite scroll — sits just below the grid.
-                IntersectionObserver fires ~200px before it enters the viewport. */}
-            <div ref={sentinelRef} className="h-1" aria-hidden />
+            {/* Sentinel — ref lives on the card 8 slots before the slice end
+                (see sentinelCardIdx above). This div is kept as a layout anchor
+                but no longer holds the ref. When no card holds it (all cards
+                loaded / filters active) sentinelRef.current is null and the
+                observer skips, which is correct — nothing more to load. */}
+            <div className="h-1" aria-hidden />
 
-            {/* Load more button — mobile only. Desktop uses the sentinel above. */}
+            {/* Load more button */}
             {synced && !hasActiveFilters && (displayLimit < displayedCards.length || serverOffset < serverTotal) && (
-              <div className="mt-12 flex flex-col items-center gap-2 sm:hidden">
+              <div className="mt-12 flex flex-col items-center gap-2">
                 <button
                   onClick={() => {
                     if (displayLimit < displayedCards.length) {
