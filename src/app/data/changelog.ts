@@ -16,6 +16,19 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.1.6",
+    date: "2026-05-18",
+    title: "Smack share — stripped-down OG stubs to isolate why Facebook scraper kept failing",
+    sections: [
+      {
+        heading: "Diagnostic minimal OG stubs",
+        items: [
+          "Even after removing the meta-refresh in 1.1.5, Facebook's debug tool kept failing every smack share URL with a misleading 'Could not resolve hostname' error — even brand-new URLs FB had never seen. Reduced the per-Smack stub to the absolute minimum: charset, title, six og:* tags, a JS redirect, and one anchor tag. No canonical, no twitter:* tags, no body image. If FB can scrape this version, the original structure was tripping something in FB's parser. If it still fails, the problem isn't the HTML at all — it's at the AWS/CloudFront layer or in FB's stuck cache for the whole `/s/` path.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.1.5",
     date: "2026-05-18",
     title: "Smack share — remove meta-refresh so Facebook actually scrapes the per-Smack OG tags",

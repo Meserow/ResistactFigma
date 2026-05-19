@@ -147,48 +147,29 @@ function pageFor(smack) {
   // the absolute SITE URL because social scrapers need a fully-qualified URL.
   const target = `/?smack=${smack.id}`;
 
+  // STRIPPED-DOWN VERSION for FB scraper compatibility. We removed:
+  //   - canonical link  (FB may follow it back to a cached-failure URL)
+  //   - twitter:* tags  (extra parse load + duplicate of og:*)
+  //   - <noscript>, body image, etc.  (FB shouldn't care, but minimise risk)
+  // What remains is the absolute minimum FB needs: charset, title,
+  // og:type/url/title/description/image, and a JS redirect for real users.
+  // If FB can scrape this version successfully, we know whatever was tripping
+  // the previous scrape was structural HTML noise — and we can add things
+  // back carefully one at a time.
   return `<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>${escapeHtml(title)}</title>
-  <meta name="description" content="${escapeHtml(description)}">
-  <link rel="canonical" href="${SITE}/s/${smack.id}.html">
-
-  <!-- Open Graph -->
-  <meta property="og:type"        content="article">
-  <meta property="og:url"         content="${SITE}/s/${smack.id}.html">
-  <meta property="og:title"       content="${escapeHtml(title)}">
-  <meta property="og:description" content="${escapeHtml(description)}">
-  <meta property="og:image"       content="${escapeHtml(absoluteImage)}">
-  <meta property="og:image:alt"   content="${escapeHtml(smack.title)}">
-  <meta property="og:site_name"   content="ResistAct">
-
-  <!-- Twitter -->
-  <meta name="twitter:card"        content="summary_large_image">
-  <meta name="twitter:url"         content="${SITE}/s/${smack.id}.html">
-  <meta name="twitter:title"       content="${escapeHtml(title)}">
-  <meta name="twitter:description" content="${escapeHtml(description)}">
-  <meta name="twitter:image"       content="${escapeHtml(absoluteImage)}">
-
-  <!-- IMPORTANT: NO meta-refresh here. Facebook's scraper follows
-       <meta http-equiv="refresh"> redirects and re-reads og:* tags from
-       the destination — which is the SPA's index.html with the homepage
-       OG tags. That sent every Smack share preview back to "RESISTACT.ORG /
-       www.resistact.org". JS redirect only — FB doesn't execute JS, so
-       scrapers see only the per-Smack OG tags we wrote above. Real users
-       (browsers) run the script below and bounce to the main app instantly. -->
-  <script>window.location.replace(${JSON.stringify(target)});</script>
+<meta charset="utf-8">
+<title>${escapeHtml(title)}</title>
+<meta property="og:type" content="article">
+<meta property="og:url" content="${SITE}/s/${smack.id}.html">
+<meta property="og:title" content="${escapeHtml(title)}">
+<meta property="og:description" content="${escapeHtml(description)}">
+<meta property="og:image" content="${escapeHtml(absoluteImage)}">
+<meta property="og:site_name" content="ResistAct">
+<script>window.location.replace(${JSON.stringify(target)});</script>
 </head>
-<body style="margin:0;background:#faf6f0;font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;color:#23297e;text-align:center;padding:48px 16px;">
-  <noscript>
-    <p>Loading ResistAct…</p>
-    <p><a href="${target}">Continue to ResistAct</a></p>
-  </noscript>
-  <img src="${escapeHtml(absoluteImage)}" alt="${escapeHtml(smack.title)}" style="max-width:480px;width:100%;margin:24px auto;display:block;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.1);">
-  <p style="font-weight:bold;font-size:18px;">${escapeHtml(smack.title)}</p>
-  <p><a href="${target}" style="color:#ed6624;font-weight:bold;text-decoration:none;">→ Open on ResistAct</a></p>
-</body>
+<body><a href="${target}">Continue to ResistAct</a></body>
 </html>
 `;
 }
