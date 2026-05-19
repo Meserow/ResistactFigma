@@ -246,9 +246,16 @@ interface SmacksPageProps {
   pendingFilterVersion?: number;
   onComplete?: (id: number) => void;
   completedSmackIds?: Set<number>;
+  /** Filter / sort state — controlled by App so the Navbar's filter row can
+   *  render the same chips + sort toggle. Optional so the component can
+   *  still run standalone (falls back to internal state). */
+  activeTags?: string[];
+  onActiveTagsChange?: (tags: string[]) => void;
+  sortBy?: "top" | "new" | "pending";
+  onSortByChange?: (s: "top" | "new" | "pending") => void;
 }
 
-export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToken, approval, onReceiptAdded, onReceiptApproved, pendingFilterVersion, onComplete, completedSmackIds }: SmacksPageProps) {
+export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToken, approval, onReceiptAdded, onReceiptApproved, pendingFilterVersion, onComplete, completedSmackIds, activeTags: activeTagsProp, onActiveTagsChange, sortBy: sortByProp, onSortByChange }: SmacksPageProps) {
   const isAdmin = approval?.isAdmin === true;
   const canSubmit = !!accessToken && (approval?.status === "approved");
 
@@ -257,7 +264,16 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
   const receipts = [...apiReceipts, ...STATIC_SMACKS.filter((r) => !apiIds.has(r.id))];
 
   // ── Tag filter ──────────────────────────────────────────────────────────────
-  const [activeTags, setActiveTags] = useState<string[]>([]);
+  // Controlled-or-uncontrolled: if `activeTags` is passed in, the parent owns
+  // the state and we forward writes via `onActiveTagsChange`. Otherwise we
+  // keep an internal copy so the component still works standalone.
+  const [activeTagsInternal, setActiveTagsInternal] = useState<string[]>([]);
+  const activeTags = activeTagsProp ?? activeTagsInternal;
+  const setActiveTags = (next: string[] | ((prev: string[]) => string[])) => {
+    const resolved = typeof next === "function" ? next(activeTags) : next;
+    if (onActiveTagsChange) onActiveTagsChange(resolved);
+    else setActiveTagsInternal(resolved);
+  };
   const toggleTag = (t: string) =>
     setActiveTags((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]);
 
@@ -659,9 +675,16 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
   }
 
   // ── Sort ────────────────────────────────────────────────────────────────────
-  const [sortBy, setSortBy] = useState<"top" | "new" | "pending">("top");
+  // Controlled-or-uncontrolled, same pattern as activeTags.
+  const [sortByInternal, setSortByInternal] = useState<"top" | "new" | "pending">("top");
+  const sortBy = sortByProp ?? sortByInternal;
+  const setSortBy = (s: "top" | "new" | "pending") => {
+    if (onSortByChange) onSortByChange(s);
+    else setSortByInternal(s);
+  };
   useEffect(() => {
     if (pendingFilterVersion && pendingFilterVersion > 0) setSortBy("pending");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingFilterVersion]);
 
   // ── Local search ─────────────────────────────────────────────────────────────
@@ -698,94 +721,25 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
 
   return (
     <div className="min-h-screen">
-      {/* ── Top bar: filter chips + sort toggle ──
-          Moved ABOVE the "What's a Smack" intro card so the chips sit up
-          next to the sort dropdown at the top of the page (same vertical
-          position as the navbar's filter row on other tabs). The intro
-          card then sits below for new visitors. */}
-      <div className="flex items-start gap-3 flex-wrap mb-4">
-        {/* Tag chips */}
-        <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
-          {availableTags.map((tag) => (
-            <button
-              key={tag}
-              onClick={() => toggleTag(tag)}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-['Poppins',sans-serif] font-semibold transition-all border ${
-                activeTags.includes(tag)
-                  ? "bg-[#23297e] text-white border-[#23297e]"
-                  : "bg-white text-gray-600 border-gray-200 hover:border-[#23297e] hover:text-[#23297e]"
-              }`}
-            >
-              <Tag size={10} />
-              {tag}
-            </button>
-          ))}
-          {activeTags.length > 0 && (
-            <button
-              onClick={() => setActiveTags([])}
-              className="px-3 py-1.5 rounded-full text-xs font-['Poppins',sans-serif] text-gray-500 hover:text-gray-700 border border-dashed border-gray-300 hover:border-gray-400 transition-all"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-
-        {/* Sort toggle */}
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-gray-100 shrink-0 self-start">
-          <button
-            onClick={() => setSortBy("top")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-['Poppins',sans-serif] font-bold text-xs transition-all ${
-              sortBy === "top"
-                ? "bg-white text-[#ed6624] shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            <Flame size={12} />
-            Top
-          </button>
-          <button
-            onClick={() => setSortBy("new")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-['Poppins',sans-serif] font-bold text-xs transition-all ${
-              sortBy === "new"
-                ? "bg-white text-[#23297e] shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            New
-          </button>
-          {isAdmin && (
-            <button
-              onClick={() => setSortBy("pending")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-['Poppins',sans-serif] font-bold text-xs transition-all ${
-                sortBy === "pending"
-                  ? "bg-white text-red-500 shadow-sm"
-                  : "text-gray-500 hover:text-red-500"
-              }`}
-            >
-              Pending
-            </button>
-          )}
-        </div>
-
-        {/* Any approved user can submit */}
-        {canSubmit && (
-          <button
-            onClick={() => setAddOpen(true)}
-            className="shrink-0 flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#ed6624] hover:bg-[#c2521b] text-white font-['Poppins',sans-serif] font-bold text-xs transition-colors self-start"
-          >
-            <Plus size={13} />
-            {isAdmin ? "Add to The Smacks" : "Submit to The Smacks"}
-          </button>
-        )}
-      </div>
-
-      {/* ── Intro: what is a Smack? — moved below the filter row so the
-          chips + sort dropdown sit at the top of the page (consistent
-          with the navbar's filter bar on The Acts / The Facts tabs). ── */}
+      {/* ── Intro: What's a Smack? — chips + sort live in the navbar above;
+          the "Add to The Smacks" / "Submit to The Smacks" call-to-action
+          tucks inside the intro card so submission is offered right next
+          to the explanation of what users are creating. ── */}
       <div className="mb-5 rounded-2xl border border-[#23297e]/15 bg-gradient-to-br from-[#ed6624]/5 via-white to-[#23297e]/5 px-4 py-3.5 sm:px-5 sm:py-4">
-        <p className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-sm sm:text-base mb-1.5 flex items-center gap-1.5">
-          <span aria-hidden="true">💥</span> What's a Smack?
-        </p>
+        <div className="flex items-start justify-between gap-3 mb-1.5">
+          <p className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-sm sm:text-base flex items-center gap-1.5">
+            <span aria-hidden="true">💥</span> What's a Smack?
+          </p>
+          {canSubmit && (
+            <button
+              onClick={() => setAddOpen(true)}
+              className="shrink-0 flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#ed6624] hover:bg-[#c2521b] text-white font-['Poppins',sans-serif] font-bold text-xs transition-colors"
+            >
+              <Plus size={13} />
+              {isAdmin ? "Add to The Smacks" : "Submit to The Smacks"}
+            </button>
+          )}
+        </div>
         <p className="font-['Poppins',sans-serif] text-xs sm:text-sm text-gray-700 leading-snug">
           The president is a cartoon villain. So is the Supreme Court. So is half of Congress. You don't fight a cartoon with a footnoted essay — you fight it with a meme that lands in two seconds. <strong className="text-[#23297e]">Smacks</strong> are shareable images that meet their grift, corruption, and stupidity with the simplicity those deserve. <span className="text-[#ed6624] font-semibold">Save it. Post it. Move on.</span>
         </p>

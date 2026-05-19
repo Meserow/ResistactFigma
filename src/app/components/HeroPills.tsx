@@ -65,8 +65,8 @@ export function HeroPills({ onMatchClick, onAskClick, onHowClick, hasMatchPrefs 
                 </>
               ) : (
                 <>
-                  <span className="text-[14px] font-extrabold text-white tracking-tight">Quick Acts for Me</span>
-                  <span className="text-[11px] font-medium text-white/90 italic">Overwhelmed? Click here to tailor the options.</span>
+                  <span className="text-[14px] font-extrabold text-white tracking-tight">Quick Act Matching Tool</span>
+                  <span className="text-[11px] font-medium text-white/90 italic">Overwhelmed? Let's tailor the options.</span>
                 </>
               )}
             </span>
