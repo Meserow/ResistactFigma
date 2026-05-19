@@ -449,7 +449,7 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
               <div>
                 <p className="font-['Poppins',sans-serif] font-bold text-gray-900 text-base leading-tight">Admin Panel</p>
                 <p className="font-['Poppins',sans-serif] text-gray-400 text-xs">
-                  {mode === "users" ? "Manage user approvals" : mode === "nourl" ? "Cards missing an action link" : mode === "online" ? "Users active in the last 24 hours" : "Review submitted actions"}
+                  {mode === "users" ? "Manage user approvals" : mode === "nourl" ? "Cards missing an action link or top image" : mode === "online" ? "Users active in the last 24 hours" : "Review submitted actions"}
                 </p>
               </div>
             </div>
@@ -474,7 +474,7 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
           <div className="px-5 flex gap-1 border-b border-gray-100 shrink-0">
             {([
               { key: "cards" as PanelMode, icon: <FileText size={13} />, label: `Cards${!cardsLoading && pendingCardsCount > 0 ? ` (${pendingCardsCount})` : ""}` },
-              { key: "nourl" as PanelMode, icon: <Link2 size={13} />, label: `No URL${noUrlCards.length > 0 ? ` (${noUrlCards.length})` : ""}` },
+              { key: "nourl" as PanelMode, icon: <Link2 size={13} />, label: `Incomplete${noUrlCards.length > 0 ? ` (${noUrlCards.length})` : ""}` },
               { key: "users" as PanelMode, icon: <Users size={13} />, label: "Users" },
               { key: "matcher" as PanelMode, icon: <Sliders size={13} />, label: "Matcher" },
               { key: "online" as PanelMode, icon: <Users size={13} />, label: `Online${onlineUsers.length > 0 ? ` (${onlineUsers.length})` : ""}` },
@@ -675,8 +675,8 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
               <div className="px-5 py-3 border-b border-gray-100 shrink-0">
                 <p className="font-['Poppins',sans-serif] text-xs text-gray-500">
                   {noUrlCards.length === 0 && !noUrlLoading
-                    ? "All approved cards have an action URL."
-                    : `${noUrlCards.length} approved card${noUrlCards.length !== 1 ? "s" : ""} with no link`}
+                    ? "All approved cards have an action URL and a top image."
+                    : `${noUrlCards.length} approved card${noUrlCards.length !== 1 ? "s" : ""} missing a link or image`}
                 </p>
               </div>
 

@@ -106,14 +106,20 @@ function buildPlatforms(siteUrl: string) {
       // into Facebook's composer if needed.
       try { navigator.clipboard?.writeText(shareText); } catch {}
       const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-      // iOS Safari treats `window.open` as a popup and silently blocks it
-      // from the Spread-the-Word modal's button (which was making the share
-      // do nothing on iPhone). Direct-navigate the current tab on iOS using
-      // `window.location.assign` — that's a navigation, not a popup, so
-      // Safari always honours it. The user can hit Back to return to ResistAct.
       const fbUrl = `https://${isIOS ? "m.facebook.com" : "www.facebook.com"}/sharer/sharer.php?u=${enc(shareUrl)}`;
       if (isIOS) {
-        window.location.assign(fbUrl);
+        // iOS Safari blocks BOTH window.open AND window.location.assign when
+        // they fire from inside a modal's button handler. The only reliable
+        // workaround: build a real <a> element and click it programmatically.
+        // Safari treats that exactly like a user-clicked link — no popup
+        // blocker, no gesture-context check. Desktop path is untouched.
+        const a = document.createElement("a");
+        a.href = fbUrl;
+        a.target = "_blank";
+        a.rel = "noopener,noreferrer";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
       } else {
         // Desktop: keep existing popup behaviour so the user doesn't lose
         // their place on the ResistAct page when sharing.
