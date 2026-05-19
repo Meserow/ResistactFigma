@@ -379,8 +379,14 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
   }
 
   async function handleFacebookShare(r: ReceiptCard) {
-    // Open Facebook synchronously before any await (popup blocker rule).
-    window.open("https://www.facebook.com/", "_blank");
+    // Open the Facebook *sharer* dialog (not the home page) synchronously,
+    // before any await — popup blockers require the window.open to happen
+    // inside the click handler. The sharer URL pre-fills the post with a
+    // link to resistact.org so users land in an active compose box. We then
+    // copy the image to clipboard so they can paste it into that compose box.
+    // (Facebook intentionally doesn't allow programmatic image attachment.)
+    const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent("https://resistact.org")}`;
+    window.open(shareUrl, "_blank", "noopener,noreferrer");
     // Copy image to clipboard so the user can paste directly into a FB post.
     try {
       const blob = await fetchImageBlob(r.imageUrl);
@@ -391,7 +397,7 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
       await handleDownload(r);
       setFbInstruction("downloaded");
     }
-    setTimeout(() => setFbInstruction("idle"), 6000);
+    setTimeout(() => setFbInstruction("idle"), 8000);
   }
 
   async function handleInstagramShare(r: ReceiptCard) {
@@ -1085,23 +1091,23 @@ function ReceiptTile({
           {receipt.title}
         </p>
 
-        {/* Footer: Share button → replaced by Shared badge once shared */}
+        {/* Footer: Share button — stays clickable after sharing so users
+            can share again to different platforms. The "Shared ✓" state is
+            just a visual confirmation, not a lockout. */}
         <div className="flex items-center justify-end gap-2 mt-auto">
-          {isShared ? (
-            <span className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-green-600 text-white font-['Poppins',sans-serif] font-bold text-xs">
-              <Check size={12} strokeWidth={3} />
-              Shared
-            </span>
-          ) : (
-            <button
-              type="button"
-              onClick={onShare}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#23297e] hover:bg-[#1a2060] text-white font-['Poppins',sans-serif] font-bold text-xs transition-colors"
-            >
-              <Share2 size={12} />
-              Share
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={onShare}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-['Poppins',sans-serif] font-bold text-xs transition-colors ${
+              isShared
+                ? "bg-green-600 hover:bg-green-700 text-white"
+                : "bg-[#23297e] hover:bg-[#1a2060] text-white"
+            }`}
+            title={isShared ? "Share again to another platform" : "Share this Smack"}
+          >
+            {isShared ? <Check size={12} strokeWidth={3} /> : <Share2 size={12} />}
+            {isShared ? "Share again" : "Share"}
+          </button>
         </div>
       </div>
     </div>
