@@ -520,25 +520,26 @@ function StepToneAndPreview({
 
   return (
     <div>
-      <div className="mb-5">
-        <div className="flex items-center gap-2.5">
-          <img src={logoImg} alt="" aria-hidden="true" className="w-9 h-9 object-contain shrink-0" />
-          <h2 id="match-me-title" className="font-['Poppins',sans-serif] text-[20px] font-bold text-[#23297e] leading-tight">
-            Quick Match Tool
-          </h2>
-        </div>
-        <p className="font-['Poppins',sans-serif] text-sm text-gray-500 mt-0.5 pl-[46px]">
+      {/* Compact header — logo + title on one row, subtitle inline next to the
+          title rather than a second line, to claw back vertical space in the
+          Quick Match Tool modal. */}
+      <div className="mb-2 flex items-center gap-2.5 flex-wrap">
+        <img src={logoImg} alt="" aria-hidden="true" className="w-7 h-7 object-contain shrink-0" />
+        <h2 id="match-me-title" className="font-['Poppins',sans-serif] text-[17px] font-bold text-[#23297e] leading-tight">
+          Quick Match Tool
+        </h2>
+        <p className="font-['Poppins',sans-serif] text-[12px] text-gray-500 leading-tight">
           What kind of actions are you up for?
         </p>
       </div>
 
-      <div className="pl-5 grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-2 mb-1">
+      <div className="pl-5 grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-1 mb-1">
         {/* Time Commitment — spans both columns, aligned with the grid below */}
         {(() => {
           const tIdx = timeIndex(prefs.time);
           const tLevel = TIME_LEVELS[tIdx];
           return (
-            <div className="sm:col-span-2 flex flex-col gap-0.5 mb-1">
+            <div className="sm:col-span-2 flex flex-col gap-0 mb-0">
               <div className="flex items-center gap-1.5 pl-1">
                 <Clock size={12} strokeWidth={1.75} className="text-gray-500 shrink-0" />
                 <span className="font-['Poppins',sans-serif] font-medium text-[12px] text-gray-800">
@@ -572,7 +573,7 @@ function StepToneAndPreview({
           const sIdx = settingIndex(prefs.setting);
           const sStop = SETTING_STOPS[sIdx];
           return (
-            <div className="flex flex-col gap-0.5">
+            <div className="flex flex-col gap-0">
               <div className="flex items-center gap-1.5 pl-1">
                 <MapPin size={12} strokeWidth={1.75} className="text-gray-500 shrink-0" />
                 <span className="font-['Poppins',sans-serif] font-medium text-[12px] text-gray-800">
@@ -598,7 +599,7 @@ function StepToneAndPreview({
           const { Icon, label, stops } = TONE_LABELS[k];
           const stop = stops[tone[k]];
           return (
-            <div key={k} className="flex flex-col gap-0.5">
+            <div key={k} className="flex flex-col gap-0">
               <div className="flex items-center gap-1.5 pl-1">
                 <Icon size={12} strokeWidth={1.75} className="text-gray-500 shrink-0" />
                 <span className="font-['Poppins',sans-serif] font-medium text-[12px] text-gray-800">
@@ -619,12 +620,12 @@ function StepToneAndPreview({
         })}
       </div>
 
-      <div className="border-t border-gray-200 pt-5 mt-5">
+      <div className="border-t border-gray-200 pt-3 mt-3">
         <h3 className="font-['Poppins',sans-serif] text-xs font-bold uppercase tracking-wider text-gray-500 mb-0.5">
           Quick Matches
         </h3>
-        <div className="mb-2">
-          <p className="font-['Poppins',sans-serif] text-[12px] text-gray-600">
+        <div className="mb-1.5">
+          <p className="font-['Poppins',sans-serif] text-[11.5px] text-gray-600 leading-snug">
             Some quick actions that align with your settings above — let us know if these feel right?
           </p>
         </div>
