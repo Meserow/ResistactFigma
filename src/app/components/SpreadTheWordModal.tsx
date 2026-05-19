@@ -102,18 +102,23 @@ function buildPlatforms(siteUrl: string) {
   const enc = (s: string) => encodeURIComponent(s);
   return [
     { id: "facebook", label: "Facebook", bg: "#1877F2", fg: "#fff", icon: <FacebookIcon />, action: () => {
-      // Copy the caption + link to the clipboard first so the user can paste
-      // into Facebook's composer (FB's new Create-post flow doesn't auto-fill
-      // the body, but once you paste the URL it renders the og:image preview).
-      // iOS users with the FB app installed may see an FB-app login screen if
-      // Universal Links intercepts the sharer URL — fall back to mobile web
-      // via m.facebook.com which isn't an FB Universal Link target.
-      // Opens as a regular tab (not a popup window) so it doesn't stay on top
-      // of subsequent share tabs.
+      // Copy the caption + link to the clipboard so the user can paste it
+      // into Facebook's composer if needed.
       try { navigator.clipboard?.writeText(shareText); } catch {}
       const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-      const host = isIOS ? "m.facebook.com" : "www.facebook.com";
-      openShare(`https://${host}/sharer/sharer.php?u=${enc(shareUrl)}`, "facebook");
+      // iOS Safari treats `window.open` as a popup and silently blocks it
+      // from the Spread-the-Word modal's button (which was making the share
+      // do nothing on iPhone). Direct-navigate the current tab on iOS using
+      // `window.location.assign` — that's a navigation, not a popup, so
+      // Safari always honours it. The user can hit Back to return to ResistAct.
+      const fbUrl = `https://${isIOS ? "m.facebook.com" : "www.facebook.com"}/sharer/sharer.php?u=${enc(shareUrl)}`;
+      if (isIOS) {
+        window.location.assign(fbUrl);
+      } else {
+        // Desktop: keep existing popup behaviour so the user doesn't lose
+        // their place on the ResistAct page when sharing.
+        openShare(fbUrl, "facebook");
+      }
     }, copyNote: "Caption + link copied. Paste it into the Facebook post — the ResistAct preview will appear." },
     { id: "threads",  label: "Threads",     bg: "#000", fg: "#fff", icon: <ThreadsIcon />,  action: () => openShare(`https://www.threads.net/intent/post?text=${enc(shareText)}`, "threads") },
     { id: "bluesky",  label: "Bluesky",     bg: "#0085FF", fg: "#fff", icon: <BlueSkyIcon />, action: () => openShare(`https://bsky.app/intent/compose?text=${enc(shareText)}`, "bluesky") },
