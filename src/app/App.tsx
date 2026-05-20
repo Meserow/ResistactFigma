@@ -367,6 +367,7 @@ export default function App() {
     return isNaN(id) ? null : id;
   });
   const [receipts, setReceipts] = useState<ReceiptCard[]>([]);
+  const [hiddenSmackIds, setHiddenSmackIds] = useState<number[]>([]);
   // Derived once per `receipts` change so the navbar's chip rendering doesn't
   // recompute on every render. Must be declared AFTER `receipts` (temporal
   // dead zone — referencing receipts earlier crashed with "Cannot access
@@ -383,6 +384,7 @@ export default function App() {
   // priority update React can interrupt for more typing.
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const [quickActionsOnly, setQuickActionsOnly] = useState(false);
+  const [showDone, setShowDone] = useState(false);
   const [sortBy, setSortBy] = useState<"popular" | "newest" | "az">("popular");
 
   function handleFilterChange(filterName: string, selected: string[]) {
@@ -442,6 +444,9 @@ export default function App() {
 
       // Quick actions only (5–10 min wins)
       if (quickActionsOnly && !card.quickAction) return false;
+
+      // Hide completed cards unless "Show Done" is checked
+      if (!showDone && completedCards.has(card.id)) return false;
 
       return true;
     });
@@ -944,7 +949,10 @@ export default function App() {
         const res = await fetch(`${API}/receipts`, { headers: HEADERS });
         if (!res.ok || cancelled) return;
         const data = await res.json();
-        if (!cancelled) setReceipts(data.receipts ?? []);
+        if (!cancelled) {
+          setReceipts(data.receipts ?? []);
+          setHiddenSmackIds(data.hiddenIds ?? []);
+        }
       } catch { /* non-critical */ }
     })();
     return () => { cancelled = true; };
@@ -1366,6 +1374,9 @@ export default function App() {
         onTabChange={handleTabChange}
         quickActionsOnly={quickActionsOnly}
         onQuickActionsChange={setQuickActionsOnly}
+        showDone={showDone}
+        onShowDoneChange={setShowDone}
+        completedCount={completedCards.size}
         sortBy={sortBy}
         onSortChange={setSortBy}
         smacksAvailableTags={smacksAvailableTags}
@@ -1422,10 +1433,15 @@ export default function App() {
           /* ── Receipts view ── */
           <SmacksPage
             receipts={receipts}
+            hiddenIds={hiddenSmackIds}
             searchQuery={deferredSearchQuery}
             accessToken={accessToken}
             approval={approval}
             onReceiptAdded={(r) => setReceipts((prev) => [...prev, r])}
+            onReceiptDeleted={(id) => {
+              setReceipts((prev) => prev.filter((r) => r.id !== id));
+              setHiddenSmackIds((prev) => prev.includes(id) ? prev : [...prev, id]);
+            }}
             onReceiptApproved={(id) =>
               setReceipts((prev) =>
                 prev.map((r) => (r.id === id ? { ...r, adminApproved: true } : r))
@@ -1606,15 +1622,15 @@ export default function App() {
                     {/* Chip strip — wraps on narrow viewports. All icons are
                         simple navy line-icons so the strip reads as one unified
                         UI element rather than a row of disparate emoji. */}
-                    <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-gray-600 font-['Poppins',sans-serif]">
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[10px] text-gray-600 font-['Poppins',sans-serif]">
                       {timeLabel && (
-                        <button onClick={() => { setMatchInitialStep(0); setMatchOpen(true); }} className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5 hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
-                          <Clock size={11} className="text-[#23297e] shrink-0" strokeWidth={2} />
+                        <button onClick={() => { setMatchInitialStep(0); setMatchOpen(true); }} className="inline-flex items-center gap-0.5 rounded-full bg-white/70 border border-gray-200 px-1.5 py-0.5 hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
+                          <Clock size={10} className="text-[#23297e] shrink-0" strokeWidth={2} />
                           {timeLabel}
                         </button>
                       )}
-                      <button onClick={() => { setMatchInitialStep(0); setMatchOpen(true); }} className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5 hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
-                        <Globe size={11} className="text-[#23297e] shrink-0" strokeWidth={2} />
+                      <button onClick={() => { setMatchInitialStep(0); setMatchOpen(true); }} className="inline-flex items-center gap-0.5 rounded-full bg-white/70 border border-gray-200 px-1.5 py-0.5 hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
+                        <Globe size={10} className="text-[#23297e] shrink-0" strokeWidth={2} />
                         {settingLabel}
                       </button>
                       {toneChips.map((c) => {
@@ -1623,33 +1639,33 @@ export default function App() {
                           <button
                             key={c.label}
                             onClick={() => { setMatchInitialStep(0); setMatchOpen(true); }}
-                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 border transition-colors ${
+                            className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 border transition-colors ${
                               c.isDefault
                                 ? "bg-gray-50 border-gray-100 text-gray-400 hover:border-[#ed6624] hover:bg-[#ed6624]/5"
                                 : "bg-[#ed6624]/10 border-[#ed6624]/30 text-[#23297e] font-semibold hover:border-[#ed6624] hover:bg-[#ed6624]/20"
                             }`}
                             title={c.isDefault ? `${c.label} — default (not set)` : `${c.label} bumped to ${c.value}`}
                           >
-                            <Icon size={11} className={`shrink-0 ${c.isDefault ? "text-gray-400" : "text-[#23297e]"}`} strokeWidth={2} />
+                            <Icon size={10} className={`shrink-0 ${c.isDefault ? "text-gray-400" : "text-[#23297e]"}`} strokeWidth={2} />
                             {c.label}: {c.value}
                           </button>
                         );
                       })}
                       {matchPrefs.state && (
-                        <button onClick={() => { setMatchInitialStep(0); setMatchOpen(true); }} className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5 hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
-                          <MapPin size={11} className="text-[#23297e] shrink-0" strokeWidth={2} />
+                        <button onClick={() => { setMatchInitialStep(0); setMatchOpen(true); }} className="inline-flex items-center gap-0.5 rounded-full bg-white/70 border border-gray-200 px-1.5 py-0.5 hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
+                          <MapPin size={10} className="text-[#23297e] shrink-0" strokeWidth={2} />
                           {matchPrefs.state}
                         </button>
                       )}
                       {groupCount > 0 && (
-                        <button onClick={() => { setMatchInitialStep(1); setMatchOpen(true); }} className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5 hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
-                          <Users size={11} className="text-[#23297e] shrink-0" strokeWidth={2} />
+                        <button onClick={() => { setMatchInitialStep(1); setMatchOpen(true); }} className="inline-flex items-center gap-0.5 rounded-full bg-white/70 border border-gray-200 px-1.5 py-0.5 hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
+                          <Users size={10} className="text-[#23297e] shrink-0" strokeWidth={2} />
                           Amplifies {groupCount} {groupCount === 1 ? "group" : "groups"}
                         </button>
                       )}
                       {matchPrefs.focusDonations && (
-                        <button onClick={() => { setMatchInitialStep(1); setMatchOpen(true); }} className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5 hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
-                          <DollarSign size={11} className="text-[#23297e] shrink-0" strokeWidth={2} />
+                        <button onClick={() => { setMatchInitialStep(1); setMatchOpen(true); }} className="inline-flex items-center gap-0.5 rounded-full bg-white/70 border border-gray-200 px-1.5 py-0.5 hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
+                          <DollarSign size={10} className="text-[#23297e] shrink-0" strokeWidth={2} />
                           Donation focus
                         </button>
                       )}

@@ -158,7 +158,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
         }`}
       >
         {isCompleted && <span aria-hidden>✓</span>}
-        <span>{isCompleted ? "DONE!" : "I did this"}</span>
+        <span>{isCompleted ? "DONE!" : "I did this!"}</span>
         {effectiveCount > 0 && (
           <span
             key={effectiveCount}
