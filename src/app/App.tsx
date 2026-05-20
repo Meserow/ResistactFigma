@@ -523,7 +523,8 @@ export default function App() {
   const pendingActsCount   = isAdminUser ? serverPendingActsCount : 0;
   const pendingSmacksCount = isAdminUser ? receipts.filter((r) => (r as any).adminApproved === false).length : 0;
 
-  const displayedCards = (() => {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const displayedCards = useMemo(() => {
     // ── Global gate: expiry + approval + already-done ────────────────────────
     const gated = cards.filter((card) => {
       // Hide expired events from everyone
@@ -660,7 +661,13 @@ export default function App() {
       }
     }
     return pinFirst(completedLast(out));
-  })();
+  // deps: everything applyFilters + ranking reads from component scope.
+  // deferredSearchQuery (not searchQuery) means this memo is bypassed
+  // entirely during keystrokes — React renders the stale list instantly,
+  // then re-runs the memo only after the deferred value settles.
+  }, [cards, deferredSearchQuery, activeFilters, quickActionsOnly, showDone,
+      completedCards, matchPrefs, isAdminUser, todayISO, boostedCards,
+      sortBy, demoteHyperLocal]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // True when any filter chip is selected OR a search is active — bypasses
   // server pagination so client-side filtering sees the full dataset.
@@ -1370,6 +1377,7 @@ export default function App() {
         onFilterChange={handleFilterChange}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        isSearchPending={searchQuery !== deferredSearchQuery}
         activeTab={activeTab}
         onTabChange={handleTabChange}
         quickActionsOnly={quickActionsOnly}
@@ -1695,7 +1703,7 @@ export default function App() {
               </div>
             ) : (
             <>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
+            <div className={`grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4 transition-opacity duration-150 ${searchQuery !== deferredSearchQuery ? "opacity-50" : "opacity-100"}`}>
               {(hasActiveFilters || showPendingActsOnly ? visibleActsCards : visibleActsCards.slice(0, displayLimit)).map((card, idx) => (
                 <div
                   key={idx < 12 ? `${card.id}-${staggerKey}` : card.id}
