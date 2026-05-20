@@ -38,6 +38,7 @@ const CATEGORY_OPTIONS: { label: string; color: string }[] = [
   { label: "Petition",             color: "#05737f" },
   { label: "Prayer",               color: "#8a00e6" },
   { label: "Professional Skills",  color: "#126d89" },
+  { label: "Purchase",             color: "#b45309" },
   { label: "Protest",              color: "#23297e" },
   { label: "Social Media",         color: "#e44b4b" },
   { label: "Spread Positivity",    color: "#8a00e6" },

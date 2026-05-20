@@ -287,6 +287,7 @@ export default function App() {
 
   // ── Auth state ──
   const [approval, setApproval] = useState<UserApproval | null>(null);
+  const [loginStreak, setLoginStreak] = useState<number>(1);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [myCompletions, setMyCompletions] = useState<{
     total: number;
@@ -828,6 +829,7 @@ export default function App() {
       if (res.ok) {
         const data = await res.json();
         setApproval(data.approval);
+        if (typeof data.streak === "number") setLoginStreak(data.streak);
         return;
       }
       console.error("Approval status fetch failed:", res.status, await res.text());
@@ -1388,6 +1390,7 @@ export default function App() {
                     <LoggedInHero
                       userId={approval.userId}
                       name={approval.name || "Resistor"}
+                      streak={loginStreak}
                       newActionsToday={newToday}
                       onMatchClick={() => setMatchOpen(true)}
                       onAskClick={() => setAskOpen(true)}

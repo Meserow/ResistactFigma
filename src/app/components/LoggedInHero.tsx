@@ -1,81 +1,23 @@
-import { useEffect, useState } from "react";
 import { HeroPills } from "./HeroPills";
 
 interface LoggedInHeroProps {
   userId: string;
   name: string;
+  streak: number;
   newActionsToday: number;
   onMatchClick?: () => void;
   onAskClick?: () => void;
   hasMatchPrefs?: boolean;
 }
 
-interface StreakState {
-  count: number;
-  lastVisit: string;
-}
-
-function todayKey(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function daysBetween(a: string, b: string): number {
-  const [ay, am, ad] = a.split("-").map(Number);
-  const [by, bm, bd] = b.split("-").map(Number);
-  const aDate = Date.UTC(ay, am - 1, ad);
-  const bDate = Date.UTC(by, bm - 1, bd);
-  return Math.round((bDate - aDate) / 86_400_000);
-}
-
-function readStreak(userId: string): StreakState | null {
-  try {
-    const raw = localStorage.getItem(`resistact_streak_${userId}`);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (typeof parsed?.count === "number" && typeof parsed?.lastVisit === "string") return parsed;
-  } catch {}
-  return null;
-}
-
-function writeStreak(userId: string, s: StreakState) {
-  try {
-    localStorage.setItem(`resistact_streak_${userId}`, JSON.stringify(s));
-  } catch {}
-}
-
-export function LoggedInHero({ userId, name, newActionsToday, onMatchClick, onAskClick, hasMatchPrefs }: LoggedInHeroProps) {
-  const [streak, setStreak] = useState(1);
-  const [isFirstVisit, setIsFirstVisit] = useState(false);
-
-  useEffect(() => {
-    const today = todayKey();
-    const prev = readStreak(userId);
-    let next: StreakState;
-    if (!prev) {
-      next = { count: 1, lastVisit: today };
-      setIsFirstVisit(true);
-    } else if (prev.lastVisit === today) {
-      next = prev;
-    } else {
-      const gap = daysBetween(prev.lastVisit, today);
-      next = gap === 1 ? { count: prev.count + 1, lastVisit: today } : { count: 1, lastVisit: today };
-    }
-    writeStreak(userId, next);
-    setStreak(next.count);
-  }, [userId]);
-
+export function LoggedInHero({ name, streak, newActionsToday, onMatchClick, onAskClick, hasMatchPrefs }: LoggedInHeroProps) {
   const firstName = name.split(/\s+/)[0] || name;
-  const greeting = isFirstVisit ? "Welcome to the resistance" : "Welcome back to the resistance";
+  const greeting = streak <= 1 ? "Welcome to the resistance" : "Welcome back to the resistance";
   const subline =
     newActionsToday > 0
       ? `${newActionsToday} new action${newActionsToday === 1 ? "" : "s"} today.`
       : "";
 
-  // Show a flickering flame at 7+ day streaks. The threshold matters: anyone
-  // can get to "Day 3" by accident, but a 7-day streak is a deliberate habit
-  // worth celebrating in the UI. Larger thresholds (30, 90) could unlock
-  // bigger visuals later — for now one flame is enough signal.
   const showStreakFlame = streak >= 7;
 
   return (

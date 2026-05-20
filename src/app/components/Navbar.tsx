@@ -319,29 +319,6 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
         <div className="hidden md:flex items-center gap-3 shrink-0 ml-1">
           {isLoggedIn ? (
             <>
-              {(() => {
-                // Master "needs attention" badge — sum of every admin queue
-                // so the user sees one big number, then drills in via the
-                // dropdown to find which queue needs love.
-                const attentionCount = isAdmin
-                  ? (pendingActsCount ?? 0) + (pendingSmacksCount ?? 0) + (pendingUsersCount ?? 0) + (flagsCount ?? 0)
-                  : 0;
-                return (
-                  <button
-                    onClick={() => setDropdownOpen(o => !o)}
-                    title={attentionCount > 0 ? `${attentionCount} ${attentionCount === 1 ? "item" : "items"} need your attention` : "Notifications"}
-                    aria-label={attentionCount > 0 ? `${attentionCount} items need attention` : "Notifications"}
-                    className="relative text-gray-500 cursor-pointer hover:text-[#23297e] transition-colors"
-                  >
-                    <Bell size={20} />
-                    {attentionCount > 0 && (
-                      <span className="absolute -top-1.5 -right-1.5 bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center ring-2 ring-white">
-                        {attentionCount > 99 ? "99+" : attentionCount}
-                      </span>
-                    )}
-                  </button>
-                );
-              })()}
 
               <div className="relative" ref={dropdownRef}>
                 <button
@@ -392,7 +369,14 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                         <span className="font-['Poppins',sans-serif] text-amber-500 text-xs flex items-center gap-0.5">
                           <Clock size={10} />Pending approval
                         </span>
-                      ) : (
+                      ) : isAdmin ? (() => {
+                        const todoCount = (pendingActsCount ?? 0) + (pendingSmacksCount ?? 0) + (pendingUsersCount ?? 0) + (flagsCount ?? 0);
+                        return (
+                          <span className={`font-['Poppins',sans-serif] text-xs font-semibold ${todoCount > 0 ? "text-red-600" : "text-green-600"}`}>
+                            {todoCount > 0 ? `Admin To Dos: ${todoCount}` : "Admin ✓ All clear"}
+                          </span>
+                        );
+                      })() : (
                         <span className="font-['Poppins',sans-serif] text-green-600 text-xs">✓ Approved</span>
                       )}
                     </div>
