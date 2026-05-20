@@ -80,9 +80,12 @@ interface NavbarProps {
   smacksSortBy?: "top" | "new" | "pending";
   onSmacksSortChange?: (s: "top" | "new" | "pending") => void;
   smacksIsAdmin?: boolean;
+  showDone?: boolean;
+  onShowDoneChange?: (v: boolean) => void;
+  completedCount?: number;
 }
 
-export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick, onPendingSmacksClick, onPendingActsClick, onFlaggedActsClick, pendingActsCount, pendingSmacksCount, flagsCount = 0, pendingUsersCount = 0, onTierClick, siteUpdating, onToggleSiteUpdating, smacksAvailableTags, smacksActiveTags, onSmacksTagToggle, onSmacksTagsClear, smacksSortBy, onSmacksSortChange, smacksIsAdmin }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
+export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, showDone, onShowDoneChange, completedCount, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick, onPendingSmacksClick, onPendingActsClick, onFlaggedActsClick, pendingActsCount, pendingSmacksCount, flagsCount = 0, pendingUsersCount = 0, onTierClick, siteUpdating, onToggleSiteUpdating, smacksAvailableTags, smacksActiveTags, onSmacksTagToggle, onSmacksTagsClear, smacksSortBy, onSmacksSortChange, smacksIsAdmin }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
   // Acts filters in render order: Location dropdown first, Category pills second.
   // Used for "Clear all" and the mobile filter row that shows just the names.
   const ACTS_FILTER_OPTIONS: Record<string, string[]> = {
@@ -581,6 +584,24 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
             </span>
             <Zap size={13} className={quickActionsOnly ? "text-[#ed6624]" : "text-gray-400"} fill={quickActionsOnly ? "#ed6624" : "none"} />
             5 Minutes Max
+          </button>
+        )}
+
+        {/* Show Done toggle (Acts tab only, when user has completions) */}
+        {activeTab === "acts" && onShowDoneChange && (completedCount ?? 0) > 0 && (
+          <button
+            onClick={() => onShowDoneChange(!showDone)}
+            className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
+              showDone
+                ? "border-[#23297e] text-[#23297e] bg-[#23297e]/10"
+                : "border-transparent text-gray-600 hover:bg-white hover:shadow-sm hover:border-gray-200"
+            }`}
+            title={showDone ? "Hide completed acts" : "Show completed acts"}
+          >
+            <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center ${showDone ? "bg-[#23297e] border-[#23297e]" : "border-gray-300"}`}>
+              {showDone && <X size={10} className="text-white rotate-45" strokeWidth={3} />}
+            </span>
+            Show Done
           </button>
         )}
 
