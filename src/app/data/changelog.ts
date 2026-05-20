@@ -16,6 +16,36 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.1.24",
+    date: "2026-05-20",
+    title: "New Purchase category, admin panel improvements, server-side streak tracking",
+    sections: [
+      {
+        heading: "New category: Purchase",
+        items: [
+          "Added a new 'Purchase' category (amber) for acts that involve buying from resistance-aligned businesses, makers, and merch sellers.",
+          "31 cards recategorized from Boycott, Funding, Irreverence, and Crafting into Purchase — including all the buy-merch, buy-from-Black/Native-owned-businesses, and buy-sticker/tee/pin cards.",
+        ],
+      },
+      {
+        heading: "Admin panel",
+        items: [
+          "Users tab is now the default when opening the admin panel — no more waiting for the cards list to load on open.",
+          "Tab row replaced with a compact dropdown — fits all five sections without overflow.",
+          "Stat chips (Total, Active, Pending, Approved, Rejected) are now clickable to filter the user list directly.",
+          "New 'Sync from Supabase' button audits every Supabase auth account against KV approval records and seeds any missing ones — so users who slipped through the signup flow now appear in the admin list.",
+          "Admin to-do count moved from the bell icon to below your name in the navbar ('Admin To Dos: N' in red, 'Admin ✓ All clear' in green). Bell icon removed.",
+        ],
+      },
+      {
+        heading: "Visit streak",
+        items: [
+          "Day streak is now tracked server-side so it persists across all your devices and browsers. Previously it was stored in localStorage and would reset whenever you switched devices.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.1.23",
     date: "2026-05-19",
     title: "Facebook share fixed on iPhone",
@@ -25,6 +55,34 @@ export const CHANGELOG: ChangelogEntry[] = [
         items: [
           "Facebook sharing on iPhone now opens the mobile web share page reliably. Previous attempts used app-specific URLs that launched the Facebook app but produced no post. The share button now opens a browser-based share dialog the same way Threads does — desktop behavior unchanged.",
           "Bluesky sharing on iPhone now copies the text to your clipboard (same as Instagram and TikTok) since the Bluesky app intercepts the web intent URL but doesn't act on it. Desktop keeps the direct web intent.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.1.22",
+    date: "2026-05-19",
+    title: "Infinite scroll overhaul, desktop shows all cards immediately",
+    sections: [
+      {
+        heading: "Feed",
+        items: [
+          "Replaced the IntersectionObserver sentinel with a passive scroll-event listener that loads more cards when within 1200px of the bottom — more reliable across screen sizes.",
+          "Desktop now renders all in-memory cards immediately (no batching) so you never hit a wall after the first 100.",
+          "Load More button is now visible on all screen sizes, not just mobile.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.1.21",
+    date: "2026-05-19",
+    title: "Preference chips open Match Me at the right step",
+    sections: [
+      {
+        heading: "Match Me",
+        items: [
+          "The preference chips shown on each action card (time, setting, tone, state, groups, donation focus) were previously decorative. They are now tappable — tapping one opens the Match Me wizard at the relevant step so you can adjust that preference directly.",
         ],
       },
     ],
