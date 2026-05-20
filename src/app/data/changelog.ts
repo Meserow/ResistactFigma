@@ -16,6 +16,69 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.1.27",
+    date: "2026-05-20",
+    title: "Search is now fast",
+    sections: [
+      {
+        heading: "Performance",
+        items: [
+          "Searching Resistance Acts is now significantly faster. The card list was being fully re-filtered and re-sorted on every single keystroke (575 cards each time). It now caches the result and only recomputes when you stop typing, so keystrokes are instant.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.1.26",
+    date: "2026-05-20",
+    title: "Search loading indicator",
+    sections: [
+      {
+        heading: "Search",
+        items: [
+          "Typing in the search box now shows a spinner and dims the card grid while results update. Previously the UI went silent for a moment with no feedback, making it feel broken.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.1.25",
+    date: "2026-05-20",
+    title: "Smacks overhaul, category cleanup, feedback fixed, UX polish",
+    sections: [
+      {
+        heading: "Smacks",
+        items: [
+          "Deleted smacks now stay deleted across all your devices. Previously the delete was stored in your browser's localStorage, so switching machines or clearing your browser brought them back. Deletes are now recorded server-side.",
+          "Deleting a smack now asks 'Sure? Yes / No' before removing it — no more accidental deletes.",
+          "Smacks filter tags completely overhauled. Every smack previously had 'Trump' and 'MAGA' as its only tags, making filtering useless. Tags are now topic-based: Accountability, Corruption, Democracy, Economy, Elections, Fascism, Foreign Policy, Humor, Inequality, MAGA, Politics, Voting Rights, and more.",
+        ],
+      },
+      {
+        heading: "Category cleanup",
+        items: [
+          "Art/Performance Art cards were stored as 'Art Piece' internally, causing a mismatch in the edit panel. All fixed — they now display and filter correctly.",
+          "The 'Yes Men' prank toolkit card was miscategorized as 'Irreverence' (a one-off category with no UI support). Moved to Art/Performance Art where it belongs.",
+          "'Letter Writing' removed from category dropdowns — it had zero cards and was a duplicate of 'Letter to Editor'.",
+          "8 cards stuck in 'Other' properly recategorized: candidate training programs → Training, save-gov-pages / read-banned-books / set-election-reminders → Personal Commitment, DOJ rep training → Professional Skills.",
+        ],
+      },
+      {
+        heading: "Feedback",
+        items: [
+          "The feedback form now actually sends. It was previously opening your default email app via a mailto: link, which silently did nothing for most users (Gmail-in-browser, no default mail app configured). Messages now go directly to the server and arrive in email via Resend.",
+        ],
+      },
+      {
+        heading: "Small fixes",
+        items: [
+          "'I did this' button now says 'I did this!' (with the exclamation mark).",
+          "Match preference chips below the matched-for-you banner are slightly smaller — they were oversized relative to the surrounding text.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.1.24",
     date: "2026-05-20",
     title: "New Purchase category, admin panel improvements, server-side streak tracking",

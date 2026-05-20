@@ -2,7 +2,7 @@ import logoImg from "../../assets/resistact-logo-horizontal.webp";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import type { ReactNode } from "react";
 import { FACT_CARDS } from "../data/factCards";
-import { Bell, Bookmark, ChevronDown, Clock, Flag, Flame, Info, LogOut, MapPin, Menu, MessageCircle, Search, ShieldCheck, SlidersHorizontal, Sparkles, Tag, X, Zap } from "lucide-react";
+import { Bell, Bookmark, ChevronDown, Clock, Flag, Flame, Info, Loader2, LogOut, MapPin, Menu, MessageCircle, Search, ShieldCheck, SlidersHorizontal, Sparkles, Tag, X, Zap } from "lucide-react";
 import type { UserApproval } from "../lib/supabase";
 import { TierProgress } from "./TierProgress";
 import { getUserTier } from "../lib/tiers";
@@ -47,6 +47,7 @@ interface NavbarProps {
   onFilterChange: (filterName: string, selected: string[]) => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
+  isSearchPending?: boolean;
   activeTab: "facts" | "acts" | "receipts";
   onTabChange: (tab: "facts" | "acts" | "receipts") => void;
   /** Render between the top bar and the filter row (e.g. the homepage hero). */
@@ -85,7 +86,7 @@ interface NavbarProps {
   completedCount?: number;
 }
 
-export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, showDone, onShowDoneChange, completedCount, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick, onPendingSmacksClick, onPendingActsClick, onFlaggedActsClick, pendingActsCount, pendingSmacksCount, flagsCount = 0, pendingUsersCount = 0, onTierClick, siteUpdating, onToggleSiteUpdating, smacksAvailableTags, smacksActiveTags, onSmacksTagToggle, onSmacksTagsClear, smacksSortBy, onSmacksSortChange, smacksIsAdmin }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
+export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, isSearchPending = false, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, showDone, onShowDoneChange, completedCount, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick, onPendingSmacksClick, onPendingActsClick, onFlaggedActsClick, pendingActsCount, pendingSmacksCount, flagsCount = 0, pendingUsersCount = 0, onTierClick, siteUpdating, onToggleSiteUpdating, smacksAvailableTags, smacksActiveTags, onSmacksTagToggle, onSmacksTagsClear, smacksSortBy, onSmacksSortChange, smacksIsAdmin }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
   // Acts filters in render order: Location dropdown first, Category pills second.
   // Used for "Clear all" and the mobile filter row that shows just the names.
   const ACTS_FILTER_OPTIONS: Record<string, string[]> = {
@@ -306,7 +307,10 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
         <div className="flex-1 flex items-center gap-3 min-w-0">
           {/* Search */}
           <div className="flex-1 min-w-0 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            {isSearchPending
+              ? <Loader2 className="absolute left-4 top-1/2 -translate-y-1/2 text-[#23297e] animate-spin" size={18} />
+              : <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            }
             <input
               type="text"
               value={searchQuery}
