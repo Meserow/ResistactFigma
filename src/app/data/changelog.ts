@@ -16,6 +16,33 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.1.29",
+    date: "2026-05-22",
+    title: "Google Analytics fix",
+    sections: [
+      {
+        heading: "Under the Hood",
+        items: [
+          "Fixed a bug that was silently preventing Google Analytics from receiving any data. The tag was initializing correctly but sending events in a format GA4 does not accept. All visits, completions, and shares should now be tracked.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.1.28",
+    date: "2026-05-20",
+    title: "15 new craftivism & merch actions",
+    sections: [
+      {
+        heading: "New Actions",
+        items: [
+          "Added 15 new Resistance Acts across Crafting, Art/Performance Art, Social Media, and Spread Positivity — pins, stickers, banners, patterns, coloring books, piñatas, and parody songs.",
+          "Highlights: \"Cleanup on Aisle 47\" pin, \"Mars Can Keep Him\" anti-Elon bumper sticker, free #FuckICE cross-stitch from Feline & Floss, anti-Trump coloring book, build-a-Trumpiñata how-to, and mockpolitrick's Trump pardon parody song.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.1.27",
     date: "2026-05-20",
     title: "Search is now fast",
