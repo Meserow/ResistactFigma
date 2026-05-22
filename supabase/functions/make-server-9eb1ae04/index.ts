@@ -1534,6 +1534,88 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       console.log(`Heal user-action:ids: restored ${restored} orphaned card refs.`);
     }
 
+    // Dedup the restore-lost-batch1 race: two function instances both ran the
+    // restore migration before either set the gate, so 2150/2151 are duplicates
+    // of 2148/2149 (same title/authorName/url). Delete the higher ids and
+    // remove from user-action:ids. Idempotent — deleting a non-existent record
+    // is a no-op and filter on a missing id is a no-op.
+    const dedupBatchRepairDone = await kv.get("migration:dedup-restore-race:v1");
+    if (!dedupBatchRepairDone) {
+      const idsToRemove = [2150, 2151];
+      for (const id of idsToRemove) {
+        await kv.del(`user-action:${id}`);
+      }
+      const currentIds = ((await kv.get("user-action:ids")) ?? []) as number[];
+      await kv.set("user-action:ids", currentIds.filter((id) => !idsToRemove.includes(id)));
+      await kv.set("migration:dedup-restore-race:v1", true);
+      console.log(`Dedup restore-race: removed ${idsToRemove.length} duplicate cards.`);
+    }
+
+    // Restore Hartford Yarn Works + Morning Crafter — batch-1 migration logged
+    // them in user-action:ids but the actual KV records never persisted (the
+    // first repair pass's getByPrefix scan found 0 of them). Re-create at new
+    // ids and append to user-action:ids.
+    const restoreLostBatch1Done = await kv.get("migration:restore-lost-batch1:v1");
+    if (!restoreLostBatch1Done) {
+      const baseIds = ((await kv.get("user-action:ids")) ?? []) as number[];
+      const idSet = new Set<number>(baseIds);
+      const startId = Math.max(...baseIds, 1305) + 1;
+      const now = new Date().toISOString();
+      const lost = [
+        {
+          category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Order a Subversive Cross-Stitch Kit from Hartford Yarn Works`,
+          description: `Hartford Yarn Works just restocked their subversive cross-stitch kits (plus their book and new styles) — turn rage at Trump/MAGA into hours of meditative stabby thread-work.`,
+          authorName: "Hartford Yarn Works", authorRole: "Independent shop",
+          authorLink: "https://bsky.app/profile/hartfordyarnworks.bsky.social",
+          targetUrl: "https://hartfordyarnworks.com/",
+          toneOverride: { anger: 2, comedy: 2, subversion: 3, hope: 2, energy: 2 },
+        },
+        {
+          category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Stitch along with The Morning Crafter's free anti-Trump-era craftivism patterns`,
+          description: `@the_morningcrafter releases free craftivism patterns on TikTok (kept off Etsy, free on her site) for people compelled to make things while resisting Trump.`,
+          authorName: "The Morning Crafter", authorRole: "TikTok creator",
+          authorLink: "https://www.tiktok.com/@the_morningcrafter",
+          targetUrl: "https://www.tiktok.com/@the_morningcrafter",
+          toneOverride: { anger: 1, comedy: 2, subversion: 2, hope: 3, energy: 2 },
+        },
+      ];
+      let placed = 0;
+      let nextId = startId;
+      const newIds = [...baseIds];
+      for (const c of lost) {
+        while (idSet.has(nextId)) nextId++;
+        const card: any = {
+          id: nextId,
+          category: c.category,
+          categoryColor: c.categoryColor,
+          actionType: "Online",
+          isOnline: true,
+          timeCommitment: "5–10 minutes",
+          title: c.title,
+          description: c.description,
+          spotsTotal: "Unlimited",
+          boosts: 0,
+          authorName: c.authorName,
+          authorRole: c.authorRole,
+          authorLink: c.authorLink,
+          targetUrl: c.targetUrl,
+          toneOverride: c.toneOverride,
+          adminApproved: true,
+          createdAt: now,
+        };
+        await kv.set(`user-action:${nextId}`, card);
+        idSet.add(nextId);
+        newIds.push(nextId);
+        placed++;
+        nextId++;
+      }
+      await kv.set("user-action:ids", newIds);
+      await kv.set("migration:restore-lost-batch1:v1", true);
+      console.log(`Restored ${placed} lost batch-1 cards.`);
+    }
+
     // Restore Tom Morello — overwritten at id 2132 by batch-2 migration when
     // it read a stale (already-corrupted) user-action:ids and computed
     // base = 2131. Re-create at the next free id.
