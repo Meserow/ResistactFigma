@@ -16,6 +16,20 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.1.41",
+    date: "2026-05-22",
+    title: "Retired past-dated event and petition cards",
+    sections: [
+      {
+        heading: "Cleanup",
+        items: [
+          "Removed six cards whose described dates had already passed: the Trans Peoria potluck (May 17), the Ethical Consumer Trump-boycott guide (Mar 20), the NAACP 25th Amendment petition (Apr 7), the Citrus Heights Resists ICE! Saturday rally (May 16), the Pretrial Fairness teach-in (May 9), and MoveOn's No Unauthorized War with Iran petition (Apr 20).",
+          "Kept the Sierra Club South Coast clean-air petition — Sierra Club is still actively campaigning on it — and Adopt-A-Corner, which runs through Jan 2029 (the date in its description was a program kickoff, not a deadline).",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.1.40",
     date: "2026-05-22",
     title: "Quick Match Tool — skip whole categories you can't or won't do",

@@ -3116,6 +3116,49 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       console.log("Updated Resistbot Citizens United card with Hawaii success (id 1374).");
     }
 
+    // One-time cleanup: retire cards whose described date has already passed
+    // (audit run 2026-05-22). Sierra Club South Coast and Adopt-A-Corner are
+    // intentionally kept — Sierra Club is still actively campaigning on the same
+    // URL, and Adopt-A-Corner runs through Jan 2029 (the "Jan 20" in the
+    // description was a program kickoff, not a deadline).
+    const retirePastDatedDone = await kv.get("cleanup:retire-past-dated-2026-05:v1");
+    if (!retirePastDatedDone) {
+      const retireTitles = new Set([
+        "Trans Peoria Community Potluck",
+        "Use Ethical Consumer's Trump-boycott guide",
+        "Sign the NAACP 25th Amendment petition",
+        "Citrus Heights Resists ICE!",
+        "Citrus Heights Resists ICE! (Coalition Against Project 2025)",
+        "Pretrial Fairness Under Threat — Teach-In",
+        "Sign MoveOn's No Unauthorized War with Iran petition",
+      ]);
+
+      const removed: { key: string; id: number; title: string }[] = [];
+
+      for (const card of (await kv.getByPrefix("action:")) as any[]) {
+        if (card && typeof card === "object" && retireTitles.has(card.title) && typeof card.id === "number") {
+          await kv.del(`action:${card.id}`);
+          removed.push({ key: `action:${card.id}`, id: card.id, title: card.title });
+        }
+      }
+
+      const removedUserIds: number[] = [];
+      for (const card of (await kv.getByPrefix("user-action:")) as any[]) {
+        if (card && typeof card === "object" && retireTitles.has(card.title) && typeof card.id === "number") {
+          await kv.del(`user-action:${card.id}`);
+          removed.push({ key: `user-action:${card.id}`, id: card.id, title: card.title });
+          removedUserIds.push(card.id);
+        }
+      }
+      if (removedUserIds.length > 0) {
+        const userIds = ((await kv.get("user-action:ids")) ?? []) as number[];
+        await kv.set("user-action:ids", userIds.filter((x) => !removedUserIds.includes(x)));
+      }
+
+      await kv.set("cleanup:retire-past-dated-2026-05:v1", true);
+      console.log(`Retired ${removed.length} past-dated cards:`, removed);
+    }
+
     // Fetch ALL action:* cards from the KV store (real cards only after purge)
     const allActionCards = await kv.getByPrefix("action:");
     const seenIds = new Set<number>();
