@@ -226,7 +226,7 @@ function ImageModal({
 }
 
 export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) {
-  const [mode, setMode] = useState<PanelMode>("cards");
+  const [mode, setMode] = useState<PanelMode>("users");
 
   // ── Users state ──────────────────────────────────────────────────────────────
   const [users, setUsers] = useState<UserApproval[]>([]);
@@ -277,6 +277,25 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
       setError("Network error loading users.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  const [syncing, setSyncing] = useState(false);
+  async function syncAuthUsers() {
+    setSyncing(true);
+    try {
+      const res = await fetch(`${API}/admin/sync-auth-users`, { method: "POST", headers: authHeaders });
+      const data = await res.json();
+      if (!res.ok) { alert(data.error ?? "Sync failed"); return; }
+      const msg = data.seeded.length === 0
+        ? `All ${data.authTotal} Supabase users already have records.`
+        : `Seeded ${data.seeded.length} missing user(s): ${data.seeded.map((u: any) => u.email).join(", ")}`;
+      alert(msg);
+      await fetchUsers();
+    } catch {
+      alert("Network error during sync.");
+    } finally {
+      setSyncing(false);
     }
   }
 
@@ -470,27 +489,19 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
             </div>
           </div>
 
-          {/* Mode switcher — Cards first */}
-          <div className="px-5 flex gap-1 border-b border-gray-100 shrink-0">
-            {([
-              { key: "cards" as PanelMode, icon: <FileText size={13} />, label: `Cards${!cardsLoading && pendingCardsCount > 0 ? ` (${pendingCardsCount})` : ""}` },
-              { key: "nourl" as PanelMode, icon: <Link2 size={13} />, label: `Incomplete${noUrlCards.length > 0 ? ` (${noUrlCards.length})` : ""}` },
-              { key: "users" as PanelMode, icon: <Users size={13} />, label: "Users" },
-              { key: "matcher" as PanelMode, icon: <Sliders size={13} />, label: "Matcher" },
-              { key: "online" as PanelMode, icon: <Users size={13} />, label: `Online${onlineUsers.length > 0 ? ` (${onlineUsers.length})` : ""}` },
-            ]).map(({ key, icon, label }) => (
-              <button
-                key={key}
-                onClick={() => setMode(key)}
-                className={`py-2.5 px-3 flex items-center gap-1.5 font-['Poppins',sans-serif] text-xs font-semibold border-b-2 -mb-px whitespace-nowrap transition-colors ${
-                  mode === key
-                    ? "text-[#23297e] border-[#23297e]"
-                    : "text-gray-400 border-transparent hover:text-gray-600"
-                }`}
-              >
-                {icon}{label}
-              </button>
-            ))}
+          {/* Mode switcher — dropdown */}
+          <div className="px-5 py-2.5 border-b border-gray-100 shrink-0">
+            <select
+              value={mode}
+              onChange={(e) => setMode(e.target.value as PanelMode)}
+              className="w-full font-['Poppins',sans-serif] text-sm font-semibold text-[#23297e] bg-[#23297e]/5 border border-[#23297e]/20 rounded-lg px-3 py-1.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#23297e]/30"
+            >
+              <option value="users">Users</option>
+              <option value="cards">{`Cards${!cardsLoading && pendingCardsCount > 0 ? ` (${pendingCardsCount})` : ""}`}</option>
+              <option value="nourl">{`Incomplete${noUrlCards.length > 0 ? ` (${noUrlCards.length})` : ""}`}</option>
+              <option value="online">{`Online${onlineUsers.length > 0 ? ` (${onlineUsers.length})` : ""}`}</option>
+              <option value="matcher">Matcher</option>
+            </select>
           </div>
 
           {/* ── CARDS mode ─────────────────────────────────────────────────────────── */}
@@ -746,36 +757,33 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
           {/* ── USERS mode ─────────────────────────────────────────────────────────── */}
           {mode === "users" && (
             <>
-              {/* Stats */}
+              {/* Stats — click to filter */}
               <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-4 shrink-0">
                 {[
-                  { label: "Total", value: users.length, color: "text-gray-700" },
-                  { label: "Pending", value: users.filter(u => u.status === "pending").length, color: "text-amber-600" },
-                  { label: "Approved", value: users.filter(u => u.status === "approved").length, color: "text-green-600" },
-                  { label: "Rejected", value: users.filter(u => u.status === "rejected").length, color: "text-red-500" },
-                ].map(({ label, value, color }) => (
-                  <div key={label} className="text-center">
+                  { label: "Total", value: users.length, color: "text-gray-700", filterKey: "all" as TabFilter },
+                  { label: "Active", value: activeCount, color: "text-[#23297e]", filterKey: "active" as TabFilter },
+                  { label: "Pending", value: users.filter(u => u.status === "pending").length, color: "text-amber-600", filterKey: "pending" as TabFilter },
+                  { label: "Approved", value: users.filter(u => u.status === "approved").length, color: "text-green-600", filterKey: "approved" as TabFilter },
+                  { label: "Rejected", value: users.filter(u => u.status === "rejected").length, color: "text-red-500", filterKey: "rejected" as TabFilter },
+                ].map(({ label, value, color, filterKey }) => (
+                  <button
+                    key={label}
+                    onClick={() => setTab(filterKey)}
+                    className={`text-center rounded-lg px-2 py-1 transition-colors ${tab === filterKey ? "bg-gray-100" : "hover:bg-gray-50"}`}
+                  >
                     <p className={`font-['Poppins',sans-serif] font-bold text-lg leading-tight ${color}`}>{value}</p>
                     <p className="font-['Poppins',sans-serif] text-[10px] text-gray-400 uppercase tracking-wide">{label}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* User tabs */}
-              <div className="px-5 flex gap-1 border-b border-gray-100 shrink-0 overflow-x-auto">
-                {TAB_ITEMS.map(({ key, label }) => (
-                  <button
-                    key={key}
-                    onClick={() => setTab(key)}
-                    className={`py-2.5 px-3 font-['Poppins',sans-serif] text-xs font-semibold border-b-2 -mb-px whitespace-nowrap transition-colors ${
-                      tab === key
-                        ? "text-[#23297e] border-[#23297e]"
-                        : "text-gray-400 border-transparent hover:text-gray-600"
-                    }`}
-                  >
-                    {label}
                   </button>
                 ))}
+                <button
+                  onClick={syncAuthUsers}
+                  disabled={syncing}
+                  title="Seed KV records for any Supabase auth users who slipped through signup"
+                  className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-['Poppins',sans-serif] font-semibold rounded-lg bg-[#23297e]/10 text-[#23297e] hover:bg-[#23297e]/20 disabled:opacity-50 transition-colors whitespace-nowrap"
+                >
+                  <RefreshCw size={11} className={syncing ? "animate-spin" : ""} />
+                  Sync from Supabase
+                </button>
               </div>
 
               {/* User list */}

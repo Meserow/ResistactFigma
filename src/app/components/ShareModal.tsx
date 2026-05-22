@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { X, Link, Mail, MessageSquare, Check } from "lucide-react";
 
 interface ShareModalProps {
@@ -94,7 +94,9 @@ function buildPlatforms(cardId: number, title: string, description: string) {
       bg: "#0085FF",
       fg: "#fff",
       icon: <BlueSkyIcon />,
-      action: () => window.open(`https://bsky.app/intent/compose?text=${enc(text)}`, "_blank"),
+      ...(/iPhone|iPad|iPod/i.test(navigator.userAgent)
+        ? { copyText: text, copyNote: "Text copied — paste it into Bluesky!" }
+        : { action: () => window.open(`https://bsky.app/intent/compose?text=${enc(text)}`, "_blank") }),
     },
     {
       id: "whatsapp",
@@ -161,22 +163,7 @@ function buildPlatforms(cardId: number, title: string, description: string) {
 // ─── Component ────────────────────────────────────────────────────────────────
 export function ShareModal({ cardId, title, description, onClose }: ShareModalProps) {
   const [toast, setToast] = useState<string | null>(null);
-  const [nativeShared, setNativeShared] = useState(false);
   const platforms = buildPlatforms(cardId, title, description);
-
-  // On mobile, try the native share sheet first — avoids the Facebook app
-  // misconfiguration error and gives a much better UX on iOS/Android.
-  useEffect(() => {
-    if (typeof navigator.share === "function" && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
-      const url = `${window.location.origin}?act=${cardId}`;
-      navigator.share({ title, text: `${title} — Join the resistance!`, url })
-        .then(() => { setNativeShared(true); onClose(); })
-        .catch(() => { /* user cancelled or share failed — fall through to modal */ });
-    }
-  }, []);
-
-  // If native share was triggered, render nothing while it's in progress
-  if (nativeShared) return null;
 
   const handleCopy = (text: string, note: string) => {
     navigator.clipboard.writeText(text).catch(() => {});

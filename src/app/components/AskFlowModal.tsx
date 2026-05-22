@@ -4,8 +4,8 @@ import {
   X, Loader2, Megaphone, Upload, Clock,
   Ban, DollarSign, Bike, Newspaper, Calendar, Share2, Hammer, PenLine, Users,
   HandHeart, Home, HardHat, Sparkles, Briefcase, Heart, Mail, GraduationCap,
-  Smile, Volume2, Palette, Handshake, Send, Brain, Lightbulb, Mailbox,
-  Flame, Laugh, VenetianMask, Sunrise, Zap,
+  Smile, Volume2, Palette, Handshake, Send, Brain, Lightbulb,
+  Flame, Laugh, VenetianMask, Sunrise, Zap, ShoppingCart,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
@@ -86,7 +86,6 @@ const CATEGORIES: { name: string; icon: LucideIcon; color: string }[] = [
   { name: "Join a Group",               icon: HandHeart,      color: "#0891b2" },
   { name: "Labor",                      icon: HardHat,        color: "#127f05" },
   { name: "Letter to Editor",           icon: Send,           color: "#c34e00" },
-  { name: "Letter Writing",             icon: Mailbox,        color: "#2d7a6b" },
   { name: "Meeting",                    icon: Calendar,       color: "#23297e" },
   { name: "Mental Health",              icon: Brain,          color: "#ff00d5" },
   { name: "News Story",                 icon: Newspaper,      color: "#896312" },
@@ -94,6 +93,7 @@ const CATEGORIES: { name: string; icon: LucideIcon; color: string }[] = [
   { name: "Petition",                   icon: PenLine,        color: "#05737f" },
   { name: "Prayer",                     icon: Sparkles,       color: "#8a00e6" },
   { name: "Professional Skills",        icon: Briefcase,      color: "#126d89" },
+  { name: "Purchase",                   icon: ShoppingCart,   color: "#b45309" },
   { name: "Protest",                    icon: Megaphone,      color: "#23297e" },
   { name: "Social Media",               icon: Share2,         color: "#e44b4b" },
   { name: "Spread Positivity",          icon: Smile,          color: "#8a00e6" },

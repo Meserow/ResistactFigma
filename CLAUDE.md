@@ -17,6 +17,13 @@ ResistAct (resistact.org) is an anti-Trump / MAGA-resistance action-matching pla
 - **Data store:** Supabase KV (accessed via `kv_store.ts`)
 - **Deployment:** Edge function is deployed via `npx supabase functions deploy` with the project ref `zkihnylrvdofdbnhmmoq`
 
+## Version & changelog (always do this)
+
+After any meaningful batch of user-facing changes (same trigger as a commit — not after every single edit, but after a feature, fix, or group of related changes is complete):
+1. Bump `"version"` in `package.json` (patch increment: 1.1.24 → 1.1.25).
+2. Add a new entry at the top of `CHANGELOG` in `src/app/data/changelog.ts` — today's date, a short title, and plain-language bullets grouped by section. Write for users, not developers.
+3. Do this without being asked. Never leave a session with uncommitted version/changelog work. Always tell the user when you've done it.
+
 ## Key conventions
 
 - Seed cards (org-curated) live in `SEED_CARDS` in `index.ts` and are stored under `action:*` keys with IDs ≥ 1000.

@@ -16,6 +16,141 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.1.27",
+    date: "2026-05-20",
+    title: "Search is now fast",
+    sections: [
+      {
+        heading: "Performance",
+        items: [
+          "Searching Resistance Acts is now significantly faster. The card list was being fully re-filtered and re-sorted on every single keystroke (575 cards each time). It now caches the result and only recomputes when you stop typing, so keystrokes are instant.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.1.26",
+    date: "2026-05-20",
+    title: "Search loading indicator",
+    sections: [
+      {
+        heading: "Search",
+        items: [
+          "Typing in the search box now shows a spinner and dims the card grid while results update. Previously the UI went silent for a moment with no feedback, making it feel broken.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.1.25",
+    date: "2026-05-20",
+    title: "Smacks overhaul, category cleanup, feedback fixed, UX polish",
+    sections: [
+      {
+        heading: "Smacks",
+        items: [
+          "Deleted smacks now stay deleted across all your devices. Previously the delete was stored in your browser's localStorage, so switching machines or clearing your browser brought them back. Deletes are now recorded server-side.",
+          "Deleting a smack now asks 'Sure? Yes / No' before removing it — no more accidental deletes.",
+          "Smacks filter tags completely overhauled. Every smack previously had 'Trump' and 'MAGA' as its only tags, making filtering useless. Tags are now topic-based: Accountability, Corruption, Democracy, Economy, Elections, Fascism, Foreign Policy, Humor, Inequality, MAGA, Politics, Voting Rights, and more.",
+        ],
+      },
+      {
+        heading: "Category cleanup",
+        items: [
+          "Art/Performance Art cards were stored as 'Art Piece' internally, causing a mismatch in the edit panel. All fixed — they now display and filter correctly.",
+          "The 'Yes Men' prank toolkit card was miscategorized as 'Irreverence' (a one-off category with no UI support). Moved to Art/Performance Art where it belongs.",
+          "'Letter Writing' removed from category dropdowns — it had zero cards and was a duplicate of 'Letter to Editor'.",
+          "8 cards stuck in 'Other' properly recategorized: candidate training programs → Training, save-gov-pages / read-banned-books / set-election-reminders → Personal Commitment, DOJ rep training → Professional Skills.",
+        ],
+      },
+      {
+        heading: "Feedback",
+        items: [
+          "The feedback form now actually sends. It was previously opening your default email app via a mailto: link, which silently did nothing for most users (Gmail-in-browser, no default mail app configured). Messages now go directly to the server and arrive in email via Resend.",
+        ],
+      },
+      {
+        heading: "Small fixes",
+        items: [
+          "'I did this' button now says 'I did this!' (with the exclamation mark).",
+          "Match preference chips below the matched-for-you banner are slightly smaller — they were oversized relative to the surrounding text.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.1.24",
+    date: "2026-05-20",
+    title: "New Purchase category, admin panel improvements, server-side streak tracking",
+    sections: [
+      {
+        heading: "New category: Purchase",
+        items: [
+          "Added a new 'Purchase' category (amber) for acts that involve buying from resistance-aligned businesses, makers, and merch sellers.",
+          "31 cards recategorized from Boycott, Funding, Irreverence, and Crafting into Purchase — including all the buy-merch, buy-from-Black/Native-owned-businesses, and buy-sticker/tee/pin cards.",
+        ],
+      },
+      {
+        heading: "Admin panel",
+        items: [
+          "Users tab is now the default when opening the admin panel — no more waiting for the cards list to load on open.",
+          "Tab row replaced with a compact dropdown — fits all five sections without overflow.",
+          "Stat chips (Total, Active, Pending, Approved, Rejected) are now clickable to filter the user list directly.",
+          "New 'Sync from Supabase' button audits every Supabase auth account against KV approval records and seeds any missing ones — so users who slipped through the signup flow now appear in the admin list.",
+          "Admin to-do count moved from the bell icon to below your name in the navbar ('Admin To Dos: N' in red, 'Admin ✓ All clear' in green). Bell icon removed.",
+        ],
+      },
+      {
+        heading: "Visit streak",
+        items: [
+          "Day streak is now tracked server-side so it persists across all your devices and browsers. Previously it was stored in localStorage and would reset whenever you switched devices.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.1.23",
+    date: "2026-05-19",
+    title: "Facebook share fixed on iPhone",
+    sections: [
+      {
+        heading: "Sharing",
+        items: [
+          "Facebook sharing on iPhone now opens the mobile web share page reliably. Previous attempts used app-specific URLs that launched the Facebook app but produced no post. The share button now opens a browser-based share dialog the same way Threads does — desktop behavior unchanged.",
+          "Bluesky sharing on iPhone now copies the text to your clipboard (same as Instagram and TikTok) since the Bluesky app intercepts the web intent URL but doesn't act on it. Desktop keeps the direct web intent.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.1.22",
+    date: "2026-05-19",
+    title: "Infinite scroll overhaul, desktop shows all cards immediately",
+    sections: [
+      {
+        heading: "Feed",
+        items: [
+          "Replaced the IntersectionObserver sentinel with a passive scroll-event listener that loads more cards when within 1200px of the bottom — more reliable across screen sizes.",
+          "Desktop now renders all in-memory cards immediately (no batching) so you never hit a wall after the first 100.",
+          "Load More button is now visible on all screen sizes, not just mobile.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.1.21",
+    date: "2026-05-19",
+    title: "Preference chips open Match Me at the right step",
+    sections: [
+      {
+        heading: "Match Me",
+        items: [
+          "The preference chips shown on each action card (time, setting, tone, state, groups, donation focus) were previously decorative. They are now tappable — tapping one opens the Match Me wizard at the relevant step so you can adjust that preference directly.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.1.20",
     date: "2026-05-19",
     title: "iOS share fix, 'Incomplete' admin tab, View Larger fix, tighter feed top padding",
@@ -287,6 +422,26 @@ export const CHANGELOG: ChangelogEntry[] = [
         items: [
           "The navbar 'Join The Resistance' button now reads 'Sign in or Create an Account…' on the second line, signalling that the flow handles both returning members and new founding-cohort signups.",
           "Site-updating banner copy changed from 'PLEASE BE PATIENT (2 minutes!)' to 'Please be patient if you see any oddities!' — less alarming during quick deploys. The 🔧 emoji bookends are now monochrome white wrench icons (lucide-react) so they don't clash with the navy bar.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.1.21",
+    date: "2026-05-18",
+    title: "Quick-time filter rename, category dropdown, orange match-me toast",
+    sections: [
+      {
+        heading: "Filters",
+        items: [
+          "Renamed the 'Quick Actions' filter chip to 'I only have 5 minutes tops!' — reads less like a category and more like the user's actual situation.",
+          "Acts category filter is now a single dropdown button next to Location. The inline category pills (top-N plus a 'more' overflow) are gone — every category lives inside the dropdown together, so the filter row stays tidy regardless of how many categories are in the dataset.",
+        ],
+      },
+      {
+        heading: "Toast polish",
+        items: [
+          "Scroll-nudge match-me toast redesigned: orange background, larger two-line copy ('Finding it hard to choose?' + 'Let us match you in 30 seconds.'), white CTA button with orange text. Wider (92 vw capped at 480 px) and positioned slightly higher so it clears the footer.",
         ],
       },
     ],

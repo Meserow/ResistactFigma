@@ -2,7 +2,7 @@ import logoImg from "../../assets/resistact-logo-horizontal.webp";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import type { ReactNode } from "react";
 import { FACT_CARDS } from "../data/factCards";
-import { Bell, Bookmark, ChevronDown, Clock, Flag, Flame, Info, LogOut, MapPin, Menu, MessageCircle, Search, ShieldCheck, SlidersHorizontal, Sparkles, Tag, X, Zap } from "lucide-react";
+import { Bell, Bookmark, ChevronDown, Clock, Flag, Flame, Info, Loader2, LogOut, MapPin, Menu, MessageCircle, Search, ShieldCheck, SlidersHorizontal, Sparkles, Tag, X, Zap } from "lucide-react";
 import type { UserApproval } from "../lib/supabase";
 import { TierProgress } from "./TierProgress";
 import { getUserTier } from "../lib/tiers";
@@ -47,6 +47,7 @@ interface NavbarProps {
   onFilterChange: (filterName: string, selected: string[]) => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
+  isSearchPending?: boolean;
   activeTab: "facts" | "acts" | "receipts";
   onTabChange: (tab: "facts" | "acts" | "receipts") => void;
   /** Render between the top bar and the filter row (e.g. the homepage hero). */
@@ -80,9 +81,12 @@ interface NavbarProps {
   smacksSortBy?: "top" | "new" | "pending";
   onSmacksSortChange?: (s: "top" | "new" | "pending") => void;
   smacksIsAdmin?: boolean;
+  showDone?: boolean;
+  onShowDoneChange?: (v: boolean) => void;
+  completedCount?: number;
 }
 
-export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick, onPendingSmacksClick, onPendingActsClick, onFlaggedActsClick, pendingActsCount, pendingSmacksCount, flagsCount = 0, pendingUsersCount = 0, onTierClick, siteUpdating, onToggleSiteUpdating, smacksAvailableTags, smacksActiveTags, onSmacksTagToggle, onSmacksTagsClear, smacksSortBy, onSmacksSortChange, smacksIsAdmin }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
+export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, isSearchPending = false, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, showDone, onShowDoneChange, completedCount, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick, onPendingSmacksClick, onPendingActsClick, onFlaggedActsClick, pendingActsCount, pendingSmacksCount, flagsCount = 0, pendingUsersCount = 0, onTierClick, siteUpdating, onToggleSiteUpdating, smacksAvailableTags, smacksActiveTags, onSmacksTagToggle, onSmacksTagsClear, smacksSortBy, onSmacksSortChange, smacksIsAdmin }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
   // Acts filters in render order: Location dropdown first, Category pills second.
   // Used for "Clear all" and the mobile filter row that shows just the names.
   const ACTS_FILTER_OPTIONS: Record<string, string[]> = {
@@ -193,6 +197,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
   const actsInlinePills = [...actsTopVisible, ...actsExtraVisible];
   const actsMoreOpen = openFilter === "acts-more";
   const actsMoreSelectedCount = actsOverflow.filter((c) => actsCatsSelected.includes(c)).length;
+  const actsCategoryOpen = openFilter === "Category";
   const locOptions = actsLocations ?? [];
   const locSelected = activeFilters["Location"] ?? [];
   const locOpen = openFilter === "Location";
@@ -302,7 +307,10 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
         <div className="flex-1 flex items-center gap-3 min-w-0">
           {/* Search */}
           <div className="flex-1 min-w-0 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            {isSearchPending
+              ? <Loader2 className="absolute left-4 top-1/2 -translate-y-1/2 text-[#23297e] animate-spin" size={18} />
+              : <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            }
             <input
               type="text"
               value={searchQuery}
@@ -318,29 +326,6 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
         <div className="hidden md:flex items-center gap-3 shrink-0 ml-1">
           {isLoggedIn ? (
             <>
-              {(() => {
-                // Master "needs attention" badge — sum of every admin queue
-                // so the user sees one big number, then drills in via the
-                // dropdown to find which queue needs love.
-                const attentionCount = isAdmin
-                  ? (pendingActsCount ?? 0) + (pendingSmacksCount ?? 0) + (pendingUsersCount ?? 0) + (flagsCount ?? 0)
-                  : 0;
-                return (
-                  <button
-                    onClick={() => setDropdownOpen(o => !o)}
-                    title={attentionCount > 0 ? `${attentionCount} ${attentionCount === 1 ? "item" : "items"} need your attention` : "Notifications"}
-                    aria-label={attentionCount > 0 ? `${attentionCount} items need attention` : "Notifications"}
-                    className="relative text-gray-500 cursor-pointer hover:text-[#23297e] transition-colors"
-                  >
-                    <Bell size={20} />
-                    {attentionCount > 0 && (
-                      <span className="absolute -top-1.5 -right-1.5 bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 flex items-center justify-center ring-2 ring-white">
-                        {attentionCount > 99 ? "99+" : attentionCount}
-                      </span>
-                    )}
-                  </button>
-                );
-              })()}
 
               <div className="relative" ref={dropdownRef}>
                 <button
@@ -391,7 +376,14 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                         <span className="font-['Poppins',sans-serif] text-amber-500 text-xs flex items-center gap-0.5">
                           <Clock size={10} />Pending approval
                         </span>
-                      ) : (
+                      ) : isAdmin ? (() => {
+                        const todoCount = (pendingActsCount ?? 0) + (pendingSmacksCount ?? 0) + (pendingUsersCount ?? 0) + (flagsCount ?? 0);
+                        return (
+                          <span className={`font-['Poppins',sans-serif] text-xs font-semibold ${todoCount > 0 ? "text-red-600" : "text-green-600"}`}>
+                            {todoCount > 0 ? `Admin To Dos: ${todoCount}` : "Admin ✓ All clear"}
+                          </span>
+                        );
+                      })() : (
                         <span className="font-['Poppins',sans-serif] text-green-600 text-xs">✓ Approved</span>
                       )}
                     </div>
@@ -596,6 +588,24 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
             </span>
             <Zap size={13} className={quickActionsOnly ? "text-[#ed6624]" : "text-gray-400"} fill={quickActionsOnly ? "#ed6624" : "none"} />
             5 Minutes Max
+          </button>
+        )}
+
+        {/* Show Done toggle (Acts tab only, when user has completions) */}
+        {activeTab === "acts" && onShowDoneChange && (completedCount ?? 0) > 0 && (
+          <button
+            onClick={() => onShowDoneChange(!showDone)}
+            className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
+              showDone
+                ? "border-[#23297e] text-[#23297e] bg-[#23297e]/10"
+                : "border-transparent text-gray-600 hover:bg-white hover:shadow-sm hover:border-gray-200"
+            }`}
+            title={showDone ? "Hide completed acts" : "Show completed acts"}
+          >
+            <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center ${showDone ? "bg-[#23297e] border-[#23297e]" : "border-gray-300"}`}>
+              {showDone && <X size={10} className="text-white rotate-45" strokeWidth={3} />}
+            </span>
+            Show Done
           </button>
         )}
 

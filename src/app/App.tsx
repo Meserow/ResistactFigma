@@ -132,6 +132,7 @@ function resolveCard(raw: ServerCard): ActionCardData {
 
 // ─── Featured illustration ────────────────────────────────────────────────────
 import diagramImg from "../assets/3a930cb92932029145f5289a4b745deaa43e0aa6.png";
+import fistImg from "../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
 
 function FeaturedIllustration() {
   return (
@@ -235,7 +236,7 @@ export default function App() {
   // painted at once. Cards are still loaded into `cards` state for filtering.
   // Mobile (<640px) gets 20; desktop gets 100 to fill a wide screen on first load.
   function getDisplayPage() {
-    return typeof window !== "undefined" && window.innerWidth >= 640 ? 100 : 20;
+    return typeof window !== "undefined" && window.innerWidth >= 640 ? 9999 : 20;
   }
   const [displayLimit, setDisplayLimit] = useState(getDisplayPage);
   const [boostedCards, setActedCards] = useState<Set<number>>(() => {
@@ -286,6 +287,7 @@ export default function App() {
 
   // ── Auth state ──
   const [approval, setApproval] = useState<UserApproval | null>(null);
+  const [loginStreak, setLoginStreak] = useState<number>(1);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [myCompletions, setMyCompletions] = useState<{
     total: number;
@@ -317,6 +319,7 @@ export default function App() {
   const [celebration, setCelebration] = useState<{ prev: number; next: number } | null>(null);
   const [askOpen, setAskOpen] = useState(false);
   const [matchOpen, setMatchOpen] = useState(false);
+  const [matchInitialStep, setMatchInitialStep] = useState<0 | 1>(0);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [scrollNudgeDismissed, setScrollNudgeDismissed] = useState(
     () => localStorage.getItem("resistact_nudge_dismissed") === "1"
@@ -364,6 +367,7 @@ export default function App() {
     return isNaN(id) ? null : id;
   });
   const [receipts, setReceipts] = useState<ReceiptCard[]>([]);
+  const [hiddenSmackIds, setHiddenSmackIds] = useState<number[]>([]);
   // Derived once per `receipts` change so the navbar's chip rendering doesn't
   // recompute on every render. Must be declared AFTER `receipts` (temporal
   // dead zone — referencing receipts earlier crashed with "Cannot access
@@ -380,6 +384,7 @@ export default function App() {
   // priority update React can interrupt for more typing.
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const [quickActionsOnly, setQuickActionsOnly] = useState(false);
+  const [showDone, setShowDone] = useState(false);
   const [sortBy, setSortBy] = useState<"popular" | "newest" | "az">("popular");
 
   function handleFilterChange(filterName: string, selected: string[]) {
@@ -439,6 +444,9 @@ export default function App() {
 
       // Quick actions only (5–10 min wins)
       if (quickActionsOnly && !card.quickAction) return false;
+
+      // Hide completed cards unless "Show Done" is checked
+      if (!showDone && completedCards.has(card.id)) return false;
 
       return true;
     });
@@ -515,7 +523,8 @@ export default function App() {
   const pendingActsCount   = isAdminUser ? serverPendingActsCount : 0;
   const pendingSmacksCount = isAdminUser ? receipts.filter((r) => (r as any).adminApproved === false).length : 0;
 
-  const displayedCards = (() => {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const displayedCards = useMemo(() => {
     // ── Global gate: expiry + approval + already-done ────────────────────────
     const gated = cards.filter((card) => {
       // Hide expired events from everyone
@@ -652,7 +661,13 @@ export default function App() {
       }
     }
     return pinFirst(completedLast(out));
-  })();
+  // deps: everything applyFilters + ranking reads from component scope.
+  // deferredSearchQuery (not searchQuery) means this memo is bypassed
+  // entirely during keystrokes — React renders the stale list instantly,
+  // then re-runs the memo only after the deferred value settles.
+  }, [cards, deferredSearchQuery, activeFilters, quickActionsOnly, showDone,
+      completedCards, matchPrefs, isAdminUser, todayISO, boostedCards,
+      sortBy, demoteHyperLocal]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // True when any filter chip is selected OR a search is active — bypasses
   // server pagination so client-side filtering sees the full dataset.
@@ -826,6 +841,7 @@ export default function App() {
       if (res.ok) {
         const data = await res.json();
         setApproval(data.approval);
+        if (typeof data.streak === "number") setLoginStreak(data.streak);
         return;
       }
       console.error("Approval status fetch failed:", res.status, await res.text());
@@ -940,7 +956,10 @@ export default function App() {
         const res = await fetch(`${API}/receipts`, { headers: HEADERS });
         if (!res.ok || cancelled) return;
         const data = await res.json();
-        if (!cancelled) setReceipts(data.receipts ?? []);
+        if (!cancelled) {
+          setReceipts(data.receipts ?? []);
+          setHiddenSmackIds(data.hiddenIds ?? []);
+        }
       } catch { /* non-critical */ }
     })();
     return () => { cancelled = true; };
@@ -1033,26 +1052,22 @@ export default function App() {
   // viewport on a non-mobile screen we load the next batch automatically.
   const sentinelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const isDesktop = () => window.innerWidth >= 640;
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries[0].isIntersecting) return;
-        if (!isDesktop()) return;                      // mobile keeps the button
-        if (hasActiveFilters) return;                  // filters show all, nothing to load
-        if (loadingMore) return;
-        if (displayLimit < displayedCards.length) {
-          setDisplayLimit((prev) => prev + getDisplayPage());
-        } else if (serverOffset < serverTotal) {
-          handleLoadMore();
-        }
-      },
-      { rootMargin: "200px" }                         // trigger 200px before the sentinel
-    );
-    observer.observe(sentinel);
-    return () => observer.disconnect();
+    if (hasActiveFilters) return;
+    function onScroll() {
+      if (loadingMore) return;
+      const distFromBottom =
+        document.documentElement.scrollHeight - window.scrollY - window.innerHeight;
+      if (distFromBottom > 1200) return;
+      if (displayLimit < displayedCards.length) {
+        setDisplayLimit((prev) => prev + getDisplayPage());
+      } else if (serverOffset < serverTotal) {
+        handleLoadMore();
+      }
+    }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    // Fire once immediately in case the page is already short enough to show everything
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
   }, [displayLimit, displayedCards.length, hasActiveFilters, loadingMore, serverOffset, serverTotal]);
 
   // ── Deep link: ?act=<cardId> ──
@@ -1362,10 +1377,14 @@ export default function App() {
         onFilterChange={handleFilterChange}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        isSearchPending={searchQuery !== deferredSearchQuery}
         activeTab={activeTab}
         onTabChange={handleTabChange}
         quickActionsOnly={quickActionsOnly}
         onQuickActionsChange={setQuickActionsOnly}
+        showDone={showDone}
+        onShowDoneChange={setShowDone}
+        completedCount={completedCards.size}
         sortBy={sortBy}
         onSortChange={setSortBy}
         smacksAvailableTags={smacksAvailableTags}
@@ -1390,6 +1409,7 @@ export default function App() {
                     <LoggedInHero
                       userId={approval.userId}
                       name={approval.name || "Resistor"}
+                      streak={loginStreak}
                       newActionsToday={newToday}
                       onMatchClick={() => setMatchOpen(true)}
                       onAskClick={() => setAskOpen(true)}
@@ -1421,10 +1441,15 @@ export default function App() {
           /* ── Receipts view ── */
           <SmacksPage
             receipts={receipts}
+            hiddenIds={hiddenSmackIds}
             searchQuery={deferredSearchQuery}
             accessToken={accessToken}
             approval={approval}
             onReceiptAdded={(r) => setReceipts((prev) => [...prev, r])}
+            onReceiptDeleted={(id) => {
+              setReceipts((prev) => prev.filter((r) => r.id !== id));
+              setHiddenSmackIds((prev) => prev.includes(id) ? prev : [...prev, id]);
+            }}
             onReceiptApproved={(id) =>
               setReceipts((prev) =>
                 prev.map((r) => (r.id === id ? { ...r, adminApproved: true } : r))
@@ -1605,51 +1630,52 @@ export default function App() {
                     {/* Chip strip — wraps on narrow viewports. All icons are
                         simple navy line-icons so the strip reads as one unified
                         UI element rather than a row of disparate emoji. */}
-                    <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-gray-600 font-['Poppins',sans-serif]">
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[10px] text-gray-600 font-['Poppins',sans-serif]">
                       {timeLabel && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5">
-                          <Clock size={11} className="text-[#23297e] shrink-0" strokeWidth={2} />
+                        <button onClick={() => { setMatchInitialStep(0); setMatchOpen(true); }} className="inline-flex items-center gap-0.5 rounded-full bg-white/70 border border-gray-200 px-1.5 py-0.5 hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
+                          <Clock size={10} className="text-[#23297e] shrink-0" strokeWidth={2} />
                           {timeLabel}
-                        </span>
+                        </button>
                       )}
-                      <span className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5">
-                        <Globe size={11} className="text-[#23297e] shrink-0" strokeWidth={2} />
+                      <button onClick={() => { setMatchInitialStep(0); setMatchOpen(true); }} className="inline-flex items-center gap-0.5 rounded-full bg-white/70 border border-gray-200 px-1.5 py-0.5 hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
+                        <Globe size={10} className="text-[#23297e] shrink-0" strokeWidth={2} />
                         {settingLabel}
-                      </span>
+                      </button>
                       {toneChips.map((c) => {
                         const Icon = c.Icon;
                         return (
-                          <span
+                          <button
                             key={c.label}
-                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 border ${
+                            onClick={() => { setMatchInitialStep(0); setMatchOpen(true); }}
+                            className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 border transition-colors ${
                               c.isDefault
-                                ? "bg-gray-50 border-gray-100 text-gray-400"
-                                : "bg-[#ed6624]/10 border-[#ed6624]/30 text-[#23297e] font-semibold"
+                                ? "bg-gray-50 border-gray-100 text-gray-400 hover:border-[#ed6624] hover:bg-[#ed6624]/5"
+                                : "bg-[#ed6624]/10 border-[#ed6624]/30 text-[#23297e] font-semibold hover:border-[#ed6624] hover:bg-[#ed6624]/20"
                             }`}
                             title={c.isDefault ? `${c.label} — default (not set)` : `${c.label} bumped to ${c.value}`}
                           >
-                            <Icon size={11} className={`shrink-0 ${c.isDefault ? "text-gray-400" : "text-[#23297e]"}`} strokeWidth={2} />
+                            <Icon size={10} className={`shrink-0 ${c.isDefault ? "text-gray-400" : "text-[#23297e]"}`} strokeWidth={2} />
                             {c.label}: {c.value}
-                          </span>
+                          </button>
                         );
                       })}
                       {matchPrefs.state && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5">
-                          <MapPin size={11} className="text-[#23297e] shrink-0" strokeWidth={2} />
+                        <button onClick={() => { setMatchInitialStep(0); setMatchOpen(true); }} className="inline-flex items-center gap-0.5 rounded-full bg-white/70 border border-gray-200 px-1.5 py-0.5 hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
+                          <MapPin size={10} className="text-[#23297e] shrink-0" strokeWidth={2} />
                           {matchPrefs.state}
-                        </span>
+                        </button>
                       )}
                       {groupCount > 0 && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5">
-                          <Users size={11} className="text-[#23297e] shrink-0" strokeWidth={2} />
+                        <button onClick={() => { setMatchInitialStep(1); setMatchOpen(true); }} className="inline-flex items-center gap-0.5 rounded-full bg-white/70 border border-gray-200 px-1.5 py-0.5 hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
+                          <Users size={10} className="text-[#23297e] shrink-0" strokeWidth={2} />
                           Amplifies {groupCount} {groupCount === 1 ? "group" : "groups"}
-                        </span>
+                        </button>
                       )}
                       {matchPrefs.focusDonations && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-white/70 border border-gray-200 px-2 py-0.5">
-                          <DollarSign size={11} className="text-[#23297e] shrink-0" strokeWidth={2} />
+                        <button onClick={() => { setMatchInitialStep(1); setMatchOpen(true); }} className="inline-flex items-center gap-0.5 rounded-full bg-white/70 border border-gray-200 px-1.5 py-0.5 hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
+                          <DollarSign size={10} className="text-[#23297e] shrink-0" strokeWidth={2} />
                           Donation focus
-                        </span>
+                        </button>
                       )}
                     </div>
                   </div>
@@ -1677,14 +1703,8 @@ export default function App() {
               </div>
             ) : (
             <>
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
+            <div className={`grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4 transition-opacity duration-150 ${searchQuery !== deferredSearchQuery ? "opacity-50" : "opacity-100"}`}>
               {(hasActiveFilters || showPendingActsOnly ? visibleActsCards : visibleActsCards.slice(0, displayLimit)).map((card, idx) => (
-                // First 12 cards get a stagger-in animation, keyed by
-                // `staggerKey` so it re-fires whenever the user applies a new
-                // Match config. Cards past index 11 don't animate — keeps
-                // infinite scroll quiet. The `key={...}-${staggerKey}` forces
-                // React to re-mount the wrapper on key change so the CSS
-                // keyframe runs from the start.
                 <div
                   key={idx < 12 ? `${card.id}-${staggerKey}` : card.id}
                   id={`card-${card.id}`}
@@ -1713,13 +1733,16 @@ export default function App() {
             </>
             )}
 
-            {/* Sentinel for desktop infinite scroll — sits just below the grid.
-                IntersectionObserver fires ~200px before it enters the viewport. */}
-            <div ref={sentinelRef} className="h-1" aria-hidden />
+            {/* Sentinel — ref lives on the card 8 slots before the slice end
+                (see sentinelCardIdx above). This div is kept as a layout anchor
+                but no longer holds the ref. When no card holds it (all cards
+                loaded / filters active) sentinelRef.current is null and the
+                observer skips, which is correct — nothing more to load. */}
+            <div className="h-1" aria-hidden />
 
-            {/* Load more button — mobile only. Desktop uses the sentinel above. */}
+            {/* Load more button */}
             {synced && !hasActiveFilters && (displayLimit < displayedCards.length || serverOffset < serverTotal) && (
-              <div className="mt-12 flex flex-col items-center gap-2 sm:hidden">
+              <div className="mt-12 flex flex-col items-center gap-2">
                 <button
                   onClick={() => {
                     if (displayLimit < displayedCards.length) {
@@ -1761,22 +1784,26 @@ export default function App() {
         </p>
       </div>
 
-      {/* Scroll nudge — lower-right toast after scrolling past ~8 cards.
+      {/* Scroll nudge — lower-right orange toast after scrolling past ~8 cards.
           Auto-expires after 30s (see useEffect above). Sits well clear of the
           always-on tagline footer so it doesn't cover it. */}
       {scrollNudgeVisible && !scrollNudgeDismissed && (
-        <div className="fixed bottom-16 right-4 md:bottom-20 md:right-6 z-40 max-w-[340px] flex items-start gap-2 bg-[#23297e] rounded-xl shadow-xl px-4 py-3 animate-[slide-in-up_220ms_ease-out]">
-          <img src={fistIcon} alt="" aria-hidden="true" className="h-8 w-auto shrink-0 mt-0.5" />
-          <div className="min-w-0 flex-1 flex flex-col items-end">
-            <p className="font-['Poppins',sans-serif] text-[13px] text-white/90 leading-snug mb-2 self-stretch">
-              Finding it hard to choose? <span className="font-semibold text-white">Let us match you in 30 seconds.</span>
+        <div className="toast-pop-in fixed bottom-16 right-4 md:bottom-24 md:right-8 z-40 w-[min(92vw,480px)] flex items-start gap-3 bg-[#fd8e33] rounded-2xl shadow-2xl px-5 py-4 ring-2 ring-white/20">
+          <div className="min-w-0 flex-1">
+            <p className="font-['Poppins',sans-serif] font-black text-[18px] md:text-[20px] text-white leading-snug mb-2">
+              Finding it hard to choose?
             </p>
-            <button
-              onClick={() => { setScrollNudgeVisible(false); setMatchOpen(true); }}
-              className="px-3.5 py-1.5 bg-[#ed6624] hover:bg-[#e07a28] text-white font-['Poppins',sans-serif] font-bold text-[13px] rounded-lg transition-colors whitespace-nowrap"
-            >
-              ✨ Quick Match Tool
-            </button>
+            <p className="font-['Poppins',sans-serif] text-[13px] md:text-[14px] text-white/90 leading-snug mb-3">
+              Let us match you in 30 seconds.
+            </p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => { setScrollNudgeVisible(false); setMatchOpen(true); }}
+                className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-white hover:bg-gray-50 text-[#fd8e33] font-['Poppins',sans-serif] font-extrabold text-[15px] rounded-xl shadow-sm transition-colors whitespace-nowrap"
+              >
+                ✨ Open Quick Acts for Me Tool →
+              </button>
+            </div>
           </div>
           <button
             onClick={() => {
@@ -1784,7 +1811,7 @@ export default function App() {
               setScrollNudgeDismissed(true);
               localStorage.setItem("resistact_nudge_dismissed", "1");
             }}
-            className="text-white/50 hover:text-white transition-colors shrink-0 -mr-1"
+            className="text-white/70 hover:text-white transition-colors shrink-0"
             aria-label="Dismiss"
           >
             ✕
@@ -1863,7 +1890,8 @@ export default function App() {
           isLoggedIn={!!approval}
           completedIds={[...completedCards]}
           boostedIds={[...boostedCards]}
-          onClose={() => setMatchOpen(false)}
+          initialStep={matchInitialStep}
+          onClose={() => { setMatchOpen(false); setMatchInitialStep(0); }}
           onApply={(prefs) => {
             setMatchPrefs(prefs);
             savePreferences(prefs);

@@ -16,7 +16,7 @@ export const STATIC_SMACKS: ReceiptCard[] = [
   {
     id: 5001,
     title: "Impeach Trump Again",
-    tags: ["Trump", "MAGA", "Fascism"],
+    tags: ["Accountability", "Democracy"],
     imageUrl: "/Smacks/impeach.png",
     caption: "He was impeached twice and should have been removed. Twice wasn't enough — the country deserves accountability. Share this. #ImpeachTrump #ResistAct",
     adminApproved: true,
@@ -24,7 +24,7 @@ export const STATIC_SMACKS: ReceiptCard[] = [
   {
     id: 5002,
     title: "Rock the Vote",
-    tags: ["Voting Rights"],
+    tags: ["Voting Rights", "Democracy"],
     imageUrl: "/Smacks/rock-the-vote.webp",
     caption: "Your vote is your most powerful tool. Use it. Share it. Protect it. #RockTheVote #ResistAct",
     adminApproved: true,
@@ -32,119 +32,119 @@ export const STATIC_SMACKS: ReceiptCard[] = [
   {
     id: 5003,
     title: "JD Vance",
-    tags: ["Trump", "MAGA"],
+    tags: ["MAGA", "Accountability"],
     imageUrl: "/Smacks/vance.png",
     adminApproved: true,
   },
   {
     id: 5004,
     title: "Presidents",
-    tags: ["Trump", "MAGA"],
+    tags: ["Politics", "History"],
     imageUrl: "/Smacks/presidents.png",
     adminApproved: true,
   },
   {
     id: 5006,
     title: "Trump Human Body",
-    tags: ["Trump", "MAGA"],
+    tags: ["Humor"],
     imageUrl: "/Smacks/trumphumanbody.png",
     adminApproved: true,
   },
   {
     id: 5007,
     title: "Dem States",
-    tags: ["Trump", "MAGA"],
+    tags: ["Democracy", "Politics"],
     imageUrl: "/Smacks/demstates.png",
     adminApproved: true,
   },
   {
     id: 5008,
     title: "No Conviction",
-    tags: ["Trump", "MAGA"],
+    tags: ["Accountability", "Corruption"],
     imageUrl: "/Smacks/noconviction.png",
     adminApproved: true,
   },
   {
     id: 5009,
     title: "Hillary Obama",
-    tags: ["Trump", "MAGA"],
+    tags: ["Politics", "History"],
     imageUrl: "/Smacks/hillaryobama.png",
     adminApproved: true,
   },
   {
     id: 5010,
     title: "Clarence Thomas",
-    tags: ["Trump", "MAGA", "Fascism"],
+    tags: ["Corruption", "Democracy"],
     imageUrl: "/Smacks/thomas.png",
     adminApproved: true,
   },
   {
     id: 5011,
     title: "2024 Votes",
-    tags: ["Trump", "MAGA"],
+    tags: ["Elections", "Voting Rights"],
     imageUrl: "/Smacks/2024votes.jpg",
     adminApproved: true,
   },
   {
     id: 5012,
     title: "Land",
-    tags: ["Trump", "MAGA"],
+    tags: ["Foreign Policy", "Policy"],
     imageUrl: "/Smacks/land.png",
     adminApproved: true,
   },
   {
     id: 5013,
     title: "Richer",
-    tags: ["Trump", "MAGA"],
+    tags: ["Economy", "Inequality"],
     imageUrl: "/Smacks/richer.png",
     adminApproved: true,
   },
   {
     id: 5014,
     title: "Wealth",
-    tags: ["Trump", "MAGA"],
+    tags: ["Economy", "Inequality"],
     imageUrl: "/Smacks/wealth.png",
     adminApproved: true,
   },
   {
     id: 5015,
     title: "Redistricting",
-    tags: ["Trump", "MAGA"],
+    tags: ["Voting Rights", "Democracy"],
     imageUrl: "/Smacks/redistricting.png",
     adminApproved: true,
   },
   {
     id: 5016,
     title: "Timeline",
-    tags: ["Trump", "MAGA"],
+    tags: ["Accountability", "History"],
     imageUrl: "/Smacks/timeline.png",
     adminApproved: true,
   },
   {
     id: 5017,
     title: "Billionaires",
-    tags: ["Trump", "MAGA"],
+    tags: ["Economy", "Inequality"],
     imageUrl: "/Smacks/billionaires.png",
     adminApproved: true,
   },
   {
     id: 5018,
     title: "Corruption",
-    tags: ["Trump", "MAGA"],
+    tags: ["Corruption", "Accountability"],
     imageUrl: "/Smacks/corruption.png",
     adminApproved: true,
   },
   {
     id: 5019,
     title: "8647",
-    tags: ["Trump", "MAGA"],
+    tags: ["Resistance", "Humor"],
     imageUrl: "/Smacks/8647.png",
     adminApproved: true,
   },
   {
     id: 5020,
     title: "Iran",
-    tags: ["Trump", "MAGA"],
+    tags: ["Foreign Policy"],
     imageUrl: "/Smacks/iran.png",
     adminApproved: true,
   },
@@ -158,56 +158,56 @@ export const STATIC_SMACKS: ReceiptCard[] = [
   {
     id: 5022,
     title: "Epstein",
-    tags: ["Trump", "MAGA", "Corruption"],
+    tags: ["Corruption", "Accountability"],
     imageUrl: "/Smacks/epstein.png",
     adminApproved: true,
   },
   {
     id: 5023,
     title: "Project 2025",
-    tags: ["Trump", "MAGA", "Fascism"],
+    tags: ["Fascism", "Democracy", "MAGA"],
     imageUrl: "/Smacks/project2025.png",
     adminApproved: true,
   },
   {
     id: 5024,
     title: "Voting Rights",
-    tags: ["Voting Rights"],
+    tags: ["Voting Rights", "Democracy"],
     imageUrl: "/Smacks/votingrights.png",
     adminApproved: true,
   },
   {
     id: 5025,
     title: "Epstein Redactions",
-    tags: ["Trump", "MAGA", "Corruption"],
+    tags: ["Corruption", "Accountability"],
     imageUrl: "/Smacks/epsteinredactions.png",
     adminApproved: true,
   },
   {
     id: 5026,
     title: "Gas Prices",
-    tags: ["Economy", "Trump", "MAGA"],
+    tags: ["Economy", "Policy"],
     imageUrl: "/Smacks/gasprices.png",
     adminApproved: true,
   },
   {
     id: 5027,
     title: "Senate",
-    tags: ["Trump", "MAGA"],
+    tags: ["Democracy", "Politics"],
     imageUrl: "/Smacks/senate.png",
     adminApproved: true,
   },
   {
     id: 5028,
     title: "Hair",
-    tags: ["Trump", "MAGA"],
+    tags: ["Humor"],
     imageUrl: "/Smacks/hair.webp",
     adminApproved: true,
   },
   {
     id: 5029,
     title: "Biden Is Not President",
-    tags: ["Trump", "MAGA"],
+    tags: ["Politics", "Elections"],
     imageUrl: "/Smacks/bidenisnotpresident.webp",
     adminApproved: true,
   },
@@ -228,20 +228,23 @@ export interface ReceiptCard {
 }
 
 // Well-known tag taxonomy — drives the filter chips.
+// Tags are topic-based so filtering is actually useful.
 const ALL_TAGS = [
-  "Economy", "Deficit & Debt", "Taxes", "Immigration",
-  "Voting Rights", "Healthcare", "Fox News", "Environment",
-  "Trump", "MAGA", "Fascism", "Hypocrisy",
-  "Social Security", "Education", "Gun Violence",
-  "Women's Rights", "LGBTQ+", "Labor",
+  "Accountability", "Corruption", "Democracy", "Economy",
+  "Elections", "Fascism", "Foreign Policy", "History",
+  "Humor", "Inequality", "MAGA", "Policy",
+  "Politics", "ResistAct", "Resistance", "Voting Rights",
 ];
 
 interface SmacksPageProps {
   receipts: ReceiptCard[];
+  /** IDs the admin has permanently hidden — server-sourced, works across devices. */
+  hiddenIds?: number[];
   searchQuery?: string;
   accessToken: string | null;
   approval: UserApproval | null;
   onReceiptAdded?: (r: ReceiptCard) => void;
+  onReceiptDeleted?: (id: number) => void;
   onReceiptApproved?: (id: number) => void;
   pendingFilterVersion?: number;
   onComplete?: (id: number) => void;
@@ -255,13 +258,18 @@ interface SmacksPageProps {
   onSortByChange?: (s: "top" | "new" | "pending") => void;
 }
 
-export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToken, approval, onReceiptAdded, onReceiptApproved, pendingFilterVersion, onComplete, completedSmackIds, activeTags: activeTagsProp, onActiveTagsChange, sortBy: sortByProp, onSortByChange }: SmacksPageProps) {
+export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds = [], searchQuery = "", accessToken, approval, onReceiptAdded, onReceiptDeleted, onReceiptApproved, pendingFilterVersion, onComplete, completedSmackIds, activeTags: activeTagsProp, onActiveTagsChange, sortBy: sortByProp, onSortByChange }: SmacksPageProps) {
   const isAdmin = approval?.isAdmin === true;
   const canSubmit = !!accessToken && (approval?.status === "approved");
 
   // Merge static smacks with API receipts; API version wins on duplicate ID.
+  // Server-hidden IDs are excluded at this stage so they never appear anywhere.
   const apiIds = new Set(apiReceipts.map((r) => r.id));
-  const receipts = [...apiReceipts, ...STATIC_SMACKS.filter((r) => !apiIds.has(r.id))];
+  const hiddenSet = new Set(serverHiddenIds);
+  const receipts = [
+    ...apiReceipts.filter((r) => !hiddenSet.has(r.id)),
+    ...STATIC_SMACKS.filter((r) => !apiIds.has(r.id) && !hiddenSet.has(r.id)),
+  ];
 
   // ── Tag filter ──────────────────────────────────────────────────────────────
   // Controlled-or-uncontrolled: if `activeTags` is passed in, the parent owns
@@ -619,7 +627,9 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
   }
 
   // ── Admin: delete ───────────────────────────────────────────────────────────
-  // Static smacks (id ≥ 5000) can't be server-deleted, so we hide them locally.
+  // Deletes are persisted server-side in smacks:hidden so they survive across
+  // devices and browser restarts. localStorage is kept as a fast local cache
+  // so the UI snaps immediately even before the server round-trip completes.
   const [deletedIds, setDeletedIds] = useState<Set<number>>(() => {
     try {
       const s = localStorage.getItem("resistact_smacks_deleted");
@@ -628,21 +638,38 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
   });
 
   async function handleDelete(id: number) {
-    const isStatic = id >= 5000;
-    if (!isStatic && accessToken) {
-      try {
-        await fetch(`${API}/admin/receipts/${id}`, {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
-      } catch { /* ignore */ }
-    }
+    // Optimistic: hide immediately in this session.
     setDeletedIds((prev) => {
       const next = new Set(prev);
       next.add(id);
       try { localStorage.setItem("resistact_smacks_deleted", JSON.stringify([...next])); } catch {}
       return next;
     });
+    // Notify parent so App.tsx state stays in sync (removes from apiReceipts
+    // and adds to hiddenSmackIds so the next render doesn't bring it back).
+    onReceiptDeleted?.(id);
+
+    if (!accessToken) return;
+    const isStatic = id >= 5000;
+    try {
+      if (isStatic) {
+        // Static smacks don't exist in KV — record the hide in smacks:hidden.
+        const res = await fetch(`${API}/admin/receipts/hide/${id}`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (!res.ok) console.error(`Failed to hide static smack #${id}:`, await res.text().catch(() => ""));
+      } else {
+        // Non-static: actually delete from KV (which also records in smacks:hidden).
+        const res = await fetch(`${API}/admin/receipts/${id}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (!res.ok) console.error(`Failed to delete smack #${id}:`, await res.text().catch(() => ""));
+      }
+    } catch (err) {
+      console.error(`Error deleting smack #${id}:`, err);
+    }
   }
 
   // ── Admin: approve ──────────────────────────────────────────────────────────
@@ -713,7 +740,7 @@ export function SmacksPage({ receipts: apiReceipts, searchQuery = "", accessToke
   const q = searchQuery.toLowerCase().trim();
   const filtered = receipts
     .filter((r) => {
-      if (deletedIds.has(r.id)) return false;
+      if (deletedIds.has(r.id) || serverHiddenIds.includes(r.id)) return false;
       if (sortBy === "pending") return isAdmin && !r.adminApproved;
       if (!isAdmin && !r.adminApproved) return false;
       if (q) {
@@ -1114,6 +1141,7 @@ function ReceiptTile({
   onDelete: () => void;
 }) {
   const [tileLightboxOpen, setTileLightboxOpen] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   return (
     <>
     <div
@@ -1133,13 +1161,33 @@ function ReceiptTile({
             >
               Approve
             </button>
-            <button
-              type="button"
-              onClick={onDelete}
-              className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-red-600 hover:bg-red-700 text-white font-['Poppins',sans-serif] font-bold text-[10px] uppercase tracking-wide transition-colors"
-            >
-              Delete
-            </button>
+            {confirmingDelete ? (
+              <div className="flex items-center gap-1">
+                <span className="font-['Poppins',sans-serif] text-[10px] text-red-700 font-semibold">Sure?</span>
+                <button
+                  type="button"
+                  onClick={() => { setConfirmingDelete(false); onDelete(); }}
+                  className="px-2 py-0.5 rounded-md bg-red-600 hover:bg-red-700 text-white font-['Poppins',sans-serif] font-bold text-[10px] uppercase tracking-wide transition-colors"
+                >
+                  Yes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmingDelete(false)}
+                  className="px-2 py-0.5 rounded-md bg-gray-200 hover:bg-gray-300 text-gray-700 font-['Poppins',sans-serif] font-bold text-[10px] uppercase tracking-wide transition-colors"
+                >
+                  No
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(true)}
+                className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-red-600 hover:bg-red-700 text-white font-['Poppins',sans-serif] font-bold text-[10px] uppercase tracking-wide transition-colors"
+              >
+                Delete
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -1182,14 +1230,33 @@ function ReceiptTile({
         </div>
         {/* Admin delete */}
         {receipt.adminApproved && isAdmin && (
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            className="absolute top-2 left-2 w-7 h-7 flex items-center justify-center rounded-full bg-white/90 text-gray-400 hover:text-red-600 hover:bg-white shadow-sm transition-colors"
-            title="Delete"
-          >
-            <Trash2 size={13} />
-          </button>
+          confirmingDelete ? (
+            <div
+              className="absolute top-2 left-2 flex items-center gap-1 z-10"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span className="font-['Poppins',sans-serif] text-[10px] text-white font-bold bg-black/60 px-1.5 py-0.5 rounded">Sure?</span>
+              <button
+                type="button"
+                onClick={() => { setConfirmingDelete(false); onDelete(); }}
+                className="px-2 py-0.5 rounded-md bg-red-600 hover:bg-red-700 text-white font-['Poppins',sans-serif] font-bold text-[10px] shadow transition-colors"
+              >Yes</button>
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(false)}
+                className="px-2 py-0.5 rounded-md bg-white/90 text-gray-700 hover:bg-white font-['Poppins',sans-serif] font-bold text-[10px] shadow transition-colors"
+              >No</button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setConfirmingDelete(true); }}
+              className="absolute top-2 left-2 w-7 h-7 flex items-center justify-center rounded-full bg-white/90 text-gray-400 hover:text-red-600 hover:bg-white shadow-sm transition-colors"
+              title="Delete"
+            >
+              <Trash2 size={13} />
+            </button>
+          )
         )}
       </button>
 
