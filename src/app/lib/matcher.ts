@@ -106,6 +106,12 @@ export interface Preferences {
    * curation persists. */
   focusDonations: boolean;
   tone: Pick<Tone, "anger" | "comedy" | "subversion" | "hope" | "energy">;
+  /** Categories the user has explicitly opted out of — cards in any of these
+   * categories are hard-filtered from the matched feed. Title-Case strings
+   * matching the canonical form produced by `normaliseCategory` in App.tsx
+   * (e.g. "Petition", "Crafting", "Email Campaign"). Empty array = no
+   * exclusions (default). */
+  excludedCategories: string[];
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -119,6 +125,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   vulnerableGroups: [],
   focusDonations: false,
   tone: { anger: 1, comedy: 1, subversion: 1, hope: 1, energy: 1 },
+  excludedCategories: [],
 };
 
 // ─── Category → tone defaults ─────────────────────────────────────────────────
@@ -477,6 +484,12 @@ export function score(card: ActionCardData, prefs: Preferences, ctx?: UserContex
   // feed. When `includeAnywhere` is true, the state field is used for ranking
   // only and the filter is bypassed (every state passes).
   if (!prefs.includeAnywhere && !stateMatches(card, prefs.state)) return 0;
+  // Hard filter: user-opted-out category. The "Skip these" chips in the
+  // Quick Match Tool write the chosen categories here; the dismissal-learning
+  // prompt ("you've passed on 3 Crafting cards") adds the category here if
+  // the user accepts the offer to hide it going forward.
+  if (prefs.excludedCategories && prefs.excludedCategories.length > 0 &&
+      prefs.excludedCategories.includes(card.category)) return 0;
 
   // Amplification check — lifts cards where the user's focus group(s) have
   // unique standing. We no longer down-rank for personal risk; sliders do that.
@@ -494,6 +507,23 @@ export function score(card: ActionCardData, prefs: Preferences, ctx?: UserContex
     (prefs.tone.hope       * t.hope) +
     (prefs.tone.hope       * t.care * 0.5) +
     (prefs.tone.energy     * t.energy);
+
+  // Tone-mismatch penalty — penalises cards that are HOTTER than the user
+  // asked for on any given tone dimension. Without this, the pure-dot-product
+  // score above only rewards matches, never penalises mismatches. So a card
+  // that's high on Anger AND high on Comedy still surfaces when the user
+  // wants Anger but Humor: None — comedy just contributes 0 to the bonus
+  // rather than dragging the card down. The penalty weight (3) is calibrated
+  // to be strong enough to push a clearly-wrong card below the 30 % score
+  // floor used by `rankCards` while still letting partial overshoots survive
+  // when other dimensions match strongly.
+  const tonePenalty = 3 * (
+    Math.max(0, t.anger      - prefs.tone.anger)      +
+    Math.max(0, t.comedy     - prefs.tone.comedy)     +
+    Math.max(0, t.subversion - prefs.tone.subversion) +
+    Math.max(0, t.hope       - prefs.tone.hope)       +
+    Math.max(0, t.energy     - prefs.tone.energy)
+  );
 
   // Time match: distance between card's bucket minutes and user's pick.
   // Smaller distance = bigger bonus. Capped.
@@ -529,7 +559,7 @@ export function score(card: ActionCardData, prefs: Preferences, ctx?: UserContex
   // appear in Quick Matches regardless of tone slider position.
   const highlightBonus = (card as any).firstTimerFriendly ? 7 : 0;
 
-  return toneScore + timeScore + amplifyBonus + engagementScore + stateBonus + boostBonus + highlightBonus;
+  return toneScore - tonePenalty + timeScore + amplifyBonus + engagementScore + stateBonus + boostBonus + highlightBonus;
 }
 
 // ─── Top N ────────────────────────────────────────────────────────────────────
@@ -713,5 +743,11 @@ function normalizePreferences(parsed: any): Preferences {
       hope: typeof parsed.tone?.hope === "number" ? parsed.tone.hope : 1,
       energy: typeof parsed.tone?.energy === "number" ? parsed.tone.energy : 1,
     },
+    // Legacy prefs (saved before excludedCategories was a field) come back
+    // without this key — default to empty so the hard filter in score()
+    // becomes a no-op for legacy users.
+    excludedCategories: Array.isArray(parsed.excludedCategories)
+      ? parsed.excludedCategories.filter((c: unknown): c is string => typeof c === "string")
+      : [],
   };
 }

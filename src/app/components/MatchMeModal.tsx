@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { X, ChevronLeft, ChevronRight, Clock, Flame, Laugh, Lock, MapPin, Sparkles, Sunrise, ThumbsDown, VenetianMask, Zap } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, EyeOff, Flame, Laugh, Lock, MapPin, Sparkles, Sunrise, ThumbsDown, VenetianMask, X, Zap } from "lucide-react";
 import logoImg from "../../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
 import type { LucideIcon } from "lucide-react";
 import { ToneRangeSlider } from "./ToneSlider";
@@ -17,6 +17,7 @@ import {
   type UserContext,
   type VulnerableGroup,
 } from "../lib/matcher";
+import { CATEGORY_GROUPS, KNOWN_CATEGORIES } from "../lib/categoryGroups";
 import { LOCATION_OPTIONS } from "../lib/locations";
 import { ActionCard, type ActionCardData } from "./ActionCard";
 import { GroupsDropdown } from "./GroupsDropdown";
@@ -43,6 +44,48 @@ function logBadMatch(entry: FeedbackEntry) {
     const trimmed = list.length > 200 ? list.slice(list.length - 200) : list;
     localStorage.setItem(FEEDBACK_KEY, JSON.stringify(trimmed));
   } catch {}
+}
+
+// ─── Dismissal-learning helpers ──────────────────────────────────────────────
+// When the user dismisses 3 cards in the same category, we offer to hide
+// that whole category. If they decline ("No, keep showing"), we remember the
+// category here so we don't prompt them again for it.
+const DISMISS_OPTOUT_KEY = "resistact_match_dismiss_optouts";
+const DISMISS_PROMPT_THRESHOLD = 3;
+
+function loadDismissOptOuts(): Set<string> {
+  try {
+    const raw = localStorage.getItem(DISMISS_OPTOUT_KEY);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return new Set();
+    return new Set(parsed.filter((c: unknown): c is string => typeof c === "string"));
+  } catch {
+    return new Set();
+  }
+}
+
+function addDismissOptOut(category: string) {
+  try {
+    const current = loadDismissOptOuts();
+    current.add(category);
+    localStorage.setItem(DISMISS_OPTOUT_KEY, JSON.stringify([...current]));
+  } catch {}
+}
+
+/** Count how many feedback entries exist for a given category. Used to
+ * trigger the "hide N category?" prompt once the count crosses the
+ * threshold. */
+function countDismissalsForCategory(category: string): number {
+  try {
+    const raw = localStorage.getItem(FEEDBACK_KEY);
+    if (!raw) return 0;
+    const list: FeedbackEntry[] = JSON.parse(raw);
+    if (!Array.isArray(list)) return 0;
+    return list.filter((e) => e?.cardCategory === category).length;
+  } catch {
+    return 0;
+  }
 }
 
 interface MatchMeModalProps {
@@ -466,6 +509,15 @@ function StepToneAndPreview({
   const [flagged, setFlagged] = useState<Set<number>>(new Set());
   const [carouselPage, setCarouselPage] = useState(0);
   const PAGE_SIZE = 4;
+  // Whether the "Skip these — categories I can't or won't do" disclosure is
+  // open. Collapsed by default to keep the modal short for users who don't
+  // need it.
+  const [showSkipCategories, setShowSkipCategories] = useState(false);
+  // When set, render the inline "you've passed on 3 X actions — hide X?"
+  // banner inside the Quick Matches section. Cleared when the user picks
+  // either button or when the category gets added to excludedCategories
+  // through some other path.
+  const [pendingHidePrompt, setPendingHidePrompt] = useState<string | null>(null);
 
   // Reset carousel to page 0 when prefs change so the user always sees their
   // freshest top matches first after adjusting sliders.
@@ -518,7 +570,76 @@ function StepToneAndPreview({
       prefs,
     });
     setFlagged((prev) => new Set(prev).add(card.id));
+
+    // After logging, check whether the category has crossed the threshold
+    // for a "hide this category?" prompt. Skip if the category is already
+    // excluded (no point asking), the user previously declined the prompt
+    // for this category, or we're already showing the prompt for a
+    // different category (don't pile on).
+    const cat = card.category;
+    if (!cat) return;
+    if ((prefs.excludedCategories ?? []).includes(cat)) return;
+    if (loadDismissOptOuts().has(cat)) return;
+    if (pendingHidePrompt) return;
+    if (countDismissalsForCategory(cat) >= DISMISS_PROMPT_THRESHOLD) {
+      setPendingHidePrompt(cat);
+    }
   }
+
+  // ── Skip-categories chip-grid handlers ─────────────────────────────────────
+  function toggleExcludedCategory(category: string) {
+    onPrefsChange((p) => {
+      const current = p.excludedCategories ?? [];
+      const next = current.includes(category)
+        ? current.filter((c) => c !== category)
+        : [...current, category];
+      return { ...p, excludedCategories: next };
+    });
+  }
+  function clearExcludedCategories() {
+    onPrefsChange((p) => ({ ...p, excludedCategories: [] }));
+  }
+  function acceptHidePrompt() {
+    if (!pendingHidePrompt) return;
+    const cat = pendingHidePrompt;
+    onPrefsChange((p) => {
+      const current = p.excludedCategories ?? [];
+      if (current.includes(cat)) return p;
+      return { ...p, excludedCategories: [...current, cat] };
+    });
+    setPendingHidePrompt(null);
+  }
+  function declineHidePrompt() {
+    if (!pendingHidePrompt) return;
+    addDismissOptOut(pendingHidePrompt);
+    setPendingHidePrompt(null);
+  }
+
+  // Build the chip-grid model: start from the canonical groups, plus a
+  // synthetic "Other" group containing any categories the loaded cards
+  // actually use that aren't already covered by CATEGORY_GROUPS. Keeps the
+  // UI honest if a card ships with a new category that hasn't been added
+  // to the groups list yet.
+  const chipGroups = useMemo(() => {
+    const unknown = new Set<string>();
+    for (const c of cards) {
+      const cat = c.category;
+      if (!cat) continue;
+      if (!KNOWN_CATEGORIES.has(cat)) unknown.add(cat);
+    }
+    if (unknown.size === 0) return CATEGORY_GROUPS;
+    // Find an existing "Other" bucket and merge, or append a new one.
+    const groups = CATEGORY_GROUPS.map((g) => ({ ...g, categories: [...g.categories] }));
+    const otherIdx = groups.findIndex((g) => g.heading === "Other");
+    if (otherIdx >= 0) {
+      const merged = new Set([...groups[otherIdx].categories, ...unknown]);
+      groups[otherIdx] = { ...groups[otherIdx], categories: [...merged] };
+    } else {
+      groups.push({ heading: "Other", categories: [...unknown] });
+    }
+    return groups;
+  }, [cards]);
+  const excludedSet = new Set(prefs.excludedCategories ?? []);
 
   return (
     <div>
@@ -622,6 +743,86 @@ function StepToneAndPreview({
         })}
       </div>
 
+      {/* ── Skip these — collapsible category-exclusion chip grid ─────────
+          Disclosure-style section between the tone sliders and the Quick
+          Matches preview. Collapsed by default so users who don't need it
+          aren't slowed down by a long chip wall. Each chip toggles between
+          "included" (default, full-colour) and "excluded" (dimmed +
+          strikethrough). Excluded categories are hard-filtered from the
+          matched feed by the corresponding guard in `score()`. */}
+      <div className="border-t border-gray-200 pt-3 mt-3">
+        <button
+          type="button"
+          onClick={() => setShowSkipCategories((v) => !v)}
+          aria-expanded={showSkipCategories}
+          className="w-full flex items-center justify-between gap-2 text-left group"
+        >
+          <span className="flex items-center gap-1.5">
+            <EyeOff size={12} strokeWidth={1.75} className="text-gray-500 shrink-0" />
+            <span className="font-['Poppins',sans-serif] text-xs font-bold uppercase tracking-wider text-gray-500 group-hover:text-[#23297e] transition-colors">
+              Skip these
+            </span>
+            <span className="font-['Poppins',sans-serif] text-[11.5px] text-gray-500">
+              — categories I can't or won't do
+            </span>
+            {excludedSet.size > 0 && (
+              <span className="font-['Poppins',sans-serif] text-[11px] font-semibold text-[#ed6624]">
+                · {excludedSet.size} hidden
+              </span>
+            )}
+          </span>
+          {showSkipCategories
+            ? <ChevronUp size={14} className="text-gray-400 shrink-0" />
+            : <ChevronDown size={14} className="text-gray-400 shrink-0" />}
+        </button>
+
+        {showSkipCategories && (
+          <div className="mt-2 space-y-2">
+            {chipGroups.map((group) => (
+              <div key={group.heading} className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-2">
+                <span className="font-['Poppins',sans-serif] text-[10px] font-bold uppercase tracking-wider text-gray-400 sm:w-[88px] sm:pt-1 shrink-0">
+                  {group.heading}
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {group.categories.map((cat) => {
+                    const isExcluded = excludedSet.has(cat);
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => toggleExcludedCategory(cat)}
+                        aria-pressed={isExcluded}
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-['Poppins',sans-serif] font-medium transition-all border ${
+                          isExcluded
+                            ? "bg-gray-100 text-gray-400 border-gray-200 line-through"
+                            : "bg-white text-gray-700 border-gray-300 hover:border-[#23297e] hover:text-[#23297e]"
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+            {excludedSet.size > 0 && (
+              <div className="pt-1 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={clearExcludedCategories}
+                  className="font-['Poppins',sans-serif] text-[11px] font-semibold text-[#ed6624] hover:text-[#c2521b] transition-colors"
+                >
+                  Show all again
+                </button>
+                <span className="font-['Poppins',sans-serif] text-[10.5px] text-gray-400">
+                  ({excludedSet.size} {excludedSet.size === 1 ? "category" : "categories"} hidden)
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="border-t border-gray-200 pt-3 mt-3">
         <h3 className="font-['Poppins',sans-serif] text-xs font-bold uppercase tracking-wider text-gray-500 mb-0.5">
           Quick Matches
@@ -631,6 +832,35 @@ function StepToneAndPreview({
             Some quick actions that align with your settings above — let us know if these feel right?
           </p>
         </div>
+        {/* Dismissal-learning prompt — appears after the user thumbs-down's
+            3 cards in the same category. They can accept (add to
+            excludedCategories) or decline (we never prompt for this
+            category again, via the dismiss-optouts localStorage key). */}
+        {pendingHidePrompt && (
+          <div className="mb-3 rounded-xl border-2 border-[#ed6624] bg-[#ed6624]/10 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <p className="font-['Poppins',sans-serif] text-[13px] text-[#23297e] leading-snug">
+              <span className="mr-1" aria-hidden>💡</span>
+              You've passed on {DISMISS_PROMPT_THRESHOLD}+ <strong>{pendingHidePrompt}</strong> actions.
+              Hide {pendingHidePrompt} from your matches going forward?
+            </p>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={acceptHidePrompt}
+                className="px-3 py-1.5 rounded-full bg-[#ed6624] hover:bg-[#c2521b] text-white font-['Poppins',sans-serif] font-bold text-xs transition-colors"
+              >
+                Yes, hide
+              </button>
+              <button
+                type="button"
+                onClick={declineHidePrompt}
+                className="px-3 py-1.5 rounded-full border border-gray-300 hover:border-gray-400 bg-white text-gray-700 font-['Poppins',sans-serif] font-semibold text-xs transition-colors"
+              >
+                No, keep showing
+              </button>
+            </div>
+          </div>
+        )}
         {visibleMatches.length === 0 ? (
           <p className="font-['Poppins',sans-serif] text-sm italic text-gray-500 mb-3 min-h-[240px]">
             Move the sliders to see matches.
