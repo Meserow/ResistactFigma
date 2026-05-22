@@ -16,6 +16,36 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.1.44",
+    date: "2026-05-22",
+    title: "Match Me — max-slider settings now actually mean it",
+    sections: [
+      {
+        heading: "Matcher",
+        items: [
+          "Slamming a tone slider to its extreme (Full mockery, None, In-the-streets, Full hope, On fire) is now a hard filter: cards with zero of that dimension are dropped entirely, not just penalised. Before 1.1.44, setting Humor to Full mockery would still surface popular serious petitions because their time + engagement bonuses outweighed the soft tone penalty. Now a card with comedy=0 is removed from the matched feed for any user with comedy=3, no exceptions.",
+          "Same in the other direction: setting Humor to None drops Full-mockery cards entirely, instead of relying on the soft overshoot penalty.",
+          "Soft penalty still handles the in-between gaps (e.g. you want Bold, card is Mild — still surfaces but ranked lower).",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.1.43",
+    date: "2026-05-22",
+    title: "Match Me sliders now work in BOTH directions",
+    sections: [
+      {
+        heading: "Matcher",
+        items: [
+          "The matcher's tone sliders now penalise cards that are colder than what you asked for — not just hotter. Before 1.1.43, setting Humor to Full mockery would still surface serious petitions because their hope/anger scores added up to a passable match even though they had zero humor. Now a card that's cooler than your slider position by 2+ stops gets pushed down proportionally, mirroring the overshoot penalty that 1.1.37 added in the other direction.",
+          "Symmetric weights — moving any slider in either direction has the same magnitude of effect on which cards bubble up.",
+          "Cards that are only 1 stop cooler than your preference still pass through unpenalised, so a 'Mild' card still surfaces when you ask for 'Bold' (close enough). The penalty only fires from a 2-stop gap upward.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.1.42",
     date: "2026-05-22",
     title: "Match-me banner chips are now actually small",
