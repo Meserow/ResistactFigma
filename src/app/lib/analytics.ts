@@ -99,11 +99,12 @@ export function initAnalytics(): void {
   document.head.appendChild(s);
 
   // Bootstrap dataLayer + global gtag().
+  // Must use the `arguments` object (not rest params) — GA4's gtag.js checks
+  // for an Arguments object when it processes the dataLayer queue. A plain
+  // Array silently fails the check and events are never sent.
   (window as any).dataLayer = (window as any).dataLayer || [];
-  function gtag(...args: any[]) {
-    (window as any).dataLayer.push(args);
-  }
-  (window as any).gtag = gtag;
+  (window as any).gtag = function gtag() { (window as any).dataLayer.push(arguments); };
+  const gtag = (window as any).gtag as (...args: any[]) => void;
 
   // Set explicit consent FIRST. Without an explicit consent grant, GA4's
   // Consent Mode v2 defaults `analytics_storage` to 'denied' for users in
