@@ -52,6 +52,13 @@ function userHasDoNotTrack(): boolean {
  *   • The user does NOT have Do-Not-Track set.
  */
 export function initAnalytics(): void {
+  // DIAGNOSTIC LOGGING — added temporarily so we can debug "GA shows zero
+  // data" by reading the Console on a real visitor's browser. Every step of
+  // the init flow logs so we can see exactly where it's bailing or stalling.
+  // Strip back to a single info-log once the data flow is confirmed.
+  // eslint-disable-next-line no-console
+  console.info("[analytics] initAnalytics() called", { measurementId: MEASUREMENT_ID, alreadyLoaded: loaded });
+
   if (loaded) return;
   if (typeof window === "undefined") return; // SSR safety, future-proofing
 
@@ -66,7 +73,7 @@ export function initAnalytics(): void {
   if (userHasDoNotTrack()) {
     if (!logged) {
       // eslint-disable-next-line no-console
-      console.info("[analytics] Disabled — respecting browser Do-Not-Track signal.");
+      console.warn("[analytics] Disabled — respecting browser Do-Not-Track signal.");
       logged = true;
     }
     return;
@@ -75,9 +82,20 @@ export function initAnalytics(): void {
   loaded = true;
 
   // Inject gtag.js (async, deferred — won't block first paint).
+  const scriptUrl = `https://www.googletagmanager.com/gtag/js?id=${MEASUREMENT_ID}`;
+  // eslint-disable-next-line no-console
+  console.info("[analytics] Injecting gtag.js script", { src: scriptUrl });
   const s = document.createElement("script");
   s.async = true;
-  s.src = `https://www.googletagmanager.com/gtag/js?id=${MEASUREMENT_ID}`;
+  s.src = scriptUrl;
+  s.onload = () => {
+    // eslint-disable-next-line no-console
+    console.info("[analytics] gtag.js loaded successfully ✓");
+  };
+  s.onerror = (e) => {
+    // eslint-disable-next-line no-console
+    console.error("[analytics] gtag.js FAILED to load — blocker / network / DNS issue", e);
+  };
   document.head.appendChild(s);
 
   // Bootstrap dataLayer + global gtag().
@@ -98,6 +116,11 @@ export function initAnalytics(): void {
     // (See gtag consent docs if you later add a banner.)
     storage: "granted",
   });
+
+  // eslint-disable-next-line no-console
+  console.info("[analytics] Initial js + config events queued", {
+    dataLayerLength: (window as any).dataLayer.length,
+  });
 }
 
 /**
@@ -105,8 +128,14 @@ export function initAnalytics(): void {
  * No-op when analytics is disabled (no ID configured, DNT on, etc.).
  */
 export function track(event: string, params: Record<string, any> = {}): void {
-  if (!loaded) return;
+  if (!loaded) {
+    // eslint-disable-next-line no-console
+    console.warn("[analytics] track() called before initAnalytics — event dropped", { event });
+    return;
+  }
   const gtag = (window as any).gtag as undefined | ((...args: any[]) => void);
+  // eslint-disable-next-line no-console
+  console.info("[analytics] track event →", event, params);
   gtag?.("event", event, params);
 }
 
