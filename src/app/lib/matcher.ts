@@ -491,6 +491,26 @@ export function score(card: ActionCardData, prefs: Preferences, ctx?: UserContex
   if (prefs.excludedCategories && prefs.excludedCategories.length > 0 &&
       prefs.excludedCategories.includes(card.category)) return 0;
 
+  // Hard filter: extreme tone mismatch. When the user pegs a slider at max
+  // (3) and the card has none (0) of that dimension — or vice versa — the
+  // gap is a full 3 stops, which is essentially "I want ALL of this tone"
+  // vs "card has none of it" (or the inverse). The soft penalty below
+  // catches smaller gaps, but at the extremes the soft penalty isn't
+  // strong enough to push popular cards (high engagement / time match) out
+  // of the matched-feed threshold. Hard-filter these so a user who picks
+  // "Humor: Full mockery" never sees a zero-humor petition.
+  const t = toneFor(card);
+  if (prefs.tone.anger      === 3 && t.anger      === 0) return 0;
+  if (prefs.tone.comedy     === 3 && t.comedy     === 0) return 0;
+  if (prefs.tone.subversion === 3 && t.subversion === 0) return 0;
+  if (prefs.tone.hope       === 3 && t.hope       === 0) return 0;
+  if (prefs.tone.energy     === 3 && t.energy     === 0) return 0;
+  if (prefs.tone.anger      === 0 && t.anger      === 3) return 0;
+  if (prefs.tone.comedy     === 0 && t.comedy     === 3) return 0;
+  if (prefs.tone.subversion === 0 && t.subversion === 3) return 0;
+  if (prefs.tone.hope       === 0 && t.hope       === 3) return 0;
+  if (prefs.tone.energy     === 0 && t.energy     === 3) return 0;
+
   // Amplification check — lifts cards where the user's focus group(s) have
   // unique standing. We no longer down-rank for personal risk; sliders do that.
   const amplifies = assessAmplification(card, prefs.vulnerableGroups);
@@ -499,7 +519,7 @@ export function score(card: ActionCardData, prefs: Preferences, ctx?: UserContex
   // `care` has no dedicated slider — it's driven by the hope slider at half
   // weight so that ACT OF KINDNESS, PRAYER, and TRANSPORTATION surface when
   // the user signals they want something constructive/warm.
-  const t = toneFor(card);
+  // (`t` is computed above for the extreme-mismatch hard filter.)
   const toneScore =
     (prefs.tone.anger      * t.anger) +
     (prefs.tone.comedy     * t.comedy) +
@@ -517,13 +537,29 @@ export function score(card: ActionCardData, prefs: Preferences, ctx?: UserContex
   // to be strong enough to push a clearly-wrong card below the 30 % score
   // floor used by `rankCards` while still letting partial overshoots survive
   // when other dimensions match strongly.
-  const tonePenalty = 3 * (
+  const tonePenaltyOver = 3 * (
     Math.max(0, t.anger      - prefs.tone.anger)      +
     Math.max(0, t.comedy     - prefs.tone.comedy)     +
     Math.max(0, t.subversion - prefs.tone.subversion) +
     Math.max(0, t.hope       - prefs.tone.hope)       +
     Math.max(0, t.energy     - prefs.tone.energy)
   );
+  // Symmetric UNDERSHOOT penalty — penalises cards that are COLDER than the
+  // user asked for. Without this, the user can crank "Humor: Full mockery"
+  // and still get serious petitions because the petition's hope/anger score
+  // adds up to a passable toneScore even with comedy=0. We forgive a gap of
+  // 1 (so a "Mild" card still surfaces when the user asks for "Bold") and
+  // only penalise from gap=2 onward. Same weight as overshoot (3) so the
+  // matcher feels symmetric — moving any slider in either direction has the
+  // same magnitude of effect on which cards bubble up.
+  const tonePenaltyUnder = 3 * (
+    Math.max(0, prefs.tone.anger      - 1 - t.anger)      +
+    Math.max(0, prefs.tone.comedy     - 1 - t.comedy)     +
+    Math.max(0, prefs.tone.subversion - 1 - t.subversion) +
+    Math.max(0, prefs.tone.hope       - 1 - t.hope)       +
+    Math.max(0, prefs.tone.energy     - 1 - t.energy)
+  );
+  const tonePenalty = tonePenaltyOver + tonePenaltyUnder;
 
   // Time match: distance between card's bucket minutes and user's pick.
   // Smaller distance = bigger bonus. Capped.
