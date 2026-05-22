@@ -1509,6 +1509,268 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       console.log(`Petitions 10-min migration: updated ${updated} cards.`);
     }
 
+    // ── Self-heal user-action:ids ──────────────────────────────────────────────
+    // Scans every `user-action:*` KV record and ensures its id is in
+    // `user-action:ids`. Recovers from prior races where multiple instances
+    // running migrations in parallel did read-modify-write on the index and
+    // dropped entries via last-write-wins. Idempotent (set union).
+    const healUserActionIdsDone = await kv.get("migration:heal-user-action-ids:v1");
+    if (!healUserActionIdsDone) {
+      const currentIds = ((await kv.get("user-action:ids")) ?? []) as number[];
+      const idSet = new Set<number>(currentIds);
+      let restored = 0;
+      for (const c of (await kv.getByPrefix("user-action:")) as any[]) {
+        if (!c || typeof c !== "object" || typeof c.id !== "number") continue;
+        if (idSet.has(c.id)) continue;
+        idSet.add(c.id);
+        currentIds.push(c.id);
+        restored++;
+      }
+      if (restored > 0) {
+        currentIds.sort((a, b) => a - b);
+        await kv.set("user-action:ids", currentIds);
+      }
+      await kv.set("migration:heal-user-action-ids:v1", true);
+      console.log(`Heal user-action:ids: restored ${restored} orphaned card refs.`);
+    }
+
+    // Restore Tom Morello — overwritten at id 2132 by batch-2 migration when
+    // it read a stale (already-corrupted) user-action:ids and computed
+    // base = 2131. Re-create at the next free id.
+    const restoreTomMorelloDone = await kv.get("migration:restore-tom-morello:v1");
+    if (!restoreTomMorelloDone) {
+      const currentIds = ((await kv.get("user-action:ids")) ?? []) as number[];
+      const nextId = Math.max(...currentIds, 1305) + 1;
+      const card: any = {
+        id: nextId,
+        category: "SPREAD POSITIVITY",
+        categoryColor: "#d97706",
+        actionType: "Online",
+        isOnline: true,
+        timeCommitment: "5–10 minutes",
+        title: `Reshare Tom Morello's "This Land is Your Land" at Hands Off NYC anti-ICE protest`,
+        description: `Tom Morello covered Woody Guthrie's "This Land is Your Land" at a Hands Off NYC protest against Trump-era ICE abuses targeting immigrant New Yorkers — share the clip as a singalong for your own local action.`,
+        spotsTotal: "Unlimited",
+        boosts: 0,
+        authorName: "Consequence / Tom Morello",
+        authorRole: "TikTok creator",
+        authorLink: "https://www.tiktok.com/@consequence",
+        targetUrl: "https://www.tiktok.com/@consequence",
+        toneOverride: { anger: 2, comedy: 0, subversion: 2, hope: 3, energy: 3 },
+        adminApproved: true,
+        createdAt: new Date().toISOString(),
+      };
+      await kv.set(`user-action:${nextId}`, card);
+      await kv.set("user-action:ids", [...currentIds, nextId]);
+      await kv.set("migration:restore-tom-morello:v1", true);
+      console.log(`Restored Tom Morello card at new id ${nextId}.`);
+    }
+
+    // One-time (batch 2): 15 more creator-shop / regional-brigade / parody-song
+    // imports. 6 images auto-fetched (3 Bluesky brigade banners + 3 YouTube
+    // thumbnails); the 7 Etsy + 2 TikTok cards land image-less and need images
+    // attached via Admin → Edit.
+    const creatorsBatch2Done = await kv.get("migration:creators-import-2026-05-batch2:v1");
+    if (!creatorsBatch2Done) {
+      type NewCard2 = {
+        category: string;
+        categoryColor: string;
+        title: string;
+        description: string;
+        authorName: string;
+        authorRole: string;
+        authorLink: string;
+        targetUrl: string;
+        toneOverride: { anger: number; comedy: number; subversion: number; hope: number; energy: number };
+        sourceImageUrl?: string;
+        // In-person fields — only set for the 3 banner brigades.
+        location?: string;
+        isOnline?: boolean;
+        actionType?: string;
+      };
+      const incoming2: NewCard2[] = [
+        // ── Etsy (7) — image-less; auto-blocked by Etsy 429 ──
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Pin the "Cuts May Be Necessary" French Revolution Guillotine Anti-Trump Button`,
+          description: `A 1.25" guillotine pinback button captioned "Cuts May Be Necessary" — Eat-the-Rich Reign-of-Terror cosplay aimed straight at Trump's oligarch class. Wear it to rallies for maximum scowl-from-MAGA-uncles.`,
+          authorName: "CherryRevolutionary", authorRole: "Etsy shop",
+          authorLink: "https://www.etsy.com/shop/CherryRevolutionary",
+          targetUrl: "https://www.etsy.com/listing/4324513102/french-revolution-guillotine-pin-button",
+          toneOverride: { anger: 2, comedy: 2, subversion: 3, hope: 1, energy: 2 } },
+        { category: "ART PIECE", categoryColor: "#896312",
+          title: `Wave the "NOPE to Fascism" Big-Face Trump Cutout Protest Sign`,
+          description: `A pre-printed jumbo Trump-face cutout on a stick captioned "NOPE TO FASCISM." Holds itself above the crowd at any anti-Trump rally — instant photo-op gold and zero arts-and-crafts night required.`,
+          authorName: "CaliSunshineInk", authorRole: "Etsy shop",
+          authorLink: "https://www.etsy.com/shop/CaliSunshineInk",
+          targetUrl: "https://www.etsy.com/listing/1886630209/anti-trump-protest-sign-nope-to-fascism",
+          toneOverride: { anger: 2, comedy: 3, subversion: 2, hope: 1, energy: 3 } },
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Pin the "Resist Bear — Only You Can Prevent Fascism Park" Smokey Pin`,
+          description: `Smokey Bear gets a glow-up: this pin/magnet swaps "Forest Fires" for "Fascism Park," with Smokey holding a RESIST shovel. Quiet-but-direct lapel flair against the Trump regime for backpacks, jackets, and tote bags.`,
+          authorName: "FracturedLullabies", authorRole: "Etsy shop",
+          authorLink: "https://www.etsy.com/shop/FracturedLullabies",
+          targetUrl: "https://www.etsy.com/listing/4399942126/resist-bear-button-protest-pin-magnet",
+          toneOverride: { anger: 1, comedy: 3, subversion: 2, hope: 2, energy: 2 } },
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Wear the Latin "Praeses Noster Stultus Est" Subtle Anti-Trump Tee`,
+          description: `A Roman-eagle classical satire shirt that reads "Praeses Noster Stultus Est" — Latin for "Our President Is Stupid." Office-safe until anyone Googles it; then it's a brutal Trump-is-an-idiot tee.`,
+          authorName: "CageyDesignsShop", authorRole: "Etsy shop",
+          authorLink: "https://www.etsy.com/shop/CageyDesignsShop",
+          targetUrl: "https://www.etsy.com/listing/1882733793/latin-subtle-anti-trump-shirt-trump-is",
+          toneOverride: { anger: 1, comedy: 3, subversion: 3, hope: 1, energy: 2 } },
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Plant the "Sorry for Being Weird Through Our First Dictatorship" Yard Sign`,
+          description: `Apologetic lawn sign with metal H-stake reading "Sorry For Being Weird Through Our First Dictatorship" — passive-aggressive welcome to your MAGA neighbors and a daily Trump-era reminder for the cul-de-sac.`,
+          authorName: "MojoSticker", authorRole: "Etsy shop",
+          authorLink: "https://www.etsy.com/shop/MojoSticker",
+          targetUrl: "https://www.etsy.com/listing/4372513055/sorry-being-weird-first-dictatorship",
+          toneOverride: { anger: 1, comedy: 3, subversion: 2, hope: 1, energy: 2 } },
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Slap the "Leopards Eating People's Faces Party" Anti-Trump Bumper Sticker`,
+          description: `The Twitter meme made physical — show every Trump-voter-regret driver behind you the slogan that named them. "Leopards Ate My Face" lore on the freeway, sized for car/laptop/dumpster.`,
+          authorName: "SpatulaCityShirts", authorRole: "Etsy shop",
+          authorLink: "https://www.etsy.com/shop/SpatulaCityShirts",
+          targetUrl: "https://www.etsy.com/listing/1822104455/i-support-the-leopards-eating-peoples",
+          toneOverride: { anger: 1, comedy: 3, subversion: 3, hope: 0, energy: 2 } },
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Hang the "Things I Trust More Than Donald Trump" Outdoor Banner`,
+          description: `A hemmed, grommeted, weatherproof full-size protest banner listing (the very long list of) things more trustworthy than Trump. Built to drop over highways, hang at rallies, or hoist above your fence.`,
+          authorName: "PrintingUSA", authorRole: "Etsy shop",
+          authorLink: "https://www.etsy.com/shop/PrintingUSA",
+          targetUrl: "https://www.etsy.com/listing/1765811950/things-i-trust-more-than-donald-trump",
+          toneOverride: { anger: 1, comedy: 3, subversion: 2, hope: 1, energy: 3 } },
+
+        // ── Bluesky banner brigades (3) — regional / in-person ──
+        { category: "FLASH MOB", categoryColor: "#ff00d5",
+          title: `Join the Indivisible Memphis Banner Brigade — Weekly Anti-Trump Highway Visibility Drops`,
+          description: `Indivisible Memphis Banner Brigade meets on the Shady Grove Rd. overpass above I-240 (parking on Ransom Lane) for No Kings / anti-Trump banner drops over rush-hour commuters. Bring a sign — your presence is your power.`,
+          authorName: "Indivisible Memphis Banner Brigade", authorRole: "Volunteer brigade",
+          authorLink: "https://bsky.app/profile/indivisiblememphis.bsky.social",
+          targetUrl: "https://bsky.app/profile/indivisiblememphis.bsky.social",
+          toneOverride: { anger: 2, comedy: 1, subversion: 2, hope: 3, energy: 3 },
+          sourceImageUrl: "https://cdn.bsky.app/img/banner/plain/did:plc:iiuocx5en26ntjbkmnoqhxpm/bafkreidruinb5m2sdonj7btamou6nkfq24rwrjpoyvkpaorpssjxlnzboa",
+          location: "Tennessee", isOnline: false, actionType: "In Person Group" },
+        { category: "FLASH MOB", categoryColor: "#ff00d5",
+          title: `Volunteer with the Hartford Visibility Brigade (CT 50501) — Banner-Drop Brigade`,
+          description: `Hartford-area CT 50501 volunteers run weekly banner-drop ops with No War / Release the Files / ICE OUT / Trump Must Go boards. Email HartfordVB@proton.me to get the schedule — more volunteers means longer messages over more bridges.`,
+          authorName: "CT 50501 Hartford Visibility Brigade", authorRole: "Volunteer brigade",
+          authorLink: "https://bsky.app/profile/byrneout44.bsky.social",
+          targetUrl: "https://bsky.app/profile/byrneout44.bsky.social",
+          toneOverride: { anger: 2, comedy: 1, subversion: 2, hope: 3, energy: 3 },
+          sourceImageUrl: "https://cdn.bsky.app/img/banner/plain/did:plc:5yxegpvvhahv5bai3lx7fkon/bafkreicqgdqhnqjhwcneha5uxh7zfkniw2yfvyu6uzlevvom4nksxp5zwm",
+          location: "Connecticut", isOnline: false, actionType: "In Person Group" },
+        { category: "FLASH MOB", categoryColor: "#ff00d5",
+          title: `Join the SoCal #BridgeBrigade #8647 Banner-Drop Crew (Alhambra, Greater LA)`,
+          description: `Greater-LA banner-drop network organizing recurring "86 47" Trump-themed overpass actions in and around Alhambra. Follow @victormswmsg for the next bridge call — bring fabric paint, zip ties, and a friend with a camera.`,
+          authorName: "SoCal Bridge Brigade", authorRole: "Volunteer brigade",
+          authorLink: "https://bsky.app/profile/victormswmsg.bsky.social",
+          targetUrl: "https://bsky.app/profile/victormswmsg.bsky.social",
+          toneOverride: { anger: 2, comedy: 2, subversion: 2, hope: 2, energy: 3 },
+          sourceImageUrl: "https://cdn.bsky.app/img/banner/plain/did:plc:co3do5kd5o4veaw46x3dnuno/bafkreieek2rig6gazr2qlkoiro7yvwswxwyvi5m6bxpyz5uxycmthcs35u",
+          location: "California", isOnline: false, actionType: "In Person Group" },
+
+        // ── YouTube parody songs (3) — og:image thumbnail available ──
+        { category: "SPREAD POSITIVITY", categoryColor: "#d97706",
+          title: `Boost the Marsh Family's "Bohemian Trumpsody" — Anti-Trump Queen Parody`,
+          description: `The viral British family that recut Les Mis in lockdown is back, this time turning "Bohemian Rhapsody" into a full-throated anti-Trump anthem. Share with the MAGA uncle who blocks every news article — he'll watch a Queen parody.`,
+          authorName: "Marsh Family", authorRole: "Independent creator",
+          authorLink: "https://www.youtube.com/watch?v=YY_8WzcHqMQ",
+          targetUrl: "https://www.youtube.com/watch?v=YY_8WzcHqMQ",
+          toneOverride: { anger: 1, comedy: 3, subversion: 2, hope: 2, energy: 3 },
+          sourceImageUrl: "https://i.ytimg.com/vi/YY_8WzcHqMQ/maxresdefault.jpg" },
+        { category: "SPREAD POSITIVITY", categoryColor: "#d97706",
+          title: `Share Parody Project's "Springtime for Elon" — Mel Brooks-Style Musk Salute Takedown`,
+          description: `A pitch-perfect "Springtime for Hitler" rewrite about Elon's inauguration arm-salute and the Trump-Musk era. Mel Brooks energy aimed at DOGE — send to anyone still pretending the salute meant nothing.`,
+          authorName: "Parody Project (Don Caron / Patrick Fitzgerald)", authorRole: "Independent creator",
+          authorLink: "https://www.youtube.com/watch?v=OvfIneIoAWw",
+          targetUrl: "https://www.youtube.com/watch?v=OvfIneIoAWw",
+          toneOverride: { anger: 1, comedy: 3, subversion: 3, hope: 1, energy: 3 },
+          sourceImageUrl: "https://i.ytimg.com/vi/OvfIneIoAWw/maxresdefault.jpg" },
+        { category: "SPREAD POSITIVITY", categoryColor: "#d97706",
+          title: `Share "Take Me Home, Epstein Files" — John Denver Country-Roads Trump Parody`,
+          description: `Patrick Fitzgerald's wistful Country-Roads recut about the Epstein Files Trump refuses to release. Less screaming, more wholesome Appalachian guilt — engineered to stick in MAGA brains for days.`,
+          authorName: "Patrick Fitzgerald (Parody Project)", authorRole: "Independent creator",
+          authorLink: "https://youtu.be/i9us52Edntw",
+          targetUrl: "https://youtu.be/i9us52Edntw",
+          toneOverride: { anger: 2, comedy: 3, subversion: 3, hope: 1, energy: 2 },
+          sourceImageUrl: "https://i.ytimg.com/vi/i9us52Edntw/maxresdefault.jpg" },
+
+        // ── TikTok creators (2) — image-less; JS-rendered ──
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Follow @justtryingtohackett on TikTok — Resistance Craftivism Community`,
+          description: `TikTok's most active anti-Trump craftivism account: she runs book-club picks, raffles tied to community-org donations, and weekly "John Lewis necessary trouble" stitching prompts for the resistance.`,
+          authorName: "Just Trying to Hackett (Independent)", authorRole: "TikTok creator",
+          authorLink: "https://www.tiktok.com/@justtryingtohackett",
+          targetUrl: "https://www.tiktok.com/@justtryingtohackett",
+          toneOverride: { anger: 1, comedy: 2, subversion: 2, hope: 3, energy: 2 } },
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Take Action with Spellbound Stitchery's Donate-to-Enter Craftivism Raffles`,
+          description: `Cross-stitch and needlepoint creator running raffles where entries are earned via donations to anti-Trump and immigrant-defense community orgs. Slow stitches, fast subversion — and your money goes to the front lines.`,
+          authorName: "Spellbound Stitchery (Independent)", authorRole: "TikTok creator",
+          authorLink: "https://www.tiktok.com/@spellboundstitchery",
+          targetUrl: "https://www.tiktok.com/@spellboundstitchery",
+          toneOverride: { anger: 0, comedy: 1, subversion: 2, hope: 3, energy: 1 } },
+      ];
+
+      async function importImage2(srcUrl: string): Promise<string> {
+        try {
+          const res = await fetch(srcUrl, { headers: { "User-Agent": "Mozilla/5.0 ResistActMigration" } });
+          if (!res.ok) { console.log(`Image fetch ${res.status} for ${srcUrl}`); return srcUrl; }
+          const contentType = res.headers.get("content-type") ?? "image/jpeg";
+          const buf = await res.arrayBuffer();
+          const ext = contentType.includes("png") ? "png" : contentType.includes("webp") ? "webp" : contentType.includes("gif") ? "gif" : "jpg";
+          const key = `creators-batch2-${crypto.randomUUID()}.${ext}`;
+          const supabase = adminClient();
+          const BUCKET = "action-images";
+          const { error: upErr } = await supabase.storage.from(BUCKET).upload(key, buf, { contentType, upsert: false });
+          if (upErr) { console.log(`Image upload failed for ${srcUrl}:`, upErr.message); return srcUrl; }
+          const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(key);
+          return urlData.publicUrl;
+        } catch (err) {
+          console.log(`Image error for ${srcUrl}:`, err);
+          return srcUrl;
+        }
+      }
+
+      const currentIds2 = ((await kv.get("user-action:ids")) ?? []) as number[];
+      const base2 = Math.max(...(currentIds2.length ? currentIds2 : [1305]), 1305);
+      const now2 = new Date().toISOString();
+      const newIds2 = [...currentIds2];
+      let added2 = 0;
+      for (let i = 0; i < incoming2.length; i++) {
+        const c = incoming2[i];
+        const id = base2 + 1 + i;
+        const topImageUrl = c.sourceImageUrl ? await importImage2(c.sourceImageUrl) : undefined;
+        const card: any = {
+          id,
+          category: c.category,
+          categoryColor: c.categoryColor,
+          actionType: c.actionType ?? "Online",
+          isOnline: c.isOnline ?? true,
+          timeCommitment: "5–10 minutes",
+          title: c.title,
+          description: c.description,
+          spotsTotal: "Unlimited",
+          boosts: 0,
+          authorName: c.authorName,
+          authorRole: c.authorRole,
+          authorLink: c.authorLink,
+          targetUrl: c.targetUrl,
+          ...(c.location ? { location: c.location } : {}),
+          ...(topImageUrl ? { topImageUrl } : {}),
+          toneOverride: c.toneOverride,
+          adminApproved: true,
+          createdAt: now2,
+        };
+        await kv.set(`user-action:${id}`, card);
+        newIds2.push(id);
+        added2++;
+      }
+      await kv.set("user-action:ids", newIds2);
+      await kv.set("migration:creators-import-2026-05-batch2:v1", true);
+      console.log(`Creators batch 2 import: added ${added2} cards (ids ${base2 + 1}..${base2 + added2}).`);
+    }
+
     // One-time: import 16 Etsy/Bluesky/TikTok creator-shop cards. 4 have
     // source images we can fetch (Bluesky public API + CrimethInc CDN); the
     // other 12 land without a header image (Etsy 429s scrapers, TikTok needs
