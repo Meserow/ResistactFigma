@@ -105,20 +105,34 @@ export function initAnalytics(): void {
   }
   (window as any).gtag = gtag;
 
+  // Set explicit consent FIRST. Without an explicit consent grant, GA4's
+  // Consent Mode v2 defaults `analytics_storage` to 'denied' for users in
+  // some regions (EEA/UK) and may silently suppress all /collect calls.
+  // We grant analytics_storage and deny everything ad-related — matches our
+  // earlier privacy posture (no ad personalization, no Google Signals).
+  // The previous code passed `storage: "granted"` to gtag('config', ...)
+  // which is NOT a valid GA4 config parameter and was being ignored —
+  // GA4 read consent as denied by default and dropped every event.
+  gtag("consent", "default", {
+    analytics_storage: "granted",
+    ad_storage: "denied",
+    ad_user_data: "denied",
+    ad_personalization: "denied",
+  });
+
   gtag("js", new Date());
   gtag("config", MEASUREMENT_ID, {
-    // Truncate IP before storage.
-    anonymize_ip: true,
     // Don't merge with Google's ad-network identity graph.
     allow_google_signals: false,
     allow_ad_personalization_signals: false,
-    // Default consent posture — analytics only, no ad storage.
-    // (See gtag consent docs if you later add a banner.)
-    storage: "granted",
+    // (Removed `anonymize_ip: true` — that was a Universal Analytics
+    // parameter; GA4 anonymises IPs by default and the legacy flag does
+    // nothing here. Removed `storage: "granted"` — not a valid GA4 config
+    // key. Consent is set above via the proper `gtag('consent', …)` call.)
   });
 
   // eslint-disable-next-line no-console
-  console.info("[analytics] Initial js + config events queued", {
+  console.info("[analytics] Initial consent + js + config events queued", {
     dataLayerLength: (window as any).dataLayer.length,
   });
 }
