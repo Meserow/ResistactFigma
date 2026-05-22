@@ -16,6 +16,74 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.1.35",
+    date: "2026-05-22",
+    title: "Images wired for 8 new action cards",
+    sections: [
+      {
+        heading: "Action Cards",
+        items: [
+          "Added header images to 8 recently-added cards: Feline & Floss (#FuckICE pattern), Carlyn Yandle (Trumpiñata), BAD Stitch (Bluesky), The Morning Crafter, mockpolitrick (TikTok), Nikola Protests Tesla, and the two Songs for Liberation / TACO Meme TikTok cards (which use the TikTok logo as a placeholder).",
+          "9 Etsy-sourced cards still need images — they're in the Incomplete tab of the admin panel waiting for manual upload.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.1.34",
+    date: "2026-05-22",
+    title: "New Smack — The Supreme Court",
+    sections: [
+      {
+        heading: "New Smacks",
+        items: [
+          "Added \"Rules for You. Power for Them.\" — breaks down all six conservative justices: luxury gifts, partisan flags, rolled-back rights, and a supermajority locked in for a generation.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.1.33",
+    date: "2026-05-22",
+    title: "Smacks get better titles (and two stubborn ones removed)",
+    sections: [
+      {
+        heading: "Smacks",
+        items: [
+          "All 26 Smack titles rewritten to actually describe what's in the image — funny, sharp, and shareable.",
+          "Removed the ResistAct logo and Richer chart smacks permanently so they stop coming back after being deleted.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.1.32",
+    date: "2026-05-22",
+    title: "Smacks load faster — all images now WebP",
+    sections: [
+      {
+        heading: "Performance",
+        items: [
+          "All 28 Smack images now served as WebP instead of PNG/JPG. WebP is typically 25–35% smaller at the same quality, so the Smacks page loads noticeably faster, especially on mobile.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.1.31",
+    date: "2026-05-22",
+    title: "2 new Smacks — RFK Jr. & Trump's reflecting pool",
+    sections: [
+      {
+        heading: "New Smacks",
+        items: [
+          "Added \"America's Health? Stripped, Confused & Rockin'\" — RFK Jr.'s qualifications laid bare: no medical degree, anti-vax activist, raw milk devotee, conspiracy promoter. Share it.",
+          "Added \"Painting History\" — Trump spent $13 million in taxpayer money painting the Reflecting Pool with non-waterproof paint while the actual plumbing problem remains. Share it.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.1.29",
     date: "2026-05-22",
     title: "Google Analytics fix",
