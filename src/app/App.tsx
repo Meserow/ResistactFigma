@@ -1632,12 +1632,12 @@ export default function App() {
                         UI element rather than a row of disparate emoji. */}
                     <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[10px] text-gray-600 font-['Poppins',sans-serif]">
                       {timeLabel && (
-                        <button onClick={() => { setMatchInitialStep(0); setMatchOpen(true); }} className="inline-flex items-center gap-0.5 rounded-full bg-white/70 border border-gray-200 px-1.5 py-0.5 hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
+                        <button onClick={() => { setMatchInitialStep(0); setMatchOpen(true); }} className="inline-flex items-center gap-0.5 rounded-full bg-white/70 border border-gray-200 px-1.5 py-0.5 text-[10px] leading-tight hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
                           <Clock size={10} className="text-[#23297e] shrink-0" strokeWidth={2} />
                           {timeLabel}
                         </button>
                       )}
-                      <button onClick={() => { setMatchInitialStep(0); setMatchOpen(true); }} className="inline-flex items-center gap-0.5 rounded-full bg-white/70 border border-gray-200 px-1.5 py-0.5 hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
+                      <button onClick={() => { setMatchInitialStep(0); setMatchOpen(true); }} className="inline-flex items-center gap-0.5 rounded-full bg-white/70 border border-gray-200 px-1.5 py-0.5 text-[10px] leading-tight hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
                         <Globe size={10} className="text-[#23297e] shrink-0" strokeWidth={2} />
                         {settingLabel}
                       </button>
@@ -1647,7 +1647,7 @@ export default function App() {
                           <button
                             key={c.label}
                             onClick={() => { setMatchInitialStep(0); setMatchOpen(true); }}
-                            className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 border transition-colors ${
+                            className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] leading-tight border transition-colors ${
                               c.isDefault
                                 ? "bg-gray-50 border-gray-100 text-gray-400 hover:border-[#ed6624] hover:bg-[#ed6624]/5"
                                 : "bg-[#ed6624]/10 border-[#ed6624]/30 text-[#23297e] font-semibold hover:border-[#ed6624] hover:bg-[#ed6624]/20"
@@ -1660,19 +1660,19 @@ export default function App() {
                         );
                       })}
                       {matchPrefs.state && (
-                        <button onClick={() => { setMatchInitialStep(0); setMatchOpen(true); }} className="inline-flex items-center gap-0.5 rounded-full bg-white/70 border border-gray-200 px-1.5 py-0.5 hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
+                        <button onClick={() => { setMatchInitialStep(0); setMatchOpen(true); }} className="inline-flex items-center gap-0.5 rounded-full bg-white/70 border border-gray-200 px-1.5 py-0.5 text-[10px] leading-tight hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
                           <MapPin size={10} className="text-[#23297e] shrink-0" strokeWidth={2} />
                           {matchPrefs.state}
                         </button>
                       )}
                       {groupCount > 0 && (
-                        <button onClick={() => { setMatchInitialStep(1); setMatchOpen(true); }} className="inline-flex items-center gap-0.5 rounded-full bg-white/70 border border-gray-200 px-1.5 py-0.5 hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
+                        <button onClick={() => { setMatchInitialStep(1); setMatchOpen(true); }} className="inline-flex items-center gap-0.5 rounded-full bg-white/70 border border-gray-200 px-1.5 py-0.5 text-[10px] leading-tight hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
                           <Users size={10} className="text-[#23297e] shrink-0" strokeWidth={2} />
                           Amplifies {groupCount} {groupCount === 1 ? "group" : "groups"}
                         </button>
                       )}
                       {matchPrefs.focusDonations && (
-                        <button onClick={() => { setMatchInitialStep(1); setMatchOpen(true); }} className="inline-flex items-center gap-0.5 rounded-full bg-white/70 border border-gray-200 px-1.5 py-0.5 hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
+                        <button onClick={() => { setMatchInitialStep(1); setMatchOpen(true); }} className="inline-flex items-center gap-0.5 rounded-full bg-white/70 border border-gray-200 px-1.5 py-0.5 text-[10px] leading-tight hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
                           <DollarSign size={10} className="text-[#23297e] shrink-0" strokeWidth={2} />
                           Donation focus
                         </button>
@@ -1685,7 +1685,7 @@ export default function App() {
                       {(matchPrefs.excludedCategories?.length ?? 0) > 0 && (
                         <button
                           onClick={() => { setMatchInitialStep(0); setMatchOpen(true); }}
-                          className="inline-flex items-center gap-0.5 rounded-full bg-white/70 border border-gray-200 px-1.5 py-0.5 hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors"
+                          className="inline-flex items-center gap-0.5 rounded-full bg-white/70 border border-gray-200 px-1.5 py-0.5 text-[10px] leading-tight hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors"
                           title={`Hidden: ${(matchPrefs.excludedCategories ?? []).join(", ")}`}
                         >
                           <EyeOff size={10} className="text-[#23297e] shrink-0" strokeWidth={2} />

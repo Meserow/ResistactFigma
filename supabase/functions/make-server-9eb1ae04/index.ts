@@ -1932,6 +1932,44 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       console.log(`Creators batch 2 import: added ${placed2.length} cards (ids ${placed2.join(", ")}).`);
     }
 
+    // Fix search-style targetUrls on 4 regional event cards. Originally
+    // imported with mobilize.us search-results URLs (effectively useless as
+    // an action link); update to each org's actual Mobilize organizer page.
+    const fixRegionalUrlsDone = await kv.get("migration:fix-regional-search-urls:v1");
+    if (!fixRegionalUrlsDone) {
+      const updates: Record<number, string> = {
+        2150: "https://www.mobilize.us/commoncause/",
+        2151: "https://www.mobilize.us/swindivisibleresistance/",
+        2152: "https://www.mobilize.us/southsnohomishcountyindivisible/",
+        2156: "https://www.mobilize.us/indivisibleyolo/",
+      };
+      let updated = 0;
+      for (const [idStr, url] of Object.entries(updates)) {
+        const id = Number(idStr);
+        const existing = await kv.get(`user-action:${id}`) as any;
+        if (existing && typeof existing === "object") {
+          await kv.set(`user-action:${id}`, { ...existing, targetUrl: url, authorLink: url });
+          updated++;
+        }
+      }
+      await kv.set("migration:fix-regional-search-urls:v1", true);
+      console.log(`Fixed regional search URLs: updated ${updated} cards.`);
+    }
+
+    // Fix Yarn Sisters card (2130) — Facebook search URL replaced with the
+    // Guardian's craft topic page (where the "Weapons of Mass Construction"
+    // craftivism feature lives).
+    const fixYarnSistersDone = await kv.get("migration:fix-yarn-sisters-url:v1");
+    if (!fixYarnSistersDone) {
+      const url = "https://www.theguardian.com/lifeandstyle/craft";
+      const existing = await kv.get("user-action:2130") as any;
+      if (existing && typeof existing === "object") {
+        await kv.set("user-action:2130", { ...existing, targetUrl: url, authorLink: url });
+      }
+      await kv.set("migration:fix-yarn-sisters-url:v1", true);
+      console.log(`Fixed Yarn Sisters URL on card 2130.`);
+    }
+
     // Dedup the portland-seattle-yolo race: ids 2153/2154/2155 are duplicates
     // of 2150/2151/2152 (Knit/STARVE/Singing) — two function instances both
     // ran the import before either set the gate. Delete the higher ids.

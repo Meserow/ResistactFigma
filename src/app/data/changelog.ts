@@ -16,6 +16,19 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.1.42",
+    date: "2026-05-22",
+    title: "Match-me banner chips are now actually small",
+    sections: [
+      {
+        heading: "Match Me",
+        items: [
+          "The preference chips under the 'Matched for you' banner (5-10 min, Confrontational: Low, Humor: None, etc.) were rendering at ~13px instead of the intended 10px because browsers don't inherit font-size into <button> elements by default — the parent container's text-[10px] was being silently overridden. Set the font size explicitly on each chip so they read at the size they were supposed to all along.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.1.41",
     date: "2026-05-22",
     title: "Retired past-dated event and petition cards",
