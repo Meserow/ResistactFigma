@@ -190,6 +190,97 @@ async function seedEllenUser() {
   }
 }
 
+// ─── User-action card insertion safety contract ─────────────────────────────
+// Edge function instances can run migrations concurrently during deploy or
+// cold-start. The `user-action:ids` index is a JSON array maintained by
+// read-modify-write — naive code (read currentIds, push, write back) is
+// last-write-wins, which has previously dropped or duplicated cards (see
+// migrations dedup-restore-race:v1, restore-tom-morello:v1,
+// restore-lost-batch1:v1, heal-user-action-ids:v1 for the forensic trail).
+//
+// Any migration that adds new user-action cards MUST go through
+// appendUserActionCards(). The /actions handler also runs an unconditional
+// heal once per warm process (see healUserActionIdsRunInProcess) as a
+// final safety net, but the helper itself makes per-card writes race-safe:
+//
+//   1. Idempotent on re-run — if a card with the same id+title already
+//      exists, it's skipped (and just re-indexed if missing from the list).
+//   2. Collision-bumping — if a card with the same id but a different
+//      title already exists (another instance got there first using the
+//      same base+i id allocator), the helper picks the next free id
+//      instead of overwriting.
+//   3. Per-card index commit — re-reading and writing user-action:ids
+//      after each card narrows the race window from "whole migration" to
+//      a single card, so a concurrent migration in another instance can
+//      shadow at most one id, not the entire batch.
+//   4. Post-loop reconciliation — one final re-read and set-union with
+//      everything we wrote, catching any concurrent writes that landed
+//      during the loop.
+//
+// The function mutates each input card's `id` field in place when bumped.
+async function appendUserActionCards(newCards: any[]): Promise<number[]> {
+  const writtenIds: number[] = [];
+  let liveIds = ((await kv.get("user-action:ids")) ?? []) as number[];
+  let liveSet = new Set<number>(liveIds);
+
+  for (const card of newCards) {
+    let targetId = card.id;
+    const existing: any = await kv.get(`user-action:${targetId}`);
+
+    if (existing && typeof existing === "object" && !Array.isArray(existing)) {
+      if (existing.title === card.title) {
+        if (!liveSet.has(targetId)) {
+          liveIds = [...liveIds, targetId];
+          liveSet.add(targetId);
+          await kv.set("user-action:ids", liveIds);
+        }
+        writtenIds.push(targetId);
+        continue;
+      }
+      let nextId = Math.max(...(liveIds.length ? liveIds : [targetId]), targetId) + 1;
+      while (liveSet.has(nextId) || (await kv.get(`user-action:${nextId}`))) {
+        nextId++;
+      }
+      targetId = nextId;
+      card.id = nextId;
+    }
+
+    await kv.set(`user-action:${targetId}`, card);
+
+    const current = ((await kv.get("user-action:ids")) ?? []) as number[];
+    if (!current.includes(targetId)) {
+      const merged = [...current, targetId];
+      await kv.set("user-action:ids", merged);
+      liveIds = merged;
+      liveSet = new Set(merged);
+    } else {
+      liveIds = current;
+      liveSet = new Set(current);
+    }
+    writtenIds.push(targetId);
+  }
+
+  const final = ((await kv.get("user-action:ids")) ?? []) as number[];
+  const finalSet = new Set(final);
+  let changed = false;
+  for (const id of writtenIds) {
+    if (!finalSet.has(id)) {
+      finalSet.add(id);
+      final.push(id);
+      changed = true;
+    }
+  }
+  if (changed) await kv.set("user-action:ids", final);
+
+  return writtenIds;
+}
+
+// Module-level flag: once per warm process, the /actions handler walks
+// every user-action:* record and reconciles user-action:ids. Cold-starts
+// align with deploys (the race window for migrations), so this catches
+// any drift introduced by the previous deploy.
+let healUserActionIdsRunInProcess = false;
+
 // ─── Seed data ────────────────────────────────────────────────────────────────
 const SEED_CARDS = [
   { id: 1, isFeatured: true, pinToTop: true, category: "BOOST", categoryColor: "#8a00e6", actionType: "Online", timeCommitment: "Ongoing", title: "Spread the Word about ResistAct", description: "The immigrant and refugee community has received direct threats about deportations and immigration raids. Our community needs your help spreading awareness about ResistAct so we can build a stronger resistance network together.", boosts: 950, spotsTotal: "Unlimited", authorName: "Ellen Meserow", authorRole: "ResistAct Founder", authorAvatarKey: "imgImage34" },
@@ -1516,11 +1607,11 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
 
     // ── Self-heal user-action:ids ──────────────────────────────────────────────
     // Scans every `user-action:*` KV record and ensures its id is in
-    // `user-action:ids`. Recovers from prior races where multiple instances
-    // running migrations in parallel did read-modify-write on the index and
-    // dropped entries via last-write-wins. Idempotent (set union).
-    const healUserActionIdsDone = await kv.get("migration:heal-user-action-ids:v1");
-    if (!healUserActionIdsDone) {
+    // `user-action:ids`. Runs once per warm process (not once globally) —
+    // cold-starts coincide with deploys, which is the race window for the
+    // migration block below, so this catches any drift the previous
+    // deploy's migrations may have introduced. Idempotent (set union).
+    if (!healUserActionIdsRunInProcess) {
       const currentIds = ((await kv.get("user-action:ids")) ?? []) as number[];
       const idSet = new Set<number>(currentIds);
       let restored = 0;
@@ -1535,8 +1626,10 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
         currentIds.sort((a, b) => a - b);
         await kv.set("user-action:ids", currentIds);
       }
-      await kv.set("migration:heal-user-action-ids:v1", true);
-      console.log(`Heal user-action:ids: restored ${restored} orphaned card refs.`);
+      healUserActionIdsRunInProcess = true;
+      if (restored > 0) {
+        console.log(`Heal user-action:ids: restored ${restored} orphaned card refs.`);
+      }
     }
 
     // Dedup the restore-lost-batch1 race: two function instances both ran the
@@ -1563,7 +1656,6 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     const restoreLostBatch1Done = await kv.get("migration:restore-lost-batch1:v1");
     if (!restoreLostBatch1Done) {
       const baseIds = ((await kv.get("user-action:ids")) ?? []) as number[];
-      const idSet = new Set<number>(baseIds);
       const startId = Math.max(...baseIds, 1305) + 1;
       const now = new Date().toISOString();
       const lost = [
@@ -1586,39 +1678,28 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           toneOverride: { anger: 1, comedy: 2, subversion: 2, hope: 3, energy: 2 },
         },
       ];
-      let placed = 0;
-      let nextId = startId;
-      const newIds = [...baseIds];
-      for (const c of lost) {
-        while (idSet.has(nextId)) nextId++;
-        const card: any = {
-          id: nextId,
-          category: c.category,
-          categoryColor: c.categoryColor,
-          actionType: "Online",
-          isOnline: true,
-          timeCommitment: "5–10 minutes",
-          title: c.title,
-          description: c.description,
-          spotsTotal: "Unlimited",
-          boosts: 0,
-          authorName: c.authorName,
-          authorRole: c.authorRole,
-          authorLink: c.authorLink,
-          targetUrl: c.targetUrl,
-          toneOverride: c.toneOverride,
-          adminApproved: true,
-          createdAt: now,
-        };
-        await kv.set(`user-action:${nextId}`, card);
-        idSet.add(nextId);
-        newIds.push(nextId);
-        placed++;
-        nextId++;
-      }
-      await kv.set("user-action:ids", newIds);
+      const cards = lost.map((c, i) => ({
+        id: startId + i,
+        category: c.category,
+        categoryColor: c.categoryColor,
+        actionType: "Online",
+        isOnline: true,
+        timeCommitment: "5–10 minutes",
+        title: c.title,
+        description: c.description,
+        spotsTotal: "Unlimited",
+        boosts: 0,
+        authorName: c.authorName,
+        authorRole: c.authorRole,
+        authorLink: c.authorLink,
+        targetUrl: c.targetUrl,
+        toneOverride: c.toneOverride,
+        adminApproved: true,
+        createdAt: now,
+      }));
+      const placed = await appendUserActionCards(cards);
       await kv.set("migration:restore-lost-batch1:v1", true);
-      console.log(`Restored ${placed} lost batch-1 cards.`);
+      console.log(`Restored ${placed.length} lost batch-1 cards (ids ${placed.join(", ")}).`);
     }
 
     // Restore Tom Morello — overwritten at id 2132 by batch-2 migration when
@@ -1627,9 +1708,8 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     const restoreTomMorelloDone = await kv.get("migration:restore-tom-morello:v1");
     if (!restoreTomMorelloDone) {
       const currentIds = ((await kv.get("user-action:ids")) ?? []) as number[];
-      const nextId = Math.max(...currentIds, 1305) + 1;
       const card: any = {
-        id: nextId,
+        id: Math.max(...currentIds, 1305) + 1,
         category: "SPREAD POSITIVITY",
         categoryColor: "#d97706",
         actionType: "Online",
@@ -1647,10 +1727,9 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
         adminApproved: true,
         createdAt: new Date().toISOString(),
       };
-      await kv.set(`user-action:${nextId}`, card);
-      await kv.set("user-action:ids", [...currentIds, nextId]);
+      const [placedId] = await appendUserActionCards([card]);
       await kv.set("migration:restore-tom-morello:v1", true);
-      console.log(`Restored Tom Morello card at new id ${nextId}.`);
+      console.log(`Restored Tom Morello card at id ${placedId}.`);
     }
 
     // One-time (batch 2): 15 more creator-shop / regional-brigade / parody-song
@@ -1822,14 +1901,12 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       const currentIds2 = ((await kv.get("user-action:ids")) ?? []) as number[];
       const base2 = Math.max(...(currentIds2.length ? currentIds2 : [1305]), 1305);
       const now2 = new Date().toISOString();
-      const newIds2 = [...currentIds2];
-      let added2 = 0;
+      const cards2: any[] = [];
       for (let i = 0; i < incoming2.length; i++) {
         const c = incoming2[i];
-        const id = base2 + 1 + i;
         const topImageUrl = c.sourceImageUrl ? await importImage2(c.sourceImageUrl) : undefined;
-        const card: any = {
-          id,
+        cards2.push({
+          id: base2 + 1 + i,
           category: c.category,
           categoryColor: c.categoryColor,
           actionType: c.actionType ?? "Online",
@@ -1848,14 +1925,150 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           toneOverride: c.toneOverride,
           adminApproved: true,
           createdAt: now2,
-        };
-        await kv.set(`user-action:${id}`, card);
-        newIds2.push(id);
-        added2++;
+        });
       }
-      await kv.set("user-action:ids", newIds2);
+      const placed2 = await appendUserActionCards(cards2);
       await kv.set("migration:creators-import-2026-05-batch2:v1", true);
-      console.log(`Creators batch 2 import: added ${added2} cards (ids ${base2 + 1}..${base2 + added2}).`);
+      console.log(`Creators batch 2 import: added ${placed2.length} cards (ids ${placed2.join(", ")}).`);
+    }
+
+    // Dedup the portland-seattle-yolo race: ids 2153/2154/2155 are duplicates
+    // of 2150/2151/2152 (Knit/STARVE/Singing) — two function instances both
+    // ran the import before either set the gate. Delete the higher ids.
+    const dedupPSYDone = await kv.get("migration:dedup-psy-race:v1");
+    if (!dedupPSYDone) {
+      const idsToRemove = [2153, 2154, 2155];
+      for (const id of idsToRemove) {
+        await kv.del(`user-action:${id}`);
+      }
+      const currentIds = ((await kv.get("user-action:ids")) ?? []) as number[];
+      await kv.set("user-action:ids", currentIds.filter((id) => !idsToRemove.includes(id)));
+      await kv.set("migration:dedup-psy-race:v1", true);
+      console.log(`Dedup PSY race: removed ${idsToRemove.length} duplicate cards.`);
+    }
+
+    // Portland/Seattle/Yolo regional event import — 4 cards. All in-person
+    // events at mobilize.us search URLs (no stable og:image), so they land
+    // adminApproved=false for the admin queue. Race-safer pattern: dedup
+    // against existing user-action records by lowercase title + targetUrl,
+    // per-card kv.get existence check before insert, and a re-read-then-union
+    // write to user-action:ids so concurrent runs can't drop or duplicate ids.
+    const portlandSeattleYoloDone = await kv.get("migration:portland-seattle-yolo-import-2026-05:v1");
+    if (!portlandSeattleYoloDone) {
+      type RegionalCard = {
+        category: string;
+        categoryColor: string;
+        title: string;
+        description: string;
+        location: string;
+        authorName: string;
+        authorRole: string;
+        targetUrl: string;
+        toneOverride: { anger: number; comedy: number; subversion: number; hope: number; energy: number };
+        amplifiesGroups?: string[];
+      };
+      const incomingRegional: RegionalCard[] = [
+        { category: "CRAFTING", categoryColor: "#c34e00",
+          title: `Knit in Protest of ICE — Portland`,
+          description: `Bring your needles and your fury to Common Cause Oregon's Knitting in Protest of ICE — a quiet, weekly visibility action outside the Portland federal building where knitters glare at Trump's deportation machine while making hats for detained families. Funny, hands-busy, low-confrontation, high-photo-op.`,
+          location: "Oregon",
+          authorName: "Common Cause Oregon", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/?q=ICE+raid",
+          toneOverride: { anger: 2, comedy: 3, subversion: 2, hope: 3, energy: 2 },
+          amplifiesGroups: ["immigrant"],
+        },
+        { category: "PROTEST", categoryColor: "#23297e",
+          title: `STARVE FASCISM — Portland`,
+          description: `SW Indivisible Resistance's blunt-named Saturday rally (May 30, Portland) targeting Trump-administration funding flows: divest, boycott Trump-friendly corporates, cut off Project 2025 donors. Big sign-painting party an hour before kickoff.`,
+          location: "Oregon",
+          authorName: "SW Indivisible Resistance", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/?q=ICE+raid",
+          toneOverride: { anger: 3, comedy: 2, subversion: 3, hope: 2, energy: 3 },
+        },
+        { category: "ART PIECE", categoryColor: "#896312",
+          title: `Singing Resistance in Edmonds (WA)`,
+          description: `South Snohomish County Indivisible hosts a monthly Singing Resistance — anti-Trump protest songs on a downtown sidewalk, Mon Jun 8 at 4pm. Bring kazoos, bring lyric sheets, bring grandma. Local, joyful, irritating to the right people.`,
+          location: "Washington",
+          authorName: "South Snohomish County Indivisible", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/?q=ICE",
+          toneOverride: { anger: 1, comedy: 3, subversion: 2, hope: 3, energy: 2 },
+        },
+        { category: "PROTEST", categoryColor: "#23297e",
+          title: `Disappeared in America Visibility Event — Yolo CA`,
+          description: `Indivisible Yolo's first-Wednesday-of-the-month silent vigil naming and showing photos of people the Trump-Biden ICE pipeline has disappeared into detention. Woodland and West Sacramento locations. Bring a printed name card from the linked spreadsheet.`,
+          location: "California",
+          authorName: "Indivisible Yolo", authorRole: "Movement Organization",
+          targetUrl: "https://www.mobilize.us/?q=deportation",
+          toneOverride: { anger: 2, comedy: 0, subversion: 3, hope: 3, energy: 2 },
+          amplifiesGroups: ["immigrant"],
+        },
+      ];
+
+      // Dedup against existing user-action:* records by (lowercase trimmed title) and targetUrl.
+      const existingPS = (await kv.getByPrefix("user-action:")) as any[];
+      const seenTitlesPS = new Set<string>();
+      const seenUrlsPS = new Set<string>();
+      for (const c of existingPS) {
+        if (!c || typeof c !== "object") continue;
+        if (typeof c.title === "string") seenTitlesPS.add(c.title.toLowerCase().trim());
+        if (typeof c.targetUrl === "string") seenUrlsPS.add(c.targetUrl);
+      }
+      const freshPS = incomingRegional.filter((c) =>
+        !seenTitlesPS.has(c.title.toLowerCase().trim())
+      );
+
+      const currentIdsPS = ((await kv.get("user-action:ids")) ?? []) as number[];
+      const startIdPS = Math.max(...currentIdsPS, 1305) + 1;
+      const nowPS = new Date().toISOString();
+      const cardsPS = freshPS.map((c, i) => ({
+        id: startIdPS + i,
+        category: c.category,
+        categoryColor: c.categoryColor,
+        actionType: "In Person Group",
+        isOnline: false,
+        timeCommitment: "1–3 hours",
+        title: c.title,
+        description: c.description,
+        location: c.location,
+        spotsTotal: "Unlimited",
+        boosts: 0,
+        authorName: c.authorName,
+        authorRole: c.authorRole,
+        authorLink: c.targetUrl,
+        targetUrl: c.targetUrl,
+        toneOverride: c.toneOverride,
+        ...(c.amplifiesGroups ? { amplifiesGroups: c.amplifiesGroups } : {}),
+        adminApproved: false,
+        createdAt: nowPS,
+      }));
+      const placedPS = await appendUserActionCards(cardsPS);
+      await kv.set("migration:portland-seattle-yolo-import-2026-05:v1", true);
+      console.log(`Portland/Seattle/Yolo regional import: added ${placedPS.length} cards (ids ${placedPS.join(", ")}).`);
+    }
+
+    // Retroactive sweep: demote any approved card missing a targetUrl OR an
+    // image (no topImageUrl + no topImageKey + no topImage). Skips pinToTop
+    // cards so the Spread-the-Word pin can't be accidentally demoted. Cards
+    // already adminApproved=false are left alone (they're already in the queue).
+    const demoteMissingDone = await kv.get("migration:demote-missing-url-or-image:v1");
+    if (!demoteMissingDone) {
+      let demoted = 0;
+      const sample: string[] = [];
+      for (const prefix of ["action:", "user-action:"]) {
+        for (const c of (await kv.getByPrefix(prefix)) as any[]) {
+          if (!c || typeof c !== "object" || typeof c.id !== "number") continue;
+          if (c.adminApproved === false) continue;
+          if (c.pinToTop) continue;
+          const hasUrl = Boolean(c.targetUrl);
+          const hasImage = Boolean(c.topImageUrl) || Boolean(c.topImageKey) || Boolean(c.topImage);
+          if (hasUrl && hasImage) continue;
+          await kv.set(`${prefix}${c.id}`, { ...c, adminApproved: false });
+          demoted++;
+          if (sample.length < 20) sample.push(`${prefix}${c.id} (url:${hasUrl},img:${hasImage})`);
+        }
+      }
+      await kv.set("migration:demote-missing-url-or-image:v1", true);
+      console.log(`Demote missing url/image: demoted ${demoted} cards. Sample: ${sample.join("; ")}`);
     }
 
     // One-time: import 16 Etsy/Bluesky/TikTok creator-shop cards. 4 have
@@ -2022,14 +2235,12 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       const currentIds = ((await kv.get("user-action:ids")) ?? []) as number[];
       const base = Math.max(...(currentIds.length ? currentIds : [1305]), 1305);
       const nowIso = new Date().toISOString();
-      const newIds = [...currentIds];
-      let added = 0;
+      const cardsEtsy: any[] = [];
       for (let i = 0; i < incoming.length; i++) {
         const c = incoming[i];
-        const id = base + 1 + i;
         const topImageUrl = c.sourceImageUrl ? await importImage(c.sourceImageUrl) : undefined;
-        const card: any = {
-          id,
+        cardsEtsy.push({
+          id: base + 1 + i,
           category: c.category,
           categoryColor: c.categoryColor,
           actionType: "Online",
@@ -2052,14 +2263,11 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           // approved-without-image situation.
           adminApproved: !!topImageUrl,
           createdAt: nowIso,
-        };
-        await kv.set(`user-action:${id}`, card);
-        newIds.push(id);
-        added++;
+        });
       }
-      await kv.set("user-action:ids", newIds);
+      const placedEtsy = await appendUserActionCards(cardsEtsy);
       await kv.set("migration:etsy-creators-import-2026-05:v1", true);
-      console.log(`Etsy creators import: added ${added} cards (ids ${base + 1}..${base + added}).`);
+      console.log(`Etsy creators import: added ${placedEtsy.length} cards (ids ${placedEtsy.join(", ")}).`);
     }
 
     // One-time: defensive cleanup for approved-without-image cards.
@@ -2198,13 +2406,9 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           amplifiesGroups: ["voter"],
         },
       ];
-      const updatedIds = [...currentIds, ...newCards.map((c) => c.id)];
-      for (const card of newCards) {
-        await kv.set(`user-action:${card.id}`, card);
-      }
-      await kv.set("user-action:ids", updatedIds);
+      const placedCC = await appendUserActionCards(newCards);
       await kv.set("migration:common-cause-actions:v1", true);
-      console.log(`Added ${newCards.length} Common Cause action cards (ids ${base + 1}–${base + 3}).`);
+      console.log(`Added ${placedCC.length} Common Cause action cards (ids ${placedCC.join(", ")}).`);
     }
 
     // One-time migration: add local/Mobilize action cards sourced from spreadsheet
@@ -2524,13 +2728,9 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           adminApproved: false, createdAt: now,
         },
       ];
-      const updatedIds = [...currentIds, ...newCards.map((c) => c.id)];
-      for (const card of newCards) {
-        await kv.set(`user-action:${card.id}`, card);
-      }
-      await kv.set("user-action:ids", updatedIds);
+      const placedML = await appendUserActionCards(newCards);
       await kv.set("migration:mobilize-local-actions:v1", true);
-      console.log(`Added ${newCards.length} local/Mobilize action cards (ids ${base + 1}–${base + 22}).`);
+      console.log(`Added ${placedML.length} local/Mobilize action cards (ids ${placedML.join(", ")}).`);
     }
 
     // One-time migration: add second batch of Mobilize/50501 action cards
@@ -2871,13 +3071,9 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           adminApproved: false, createdAt: now,
         },
       ];
-      const updatedIds = [...currentIds, ...newCards.map((c) => c.id)];
-      for (const card of newCards) {
-        await kv.set(`user-action:${card.id}`, card);
-      }
-      await kv.set("user-action:ids", updatedIds);
+      const placedMv2 = await appendUserActionCards(newCards);
       await kv.set("migration:mobilize-actions-v2:v1", true);
-      console.log(`Added ${newCards.length} Mobilize/50501 action cards (v2) (ids ${base + 1}–${base + 24}).`);
+      console.log(`Added ${placedMv2.length} Mobilize/50501 action cards (v2) (ids ${placedMv2.join(", ")}).`);
     }
 
     // One-time migration: add Resistbot "Empower States to Undo Citizens United" petition card

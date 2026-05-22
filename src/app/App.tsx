@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useDeferredValue } from "react";
-import { Wrench, Clock, Globe, Flame, Smile, VenetianMask, Sun, Zap, MapPin, Users, DollarSign } from "lucide-react";
+import { Wrench, Clock, Globe, Flame, Smile, VenetianMask, Sun, Zap, MapPin, Users, DollarSign, EyeOff } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { initAnalytics, analytics } from "./lib/analytics";
 import { GAMIFICATION_KEYFRAMES } from "./lib/animations";
@@ -1675,6 +1675,21 @@ export default function App() {
                         <button onClick={() => { setMatchInitialStep(1); setMatchOpen(true); }} className="inline-flex items-center gap-0.5 rounded-full bg-white/70 border border-gray-200 px-1.5 py-0.5 hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
                           <DollarSign size={10} className="text-[#23297e] shrink-0" strokeWidth={2} />
                           Donation focus
+                        </button>
+                      )}
+                      {/* Hidden-categories chip — appears when the user has any
+                          "Skip these" exclusions active. Click reopens the
+                          Match Tool so they can adjust which categories are
+                          hidden; the bare X-style "show all again" lives
+                          inside the modal itself. */}
+                      {(matchPrefs.excludedCategories?.length ?? 0) > 0 && (
+                        <button
+                          onClick={() => { setMatchInitialStep(0); setMatchOpen(true); }}
+                          className="inline-flex items-center gap-0.5 rounded-full bg-white/70 border border-gray-200 px-1.5 py-0.5 hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors"
+                          title={`Hidden: ${(matchPrefs.excludedCategories ?? []).join(", ")}`}
+                        >
+                          <EyeOff size={10} className="text-[#23297e] shrink-0" strokeWidth={2} />
+                          Hiding {matchPrefs.excludedCategories!.length} {matchPrefs.excludedCategories!.length === 1 ? "category" : "categories"}
                         </button>
                       )}
                     </div>

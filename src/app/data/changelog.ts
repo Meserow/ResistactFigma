@@ -16,6 +16,72 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.1.40",
+    date: "2026-05-22",
+    title: "Quick Match Tool — skip whole categories you can't or won't do",
+    sections: [
+      {
+        heading: "Match Me — Skip these",
+        items: [
+          "New collapsible \"Skip these\" section in the Quick Match Tool, below the tone sliders. Click any category chip — Petition, Crafting, Email Campaign, Protest, etc. — to hide that whole category from your matches. Categories are grouped into themed rows (Make / Do, Reach Out, Show Up, Care, Money / Stuff, Other) so the chip grid is scannable instead of being one long wall of 26 chips.",
+          "Excluded categories are hard-filtered from results — same way Setting and State mismatches are filtered today — so a hidden category never sneaks back in via a strong tone score.",
+          "The \"Matched for you\" banner gets a new chip: \"Hiding N categories\" — click it to reopen the Match Tool and adjust which categories are hidden.",
+          "Exclusions sync to your account when you're signed in (same path as the rest of your match prefs), so they follow you across devices.",
+        ],
+      },
+      {
+        heading: "Match Me — smarter on its own",
+        items: [
+          "When you click \"Not a great match\" on three cards in the same category, the tool now offers to hide that whole category for you. Two buttons: \"Yes, hide\" (adds it to your skipped categories going forward) or \"No, keep showing\" (we'll never ask again for that category).",
+          "Builds on the dismissal log that was already being recorded — we just hadn't done anything with it yet.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.1.39",
+    date: "2026-05-22",
+    title: "Made the action-card imports race-safe so cards stop getting dropped",
+    sections: [
+      {
+        heading: "Under the Hood",
+        items: [
+          "Fixed the race condition that caused us to lose Tom Morello, Hartford Yarn Works, and The Morning Crafter across two deploys last week — when the edge function scales up during a deploy, two instances would run a batch-import at the same time, both write the same list of card-ids back to the index using last-write-wins, and the second write would overwrite the first instance's additions. The card records still existed in the database, but they were invisible to the public feed because the index didn't know about them.",
+          "All card-adding migrations now go through a shared helper that: re-checks each card's id before insert (skip if already present, bump to a new id if a different card is using it), commits the index update per-card instead of once-at-the-end (so a concurrent run can shadow at most one id, not a whole batch), and runs a final set-union reconciliation in case anything else wrote during the loop.",
+          "The self-heal pass that catches dropped cards now runs once per warm process (i.e. on every deploy/cold-start) instead of once forever — so any future drift gets cleaned up automatically the next time the edge function restarts.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.1.37",
+    date: "2026-05-22",
+    title: "Match Me sliders now actually filter out cards that don't match",
+    sections: [
+      {
+        heading: "Matcher",
+        items: [
+          "Fixed a bug where setting a tone slider to its lowest position (e.g. 'Humor: None', 'Confrontational: None') didn't actually exclude cards that were high on that dimension — it just stopped giving them a bonus. So if you set Humor to None and another card was both confrontational AND full mockery, the matcher would still surface it because the anger match outweighed the humor mismatch.",
+          "The scorer now penalises cards whose tone is hotter than what you asked for on any dimension. Set Humor: None and a Full-mockery card will be pushed below the score floor and dropped from your matches — instead of sneaking in via its anger or subversion score.",
+          "Cards that are calmer than you asked for (e.g. you want full mockery, card is mild) still surface — the penalty only applies when the card overshoots your preference, not when it undershoots.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.1.36",
+    date: "2026-05-22",
+    title: "Cleaned up the Google Analytics debugging logs",
+    sections: [
+      {
+        heading: "Under the Hood",
+        items: [
+          "Removed the temporary console-log instrumentation that was added to the analytics module while we were tracking down why GA was receiving zero data. The wiring is confirmed working, so the play-by-play logs aren't needed anymore. The error-path log is kept (so any future blocker / DNS issue shows up clearly in DevTools), but the normal success path is silent again.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.1.35",
     date: "2026-05-22",
     title: "Images wired for 8 new action cards",
