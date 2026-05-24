@@ -14,6 +14,15 @@ const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`
 // Add entries here whenever you drop a new image into public/smacks/.
 export const STATIC_SMACKS: ReceiptCard[] = [
   {
+    id: 5000,
+    title: "Join the Resistance",
+    tags: ["ResistAct", "Resistance"],
+    imageUrl: "/Smacks/ResistActSmack.webp",
+    caption: "The resistance grows one share at a time. Tag a friend who's been doomscrolling and send them this. Then come find your next action at resistact.org. #ResistAct #JoinTheResistance",
+    adminApproved: true,
+    pinToTop: true,
+  },
+  {
     id: 5001,
     title: "Third Time's the Charm",
     tags: ["Accountability", "Democracy"],
@@ -235,6 +244,11 @@ export interface ReceiptCard {
   adminApproved: boolean;
   boosts?: number;
   createdAt?: string;
+  /** When true, this smack is forced to the top of the grid regardless of
+   *  sort order (top / new / pending), tag filter, or search query. Use
+   *  sparingly — pinning multiple cards just creates a sub-sort problem.
+   *  Currently used for the branded ResistAct hero smack only. */
+  pinToTop?: boolean;
 }
 
 // Well-known tag taxonomy — drives the filter chips.
@@ -747,27 +761,46 @@ export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds =
   // so this page can lead with an intro paragraph instead of a duplicate input.
 
   // ── Filter + sort ────────────────────────────────────────────────────────────
+  // pinToTop cards (e.g. the branded ResistAct hero smack) ALWAYS lead the
+  // grid regardless of sort, tag filter, or search query — they survive the
+  // filter step unconditionally and then get prepended to the sorted rest.
+  // This mirrors the Acts-side pinToTop ("Spread the Word") behaviour. They
+  // STILL respect the pending filter (admin-only view) because that's a
+  // different mode, not a sort within the public grid.
   const q = searchQuery.toLowerCase().trim();
-  const filtered = receipts
-    .filter((r) => {
-      if (deletedIds.has(r.id) || serverHiddenIds.includes(r.id)) return false;
-      if (sortBy === "pending") return isAdmin && !r.adminApproved;
-      if (!isAdmin && !r.adminApproved) return false;
-      if (q) {
-        return (
-          r.title.toLowerCase().includes(q) ||
-          r.tags.some((t) => t.toLowerCase().includes(q)) ||
-          r.caption?.toLowerCase().includes(q)
-        );
-      }
-      if (activeTags.length === 0) return true;
-      return activeTags.some((t) => r.tags.map((x) => x.toLowerCase()).includes(t.toLowerCase()));
-    })
-    .sort((a, b) =>
-      sortBy === "top"
-        ? boostCountFor(b) - boostCountFor(a)
-        : (b.createdAt ?? "").localeCompare(a.createdAt ?? "")
-    );
+  const isPendingMode = sortBy === "pending";
+  const visible = receipts.filter((r) => {
+    if (deletedIds.has(r.id) || serverHiddenIds.includes(r.id)) return false;
+    if (isPendingMode) return isAdmin && !r.adminApproved;
+    if (!isAdmin && !r.adminApproved) return false;
+    return true;
+  });
+  const passesUserFilters = (r: ReceiptCard) => {
+    if (q) {
+      return (
+        r.title.toLowerCase().includes(q) ||
+        r.tags.some((t) => t.toLowerCase().includes(q)) ||
+        (r.caption?.toLowerCase().includes(q) ?? false)
+      );
+    }
+    if (activeTags.length === 0) return true;
+    return activeTags.some((t) => r.tags.map((x) => x.toLowerCase()).includes(t.toLowerCase()));
+  };
+  // Pinned cards skip the tag/search filters so they never disappear from
+  // the top of the page. (We DO honor the pending-mode filter above — see
+  // `visible` — because that's a deliberate admin view, not a public sort.)
+  const pinnedCards = isPendingMode ? [] : visible.filter((r) => r.pinToTop);
+  const pinnedIds = new Set(pinnedCards.map((r) => r.id));
+  const filtered = [
+    ...pinnedCards,
+    ...visible
+      .filter((r) => !pinnedIds.has(r.id) && passesUserFilters(r))
+      .sort((a, b) =>
+        sortBy === "top"
+          ? boostCountFor(b) - boostCountFor(a)
+          : (b.createdAt ?? "").localeCompare(a.createdAt ?? "")
+      ),
+  ];
 
   // Collect distinct tags from loaded receipts for the filter bar.
   const availableTags = Array.from(

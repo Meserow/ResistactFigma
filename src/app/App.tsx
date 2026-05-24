@@ -28,7 +28,7 @@ import { TierModal } from "./components/TierModal";
 import { CelebrationModal } from "./components/CelebrationModal";
 import { FeedbackModal } from "./components/FeedbackModal";
 import { SmacksPage, STATIC_SMACKS, type ReceiptCard } from "./components/SmacksPage";
-import { rankCards, score as scoreCard, loadPreferences, clearPreferences, applyMatcherConfig, fetchUserPreferences, pushUserPreferences, savePreferences, timeBucketFor, type Preferences, type UserContext } from "./lib/matcher";
+import { rankCards, score as scoreCard, loadPreferences, clearPreferences, applyMatcherConfig, fetchUserPreferences, pushUserPreferences, savePreferences, timeBucketFor, cardIsLocalToState, settingMatches, type Preferences, type UserContext } from "./lib/matcher";
 import svgPaths from "../imports/svg-77lgd1zdt6";
 import { projectId, publicAnonKey } from "/utils/supabase/info";
 import { supabase } from "./lib/supabase";
@@ -509,6 +509,16 @@ export default function App() {
   const demoteHyperLocal = !accessToken && !matchPrefs;
 
 
+  // Today's date as ISO string (YYYY-MM-DD) for expiry + sort comparisons.
+  // MUST be declared BEFORE the function declarations below — those close
+  // over `todayISO`, and a `const` in the temporal dead zone throws
+  // "Cannot access 'todayISO' before initialization" if the function is
+  // ever invoked before this line executes. Hoisted function declarations
+  // are callable immediately on entry to the component body, so the safest
+  // ordering is: declare the constants first, then the functions that
+  // close over them.
+  const todayISO = new Date().toISOString().slice(0, 10);
+
   // Upcoming-event boost — pushes time-sensitive cards toward the top of the
   // Popular sort. Closer event = bigger boost. Past events return 0 because
   // they're already filtered out of the visible feed (see gated[] above).
@@ -541,8 +551,6 @@ export default function App() {
     if (lb === 4) return base * 0.7;        // unspecified location
     return base;                            // Online / National / Multi-state untouched
   }
-  // Today's date as ISO string (YYYY-MM-DD) for expiry + sort comparisons.
-  const todayISO = new Date().toISOString().slice(0, 10);
   const isAdminUser = approval?.isAdmin === true;
   const pendingActsCount   = isAdminUser ? serverPendingActsCount : 0;
   const pendingSmacksCount = isAdminUser ? receipts.filter((r) => (r as any).adminApproved === false).length : 0;
@@ -575,10 +583,54 @@ export default function App() {
     // Helper: prepend the always-show pinned card(s) to any result array.
     // Filters and match-me operate only on `filtered` / `rankable` below,
     // so the pinned card never gets dropped by category/location/Match Me/etc.
-    const withPinned = (arr: ActionCardData[]): ActionCardData[] =>
-      pinnedAlwaysShow.length === 0
-        ? arr
-        : [...pinnedAlwaysShow, ...arr.filter((c) => !c.pinToTop)];
+    //
+    // Second pin layer: when the user has told us a state (via Match Me) AND
+    // we have a card with an upcoming `eventDate` in that state, lift those
+    // ahead of everything else. The matcher's score already gives state-local
+    // and event-proximity bonuses but they can be out-scored by tone matches
+    // — a hard pin guarantees a state-local rally next week is the first
+    // thing the user sees regardless of how it scores. Cards inside the pin
+    // band are sorted by event date ASC (soonest first). Reuses the outer
+    // `todayISO` constant declared above the useMemo.
+    const userState = matchPrefs?.state ?? null;
+    const userSetting = matchPrefs?.setting ?? [];
+    const localUpcomingIds = new Set<number>();
+    if (userState) {
+      for (const c of cards) {
+        const d = (c as any).eventDate as string | undefined;
+        if (!d || d < todayISO) continue;
+        if (!cardIsLocalToState(c, userState)) continue;
+        // Respect the user's online/in-person filter — pinning an in-person
+        // rally when they picked Remote only would contradict the explicit
+        // preference. settingMatches returns true when the setting array is
+        // empty ("any"), so users without a preference still get the lift.
+        if (!settingMatches(c, userSetting)) continue;
+        if (c.adminApproved === false && !isAdminUser) continue;
+        if (typeof c.id === "number") localUpcomingIds.add(c.id);
+      }
+    }
+    const localUpcomingCards = (() => {
+      if (localUpcomingIds.size === 0) return [] as ActionCardData[];
+      const matches = cards.filter((c) => typeof c.id === "number" && localUpcomingIds.has(c.id));
+      matches.sort((a, b) => {
+        const da = (a as any).eventDate as string | undefined;
+        const db = (b as any).eventDate as string | undefined;
+        return (da ?? "9999").localeCompare(db ?? "9999");
+      });
+      return matches;
+    })();
+
+    const withPinned = (arr: ActionCardData[]): ActionCardData[] => {
+      // Order: pinToTop cards (Spread the Word) → state-local upcoming events
+      // → everything else, with the latter two de-duped against each other and
+      // against the rest of the array so cards never appear twice.
+      const usedIds = new Set<number>();
+      for (const c of pinnedAlwaysShow) if (typeof c.id === "number") usedIds.add(c.id);
+      const localBand = localUpcomingCards.filter((c) => !usedIds.has(c.id!));
+      for (const c of localBand) usedIds.add(c.id!);
+      const rest = arr.filter((c) => !c.pinToTop && !(typeof c.id === "number" && usedIds.has(c.id)));
+      return [...pinnedAlwaysShow, ...localBand, ...rest];
+    };
     // Backwards-compat alias used further down — same behaviour now.
     const pinFirst = withPinned;
 
@@ -604,7 +656,23 @@ export default function App() {
     if (matchPrefs) {
       // Admins always see pending cards — pull them out so the score threshold
       // doesn't silently drop them, then append them after the ranked results.
-      const pendingForAdmin = isAdminUser ? filtered.filter((c) => c.adminApproved === false) : [];
+      // Admin-only "still pending" set surfaced in their match feed. Apply the
+      // same hard filters the matcher's `score()` uses (setting + state) so
+      // toggling "Remote only" or picking a state actually hides in-person /
+      // out-of-state pending cards from the matched view. Admins still see
+      // everything in the AdminPanel — this only narrows the consumer feed.
+      const pendingForAdmin = isAdminUser
+        ? filtered.filter((c) => {
+            if (c.adminApproved !== false) return false;
+            if (!settingMatches(c, matchPrefs.setting)) return false;
+            if (!matchPrefs.includeAnywhere && matchPrefs.state) {
+              if (!cardIsLocalToState(c, matchPrefs.state) && !(c.isOnline || c.location === "National" || c.location === "Multi-state")) {
+                return false;
+              }
+            }
+            return true;
+          })
+        : [];
       let rankable = isAdminUser ? filtered.filter((c) => c.adminApproved !== false) : filtered;
 
       // Hard time caps for the "I have very little time" buckets. The user
@@ -1574,27 +1642,52 @@ export default function App() {
             )}
 
             {/* Pending-only banner */}
-            {isAdminUser && showPendingActsOnly && (
-              <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-red-300 bg-red-50 px-4 py-2.5">
-                <p className="font-['Poppins',sans-serif] text-sm text-red-700">
-                  ⚠️ <strong>Pending approval only</strong> — showing {visibleActsCards.length} unapproved act{visibleActsCards.length !== 1 ? "s" : ""}.
-                </p>
-                <div className="flex items-center gap-3 shrink-0">
-                  <button
-                    onClick={() => handleApproveAll(visibleActsCards.map((c) => c.id))}
-                    className="font-['Poppins',sans-serif] text-xs font-semibold bg-green-600 hover:bg-green-700 text-white rounded-lg px-3 py-1.5 transition-colors"
-                  >
-                    ✓ Approve all {visibleActsCards.length} showing
-                  </button>
-                  <button
-                    onClick={() => setShowPendingActsOnly(false)}
-                    className="font-['Poppins',sans-serif] text-xs font-semibold text-red-600 hover:underline"
-                  >
-                    Show all
-                  </button>
+            {isAdminUser && showPendingActsOnly && (() => {
+              // Mirror the server-side image check in /admin/approve-action/:id:
+              // a card needs at least one of topImageUrl, topImageKey to pass.
+              // (The server also accepts a `topImage` field, but that's a
+              // client-only resolved value derived from the other two.)
+              const cardsWithImages = visibleActsCards.filter(
+                (c) => Boolean(c.topImageUrl) || Boolean(c.topImageKey)
+              );
+              const allHaveImages = cardsWithImages.length === visibleActsCards.length;
+              return (
+                <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-red-300 bg-red-50 px-4 py-2.5">
+                  <p className="font-['Poppins',sans-serif] text-sm text-red-700">
+                    ⚠️ <strong>Pending approval only</strong> — showing {visibleActsCards.length} unapproved act{visibleActsCards.length !== 1 ? "s" : ""}.
+                  </p>
+                  <div className="flex items-center gap-3 shrink-0">
+                    {/* "Approve all with images" — only surfaces when SOME but
+                        not ALL visible pending cards have a top image. Lets
+                        an admin one-click clear the easy approvals and deal
+                        with the imageless leftovers manually. Hidden when
+                        every card already has an image (the regular button
+                        below covers that case) or when none do. */}
+                    {cardsWithImages.length > 0 && !allHaveImages && (
+                      <button
+                        onClick={() => handleApproveAll(cardsWithImages.map((c) => c.id))}
+                        className="font-['Poppins',sans-serif] text-xs font-semibold bg-green-600 hover:bg-green-700 text-white rounded-lg px-3 py-1.5 transition-colors"
+                        title={`Approve only the ${cardsWithImages.length} pending acts that have a top image (server rejects approval on imageless cards).`}
+                      >
+                        ✓ Approve {cardsWithImages.length} with images
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleApproveAll(visibleActsCards.map((c) => c.id))}
+                      className="font-['Poppins',sans-serif] text-xs font-semibold bg-green-600 hover:bg-green-700 text-white rounded-lg px-3 py-1.5 transition-colors"
+                    >
+                      ✓ Approve all {visibleActsCards.length} showing
+                    </button>
+                    <button
+                      onClick={() => setShowPendingActsOnly(false)}
+                      className="font-['Poppins',sans-serif] text-xs font-semibold text-red-600 hover:underline"
+                    >
+                      Show all
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Match-mode banner — visible when match prefs are filtering the feed.
                 Surfaces the user's actual settings as chips so they remember WHY

@@ -16,6 +16,42 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.1.52",
+    date: "2026-05-24",
+    title: "Branded 'Join the Resistance' smack now pinned to the top of the Smacks page",
+    sections: [
+      {
+        heading: "The Smacks",
+        items: [
+          "A new branded ResistAct smack is now permanently at the top of the Smacks page — regardless of which sort you're using (Top, New, or — for admins — Pending), and regardless of any active tag filter or search query.",
+          "Pinning is opt-in per smack (a new `pinToTop` flag on the static smack definitions). Right now exactly one smack is pinned. Pinning more would require deciding how to order the pinned cards among themselves; right now there's no rule for that.",
+          "The image was uploaded as a 3.2 MB PNG. We converted it to WebP (517 KB — 84% smaller) for the in-grid render. The original PNG is preserved as `ResistActSmack.png` so the 'Download high-res' button still hands you the full-quality file.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.1.51",
+    date: "2026-05-24",
+    title: "Admin: bulk-approve only the pending cards that have an image",
+    sections: [
+      {
+        heading: "Admin",
+        items: [
+          "New '✓ Approve N with images' button in the Pending-approval banner, sitting next to the existing '✓ Approve all N showing'. One click bulk-approves only the visible pending cards that already have a top image — leaving imageless ones in pending for you to upload an image to before they can go live.",
+          "The button only appears when some — but not all — visible pending cards have an image. If everything has an image, the existing 'Approve all' button covers it; if nothing does, the new button is hidden.",
+          "Background: the server rejects approval on any card without a topImageUrl or topImageKey. Before this change, hitting 'Approve all' on a mixed batch surfaced one error per imageless card and partially-approved the rest. The new button lets you separate the easy approvals from the cards that still need image uploads in one pass.",
+        ],
+      },
+      {
+        heading: "Fixes",
+        items: [
+          "Fixed a 'Something went wrong — Cannot access todayISO2 before initialization' crash that could appear on page load. Caused by yesterday's upcoming-event boost code referencing a constant that was declared further down the file; reordered so the constant is in place before any function tries to read it.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.1.50",
     date: "2026-05-24",
     title: "Upcoming events rise toward the top + new Broken-images admin tab",

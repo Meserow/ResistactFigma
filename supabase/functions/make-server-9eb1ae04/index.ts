@@ -4804,6 +4804,63 @@ app.get("/make-server-9eb1ae04/admin/actions/big-images", async (c) => {
   }
 });
 
+// ─── GET /admin/actions/url-equals-authorlink — same-URL audit ───────────────
+// Admin-only. Lists every card where `targetUrl` and `authorLink` resolve to
+// the same URL after a light normalization (lowercase, trailing slash dropped).
+// Usually means the bulk-importer pointed both fields at the same source page
+// and there's no distinct creator / "more from this author" link to surface.
+app.get("/make-server-9eb1ae04/admin/actions/url-equals-authorlink", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const norm = (u: unknown): string => {
+      if (typeof u !== "string") return "";
+      const t = u.trim().toLowerCase();
+      if (!t) return "";
+      try {
+        const p = new URL(t);
+        return (p.hostname + p.pathname + p.search).replace(/\/+$/, "");
+      } catch {
+        return t.replace(/\/+$/, "");
+      }
+    };
+
+    const matches: any[] = [];
+
+    const consider = (cc: any, store: string) => {
+      if (!cc || typeof cc !== "object" || typeof cc.id !== "number") return;
+      const t = norm(cc.targetUrl);
+      const a = norm(cc.authorLink);
+      if (!t || !a) return;
+      if (t !== a) return;
+      matches.push({
+        id: cc.id,
+        title: cc.title,
+        authorName: cc.authorName,
+        targetUrl: cc.targetUrl,
+        authorLink: cc.authorLink,
+        adminApproved: cc.adminApproved,
+        _store: store,
+      });
+    };
+
+    for (const cc of (await kv.getByPrefix("action:")) as any[]) consider(cc, "action");
+    const userIds = ((await kv.get("user-action:ids")) ?? []) as number[];
+    for (const id of userIds) {
+      const cc = (await kv.get(`user-action:${id}`)) as any;
+      consider(cc, "user-action");
+    }
+
+    matches.sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
+    return c.json({ total: matches.length, cards: matches });
+  } catch (err) {
+    console.log("url-equals-authorlink error:", err);
+    return c.json({ error: `Audit failed: ${err}` }, 500);
+  }
+});
+
 // ─── GET /admin/actions/broken-images — list cards whose topImageUrl 404s ────
 // Admin-only. Walks every card from both stores, HEADs each `topImageUrl`. For
 // root-relative paths (e.g. "/people-power-united.jpg") prepends `origin`
