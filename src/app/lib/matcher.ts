@@ -491,20 +491,18 @@ export function score(card: ActionCardData, prefs: Preferences, ctx?: UserContex
   if (prefs.excludedCategories && prefs.excludedCategories.length > 0 &&
       prefs.excludedCategories.includes(card.category)) return 0;
 
-  // Hard filter: extreme tone mismatch. When the user pegs a slider at max
-  // (3) and the card has none (0) of that dimension — or vice versa — the
-  // gap is a full 3 stops, which is essentially "I want ALL of this tone"
-  // vs "card has none of it" (or the inverse). The soft penalty below
-  // catches smaller gaps, but at the extremes the soft penalty isn't
-  // strong enough to push popular cards (high engagement / time match) out
-  // of the matched-feed threshold. Hard-filter these so a user who picks
-  // "Humor: Full mockery" never sees a zero-humor petition.
+  // Hard filter: extreme OVERSHOOT only. When the user explicitly picks
+  // "None" (slider=0) for a tone, showing them a card with "Full mockery"
+  // (or any 3-rating) on that dimension is actively offensive — they
+  // asked us not to. So we hard-filter that case.
+  //
+  // We do NOT mirror this for the undershoot direction (user picks max,
+  // card has none) — that asymmetry is intentional. "I want all of this"
+  // is a soft preference, not a veto; if the user's other sliders narrow
+  // the pool down to mostly-low-on-this-dim cards, we still want to
+  // surface something. The soft undershoot penalty below already drags
+  // those cards down the ranking when better options exist.
   const t = toneFor(card);
-  if (prefs.tone.anger      === 3 && t.anger      === 0) return 0;
-  if (prefs.tone.comedy     === 3 && t.comedy     === 0) return 0;
-  if (prefs.tone.subversion === 3 && t.subversion === 0) return 0;
-  if (prefs.tone.hope       === 3 && t.hope       === 0) return 0;
-  if (prefs.tone.energy     === 3 && t.energy     === 0) return 0;
   if (prefs.tone.anger      === 0 && t.anger      === 3) return 0;
   if (prefs.tone.comedy     === 0 && t.comedy     === 3) return 0;
   if (prefs.tone.subversion === 0 && t.subversion === 3) return 0;

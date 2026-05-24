@@ -2,6 +2,7 @@ import { Hono } from "npm:hono";
 import { cors } from "npm:hono/cors";
 import { logger } from "npm:hono/logger";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 import * as kv from "./kv_store.ts";
 
 const app = new Hono();
@@ -158,7 +159,7 @@ async function sweepAdminAllowlistOnce() {
 
 // ─── Seed Ellen user ──────────────────────────────────────────────────────────
 async function seedEllenUser() {
-  const alreadySeeded = await kv.get("seed:ellen:v1");
+  const alreadySeeded = await getMigrationFlag("seed:ellen:v1");
   if (alreadySeeded) return;
   try {
     const { data, error } = await adminClient().auth.admin.createUser({
@@ -169,7 +170,7 @@ async function seedEllenUser() {
     });
     if (error) {
       console.log("Ellen seed note (may already exist):", error.message);
-      await kv.set("seed:ellen:v1", true);
+      await setMigrationFlag("seed:ellen:v1");
       return;
     }
     const ellenRecord = {
@@ -183,7 +184,7 @@ async function seedEllenUser() {
       createdAt: new Date().toISOString(),
     };
     await kv.set(`user:approval:${data.user.id}`, ellenRecord);
-    await kv.set("seed:ellen:v1", true);
+    await setMigrationFlag("seed:ellen:v1");
     console.log("Seeded Ellen Escarcega as approved user.");
   } catch (err) {
     console.log("Error seeding Ellen:", err);
@@ -280,6 +281,118 @@ async function appendUserActionCards(newCards: any[]): Promise<number[]> {
 // align with deploys (the race window for migrations), so this catches
 // any drift introduced by the previous deploy.
 let healUserActionIdsRunInProcess = false;
+
+// PERF: Module-level cache for migration/cleanup/seed flags. These keys
+// are write-once (set to `true` after a one-time migration runs) but
+// were being re-read on every /actions request — ~41 sequential KV
+// round-trips, ~3-4 seconds of pure flag-check overhead per request.
+// On Supabase Edge Functions, fresh isolates often serve each request,
+// so the cache is reseeded per request via warmMigrationFlagCache() — a
+// single mget batch that reads all 41 flags in one round-trip (~100ms
+// vs ~4s sequential). Once the cache is warm, every getMigrationFlag()
+// is a Set.has lookup.
+const migrationFlagCache = new Set<string>();
+
+// All known migration/cleanup/seed flag keys. Kept in sync with the
+// strings passed to getMigrationFlag()/setMigrationFlag() in this file.
+// If you add a new migration, add its key here so the warm-up batch
+// picks it up — otherwise it'll fall back to an individual kv.get on
+// first reference (still correct, just one extra round-trip).
+const KNOWN_MIGRATION_FLAG_KEYS: readonly string[] = [
+  "cleanup:backfill-images-1245:v1",
+  "cleanup:blaire-substack-desc:v1",
+  "cleanup:clear-stray-offtopic:v1",
+  "cleanup:dropped-seeds:v1",
+  "cleanup:fake-seeds:v1",
+  "cleanup:link-to-targeturl:v1",
+  "cleanup:purge-fake-seeds:v2",
+  "cleanup:reapprove-beanie:v1",
+  "cleanup:reset-boosts-5:v1",
+  "cleanup:reset-boosts-5:v3",
+  "cleanup:retire-past-dated-2026-05:v1",
+  "cleanup:set-boosts-1-950:v1",
+  "cleanup:tiktok-youtube-rekey:v1",
+  "migrate:spotsused-to-boosts:v1",
+  "migration:admin-approved:v1",
+  "migration:approved-without-image-cleanup:v1",
+  "migration:cancel-your-10min:v1",
+  "migration:common-cause-actions:v1",
+  "migration:creators-import-2026-05-batch2:v1",
+  "migration:dedup-psy-race:v1",
+  "migration:dedup-restore-race:v1",
+  "migration:demote-missing-url-or-image:v1",
+  "migration:etsy-creators-import-2026-05:v1",
+  "migration:event-dates:v1",
+  "migration:fix-regional-search-urls:v1",
+  "migration:fix-yarn-sisters-url:v1",
+  "migration:mobilize-actions-v2:v1",
+  "migration:mobilize-local-actions:v1",
+  "migration:no-image-review:v1",
+  "migration:nourl-review:v1",
+  "migration:petitions-10min:v1",
+  "migration:portland-seattle-yolo-import-2026-05:v1",
+  "migration:reset-boosts:v1",
+  "migration:resistbot-citizens-united:v1",
+  "migration:resistbot-citizens-united:v2",
+  "migration:restore-lost-batch1:v1",
+  "migration:restore-tom-morello:v1",
+  "migration:tsv-batch-2026-05-17:v1",
+  "migration:user-cards:v1",
+  "seed:ellen:v1",
+  "seed:org-actions:v25",
+  "seed:receipts:v2",
+];
+
+// Tracks whether warmMigrationFlagCache() has run in this isolate. On
+// long-lived warm isolates this saves the batch read on subsequent
+// requests; on fresh isolates it runs once per request lifecycle.
+let migrationCacheWarmed = false;
+
+async function warmMigrationFlagCache(): Promise<void> {
+  if (migrationCacheWarmed) return;
+  // Single batch read: `SELECT key, value WHERE key IN (...)` returns
+  // one row per existing key. Bypassing kv.mget here because that helper
+  // returns values only (no keys), so we can't tell which key each value
+  // belongs to under Postgres's unordered IN-result. One round-trip
+  // replaces what was ~41 sequential gets (~4s → ~100ms on cold isolates).
+  try {
+    const client = adminClient();
+    const { data, error } = await client
+      .from("kv_store_9eb1ae04")
+      .select("key, value")
+      .in("key", [...KNOWN_MIGRATION_FLAG_KEYS]);
+    if (error) throw new Error(error.message);
+    for (const row of (data ?? []) as Array<{ key: string; value: unknown }>) {
+      if (row.value === true) migrationFlagCache.add(row.key);
+    }
+  } catch (err) {
+    // Don't fail the whole request if warm-up fails — getMigrationFlag
+    // will fall back to individual reads (slower but correct).
+    console.log("warmMigrationFlagCache failed (falling back to lazy reads):", err);
+  }
+  migrationCacheWarmed = true;
+}
+
+async function getMigrationFlag(key: string): Promise<boolean> {
+  if (migrationFlagCache.has(key)) return true;
+  const val = await kv.get(key);
+  if (val === true) migrationFlagCache.add(key);
+  return val === true;
+}
+async function setMigrationFlag(key: string): Promise<void> {
+  await kv.set(key, true);
+  migrationFlagCache.add(key);
+}
+
+// PERF: in-process cache for the assembled /actions card list. Short TTL
+// trades a few seconds of stale-write visibility for ~5× lower latency
+// on warm requests, which is the right tradeoff for a feed that's
+// already eventual-consistent (admin approvals, boost counts, etc.).
+const ACTIONS_CACHE_TTL_MS = 15_000;
+let actionsCache: { cards: any[]; ts: number } | null = null;
+function invalidateActionsCache(): void {
+  actionsCache = null;
+}
 
 // ─── Seed data ────────────────────────────────────────────────────────────────
 const SEED_CARDS = [
@@ -1152,39 +1265,52 @@ app.delete("/make-server-9eb1ae04/admin/matcher-config", async (c) => {
 // ─── GET /actions ─────────────────────────────────────────────────────────────
 app.get("/make-server-9eb1ae04/actions", async (c) => {
   try {
-    const limit  = Math.min(Number(c.req.query("limit")  ?? 20), 100);
+    // Cap raised from 100 → 2000 so the client can drain the whole catalog
+    // (~600 cards as of May 2026, with room to grow) in a single request.
+    // The server already loads ALL cards into `allCards` before slicing
+    // (see further down), so paginating buys us nothing on the server side
+    // — it only adds 5+ round-trip latencies on the client's initial sync.
+    // 2000 keeps a hard ceiling so a malformed client can't ask for
+    // millions and OOM the function.
+    const limit  = Math.min(Number(c.req.query("limit")  ?? 20), 2000);
     const offset = Math.max(Number(c.req.query("offset") ?? 0),   0);
+
+    // PERF: warm the migration-flag cache in a single batch read so the
+    // ~41 individual getMigrationFlag() calls in the migration blocks
+    // below are all Set lookups (instant) instead of separate KV
+    // round-trips (~100ms each = ~4 seconds total on cold isolates).
+    await warmMigrationFlagCache();
 
     // Seed Ellen user if not done yet
     await seedEllenUser();
 
     // One-time: remove fake placeholder seed cards (IDs 1–18) from the DB
-    const fakePurged = await kv.get("cleanup:fake-seeds:v1");
+    const fakePurged = await getMigrationFlag("cleanup:fake-seeds:v1");
     if (!fakePurged) {
       const fakeIds = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18];
       for (const id of fakeIds) await kv.del(`action:${id}`);
-      await kv.set("cleanup:fake-seeds:v1", true);
+      await setMigrationFlag("cleanup:fake-seeds:v1");
       console.log("Purged fake seed cards 1–18.");
     }
 
     // One-time: re-purge the placeholder seed cards (ids 2–17 minus 11) that
     // were re-seeded after the v1 cleanup ran. SEED_CARDS no longer references
     // them, so deleting their KV records is final — they won't reappear.
-    const fakePurgedV2 = await kv.get("cleanup:purge-fake-seeds:v2");
+    const fakePurgedV2 = await getMigrationFlag("cleanup:purge-fake-seeds:v2");
     if (!fakePurgedV2) {
       const ids = [2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17];
       for (const id of ids) await kv.del(`action:${id}`);
-      await kv.set("cleanup:purge-fake-seeds:v2", true);
+      await setMigrationFlag("cleanup:purge-fake-seeds:v2");
       console.log(`Purged ${ids.length} fake seed cards (v2): ${ids.join(", ")}`);
     }
 
     // One-time: remove dropped seed cards. Add new IDs to the array and bump
     // the version key whenever you delete cards from SEED_CARDS.
-    const droppedPurged = await kv.get("cleanup:dropped-seeds:v1");
+    const droppedPurged = await getMigrationFlag("cleanup:dropped-seeds:v1");
     if (!droppedPurged) {
       const droppedIds = [1136, 1185]; // Apiary repro-pledge duplicates
       for (const id of droppedIds) await kv.del(`action:${id}`);
-      await kv.set("cleanup:dropped-seeds:v1", true);
+      await setMigrationFlag("cleanup:dropped-seeds:v1");
       console.log(`Purged ${droppedIds.length} dropped seed cards.`);
     }
 
@@ -1192,7 +1318,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     // `boosts: 5` placeholder values. These were carry-over from the original
     // Figma demo data. Live data writes get preserved on re-seed via the
     // merge logic below, so the seed file alone can't clear them.
-    const boostsResetDone = await kv.get("cleanup:reset-boosts-5:v1");
+    const boostsResetDone = await getMigrationFlag("cleanup:reset-boosts-5:v1");
     if (!boostsResetDone) {
       const resetIds = [8, 9, 10, 13];
       for (const id of resetIds) {
@@ -1201,7 +1327,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           await kv.set(`action:${id}`, { ...existing, boosts: 0 });
         }
       }
-      await kv.set("cleanup:reset-boosts-5:v1", true);
+      await setMigrationFlag("cleanup:reset-boosts-5:v1");
       console.log(`Reset boosts to 0 on ${resetIds.length} demo cards.`);
     }
 
@@ -1209,7 +1335,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     // CSV-imported version was vague about why users would subscribe; the
     // updated copy makes the anti-MAGA satire connection explicit so admins
     // and users can immediately see why it's on-topic.
-    const blaireUpdated = await kv.get("cleanup:blaire-substack-desc:v1");
+    const blaireUpdated = await getMigrationFlag("cleanup:blaire-substack-desc:v1");
     if (!blaireUpdated) {
       const newDesc = "The newsletter version of Blaire Erskine's deadpan-news-anchor MAGA satire — bonus fake interviews skewering Trump talking points, behind-the-scenes on her viral TikTok reels, no algorithm gating. Direct to your inbox.";
       for (const prefix of ["action:", "user-action:"]) {
@@ -1218,7 +1344,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           await kv.set(`${prefix}1278`, { ...existing, description: newDesc });
         }
       }
-      await kv.set("cleanup:blaire-substack-desc:v1", true);
+      await setMigrationFlag("cleanup:blaire-substack-desc:v1");
       console.log("Updated Blaire Erskine Substack description (id 1278).");
     }
 
@@ -1227,7 +1353,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     // human click in a past admin session — the rest of the cancel-subs
     // cluster (Amazon/Microsoft/Xbox/etc.) was approved cleanly. Going
     // forward the off-topic badge is AI-set only.
-    const strayFlagsCleared = await kv.get("cleanup:clear-stray-offtopic:v1");
+    const strayFlagsCleared = await getMigrationFlag("cleanup:clear-stray-offtopic:v1");
     if (!strayFlagsCleared) {
       const ids = [265, 266, 267];
       for (const id of ids) {
@@ -1240,7 +1366,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           }
         }
       }
-      await kv.set("cleanup:clear-stray-offtopic:v1", true);
+      await setMigrationFlag("cleanup:clear-stray-offtopic:v1");
       console.log(`Cleared stray notOnTopic flags on ${ids.length} cards.`);
     }
 
@@ -1249,7 +1375,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     // Tesla cards are skipped — they already use the local `org_tesla-takedown`
     // asset. TikTok / Twitch / Pol-Rev pages don't expose og:image, so they
     // borrow the 50501 / brand-equivalent image as a sensible fallback.
-    const imagesBackfillDone = await kv.get("cleanup:backfill-images-1245:v1");
+    const imagesBackfillDone = await getMigrationFlag("cleanup:backfill-images-1245:v1");
     if (!imagesBackfillDone) {
       const FIFTY = "https://linktr.ee/og/image/fiftyfiftyonemovement.jpg";
       const INDIV = "https://indivisible.org/wp-content/uploads/2026/01/indivisible_logo_dark_fill.png";
@@ -1284,7 +1410,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           }
         }
       }
-      await kv.set("cleanup:backfill-images-1245:v1", true);
+      await setMigrationFlag("cleanup:backfill-images-1245:v1");
       console.log(`Backfilled topImageUrl on ${imageBackfillCount} new cards.`);
     }
 
@@ -1292,7 +1418,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     // cards so the new local SVG logos (org_tiktok / org_youtube, with
     // imageContain) take over. The resolver prefers topImageUrl over
     // topImageKey, so we must null it explicitly.
-    const tiktokYoutubeRekeyDone = await kv.get("cleanup:tiktok-youtube-rekey:v1");
+    const tiktokYoutubeRekeyDone = await getMigrationFlag("cleanup:tiktok-youtube-rekey:v1");
     if (!tiktokYoutubeRekeyDone) {
       const idsToRekey = [1266, 1267, 1273, 1274, 1279, 1280, 1281];
       let cleared = 0;
@@ -1306,7 +1432,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           }
         }
       }
-      await kv.set("cleanup:tiktok-youtube-rekey:v1", true);
+      await setMigrationFlag("cleanup:tiktok-youtube-rekey:v1");
       console.log(`Cleared topImageUrl on ${cleared} TikTok/YouTube cards (rekeyed to local SVGs).`);
     }
 
@@ -1314,7 +1440,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     // added cards (IDs 2000+) that shipped with a default-5 value. These live
     // under `user-action:` (not `action:`) since they came through the user-
     // submission flow. v3 since v2 wrote to the wrong prefix.
-    const boostsResetV3Done = await kv.get("cleanup:reset-boosts-5:v3");
+    const boostsResetV3Done = await getMigrationFlag("cleanup:reset-boosts-5:v3");
     if (!boostsResetV3Done) {
       const resetIds = [2002, 2003, 2004, 2005, 2006];
       for (const id of resetIds) {
@@ -1326,7 +1452,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           }
         }
       }
-      await kv.set("cleanup:reset-boosts-5:v3", true);
+      await setMigrationFlag("cleanup:reset-boosts-5:v3");
       console.log(`Reset boosts to 0 on ${resetIds.length} admin-added cards.`);
     }
 
@@ -1336,23 +1462,23 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     // and admin curation flags (`quickAction`) are preserved across re-seeds —
     // only seed-managed metadata (title/desc/url/image) is overwritten.
     // One-time: set boosts = 950 on the pinned Spread the Word card.
-    const boostsFixed1 = await kv.get("cleanup:set-boosts-1-950:v1");
+    const boostsFixed1 = await getMigrationFlag("cleanup:set-boosts-1-950:v1");
     if (!boostsFixed1) {
       const card1 = await kv.get("action:1") as any;
       if (card1 && typeof card1 === "object") {
         await kv.set("action:1", { ...card1, boosts: 950 });
       }
-      await kv.set("cleanup:set-boosts-1-950:v1", true);
+      await setMigrationFlag("cleanup:set-boosts-1-950:v1");
       console.log("Set boosts = 950 on action:1 (Spread the Word).");
     }
 
-    const orgsSeeded = await kv.get("seed:org-actions:v25");
+    const orgsSeeded = await getMigrationFlag("seed:org-actions:v25");
     if (!orgsSeeded) {
       // Mark the seed as done UP FRONT — if the request times out partway
       // through the 260-card loop, the next request still skips the loop
       // instead of dying again. The cards already written stay; missing ones
       // get filled in on the next version bump.
-      await kv.set("seed:org-actions:v25", true);
+      await setMigrationFlag("seed:org-actions:v25");
       let count = 0;
       for (const card of SEED_CARDS) {
         // Seed every card in SEED_CARDS (no longer skipping ids <1000).
@@ -1388,7 +1514,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     // One-time migration: any pre-rename card still using `spotsUsed` gets a
     // matching `boosts` field copied in (without removing spotsUsed, so an
     // older client deploy keeps working).
-    const migratedBoosts = await kv.get("migrate:spotsused-to-boosts:v1");
+    const migratedBoosts = await getMigrationFlag("migrate:spotsused-to-boosts:v1");
     if (!migratedBoosts) {
       let migrated = 0;
       for (const c of (await kv.getByPrefix("action:")) as any[]) {
@@ -1409,13 +1535,13 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           migrated++;
         }
       }
-      await kv.set("migrate:spotsused-to-boosts:v1", true);
+      await setMigrationFlag("migrate:spotsused-to-boosts:v1");
       console.log(`Migrated ${migrated} cards from spotsUsed → boosts.`);
     }
 
     // One-time migration: zero out boosts on all org seed cards (id >= 1000)
     // that were incorrectly seeded with boosts: 4.
-    const boostsZeroed = await kv.get("migration:reset-boosts:v1");
+    const boostsZeroed = await getMigrationFlag("migration:reset-boosts:v1");
     if (!boostsZeroed) {
       let zeroed = 0;
       for (const card of (await kv.getByPrefix("action:")) as any[]) {
@@ -1425,7 +1551,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           zeroed++;
         }
       }
-      await kv.set("migration:reset-boosts:v1", true);
+      await setMigrationFlag("migration:reset-boosts:v1");
       console.log(`Reset boosts to 0 on ${zeroed} org seed cards.`);
     }
 
@@ -1433,7 +1559,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     // Cards with images (topImageKey or topImageUrl) get adminApproved: true,
     // EXCEPT for the batch added in action:1251–1271 which need admin review.
     // All user-created cards without adminApproved also get flagged as false.
-    const adminApprovedMigrated = await kv.get("migration:admin-approved:v1");
+    const adminApprovedMigrated = await getMigrationFlag("migration:admin-approved:v1");
     if (!adminApprovedMigrated) {
       let approved = 0, flagged = 0;
       for (const card of (await kv.getByPrefix("action:")) as any[]) {
@@ -1459,12 +1585,12 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           flagged++;
         }
       }
-      await kv.set("migration:admin-approved:v1", true);
+      await setMigrationFlag("migration:admin-approved:v1");
       console.log(`Admin-approved migration: ${approved} approved, ${flagged} flagged pending.`);
     }
 
     // One-time migration: set eventDate on the pol-rev event cards.
-    const eventDatesMigrated = await kv.get("migration:event-dates:v1");
+    const eventDatesMigrated = await getMigrationFlag("migration:event-dates:v1");
     if (!eventDatesMigrated) {
       const dates: Record<number, string> = {
         1252: "2026-07-04",
@@ -1485,12 +1611,12 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           await kv.set(`action:${idStr}`, evCard);
         }
       }
-      await kv.set("migration:event-dates:v1", true);
+      await setMigrationFlag("migration:event-dates:v1");
       console.log("Event-dates migration complete.");
     }
 
     // One-time migrations for user-created cards (from origin/develop)
-    const migrationV1 = await kv.get("migration:user-cards:v1");
+    const migrationV1 = await getMigrationFlag("migration:user-cards:v1");
     if (!migrationV1) {
       console.log("Running user-card migration v1...");
       const card30 = await kv.get("user-action:30") as any;
@@ -1501,7 +1627,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
         await kv.set("user-action:30", card30);
         console.log("Migrated card 30: Baby Trump Balloon");
       }
-      await kv.set("migration:user-cards:v1", true);
+      await setMigrationFlag("migration:user-cards:v1");
       console.log("User-card migration v1 complete.");
     }
 
@@ -1509,7 +1635,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     // targetUrl as unapproved so the admin can review and add the correct
     // action link. authorLink (author homepage) is a separate field and is
     // intentionally NOT used as a substitute here.
-    const noUrlReviewDone = await kv.get("migration:nourl-review:v1");
+    const noUrlReviewDone = await getMigrationFlag("migration:nourl-review:v1");
     if (!noUrlReviewDone) {
       let marked = 0;
       const userCardIds3 = (await kv.get("user-action:ids") ?? []) as number[];
@@ -1520,7 +1646,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           marked++;
         }
       }
-      await kv.set("migration:nourl-review:v1", true);
+      await setMigrationFlag("migration:nourl-review:v1");
       console.log(`nourl-review: marked ${marked} user-submitted cards without a targetUrl as unapproved.`);
     }
 
@@ -1528,7 +1654,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     // The nourl-review migration flagged it because it has no targetUrl
     // (it's a crafting card with no external link), but it was previously
     // approved and should stay live.
-    const beanieReapproved = await kv.get("cleanup:reapprove-beanie:v1");
+    const beanieReapproved = await getMigrationFlag("cleanup:reapprove-beanie:v1");
     if (!beanieReapproved) {
       let reapproved = 0;
       for (const c of (await kv.getByPrefix("user-action:")) as any[]) {
@@ -1539,7 +1665,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           console.log(`Re-approved beanie card user-action:${c.id}: "${c.title}"`);
         }
       }
-      await kv.set("cleanup:reapprove-beanie:v1", true);
+      await setMigrationFlag("cleanup:reapprove-beanie:v1");
       console.log(`Beanie re-approval migration: ${reapproved} cards updated.`);
     }
 
@@ -1547,7 +1673,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     // with a `link` field instead. The create endpoint previously stored the
     // AskFlow URL as `link`; everything else (admin panel, nourl-review,
     // EditCardModal) reads `targetUrl`. Rename the field in place.
-    const linkToTargetUrlDone = await kv.get("cleanup:link-to-targeturl:v1");
+    const linkToTargetUrlDone = await getMigrationFlag("cleanup:link-to-targeturl:v1");
     if (!linkToTargetUrlDone) {
       let fixed = 0;
       for (const c of (await kv.getByPrefix("user-action:")) as any[]) {
@@ -1558,7 +1684,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           fixed++;
         }
       }
-      await kv.set("cleanup:link-to-targeturl:v1", true);
+      await setMigrationFlag("cleanup:link-to-targeturl:v1");
       console.log(`link→targetUrl migration: fixed ${fixed} user-submitted cards.`);
     }
 
@@ -1566,7 +1692,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     // topImage) gets adminApproved:false so it lands in the admin review queue
     // instead of leaking to anon users. The create endpoint requires an image
     // up front; this migration cleans up cards admitted before that rule.
-    const noImageReviewDone = await kv.get("migration:no-image-review:v1");
+    const noImageReviewDone = await getMigrationFlag("migration:no-image-review:v1");
     if (!noImageReviewDone) {
       let demoted = 0;
       for (const prefix of ["action:", "user-action:"]) {
@@ -1579,7 +1705,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           demoted++;
         }
       }
-      await kv.set("migration:no-image-review:v1", true);
+      await setMigrationFlag("migration:no-image-review:v1");
       console.log(`No-image review migration: demoted ${demoted} cards to adminApproved=false.`);
     }
 
@@ -1587,7 +1713,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     // `quickAction: true` so the matcher classifies them as the new `10min`
     // bucket (not `5min` via the quickAction shortcut). Touches both `action:*`
     // (org seeds) and `user-action:*` (admin-added / user-submitted).
-    const petitions10minDone = await kv.get("migration:petitions-10min:v1");
+    const petitions10minDone = await getMigrationFlag("migration:petitions-10min:v1");
     if (!petitions10minDone) {
       let updated = 0;
       for (const prefix of ["action:", "user-action:"]) {
@@ -1601,7 +1727,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           updated++;
         }
       }
-      await kv.set("migration:petitions-10min:v1", true);
+      await setMigrationFlag("migration:petitions-10min:v1");
       console.log(`Petitions 10-min migration: updated ${updated} cards.`);
     }
 
@@ -1637,7 +1763,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     // of 2148/2149 (same title/authorName/url). Delete the higher ids and
     // remove from user-action:ids. Idempotent — deleting a non-existent record
     // is a no-op and filter on a missing id is a no-op.
-    const dedupBatchRepairDone = await kv.get("migration:dedup-restore-race:v1");
+    const dedupBatchRepairDone = await getMigrationFlag("migration:dedup-restore-race:v1");
     if (!dedupBatchRepairDone) {
       const idsToRemove = [2150, 2151];
       for (const id of idsToRemove) {
@@ -1645,7 +1771,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       }
       const currentIds = ((await kv.get("user-action:ids")) ?? []) as number[];
       await kv.set("user-action:ids", currentIds.filter((id) => !idsToRemove.includes(id)));
-      await kv.set("migration:dedup-restore-race:v1", true);
+      await setMigrationFlag("migration:dedup-restore-race:v1");
       console.log(`Dedup restore-race: removed ${idsToRemove.length} duplicate cards.`);
     }
 
@@ -1653,7 +1779,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     // them in user-action:ids but the actual KV records never persisted (the
     // first repair pass's getByPrefix scan found 0 of them). Re-create at new
     // ids and append to user-action:ids.
-    const restoreLostBatch1Done = await kv.get("migration:restore-lost-batch1:v1");
+    const restoreLostBatch1Done = await getMigrationFlag("migration:restore-lost-batch1:v1");
     if (!restoreLostBatch1Done) {
       const baseIds = ((await kv.get("user-action:ids")) ?? []) as number[];
       const startId = Math.max(...baseIds, 1305) + 1;
@@ -1698,14 +1824,14 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
         createdAt: now,
       }));
       const placed = await appendUserActionCards(cards);
-      await kv.set("migration:restore-lost-batch1:v1", true);
+      await setMigrationFlag("migration:restore-lost-batch1:v1");
       console.log(`Restored ${placed.length} lost batch-1 cards (ids ${placed.join(", ")}).`);
     }
 
     // Restore Tom Morello — overwritten at id 2132 by batch-2 migration when
     // it read a stale (already-corrupted) user-action:ids and computed
     // base = 2131. Re-create at the next free id.
-    const restoreTomMorelloDone = await kv.get("migration:restore-tom-morello:v1");
+    const restoreTomMorelloDone = await getMigrationFlag("migration:restore-tom-morello:v1");
     if (!restoreTomMorelloDone) {
       const currentIds = ((await kv.get("user-action:ids")) ?? []) as number[];
       const card: any = {
@@ -1728,7 +1854,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
         createdAt: new Date().toISOString(),
       };
       const [placedId] = await appendUserActionCards([card]);
-      await kv.set("migration:restore-tom-morello:v1", true);
+      await setMigrationFlag("migration:restore-tom-morello:v1");
       console.log(`Restored Tom Morello card at id ${placedId}.`);
     }
 
@@ -1736,7 +1862,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     // imports. 6 images auto-fetched (3 Bluesky brigade banners + 3 YouTube
     // thumbnails); the 7 Etsy + 2 TikTok cards land image-less and need images
     // attached via Admin → Edit.
-    const creatorsBatch2Done = await kv.get("migration:creators-import-2026-05-batch2:v1");
+    const creatorsBatch2Done = await getMigrationFlag("migration:creators-import-2026-05-batch2:v1");
     if (!creatorsBatch2Done) {
       type NewCard2 = {
         category: string;
@@ -1928,14 +2054,14 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
         });
       }
       const placed2 = await appendUserActionCards(cards2);
-      await kv.set("migration:creators-import-2026-05-batch2:v1", true);
+      await setMigrationFlag("migration:creators-import-2026-05-batch2:v1");
       console.log(`Creators batch 2 import: added ${placed2.length} cards (ids ${placed2.join(", ")}).`);
     }
 
     // Fix search-style targetUrls on 4 regional event cards. Originally
     // imported with mobilize.us search-results URLs (effectively useless as
     // an action link); update to each org's actual Mobilize organizer page.
-    const fixRegionalUrlsDone = await kv.get("migration:fix-regional-search-urls:v1");
+    const fixRegionalUrlsDone = await getMigrationFlag("migration:fix-regional-search-urls:v1");
     if (!fixRegionalUrlsDone) {
       const updates: Record<number, string> = {
         2150: "https://www.mobilize.us/commoncause/",
@@ -1952,28 +2078,28 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           updated++;
         }
       }
-      await kv.set("migration:fix-regional-search-urls:v1", true);
+      await setMigrationFlag("migration:fix-regional-search-urls:v1");
       console.log(`Fixed regional search URLs: updated ${updated} cards.`);
     }
 
     // Fix Yarn Sisters card (2130) — Facebook search URL replaced with the
     // Guardian's craft topic page (where the "Weapons of Mass Construction"
     // craftivism feature lives).
-    const fixYarnSistersDone = await kv.get("migration:fix-yarn-sisters-url:v1");
+    const fixYarnSistersDone = await getMigrationFlag("migration:fix-yarn-sisters-url:v1");
     if (!fixYarnSistersDone) {
       const url = "https://www.theguardian.com/lifeandstyle/craft";
       const existing = await kv.get("user-action:2130") as any;
       if (existing && typeof existing === "object") {
         await kv.set("user-action:2130", { ...existing, targetUrl: url, authorLink: url });
       }
-      await kv.set("migration:fix-yarn-sisters-url:v1", true);
+      await setMigrationFlag("migration:fix-yarn-sisters-url:v1");
       console.log(`Fixed Yarn Sisters URL on card 2130.`);
     }
 
     // Dedup the portland-seattle-yolo race: ids 2153/2154/2155 are duplicates
     // of 2150/2151/2152 (Knit/STARVE/Singing) — two function instances both
     // ran the import before either set the gate. Delete the higher ids.
-    const dedupPSYDone = await kv.get("migration:dedup-psy-race:v1");
+    const dedupPSYDone = await getMigrationFlag("migration:dedup-psy-race:v1");
     if (!dedupPSYDone) {
       const idsToRemove = [2153, 2154, 2155];
       for (const id of idsToRemove) {
@@ -1981,7 +2107,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       }
       const currentIds = ((await kv.get("user-action:ids")) ?? []) as number[];
       await kv.set("user-action:ids", currentIds.filter((id) => !idsToRemove.includes(id)));
-      await kv.set("migration:dedup-psy-race:v1", true);
+      await setMigrationFlag("migration:dedup-psy-race:v1");
       console.log(`Dedup PSY race: removed ${idsToRemove.length} duplicate cards.`);
     }
 
@@ -1991,7 +2117,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     // against existing user-action records by lowercase title + targetUrl,
     // per-card kv.get existence check before insert, and a re-read-then-union
     // write to user-action:ids so concurrent runs can't drop or duplicate ids.
-    const portlandSeattleYoloDone = await kv.get("migration:portland-seattle-yolo-import-2026-05:v1");
+    const portlandSeattleYoloDone = await getMigrationFlag("migration:portland-seattle-yolo-import-2026-05:v1");
     if (!portlandSeattleYoloDone) {
       type RegionalCard = {
         category: string;
@@ -2080,7 +2206,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
         createdAt: nowPS,
       }));
       const placedPS = await appendUserActionCards(cardsPS);
-      await kv.set("migration:portland-seattle-yolo-import-2026-05:v1", true);
+      await setMigrationFlag("migration:portland-seattle-yolo-import-2026-05:v1");
       console.log(`Portland/Seattle/Yolo regional import: added ${placedPS.length} cards (ids ${placedPS.join(", ")}).`);
     }
 
@@ -2088,7 +2214,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     // image (no topImageUrl + no topImageKey + no topImage). Skips pinToTop
     // cards so the Spread-the-Word pin can't be accidentally demoted. Cards
     // already adminApproved=false are left alone (they're already in the queue).
-    const demoteMissingDone = await kv.get("migration:demote-missing-url-or-image:v1");
+    const demoteMissingDone = await getMigrationFlag("migration:demote-missing-url-or-image:v1");
     if (!demoteMissingDone) {
       let demoted = 0;
       const sample: string[] = [];
@@ -2105,7 +2231,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           if (sample.length < 20) sample.push(`${prefix}${c.id} (url:${hasUrl},img:${hasImage})`);
         }
       }
-      await kv.set("migration:demote-missing-url-or-image:v1", true);
+      await setMigrationFlag("migration:demote-missing-url-or-image:v1");
       console.log(`Demote missing url/image: demoted ${demoted} cards. Sample: ${sample.join("; ")}`);
     }
 
@@ -2114,7 +2240,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     // other 12 land without a header image (Etsy 429s scrapers, TikTok needs
     // JS, Facebook search URL has no stable asset) and need images attached
     // via Admin → Edit. All inserted with adminApproved=true.
-    const etsyCreatorsImportDone = await kv.get("migration:etsy-creators-import-2026-05:v1");
+    const etsyCreatorsImportDone = await getMigrationFlag("migration:etsy-creators-import-2026-05:v1");
     if (!etsyCreatorsImportDone) {
       type NewCard = {
         category: string;
@@ -2304,7 +2430,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
         });
       }
       const placedEtsy = await appendUserActionCards(cardsEtsy);
-      await kv.set("migration:etsy-creators-import-2026-05:v1", true);
+      await setMigrationFlag("migration:etsy-creators-import-2026-05:v1");
       console.log(`Etsy creators import: added ${placedEtsy.length} cards (ids ${placedEtsy.join(", ")}).`);
     }
 
@@ -2324,7 +2450,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     //
     // The PUT-leak and migration source-code holes are closed in this same
     // release, so this cleanup is one-shot — bad state can't recur.
-    const approvedNoImageCleanupDone = await kv.get("migration:approved-without-image-cleanup:v1");
+    const approvedNoImageCleanupDone = await getMigrationFlag("migration:approved-without-image-cleanup:v1");
     if (!approvedNoImageCleanupDone) {
       let flipped = 0;
       const flippedIds: number[] = [];
@@ -2339,13 +2465,181 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           flippedIds.push(c.id);
         }
       }
-      await kv.set("migration:approved-without-image-cleanup:v1", true);
+      await setMigrationFlag("migration:approved-without-image-cleanup:v1");
       console.log(`Approved-without-image cleanup: flipped ${flipped} cards back to pending. IDs: ${flippedIds.join(", ")}`);
+    }
+
+    // One-time: import a curated batch from the 2026-05-17 TSV scout output.
+    //
+    // Source: 27-row spreadsheet of Indivisible / Mobilize / Pol-Rev / Etsy
+    // candidates. Manually filtered against existing seed-card URLs and
+    // the rules "direct campaign link, harvestable og:image, authorLink ≠
+    // targetUrl, no dupes." 20 of the 27 rows were rejected at this stage
+    // (existing-card URL collision, homepage-only links, or source_url
+    // identical to targetUrl). The surviving 7 rows had their og:image
+    // harvested on 2026-05-17 via raw HTML scrape — links below are the
+    // live og:image URLs at that scrape time.
+    //
+    // Cards land with adminApproved=false so they surface in Admin → Pending
+    // for one-click approval (which will pass the image gate because we set
+    // topImageUrl). The existingUrls pre-check is belt-and-suspenders against
+    // URL collision even though we hand-verified.
+    const tsvBatch2026May17Done = await getMigrationFlag("migration:tsv-batch-2026-05-17:v1");
+    if (!tsvBatch2026May17Done) {
+      type TsvCard = {
+        category: string;
+        categoryColor: string;
+        title: string;
+        description: string;
+        targetUrl: string;
+        topImageUrl: string;
+        authorName: string;
+        authorRole: string;
+        authorLink: string;
+        isOnline: boolean;
+        actionType: string;
+        location?: string;
+        eventDate?: string;
+        toneOverride: { anger: number; comedy: number; subversion: number; hope: number; energy: number };
+        amplifiesGroups?: string[];
+        timeCommitment?: string;
+      };
+      const tsvIncoming: TsvCard[] = [
+        // Row 2 — Indivisible call to block insurrection slush fund
+        { category: "PETITION", categoryColor: "#05737f",
+          title: "Tell Senators to Block Trump's $1.8B Insurrection Slush Fund",
+          description: "Indivisible call-tool: tell your senator to block Trump's $1.8 billion proposal to pay out the Jan 6 insurrectionists. 5-minute call script with your reps' direct lines.",
+          targetUrl: "https://indivisible.org/actions/senate-no-payouts-for-insurrectionists/",
+          topImageUrl: "https://indivisible.org/wp-content/uploads/2026/05/260522_No-Payouts-for-Insurrectionists_1.jpg",
+          authorName: "Indivisible", authorRole: "Movement Organization", authorLink: "https://indivisible.org/",
+          isOnline: true, actionType: "Online", timeCommitment: "5–10 minutes",
+          toneOverride: { anger: 3, comedy: 0, subversion: 1, hope: 2, energy: 2 } },
+        // Row 6 — Indivisible petition to end Trump's Cuba blockade
+        { category: "PETITION", categoryColor: "#05737f",
+          title: "Demand Your Senator End Trump's Blockade on Cuba",
+          description: "Indivisible call script targeting Trump's tightened Cuba blockade — humanitarian crisis Trump created by reversing Biden-era easements. 4-minute action.",
+          targetUrl: "https://indivisible.org/actions/demand-your-senator-end-trumps-blockade-on-cuba/",
+          topImageUrl: "https://indivisible.org/wp-content/uploads/2026/05/250519_End-Trump-s-Blockade-on-Cuba_3.png",
+          authorName: "Indivisible", authorRole: "Movement Organization", authorLink: "https://indivisible.org/",
+          isOnline: true, actionType: "Online", timeCommitment: "5–10 minutes",
+          toneOverride: { anger: 2, comedy: 0, subversion: 1, hope: 2, energy: 2 } },
+        // Row 8 — Seattle Indivisible NO WAR. NO KINGS rally
+        { category: "PROTEST", categoryColor: "#23297e",
+          title: "NO WAR. NO KINGS: U Village — Seattle (May 30)",
+          description: "Seattle Indivisible's Saturday anti-Trump / anti-Iran-war visibility action at University Village. Recurring NO KINGS protest series targeting Trump's executive overreach.",
+          targetUrl: "https://www.mobilize.us/mobilize/event/822442/",
+          topImageUrl: "https://mobilizeamerica.imgix.net/uploads/event/Image_20260304193116846523.jpeg?w=1200&h=628&fit=crop&bg=FFF",
+          authorName: "Seattle Indivisible", authorRole: "Movement Organization", authorLink: "https://www.mobilize.us/mobilize/",
+          isOnline: false, actionType: "In Person Group", location: "Washington", eventDate: "2026-05-30",
+          toneOverride: { anger: 2, comedy: 1, subversion: 1, hope: 3, energy: 3 } },
+        // Row 9 — Southend Indivisible ICE HQ Tukwila visibility action
+        { category: "PROTEST", categoryColor: "#23297e",
+          title: "Protest ICE Terror at ICE HQ — Tukwila WA (May 29)",
+          description: "Southend Indivisible's Friday-morning visibility action outside ICE Seattle HQ in Tukwila, targeting Trump's deportation surge and the ICE office expansion in WA.",
+          targetUrl: "https://www.mobilize.us/mobilize/event/944899/",
+          topImageUrl: "https://mobilizeamerica.imgix.net/uploads/event/IMG_5533%20%281%29_20260203035337181451.jpeg?w=1200&h=628&fit=crop&bg=FFF",
+          authorName: "Southend Indivisible", authorRole: "Movement Organization", authorLink: "https://www.mobilize.us/mobilize/",
+          isOnline: false, actionType: "In Person Group", location: "Washington", eventDate: "2026-05-29",
+          toneOverride: { anger: 3, comedy: 0, subversion: 1, hope: 2, energy: 3 }, amplifiesGroups: ["immigrant"] },
+        // Row 14 — Tesla Takedown Boston combined rally
+        { category: "PROTEST", categoryColor: "#23297e",
+          title: "Trump Takedown — Boston (Jun 13)",
+          description: "Tesla Takedown Boston's June 13 in-person action combining Tesla Takedown, Trump Takedown, and No Kings messaging into a single anti-Musk/anti-Trump rally.",
+          targetUrl: "https://events.pol-rev.com/events/7fa8eece-013c-4d77-a25f-3f2a87f27e99",
+          topImageUrl: "https://events.pol-rev.com/media/d6798d55fcaf4dcebc496f7a3bdd0ddca7450d85c00c6852ae31942e9b8e9975.png?name=boycott%20tmobile.png",
+          authorName: "Tesla Takedown Boston", authorRole: "Movement Organization", authorLink: "https://events.pol-rev.com/",
+          isOnline: false, actionType: "In Person Group", location: "Massachusetts", eventDate: "2026-06-13",
+          toneOverride: { anger: 3, comedy: 1, subversion: 2, hope: 2, energy: 3 } },
+        // Row 15 — She Is Me Epstein Files protest walk interest meeting
+        { category: "MEETING", categoryColor: "#5a3e9e",
+          title: "Interest Meeting for Epstein Protest Walk DC (Jun 10)",
+          description: "She Is Me's interest meeting for a planned Epstein Files protest walk in DC, targeting Trump's refusal to release the Epstein client list. Camden County NJ for the meeting.",
+          targetUrl: "https://events.pol-rev.com/events/308acc70-547b-4c1b-a606-0584dee69852",
+          topImageUrl: "https://events.pol-rev.com/media/16de76e41e2952aca18f20568acba37d294065efaa514b9e7e4357b4b8c18183.jpg?name=1000002421.jpg",
+          authorName: "She Is Me", authorRole: "Movement Organization", authorLink: "https://events.pol-rev.com/",
+          isOnline: false, actionType: "In Person Group", location: "New Jersey", eventDate: "2026-06-10",
+          toneOverride: { anger: 2, comedy: 1, subversion: 2, hope: 2, energy: 2 } },
+        // Row 21 — Resist And Defend banner drop Corte Madera
+        { category: "PROTEST", categoryColor: "#23297e",
+          title: "Protect Immigrants Banner Drop — Corte Madera CA (May 28)",
+          description: "Resist And Defend's Thursday-afternoon banner-drop action over a Corte Madera overpass — fast, high-visibility anti-Trump-deportation signage for commuter eyes.",
+          targetUrl: "https://www.mobilize.us/mobilize/event/933855/",
+          topImageUrl: "https://mobilizeamerica.imgix.net/uploads/event/tamalpais_20260406004508465116.jpg?w=1200&h=628&fit=crop&bg=FFF",
+          authorName: "Resist And Defend", authorRole: "Movement Organization", authorLink: "https://www.mobilize.us/mobilize/",
+          isOnline: false, actionType: "In Person Group", location: "California", eventDate: "2026-05-28",
+          toneOverride: { anger: 2, comedy: 0, subversion: 2, hope: 2, energy: 3 }, amplifiesGroups: ["immigrant"] },
+      ];
+
+      // Build a set of every existing card URL across both stores so we can
+      // skip any TSV row whose targetUrl already lives in the catalog. This
+      // is belt-and-suspenders — we hand-checked when assembling the list.
+      const existingUrls = new Set<string>();
+      for (const prefix of ["action:", "user-action:"]) {
+        for (const c of (await kv.getByPrefix(prefix)) as any[]) {
+          if (c && typeof c === "object" && typeof c.targetUrl === "string") {
+            existingUrls.add(normalizeBulkImportUrl(c.targetUrl));
+          }
+        }
+      }
+
+      const currentIds = ((await kv.get("user-action:ids")) ?? []) as number[];
+      const baseId = Math.max(...(currentIds.length ? currentIds : [1335]), 1335);
+      const nowIso = new Date().toISOString();
+      const newIds = [...currentIds];
+      let added = 0;
+      const skippedDupes: string[] = [];
+
+      for (let i = 0; i < tsvIncoming.length; i++) {
+        const c = tsvIncoming[i];
+        if (existingUrls.has(normalizeBulkImportUrl(c.targetUrl))) {
+          skippedDupes.push(c.title);
+          continue;
+        }
+        const id = baseId + 1 + added;
+        const card: any = {
+          id,
+          category: c.category,
+          categoryColor: c.categoryColor,
+          actionType: c.actionType,
+          isOnline: c.isOnline,
+          title: c.title,
+          description: c.description,
+          spotsTotal: "Unlimited",
+          boosts: 0,
+          authorName: c.authorName,
+          authorRole: c.authorRole,
+          authorLink: c.authorLink,
+          targetUrl: c.targetUrl,
+          topImageUrl: c.topImageUrl,
+          toneOverride: c.toneOverride,
+          ...(c.location ? { location: c.location } : {}),
+          ...(c.eventDate ? { eventDate: c.eventDate } : {}),
+          ...(c.amplifiesGroups ? { amplifiesGroups: c.amplifiesGroups } : {}),
+          ...(c.timeCommitment ? { timeCommitment: c.timeCommitment } : {}),
+          // Land as pending so the admin reviews each before going live —
+          // the rule we hardened earlier ("bulk-write paths must not auto-
+          // approve") applies here too. The approve endpoint's image gate
+          // will pass because we set topImageUrl, so this is a one-click
+          // approval from Admin → Pending.
+          adminApproved: false,
+          createdAt: nowIso,
+          createdBy: "tsv-batch-2026-05-17",
+        };
+        await kv.set(`user-action:${id}`, card);
+        newIds.push(id);
+        added++;
+      }
+
+      if (added > 0) {
+        await kv.set("user-action:ids", newIds);
+      }
+      await setMigrationFlag("migration:tsv-batch-2026-05-17:v1");
+      console.log(`TSV batch 2026-05-17 import: added ${added} cards.${skippedDupes.length ? ` Skipped (URL dupes): ${skippedDupes.join("; ")}` : ""}`);
     }
 
     // One-time: bulk-mark "Cancel your …" boycott cards as "5–10 minutes".
     // They were stored as "Ongoing" but the actual cancel step is a few clicks.
-    const cancelYour10minDone = await kv.get("migration:cancel-your-10min:v1");
+    const cancelYour10minDone = await getMigrationFlag("migration:cancel-your-10min:v1");
     if (!cancelYour10minDone) {
       let updated = 0;
       for (const prefix of ["action:", "user-action:"]) {
@@ -2357,14 +2651,14 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           updated++;
         }
       }
-      await kv.set("migration:cancel-your-10min:v1", true);
+      await setMigrationFlag("migration:cancel-your-10min:v1");
       console.log(`Cancel-your 10-min migration: updated ${updated} cards.`);
     }
 
     // Seed The Smacks receipts. Bump the version key whenever SEED_RECEIPTS changes.
-    const receiptsSeeded = await kv.get("seed:receipts:v2");
+    const receiptsSeeded = await getMigrationFlag("seed:receipts:v2");
     if (!receiptsSeeded) {
-      await kv.set("seed:receipts:v2", true);
+      await setMigrationFlag("seed:receipts:v2");
       const existingIds = ((await kv.get("receipt:ids")) ?? []) as number[];
       const idSet = new Set(existingIds);
       const newIds = [...existingIds];
@@ -2382,7 +2676,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     }
 
     // One-time: add three Common Cause actions as approved user-action cards.
-    const commonCauseDone = await kv.get("migration:common-cause-actions:v1");
+    const commonCauseDone = await getMigrationFlag("migration:common-cause-actions:v1");
     if (!commonCauseDone) {
       const currentIds = ((await kv.get("user-action:ids")) ?? []) as number[];
       const base = Math.max(...(currentIds.length ? currentIds : [1305]), 1305);
@@ -2445,12 +2739,12 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
         },
       ];
       const placedCC = await appendUserActionCards(newCards);
-      await kv.set("migration:common-cause-actions:v1", true);
+      await setMigrationFlag("migration:common-cause-actions:v1");
       console.log(`Added ${placedCC.length} Common Cause action cards (ids ${placedCC.join(", ")}).`);
     }
 
     // One-time migration: add local/Mobilize action cards sourced from spreadsheet
-    const mobilizeLocalDone = await kv.get("migration:mobilize-local-actions:v1");
+    const mobilizeLocalDone = await getMigrationFlag("migration:mobilize-local-actions:v1");
     if (!mobilizeLocalDone) {
       const currentIds = ((await kv.get("user-action:ids")) ?? []) as number[];
       const base = Math.max(...(currentIds.length ? currentIds : [1400]), 1400);
@@ -2767,12 +3061,12 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
         },
       ];
       const placedML = await appendUserActionCards(newCards);
-      await kv.set("migration:mobilize-local-actions:v1", true);
+      await setMigrationFlag("migration:mobilize-local-actions:v1");
       console.log(`Added ${placedML.length} local/Mobilize action cards (ids ${placedML.join(", ")}).`);
     }
 
     // One-time migration: add second batch of Mobilize/50501 action cards
-    const mobilizeV2Done = await kv.get("migration:mobilize-actions-v2:v1");
+    const mobilizeV2Done = await getMigrationFlag("migration:mobilize-actions-v2:v1");
     if (!mobilizeV2Done) {
       const currentIds = ((await kv.get("user-action:ids")) ?? []) as number[];
       const base = Math.max(...(currentIds.length ? currentIds : [1500]), 1500);
@@ -3110,12 +3404,12 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
         },
       ];
       const placedMv2 = await appendUserActionCards(newCards);
-      await kv.set("migration:mobilize-actions-v2:v1", true);
+      await setMigrationFlag("migration:mobilize-actions-v2:v1");
       console.log(`Added ${placedMv2.length} Mobilize/50501 action cards (v2) (ids ${placedMv2.join(", ")}).`);
     }
 
     // One-time migration: add Resistbot "Empower States to Undo Citizens United" petition card
-    const resistbotCitizensDone = await kv.get("migration:resistbot-citizens-united:v1");
+    const resistbotCitizensDone = await getMigrationFlag("migration:resistbot-citizens-united:v1");
     if (!resistbotCitizensDone) {
       const card = {
         id: 1374,
@@ -3138,19 +3432,19 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
         createdAt: new Date().toISOString(),
       };
       await kv.set(`action:${card.id}`, card);
-      await kv.set("migration:resistbot-citizens-united:v1", true);
+      await setMigrationFlag("migration:resistbot-citizens-united:v1");
       console.log("Added Resistbot Citizens United petition card (id 1374).");
     }
 
     // v2: update description to mention Hawaii's success
-    const resistbotCitizensV2Done = await kv.get("migration:resistbot-citizens-united:v2");
+    const resistbotCitizensV2Done = await getMigrationFlag("migration:resistbot-citizens-united:v2");
     if (!resistbotCitizensV2Done) {
       const existing: any = await kv.get("action:1374");
       if (existing) {
         existing.description = "Hawaii just did it — became the first state to pass legislation rolling back Citizens United. Now we need every state to follow. Text SIGN PKFEPT to 50409 or sign via Resistbot to urge your governor and legislature to use state authority to limit corporate spending in elections. Montana's Transparent Elections Initiative showed the way. Hawaii proved it works. Let's go.";
         await kv.set("action:1374", existing);
       }
-      await kv.set("migration:resistbot-citizens-united:v2", true);
+      await setMigrationFlag("migration:resistbot-citizens-united:v2");
       console.log("Updated Resistbot Citizens United card with Hawaii success (id 1374).");
     }
 
@@ -3159,7 +3453,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     // intentionally kept — Sierra Club is still actively campaigning on the same
     // URL, and Adopt-A-Corner runs through Jan 2029 (the "Jan 20" in the
     // description was a program kickoff, not a deadline).
-    const retirePastDatedDone = await kv.get("cleanup:retire-past-dated-2026-05:v1");
+    const retirePastDatedDone = await getMigrationFlag("cleanup:retire-past-dated-2026-05:v1");
     if (!retirePastDatedDone) {
       const retireTitles = new Set([
         "Trans Peoria Community Potluck",
@@ -3193,37 +3487,62 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
         await kv.set("user-action:ids", userIds.filter((x) => !removedUserIds.includes(x)));
       }
 
-      await kv.set("cleanup:retire-past-dated-2026-05:v1", true);
+      await setMigrationFlag("cleanup:retire-past-dated-2026-05:v1");
       console.log(`Retired ${removed.length} past-dated cards:`, removed);
     }
 
-    // Fetch ALL action:* cards from the KV store (real cards only after purge)
-    const allActionCards = await kv.getByPrefix("action:");
-    const seenIds = new Set<number>();
-    const allCards: any[] = [];
-    for (const card of allActionCards) {
-      if (card && typeof card === "object" && typeof card.id === "number" && !seenIds.has(card.id)) {
+    // PERF: in-process cache + parallel KV reads. The catalog (~600 cards)
+    // changes infrequently relative to read traffic (admins approve cards
+    // every few minutes; boosts trickle; user submissions are sparse), so
+    // a short TTL (15s) cache eliminates almost all KV round-trips on warm
+    // requests. Cache is explicitly invalidated by mutation endpoints below.
+    const now = Date.now();
+    let assembled: any[];
+    let cacheStatus: "hit" | "miss" = "miss";
+    const tStart = Date.now();
+    if (actionsCache && (now - actionsCache.ts) < ACTIONS_CACHE_TTL_MS) {
+      assembled = actionsCache.cards;
+      cacheStatus = "hit";
+      console.log(`/actions cache hit (age ${now - actionsCache.ts}ms)`);
+    } else {
+      // PERF: parallelize the three independent KV reads (was sequential).
+      const tKvStart = Date.now();
+      const [allActionCardsRaw, userCardIdsRaw, userActionRecordsRaw] = await Promise.all([
+        kv.getByPrefix("action:"),
+        kv.get("user-action:ids"),
+        kv.getByPrefix("user-action:"),
+      ]);
+      console.log(`/actions KV fetch took ${Date.now() - tKvStart}ms`);
+
+      const seenIds = new Set<number>();
+      assembled = [];
+      for (const card of allActionCardsRaw as any[]) {
+        if (card && typeof card === "object" && typeof card.id === "number" && !seenIds.has(card.id)) {
+          seenIds.add(card.id);
+          assembled.push(card);
+        }
+      }
+
+      const userCardIds = (userCardIdsRaw ?? []) as number[];
+      const userCardIdSet = new Set(userCardIds);
+      for (const card of userActionRecordsRaw as any[]) {
+        if (!card || typeof card !== "object" || typeof card.id !== "number") continue;
+        if (!userCardIdSet.has(card.id)) continue;
+        if (seenIds.has(card.id)) continue;
         seenIds.add(card.id);
-        allCards.push(card);
+        assembled.push(card);
       }
+
+      assembled.sort((a, b) => a.id - b.id);
+      actionsCache = { cards: assembled, ts: now };
     }
 
-    // Also fetch user-created cards
-    const userCardIds = (await kv.get("user-action:ids") ?? []) as number[];
-    for (const id of userCardIds) {
-      if (seenIds.has(id)) continue;
-      const card = await kv.get(`user-action:${id}`);
-      if (card && typeof card === "object") {
-        seenIds.add(id);
-        allCards.push(card);
-      }
-    }
+    const total = assembled.length;
+    const cards = assembled.slice(offset, offset + limit);
 
-    allCards.sort((a, b) => a.id - b.id);
-    const total = allCards.length;
-    const cards = allCards.slice(offset, offset + limit);
-
-    console.log(`Returning ${cards.length} of ${total} action cards (offset=${offset}, limit=${limit}).`);
+    console.log(`Returning ${cards.length} of ${total} action cards (offset=${offset}, limit=${limit}, cache=${cacheStatus}, total handler ${Date.now() - tStart}ms).`);
+    c.header("X-Cache", cacheStatus);
+    c.header("X-Handler-Ms", String(Date.now() - tStart));
     return c.json({ cards, total });
   } catch (err) {
     console.log("Error in GET /actions:", err);
@@ -3242,11 +3561,16 @@ app.get("/make-server-9eb1ae04/stats", async (c) => {
         seenIds.add(card.id); allCards.push(card);
       }
     }
+    // PERF: single batch fetch (was a per-id loop with ~450 sequential round-trips)
     const userCardIds = (await kv.get("user-action:ids") ?? []) as number[];
-    for (const id of userCardIds) {
-      if (seenIds.has(id)) continue;
-      const card = await kv.get(`user-action:${id}`);
-      if (card && typeof card === "object") { seenIds.add(id); allCards.push(card); }
+    const userCardIdSet = new Set(userCardIds);
+    const userActionRecords = (await kv.getByPrefix("user-action:")) as any[];
+    for (const card of userActionRecords) {
+      if (!card || typeof card !== "object" || typeof card.id !== "number") continue;
+      if (!userCardIdSet.has(card.id)) continue;
+      if (seenIds.has(card.id)) continue;
+      seenIds.add(card.id);
+      allCards.push(card);
     }
 
     // Distinct non-empty locations = cities
@@ -3585,6 +3909,7 @@ app.post("/make-server-9eb1ae04/actions/create", async (c) => {
 
     await kv.set(`user-action:${nextId}`, card);
     await kv.set("user-action:ids", [...currentIds, nextId]);
+    invalidateActionsCache();
     console.log(`User ${approval.name} created ASK #${nextId}: "${title}"${offTopic ? " [AUTO-FLAGGED: off-topic]" : ""}`);
     return c.json({ card });
   } catch (err) {
@@ -3865,6 +4190,7 @@ app.put("/make-server-9eb1ae04/actions/:id", async (c) => {
     }
 
     await kv.set(cardKey, updated);
+    invalidateActionsCache();
     console.log(`${approval.name} edited card #${id}: "${updated.title}"`);
     return c.json({ card: updated });
   } catch (err) {
@@ -3948,6 +4274,7 @@ app.post("/make-server-9eb1ae04/admin/approve-action/:id", async (c) => {
     // it so the card doesn't carry a stale "NOT ON TOPIC" badge into live.
     if (card.notOnTopic) delete card.notOnTopic;
     await kv.set(cardKey, card);
+    invalidateActionsCache();
     console.log(`Admin ${admin.record.name} approved card #${id}: "${card.title}"`);
     return c.json({ card });
   } catch (err) {
@@ -4201,6 +4528,7 @@ app.post("/make-server-9eb1ae04/admin/flag-off-topic/:id", async (c) => {
     card.flaggedBy = admin.user.id;
     card.flaggedAt = new Date().toISOString();
     await kv.set(cardKey, card);
+    invalidateActionsCache();
     console.log(`Admin ${admin.record.name} flagged card #${id} as off-topic: "${card.title}"`);
     return c.json({ card });
   } catch (err) {
@@ -4229,6 +4557,7 @@ app.post("/make-server-9eb1ae04/admin/unflag-off-topic/:id", async (c) => {
     delete card.flaggedBy;
     delete card.flaggedAt;
     await kv.set(cardKey, card);
+    invalidateActionsCache();
     console.log(`Admin ${admin.record.name} cleared off-topic flag on card #${id}: "${card.title}"`);
     return c.json({ card });
   } catch (err) {
@@ -4296,6 +4625,185 @@ app.post("/make-server-9eb1ae04/actions/upload-image", async (c) => {
   }
 });
 
+// ─── POST /admin/actions/:id/recompress-image — shrink a stored card image ───
+// Admin-only. Fetches the card's current `topImageUrl` (must be a Supabase
+// storage URL we host), resizes to max 1200px width if larger, re-encodes in
+// the same format (PNG or JPEG), uploads the new bytes, and updates the card.
+// Skips WebP/AVIF/GIF inputs (imagescript can't decode them or they're already
+// optimized). Returns the size before/after.
+const RECOMPRESS_MAX_WIDTH = 1200;
+const STORAGE_PREFIX = "zkihnylrvdofdbnhmmoq.supabase.co/storage";
+app.post("/make-server-9eb1ae04/admin/actions/:id/recompress-image", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const idStr = c.req.param("id");
+    const id = Number(idStr);
+    if (!Number.isFinite(id)) return c.json({ error: "Invalid id" }, 400);
+
+    // Find the card — try user-action first (more recent), then action.
+    let prefix = "user-action:";
+    let card = (await kv.get(`${prefix}${id}`)) as any;
+    if (!card) {
+      prefix = "action:";
+      card = (await kv.get(`${prefix}${id}`)) as any;
+    }
+    if (!card) return c.json({ error: `Card ${id} not found` }, 404);
+
+    const url = card.topImageUrl;
+    if (!url) return c.json({ error: "Card has no topImageUrl to recompress" }, 400);
+    if (!url.includes(STORAGE_PREFIX)) {
+      return c.json({ error: "Can only recompress images hosted in our own Supabase storage" }, 400);
+    }
+
+    // Fetch the existing image.
+    const res = await fetch(url);
+    if (!res.ok) return c.json({ error: `Image fetch failed (${res.status})` }, 502);
+    const oldBuf = new Uint8Array(await res.arrayBuffer());
+    const oldSize = oldBuf.length;
+    const contentType = (res.headers.get("content-type") ?? "").toLowerCase();
+
+    // Format filter: imagescript handles PNG + JPEG. Skip everything else.
+    let format: "png" | "jpeg";
+    if (contentType.includes("png")) format = "png";
+    else if (contentType.includes("jpeg") || contentType.includes("jpg")) format = "jpeg";
+    else {
+      return c.json({
+        skipped: true,
+        reason: `Unsupported content type for recompression: ${contentType || "unknown"}`,
+        oldSize,
+      });
+    }
+
+    // Decode + optionally resize.
+    const img = await Image.decode(oldBuf);
+    const origWidth = img.width;
+    const origHeight = img.height;
+    let processed = img;
+    if (origWidth > RECOMPRESS_MAX_WIDTH) {
+      processed = img.resize(RECOMPRESS_MAX_WIDTH, Image.RESIZE_AUTO);
+    }
+
+    // Re-encode in the same format.
+    let newBuf: Uint8Array;
+    let ext: string;
+    let mime: string;
+    if (format === "png") {
+      newBuf = await processed.encode();
+      ext = "png";
+      mime = "image/png";
+    } else {
+      newBuf = await processed.encodeJPEG(85);
+      ext = "jpg";
+      mime = "image/jpeg";
+    }
+
+    if (newBuf.length >= oldSize) {
+      return c.json({
+        skipped: true,
+        reason: "Recompressed bytes not smaller than original — leaving as-is.",
+        oldSize,
+        newSize: newBuf.length,
+        originalWidth: origWidth,
+        originalHeight: origHeight,
+      });
+    }
+
+    // Upload + update card.
+    const supabase = adminClient();
+    const BUCKET = "action-images";
+    const key = `recompressed-${crypto.randomUUID()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from(BUCKET).upload(key, newBuf, { contentType: mime, upsert: false });
+    if (upErr) return c.json({ error: `Upload failed: ${upErr.message}` }, 500);
+    const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(key);
+    const newUrl = urlData.publicUrl;
+
+    await kv.set(`${prefix}${id}`, { ...card, topImageUrl: newUrl });
+    console.log(`Admin ${admin.record.name} recompressed card #${id}: ${oldSize} → ${newBuf.length} bytes (${origWidth}x${origHeight} → ${processed.width}x${processed.height})`);
+
+    return c.json({
+      success: true,
+      oldSize,
+      newSize: newBuf.length,
+      savings: oldSize - newBuf.length,
+      savingsPct: Math.round(100 * (1 - newBuf.length / oldSize)),
+      originalWidth: origWidth,
+      originalHeight: origHeight,
+      newWidth: processed.width,
+      newHeight: processed.height,
+      newUrl,
+    });
+  } catch (err) {
+    console.log("Recompress error:", err);
+    return c.json({ error: `Recompress failed: ${err}` }, 500);
+  }
+});
+
+// ─── GET /admin/actions/big-images — list cards whose image is oversized ─────
+// Admin-only. Iterates all cards (both stores), HEADs each Supabase storage
+// URL, returns those with content-length above `threshold` (default 500_000).
+// Slower than a normal list because of N HEAD requests; the admin UI calls it
+// on-demand when the operator opens the "Big images" tab.
+app.get("/make-server-9eb1ae04/admin/actions/big-images", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const threshold = Math.max(1024, Number(c.req.query("threshold") ?? 500_000));
+
+    // Collect every card from both stores.
+    const cards: any[] = [];
+    for (const c2 of (await kv.getByPrefix("action:")) as any[]) {
+      if (c2 && typeof c2 === "object" && typeof c2.id === "number") cards.push({ ...c2, _store: "action" });
+    }
+    const userIds = ((await kv.get("user-action:ids")) ?? []) as number[];
+    for (const id of userIds) {
+      const cc = (await kv.get(`user-action:${id}`)) as any;
+      if (cc && typeof cc === "object" && typeof cc.id === "number") cards.push({ ...cc, _store: "user-action" });
+    }
+
+    // HEAD each Supabase storage URL in parallel batches.
+    const candidates = cards.filter((c2) => typeof c2.topImageUrl === "string" && c2.topImageUrl.includes(STORAGE_PREFIX));
+    const big: any[] = [];
+    const BATCH = 12;
+    for (let i = 0; i < candidates.length; i += BATCH) {
+      const slice = candidates.slice(i, i + BATCH);
+      const results = await Promise.all(slice.map(async (c2) => {
+        try {
+          const r = await fetch(c2.topImageUrl, { method: "HEAD" });
+          if (!r.ok) return null;
+          const size = Number(r.headers.get("content-length") ?? "0");
+          const ct = r.headers.get("content-type") ?? "?";
+          return { card: c2, size, contentType: ct };
+        } catch {
+          return null;
+        }
+      }));
+      for (const r of results) {
+        if (r && r.size >= threshold) {
+          big.push({
+            id: r.card.id,
+            title: r.card.title,
+            authorName: r.card.authorName,
+            topImageUrl: r.card.topImageUrl,
+            size: r.size,
+            contentType: r.contentType,
+            _store: r.card._store,
+          });
+        }
+      }
+    }
+    big.sort((a, b) => b.size - a.size);
+    return c.json({ cards: big, threshold, total: big.length });
+  } catch (err) {
+    console.log("Big-images error:", err);
+    return c.json({ error: `Failed to list big images: ${err}` }, 500);
+  }
+});
+
 // ─── DELETE /actions/:id — admin-only card removal ────────────────────────────
 app.delete("/make-server-9eb1ae04/actions/:id", async (c) => {
   try {
@@ -4309,6 +4817,7 @@ app.delete("/make-server-9eb1ae04/actions/:id", async (c) => {
     const seedCard = await kv.get(`action:${id}`);
     if (seedCard) {
       await kv.del(`action:${id}`);
+      invalidateActionsCache();
       console.log(`Admin ${admin.record.name} deleted seed card #${id}`);
       return c.json({ success: true });
     }
@@ -4319,6 +4828,7 @@ app.delete("/make-server-9eb1ae04/actions/:id", async (c) => {
       await kv.del(`user-action:${id}`);
       const currentIds = (await kv.get("user-action:ids") ?? []) as number[];
       await kv.set("user-action:ids", currentIds.filter((x) => x !== id));
+      invalidateActionsCache();
       console.log(`Admin ${admin.record.name} deleted user card #${id}`);
       return c.json({ success: true });
     }
