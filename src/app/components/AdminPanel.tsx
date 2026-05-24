@@ -33,7 +33,7 @@ interface AdminPanelProps {
 }
 
 type TabFilter = "active" | "pending" | "approved" | "rejected" | "all";
-type PanelMode = "cards" | "users" | "nourl" | "matcher" | "online" | "bigimages";
+type PanelMode = "cards" | "users" | "nourl" | "matcher" | "online" | "bigimages" | "brokenimages";
 
 interface BigImageCard {
   id: number;
@@ -42,6 +42,17 @@ interface BigImageCard {
   topImageUrl: string;
   size: number;
   contentType: string;
+}
+
+interface BrokenImageCard {
+  id: number;
+  title: string;
+  authorName: string;
+  topImageUrl: string;
+  fullUrl: string;
+  status: number;
+  error: string | null;
+  adminApproved?: boolean;
 }
 
 interface OnlineUser {
@@ -277,6 +288,13 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
   /** Per-card status after a recompress click — feedback shown inline. */
   const [optResults, setOptResults] = useState<Record<number, { ok: boolean; msg: string }>>({});
 
+  // ── Broken-images state ──────────────────────────────────────────────────────
+  const [brokenImages, setBrokenImages] = useState<BrokenImageCard[]>([]);
+  const [brokenLoading, setBrokenLoading] = useState(false);
+  const [brokenError, setBrokenError] = useState<string | null>(null);
+  const [brokenOrigin, setBrokenOrigin] = useState<string>(() => window.location.origin);
+  const [brokenScannedCount, setBrokenScannedCount] = useState<number>(0);
+
   const authHeaders = {
     "Content-Type": "application/json",
     Authorization: `Bearer ${accessToken}`,
@@ -443,6 +461,25 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
   // expensive — let the operator hit Refresh manually).
   useEffect(() => { if (mode === "bigimages" && bigImages.length === 0 && !bigImagesLoading) fetchBigImages(); }, [mode]);
 
+  async function fetchBrokenImages() {
+    setBrokenLoading(true);
+    setBrokenError(null);
+    try {
+      const res = await fetch(`${API}/admin/actions/broken-images?origin=${encodeURIComponent(brokenOrigin)}`, { headers: authHeaders });
+      const data = await res.json();
+      if (!res.ok) { setBrokenError(data.error ?? "Failed to scan broken images."); return; }
+      setBrokenImages(data.cards ?? []);
+      setBrokenScannedCount(data.scanned ?? 0);
+    } catch {
+      setBrokenError("Network error scanning broken images.");
+    } finally {
+      setBrokenLoading(false);
+    }
+  }
+  // Broken-images tab: fetch on entry. Slow (N HEAD requests through the
+  // edge function) — manual Refresh thereafter.
+  useEffect(() => { if (mode === "brokenimages" && brokenImages.length === 0 && !brokenLoading) fetchBrokenImages(); }, [mode]);
+
   async function handleApprove(userId: string) {
     setActionLoading(userId + ":approve");
     try {
@@ -532,17 +569,17 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
               <div>
                 <p className="font-['Poppins',sans-serif] font-bold text-gray-900 text-base leading-tight">Admin Panel</p>
                 <p className="font-['Poppins',sans-serif] text-gray-400 text-xs">
-                  {mode === "users" ? "Manage user approvals" : mode === "nourl" ? "Cards missing an action link or top image" : mode === "online" ? "Users active in the last 24 hours" : mode === "bigimages" ? "Stored images over 500 KB — optimize to shrink" : "Review submitted actions"}
+                  {mode === "users" ? "Manage user approvals" : mode === "nourl" ? "Cards missing an action link or top image" : mode === "online" ? "Users active in the last 24 hours" : mode === "bigimages" ? "Stored images over 500 KB — optimize to shrink" : mode === "brokenimages" ? "Cards whose topImageUrl 404s — needs re-upload" : "Review submitted actions"}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={mode === "users" ? fetchUsers : mode === "nourl" ? fetchNoUrlCards : mode === "online" ? fetchOnlineUsers : mode === "bigimages" ? fetchBigImages : fetchPendingCards}
-                disabled={mode === "users" ? loading : mode === "nourl" ? noUrlLoading : mode === "online" ? onlineLoading : mode === "bigimages" ? bigImagesLoading : cardsLoading}
+                onClick={mode === "users" ? fetchUsers : mode === "nourl" ? fetchNoUrlCards : mode === "online" ? fetchOnlineUsers : mode === "bigimages" ? fetchBigImages : mode === "brokenimages" ? fetchBrokenImages : fetchPendingCards}
+                disabled={mode === "users" ? loading : mode === "nourl" ? noUrlLoading : mode === "online" ? onlineLoading : mode === "bigimages" ? bigImagesLoading : mode === "brokenimages" ? brokenLoading : cardsLoading}
                 className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40"
               >
-                <RefreshCw size={15} className={(mode === "users" ? loading : mode === "nourl" ? noUrlLoading : mode === "online" ? onlineLoading : mode === "bigimages" ? bigImagesLoading : cardsLoading) ? "animate-spin" : ""} />
+                <RefreshCw size={15} className={(mode === "users" ? loading : mode === "nourl" ? noUrlLoading : mode === "online" ? onlineLoading : mode === "bigimages" ? bigImagesLoading : mode === "brokenimages" ? brokenLoading : cardsLoading) ? "animate-spin" : ""} />
               </button>
               <button
                 onClick={onClose}
@@ -565,6 +602,7 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
               <option value="nourl">{`Incomplete${noUrlCards.length > 0 ? ` (${noUrlCards.length})` : ""}`}</option>
               <option value="online">{`Online${onlineUsers.length > 0 ? ` (${onlineUsers.length})` : ""}`}</option>
               <option value="bigimages">{`Big images${bigImages.length > 0 ? ` (${bigImages.length})` : ""}`}</option>
+              <option value="brokenimages">{`Broken images${brokenImages.length > 0 ? ` (${brokenImages.length})` : ""}`}</option>
               <option value="matcher">Matcher</option>
             </select>
           </div>
@@ -1121,6 +1159,77 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
                         </li>
                       );
                     })}
+                  </ul>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* ── BROKEN IMAGES mode ─────────────────────────────────────────────────── */}
+          {mode === "brokenimages" && (
+            <>
+              <div className="px-5 py-3 border-b border-gray-100 shrink-0 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-['Poppins',sans-serif] text-[11px] text-gray-500 font-semibold uppercase tracking-wide shrink-0">Frontend origin</span>
+                  <input
+                    type="url"
+                    value={brokenOrigin}
+                    onChange={(e) => setBrokenOrigin(e.target.value)}
+                    placeholder="https://resistact.org"
+                    className="flex-1 px-2 py-1 text-xs font-mono border border-gray-200 rounded focus:outline-none focus:border-[#23297e]"
+                  />
+                  <button
+                    type="button"
+                    onClick={fetchBrokenImages}
+                    disabled={brokenLoading}
+                    className="px-2.5 py-1 bg-[#23297e] hover:bg-[#1a2060] text-white font-['Poppins',sans-serif] font-semibold text-xs rounded transition-colors disabled:opacity-50"
+                  >
+                    {brokenLoading ? "Scanning…" : "Re-scan"}
+                  </button>
+                </div>
+                <p className="font-['Poppins',sans-serif] text-xs text-gray-500">
+                  {brokenLoading && brokenImages.length === 0
+                    ? "Scanning every card's topImageUrl — this can take 30+ seconds…"
+                    : brokenImages.length === 0 && brokenScannedCount === 0
+                      ? "Haven't scanned yet — click Re-scan."
+                      : brokenImages.length === 0
+                        ? `All ${brokenScannedCount} image-bearing cards return 2xx. Nice.`
+                        : `${brokenImages.length} of ${brokenScannedCount} cards have a broken topImageUrl`}
+                </p>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                {brokenError ? (
+                  <div className="p-5 text-center">
+                    <p className="font-['Poppins',sans-serif] text-sm text-red-500">{brokenError}</p>
+                    <button onClick={fetchBrokenImages} className="mt-3 text-xs text-[#23297e] underline font-['Poppins',sans-serif]">Retry</button>
+                  </div>
+                ) : brokenImages.length === 0 && !brokenLoading ? (
+                  <div className="flex flex-col items-center justify-center h-40 gap-2">
+                    <CheckCircle2 size={28} className="text-green-200" />
+                    <p className="font-['Poppins',sans-serif] text-sm text-gray-400">No broken card images detected.</p>
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-gray-50">
+                    {brokenImages.map((b) => (
+                      <li key={b.id} className="px-5 py-3 flex items-start gap-3">
+                        <AlertTriangle size={16} className="text-amber-500 shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-['Poppins',sans-serif] font-semibold text-sm text-gray-800 truncate">
+                            <span className="text-gray-400 font-normal">#{b.id}</span> {b.title}
+                          </p>
+                          <p className="font-['Poppins',sans-serif] text-xs text-gray-400 truncate">{b.authorName}</p>
+                          <p className="font-['Poppins',sans-serif] text-[11px] text-gray-500 mt-0.5">
+                            <span className="font-mono">{b.topImageUrl}</span>
+                            <span className="ml-2 text-amber-700">
+                              {b.error ? `network error: ${b.error.slice(0, 50)}` : `HTTP ${b.status}`}
+                            </span>
+                            {b.adminApproved === false && (
+                              <span className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-semibold uppercase tracking-wide">Pending</span>
+                            )}
+                          </p>
+                        </div>
+                      </li>
+                    ))}
                   </ul>
                 )}
               </div>
