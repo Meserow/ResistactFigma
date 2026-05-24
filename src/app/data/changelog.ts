@@ -16,6 +16,46 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.0",
+    date: "2026-05-24",
+    title: "State-local upcoming events pin to the top of Match Me, three new admin audit tools, and an automated inbox importer",
+    sections: [
+      {
+        heading: "Match Me",
+        items: [
+          "When you've told Match Me your state, any card with an upcoming event date in that state now pins to the top of your matched feed — ahead of every score-based result. The matcher's state bonus (+6) plus its event-proximity bonus (up to +10) could be out-scored by a strong tone match, which meant a rally in your city next week could slip below an online petition. The new hard-pin guarantees the local-and-imminent stuff is the first thing you see, sorted soonest-first. Applies in all sort modes (Popular, A–Z, Newest).",
+          "Respects your other Match Me preferences. If you've set Location to 'Remote only', in-person rallies in your state will NOT be pinned (or otherwise surface) — the pin layer now runs `settingMatches` before lifting anything.",
+          "For admins, the 'still pending' cards that get appended to your matched feed are also now filtered by Setting + State. Toggling Remote-only actually hides in-person pending cards from the consumer feed view — the AdminPanel queue still shows everything for approval.",
+        ],
+      },
+      {
+        heading: "Admin Panel — three new audit tools",
+        items: [
+          "Big images: lists every stored card image over 500 KB, with a one-click Optimize button per row that round-trips through a new server endpoint to decode (ImageScript), resize to 1200 px wide max, re-encode same format, upload to the bucket, and update the card. Bails if recompression doesn't actually save bytes. The list trims as you optimize.",
+          "Broken images: HEAD-checks every card's topImageUrl against a configurable frontend origin (defaults to the browser's current origin) and lists any that 404 or network-error. Catches the case where someone deletes a root-public asset and the database still references it. Built after a cleanup pass blew away ~50 root-public images that were referenced from cards but not from source code.",
+          "URL = Author link: lists every card where `targetUrl` and `authorLink` normalize to the same URL. Usually a sign that the bulk-importer set both fields to the source URL and the card never got a distinct creator-homepage link.",
+        ],
+      },
+      {
+        heading: "Inbox importer",
+        items: [
+          "New `tools/import_inbox.py` reads every JSON file the Cowork scout drops in `data/inbox/` and pushes the contained acts through the existing `/admin/bulk-import` endpoint. Two-layer dedup: client-side pre-filter against the live `/actions` inventory (catches cross-source URL collisions), plus the server-side fingerprint (catches re-runs of the same import).",
+          "Image enrichment dispatched per platform: Bluesky via the public no-auth API (banner > avatar), TikTok via the inline `avatarLarger` JSON in the initial HTML, YouTube and Substack via og:image scrape with a browser User-Agent. Instagram, Threads, and Facebook are JS-rendered so they land image-less — admin upload required.",
+          "Daily scheduled task `resistact-import-inbox` runs at 19:06 local time and triggers the importer. Token loaded from `~/.config/resistact/admin-import-token` (NOT in this repo). Empty inbox is a no-op exit.",
+        ],
+      },
+      {
+        heading: "Behind the scenes",
+        items: [
+          "Cleaned ~80 MB of unreferenced files out of `public/` (mostly orphaned `.png` duplicates of `.webp` images that were actually being served) plus ~3 MB of unused hashed Figma exports in `src/assets/`. Converted `og-image-v3.jpg` → `og-image-v3.webp` (94 KB saved).",
+          "Added a sweep migration that demotes any approved card missing either a `targetUrl` or an image (no `topImageUrl`/`topImageKey`) to `adminApproved: false` so it lands in the pending queue. Skips `pinToTop` cards.",
+          "Recovered three cards lost to a race condition during a multi-instance migration: Tom Morello (relocated to id 2147), Hartford Yarn Works (2148), Morning Crafter (2149). Patched five regional-event cards that were stored with mobilize.us search URLs as their action link — now point at each org's actual mobilize organizer page.",
+          "Bulk-marked the 'Cancel your X' BOYCOTT cards as `5–10 minutes` (was `Ongoing`).",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.1.52",
     date: "2026-05-24",
     title: "Branded 'Join the Resistance' smack now pinned to the top of the Smacks page",
