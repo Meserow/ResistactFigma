@@ -33,7 +33,16 @@ interface AdminPanelProps {
 }
 
 type TabFilter = "active" | "pending" | "approved" | "rejected" | "all";
-type PanelMode = "cards" | "users" | "nourl" | "matcher" | "online";
+type PanelMode = "cards" | "users" | "nourl" | "matcher" | "online" | "bigimages";
+
+interface BigImageCard {
+  id: number;
+  title: string;
+  authorName: string;
+  topImageUrl: string;
+  size: number;
+  contentType: string;
+}
 
 interface OnlineUser {
   userId: string;
@@ -260,6 +269,14 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
   const [onlineLoading, setOnlineLoading] = useState(false);
   const [onlineError, setOnlineError] = useState<string | null>(null);
 
+  // ── Big-images state ─────────────────────────────────────────────────────────
+  const [bigImages, setBigImages] = useState<BigImageCard[]>([]);
+  const [bigImagesLoading, setBigImagesLoading] = useState(false);
+  const [bigImagesError, setBigImagesError] = useState<string | null>(null);
+  const [optimizing, setOptimizing] = useState<number | null>(null);
+  /** Per-card status after a recompress click — feedback shown inline. */
+  const [optResults, setOptResults] = useState<Record<number, { ok: boolean; msg: string }>>({});
+
   const authHeaders = {
     "Content-Type": "application/json",
     Authorization: `Bearer ${accessToken}`,
@@ -368,6 +385,50 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
     }
   }
 
+  async function fetchBigImages() {
+    setBigImagesLoading(true);
+    setBigImagesError(null);
+    try {
+      const res = await fetch(`${API}/admin/actions/big-images?threshold=500000`, { headers: authHeaders });
+      const data = await res.json();
+      if (!res.ok) { setBigImagesError(data.error ?? "Failed to load big images."); return; }
+      setBigImages(data.cards ?? []);
+    } catch {
+      setBigImagesError("Network error loading big images.");
+    } finally {
+      setBigImagesLoading(false);
+    }
+  }
+
+  async function handleOptimize(id: number) {
+    setOptimizing(id);
+    setOptResults((prev) => ({ ...prev, [id]: { ok: false, msg: "Optimizing…" } }));
+    try {
+      const res = await fetch(`${API}/admin/actions/${id}/recompress-image`, {
+        method: "POST",
+        headers: authHeaders,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setOptResults((prev) => ({ ...prev, [id]: { ok: false, msg: data.error ?? "Failed" } }));
+        return;
+      }
+      if (data.skipped) {
+        setOptResults((prev) => ({ ...prev, [id]: { ok: false, msg: data.reason ?? "Skipped" } }));
+        return;
+      }
+      const oldKb = Math.round(data.oldSize / 1024);
+      const newKb = Math.round(data.newSize / 1024);
+      setOptResults((prev) => ({ ...prev, [id]: { ok: true, msg: `${oldKb}KB → ${newKb}KB (-${data.savingsPct}%)` } }));
+      // Update the row in place so the size badge reflects the new state.
+      setBigImages((prev) => prev.map((b) => b.id === id ? { ...b, size: data.newSize, topImageUrl: data.newUrl } : b).filter((b) => b.size >= 500_000));
+    } catch {
+      setOptResults((prev) => ({ ...prev, [id]: { ok: false, msg: "Network error" } }));
+    } finally {
+      setOptimizing(null);
+    }
+  }
+
   useEffect(() => { fetchPendingCards(); }, []);
   useEffect(() => { if (mode === "users" && users.length === 0) fetchUsers(); }, [mode]);
   useEffect(() => { if (mode === "nourl" && noUrlCards.length === 0 && !noUrlLoading) fetchNoUrlCards(); }, [mode]);
@@ -378,6 +439,9 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
     const id = window.setInterval(fetchOnlineUsers, 30_000);
     return () => window.clearInterval(id);
   }, [mode]);
+  // Big-images tab: fetch on entry, no auto-refresh (the HEAD requests are
+  // expensive — let the operator hit Refresh manually).
+  useEffect(() => { if (mode === "bigimages" && bigImages.length === 0 && !bigImagesLoading) fetchBigImages(); }, [mode]);
 
   async function handleApprove(userId: string) {
     setActionLoading(userId + ":approve");
@@ -468,17 +532,17 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
               <div>
                 <p className="font-['Poppins',sans-serif] font-bold text-gray-900 text-base leading-tight">Admin Panel</p>
                 <p className="font-['Poppins',sans-serif] text-gray-400 text-xs">
-                  {mode === "users" ? "Manage user approvals" : mode === "nourl" ? "Cards missing an action link or top image" : mode === "online" ? "Users active in the last 24 hours" : "Review submitted actions"}
+                  {mode === "users" ? "Manage user approvals" : mode === "nourl" ? "Cards missing an action link or top image" : mode === "online" ? "Users active in the last 24 hours" : mode === "bigimages" ? "Stored images over 500 KB — optimize to shrink" : "Review submitted actions"}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={mode === "users" ? fetchUsers : mode === "nourl" ? fetchNoUrlCards : mode === "online" ? fetchOnlineUsers : fetchPendingCards}
-                disabled={mode === "users" ? loading : mode === "nourl" ? noUrlLoading : mode === "online" ? onlineLoading : cardsLoading}
+                onClick={mode === "users" ? fetchUsers : mode === "nourl" ? fetchNoUrlCards : mode === "online" ? fetchOnlineUsers : mode === "bigimages" ? fetchBigImages : fetchPendingCards}
+                disabled={mode === "users" ? loading : mode === "nourl" ? noUrlLoading : mode === "online" ? onlineLoading : mode === "bigimages" ? bigImagesLoading : cardsLoading}
                 className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40"
               >
-                <RefreshCw size={15} className={(mode === "users" ? loading : mode === "nourl" ? noUrlLoading : mode === "online" ? onlineLoading : cardsLoading) ? "animate-spin" : ""} />
+                <RefreshCw size={15} className={(mode === "users" ? loading : mode === "nourl" ? noUrlLoading : mode === "online" ? onlineLoading : mode === "bigimages" ? bigImagesLoading : cardsLoading) ? "animate-spin" : ""} />
               </button>
               <button
                 onClick={onClose}
@@ -500,6 +564,7 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
               <option value="cards">{`Cards${!cardsLoading && pendingCardsCount > 0 ? ` (${pendingCardsCount})` : ""}`}</option>
               <option value="nourl">{`Incomplete${noUrlCards.length > 0 ? ` (${noUrlCards.length})` : ""}`}</option>
               <option value="online">{`Online${onlineUsers.length > 0 ? ` (${onlineUsers.length})` : ""}`}</option>
+              <option value="bigimages">{`Big images${bigImages.length > 0 ? ` (${bigImages.length})` : ""}`}</option>
               <option value="matcher">Matcher</option>
             </select>
           </div>
@@ -991,6 +1056,69 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
                           {formatRelative(u.lastSeenAt)}
                         </p>
                       </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* ── BIG IMAGES mode ────────────────────────────────────────────────────── */}
+          {mode === "bigimages" && (
+            <>
+              <div className="px-5 py-3 border-b border-gray-100 shrink-0">
+                <p className="font-['Poppins',sans-serif] text-xs text-gray-500">
+                  {bigImagesLoading && bigImages.length === 0
+                    ? "Scanning stored images (one HEAD request per card — takes ~10s)…"
+                    : bigImages.length === 0
+                      ? "No stored images over 500 KB. Nice."
+                      : `${bigImages.length} stored image${bigImages.length !== 1 ? "s" : ""} over 500 KB`}
+                </p>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                {bigImagesError ? (
+                  <div className="p-5 text-center">
+                    <p className="font-['Poppins',sans-serif] text-sm text-red-500">{bigImagesError}</p>
+                    <button onClick={fetchBigImages} className="mt-3 text-xs text-[#23297e] underline font-['Poppins',sans-serif]">Retry</button>
+                  </div>
+                ) : bigImages.length === 0 && !bigImagesLoading ? (
+                  <div className="flex flex-col items-center justify-center h-40 gap-2">
+                    <ImageIcon size={28} className="text-gray-200" />
+                    <p className="font-['Poppins',sans-serif] text-sm text-gray-400">All stored images are under 500 KB.</p>
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-gray-50">
+                    {bigImages.map((b) => {
+                      const isOpt = optimizing === b.id;
+                      const result = optResults[b.id];
+                      const sizeKb = Math.round(b.size / 1024);
+                      return (
+                        <li key={b.id} className="px-5 py-3 flex items-center gap-3">
+                          <img src={b.topImageUrl} alt="" className="w-14 h-14 rounded-lg object-cover shrink-0 bg-gray-100 border border-gray-200" loading="lazy" />
+                          <div className="min-w-0 flex-1">
+                            <p className="font-['Poppins',sans-serif] font-semibold text-sm text-gray-800 truncate">
+                              <span className="text-gray-400 font-normal">#{b.id}</span> {b.title}
+                            </p>
+                            <p className="font-['Poppins',sans-serif] text-xs text-gray-400 truncate">{b.authorName}</p>
+                            <p className="font-['Poppins',sans-serif] text-[11px] text-gray-500 mt-0.5">
+                              <span className="font-semibold">{sizeKb.toLocaleString()} KB</span>
+                              <span className="text-gray-400"> · {b.contentType}</span>
+                              {result && (
+                                <span className={`ml-2 ${result.ok ? "text-green-600" : "text-amber-600"}`}>{result.msg}</span>
+                              )}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleOptimize(b.id)}
+                            disabled={isOpt}
+                            className="flex items-center gap-1.5 py-1.5 px-3 bg-[#23297e] hover:bg-[#1a2060] text-white font-['Poppins',sans-serif] font-semibold text-xs rounded-lg transition-colors disabled:opacity-50 shrink-0"
+                          >
+                            {isOpt ? <Loader2 size={13} className="animate-spin" /> : <RotateCcw size={13} />}
+                            {isOpt ? "Optimizing…" : "Optimize"}
+                          </button>
+                        </li>
                       );
                     })}
                   </ul>

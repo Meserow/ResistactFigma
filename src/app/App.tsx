@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useDeferredValue } from "react";
-import { Wrench, Clock, Globe, Flame, Smile, VenetianMask, Sun, Zap, MapPin, Users, DollarSign, EyeOff } from "lucide-react";
+import { Wrench, Clock, Globe, Flame, Smile, VenetianMask, Sun, Zap, MapPin, Users, DollarSign, EyeOff, Loader2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { initAnalytics, analytics } from "./lib/analytics";
 import { GAMIFICATION_KEYFRAMES } from "./lib/animations";
@@ -884,47 +884,52 @@ export default function App() {
   useEffect(() => {
     async function syncCards() {
       try {
-        // Fetch first page to learn the total
-        const firstRes = await fetch(`${API}/actions?limit=100&offset=0`, { headers: HEADERS });
-        if (!firstRes.ok) {
-          const text = await firstRes.text();
-          console.error(`Failed to sync cards from server (${firstRes.status}): ${text}`);
+        // Single drain — server's /actions cap is now 2000 (was 100), big
+        // enough to return the whole catalog in one response. Previously we
+        // paged 100-at-a-time and spawned 5+ parallel fetches, each subject
+        // to edge-function cold-start latency. That made the "Matched for
+        // you" banner read low ("Showing 3 actions") until all batches
+        // settled, which felt like a broken matcher. One round-trip ≈ one
+        // cold-start instead of six.
+        const res = await fetch(`${API}/actions?limit=2000&offset=0`, { headers: HEADERS });
+        if (!res.ok) {
+          const text = await res.text();
+          console.error(`Failed to sync cards from server (${res.status}): ${text}`);
           setCards(STATIC_CARDS);
           setLoading(false);
           return;
         }
-        const firstData = await firstRes.json();
-        const firstBatch = (firstData.cards as ServerCard[] | undefined) ?? [];
-        if (firstBatch.length === 0) {
+        const data = await res.json();
+        const batch = (data.cards as ServerCard[] | undefined) ?? [];
+        if (batch.length === 0) {
           setCards(STATIC_CARDS);
           setLoading(false);
           return;
         }
-        const total = firstData.total ?? firstBatch.length;
-        const all: ActionCardData[] = firstBatch.map(resolveCard);
-        // Show the first page immediately so the user sees something fast.
+        const total = data.total ?? batch.length;
+        const all: ActionCardData[] = batch.map(resolveCard);
         setCards(all);
         setServerTotal(total);
         setServerOffset(all.length);
         setSynced(true);
         setLoading(false);
-        // Cache the raw first page so the next visit hydrates instantly.
-        writeCardsCache(firstBatch, total);
+        // Cache the raw response so the next visit hydrates instantly.
+        writeCardsCache(batch, total);
 
-        // Drain the rest in parallel — sequential fetches add up to multi-second
-        // sync on slower connections, which makes the acts count next to the
-        // sort dropdown read low (e.g. "200 acts") and silently scopes search
-        // to whatever's loaded so far. Fire all remaining pages at once and
-        // commit them in offset order.
-        const remainingOffsets: number[] = [];
-        for (let o = all.length; o < total; o += 100) remainingOffsets.push(o);
-        if (remainingOffsets.length > 0) {
+        // Safety net: if the server returned fewer cards than `total` (e.g.
+        // the cap was hit because we let the catalog grow past 2000), fall
+        // back to the old paginated drain for the remainder. We expect this
+        // branch to be cold for years given current growth, but it keeps the
+        // UI honest if/when we cross the threshold.
+        if (all.length < total) {
+          const remainingOffsets: number[] = [];
+          for (let o = all.length; o < total; o += 2000) remainingOffsets.push(o);
           const results = await Promise.all(
             remainingOffsets.map(async (o) => {
-              const res = await fetch(`${API}/actions?limit=100&offset=${o}`, { headers: HEADERS });
-              if (!res.ok) return { offset: o, cards: [] as ServerCard[] };
-              const data = await res.json();
-              return { offset: o, cards: (data.cards as ServerCard[] | undefined) ?? [] };
+              const r = await fetch(`${API}/actions?limit=2000&offset=${o}`, { headers: HEADERS });
+              if (!r.ok) return { offset: o, cards: [] as ServerCard[] };
+              const d = await r.json();
+              return { offset: o, cards: (d.cards as ServerCard[] | undefined) ?? [] };
             }),
           );
           const ordered = results
@@ -1016,9 +1021,11 @@ export default function App() {
       try {
         let offset = serverOffset;
         const collected: ActionCardData[] = [];
-        // Server caps per-request at 100; loop until we've drained.
+        // Server cap is 2000 per request (raised from 100), so we almost
+        // always finish in a single iteration. The loop stays for the
+        // unlikely future where we cross 2000 cards.
         while (offset < serverTotal && !cancelled) {
-          const res = await fetch(`${API}/actions?limit=100&offset=${offset}`, { headers: HEADERS });
+          const res = await fetch(`${API}/actions?limit=2000&offset=${offset}`, { headers: HEADERS });
           if (!res.ok) break;
           const data = await res.json();
           const batch = (data.cards as ServerCard[] | undefined) ?? [];
@@ -1626,6 +1633,18 @@ export default function App() {
                       <span className="resistact-anim-twinkle" aria-hidden>✨</span>{" "}
                       <strong className="text-[#23297e]">Matched for you.</strong>{" "}
                       Showing <strong className="text-[#23297e]">{displayedCards.length}</strong> {displayedCards.length === 1 ? "action" : "actions"}.
+                      {/* Loading indicator while the rest of the catalog
+                          is still streaming in. Without this, the user sees
+                          "Matched for you. Showing 3 actions." and thinks
+                          the matcher is broken — when in reality the cards
+                          array is only at offset 100/587 and more matches
+                          are seconds away. */}
+                      {serverTotal > 0 && cards.length < serverTotal && (
+                        <span className="ml-2 inline-flex items-center gap-1 text-xs text-gray-500 italic">
+                          <Loader2 size={11} className="animate-spin shrink-0" />
+                          loading more… ({cards.length}/{serverTotal})
+                        </span>
+                      )}
                     </p>
                     {/* Chip strip — wraps on narrow viewports. All icons are
                         simple navy line-icons so the strip reads as one unified

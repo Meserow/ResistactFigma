@@ -16,6 +16,85 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.1.49",
+    date: "2026-05-24",
+    title: "Seven new actions imported from a TSV scout batch, all waiting in Admin → Pending",
+    sections: [
+      {
+        heading: "What's new",
+        items: [
+          "Imported 7 curated actions from a 27-row scout spreadsheet: Indivisible calls to block Trump's $1.8B insurrection slush fund and end the Cuba blockade, plus five in-person events (Seattle NO WAR/NO KINGS, Tukwila ICE HQ protest, Boston Trump Takedown, DC Epstein protest walk interest meeting, Corte Madera CA banner drop).",
+          "Each card lands in Admin → Pending with its og:image already attached, so an admin can one-click approve.",
+        ],
+      },
+      {
+        heading: "What we rejected",
+        items: [
+          "20 of the 27 rows were dropped: 8 were exact URL dupes of existing seed cards, 6 had homepage-only links (firstfriendsnjny.org/, raicestexas.org/get-involved/, mijente.net/get-involved/, etc.) where the action URL was identical to the org's source URL, 6 more were event-level duplicates where a different mobilize event ID pointed to the same recurring action already on the site.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.1.48",
+    date: "2026-05-24",
+    title: "Acts catalogue load time cut from 20 seconds to ~1.5 seconds",
+    sections: [
+      {
+        heading: "Performance",
+        items: [
+          "Yesterday's 'single big fetch' (1.1.47) didn't actually help because the bottleneck wasn't pagination — it was the server. Today the server takes ~1.5 seconds to respond instead of ~20. The blank card shells you were seeing for 20+ seconds on cold loads should be gone.",
+          "Two backend fixes did the heavy lifting: (1) the catalogue assembly used to fetch every user-submitted card with its own separate database call — ~450 calls in a chain, one after another. Replaced that with a single batched query. (2) On every request, the server was also re-checking ~40 one-time migration flags one at a time. Now it batches them into a single query and remembers the results.",
+          "What you'll notice: the 'Matched for you' banner should fill in almost instantly on a normal connection. Fewer 'Showing 3 actions' moments. Cards stop appearing as empty grey rectangles while the rest of the catalogue loads.",
+          "No behaviour change for users. Admins should still see card edits and approvals reflected immediately in their own panel; the public feed updates within ~15 seconds.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.1.47",
+    date: "2026-05-23",
+    title: "Faster first-load — the whole catalogue arrives in one request",
+    sections: [
+      {
+        heading: "Performance",
+        items: [
+          "The Acts catalogue used to load in 6 chained requests of 100 cards each, with each request paying the edge function's cold-start latency. We've raised the server's per-request cap from 100 to 2000 and switched the client to a single drain — the whole ~600-card catalogue now arrives in one round-trip instead of six.",
+          "Net effect on a cold edge function: roughly 3 seconds saved on first page load. The 'Matched for you' banner should jump to its final number almost immediately on most networks, and you should stop seeing 'Showing 3 actions' linger while the rest of the cards trickle in.",
+          "Cache and fallback paths preserved: if the catalogue ever grows past 2000 cards, the client falls back to paginated drain for the remainder. No behaviour changes for users; just less waiting.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.1.46",
+    date: "2026-05-23",
+    title: "Match Me banner now shows when more cards are still loading",
+    sections: [
+      {
+        heading: "Match Me",
+        items: [
+          "The 'Matched for you. Showing N actions.' banner now shows a small spinner and '(125/587) loading more…' message while the rest of the catalogue is still streaming in from the server. Before this, you'd land on the page, see '3 matches' before the rest of the cards had loaded, and assume the matcher was broken — when really it just needed another second or two to finish the sync.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.1.45",
+    date: "2026-05-23",
+    title: "Match Me — relaxed the over-aggressive filter that was returning only 3 cards",
+    sections: [
+      {
+        heading: "Matcher",
+        items: [
+          "Yesterday's 'max-slider hard filter' (1.1.44) went too far — setting any slider to its maximum (e.g. Humor: Full mockery) was eliminating every card with zero of that tone, which wiped out 17 of 23 categories at once. Combined with other slider preferences, the result was 3-card matches.",
+          "Made the hard filter asymmetric: setting a slider to NONE still hard-filters out cards with that tone at FULL (e.g. picking Humor: None still drops Full-mockery cards — you explicitly said you don't want it). But setting a slider to MAX no longer hard-filters cards with zero of it — the soft undershoot penalty from 1.1.43 still pushes them down the ranking, but they remain available when better-matching cards are scarce.",
+          "Net effect: you should now get a healthy 15-30 matches instead of 2-5, with the cards that best fit your sliders ranked first.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.1.44",
     date: "2026-05-22",
     title: "Match Me — max-slider settings now actually mean it",
