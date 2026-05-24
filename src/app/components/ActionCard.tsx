@@ -6,6 +6,7 @@ import { SpreadTheWordModal } from "./SpreadTheWordModal";
 import { CardDetailsModal } from "./CardDetailsModal";
 import { FlagCardModal } from "./FlagCardModal";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
+import cardFallbackImg from "../../assets/resistact-card-fallback.webp";
 
 // Approximate threshold for when the description gets clamped in the grid view.
 // We use a character count rather than measuring DOM because measuring on every
@@ -415,76 +416,78 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
             </button>
           </div>
         )}
-        {/* Top image */}
-        {showTopImage ? (
-          <div className={`relative ${compact ? "h-[70px]" : "h-[160px]"} shrink-0 ${card.imageContain ? "bg-gray-50" : ""}`}>
+        {/* Top image — uses the card's own photo if available, else a
+            generic ResistAct logo banner. We render the same wrapper either
+            way so badges, controls, location pill and "I did this" sit in
+            identical positions whether or not we have real art. */}
+        <div className={`relative ${compact ? "h-[70px]" : "h-[160px]"} shrink-0 ${showTopImage && card.imageContain ? "bg-gray-50" : ""} ${!showTopImage ? "bg-[#fff8f3]" : ""}`}>
+          {showTopImage ? (
             <ImageWithFallback
               src={card.topImage}
               alt={card.title}
               className={`w-full h-full ${card.imageContain ? "object-contain p-2" : "object-cover object-top"}`}
               onError={() => setImageFailed(true)}
             />
-            {/* Gradient overlay for readability — skipped for logo-fit cards. */}
-            {!card.imageContain && (
-              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-            )}
+          ) : (
+            <img
+              src={cardFallbackImg}
+              alt=""
+              aria-hidden="true"
+              className={`w-full h-full object-contain ${compact ? "p-2" : "p-4"}`}
+            />
+          )}
+          {/* Gradient overlay for readability — only on real photos. Skipped
+              for logo-fit cards and the brand fallback (both are light bg). */}
+          {showTopImage && !card.imageContain && (
+            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+          )}
 
-            {/* Stretched link — image area opens the same URL as the title.
-                Placed before badges/buttons so they remain clickable. */}
-            {(card.targetUrl || card.authorLink) && (
-              <a
-                href={card.targetUrl ?? card.authorLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={card.title}
-                className="absolute inset-0"
-              />
-            )}
+          {/* Stretched link — image area opens the same URL as the title.
+              Placed before badges/buttons so they remain clickable. */}
+          {(card.targetUrl || card.authorLink) && (
+            <a
+              href={card.targetUrl ?? card.authorLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={card.title}
+              className="absolute inset-0"
+            />
+          )}
 
-            {/* Pencil + Bookmark — hidden in compact preview mode. */}
-            {!compact && (
-              <div className="absolute top-2.5 right-3 flex items-center gap-1.5">
-                <TimeBadge light={true} />
-                <TopControls light={true} />
-              </div>
-            )}
-
-            {/* Type tag */}
-            {card.typeTag && (
-              <div className="absolute top-2.5 left-3 bg-white/90 backdrop-blur-sm border border-[#fb00ff] rounded-lg px-2.5 py-0.5">
-                <span className="font-['Poppins',sans-serif] font-bold text-[11px] text-[#fc20ff]">{card.typeTag}</span>
-              </div>
-            )}
-
-            {/* Location badge on image */}
-            {(card.isOnline || card.location) && (
-              <div className="absolute bottom-2 right-3 flex items-center gap-1 bg-black/50 backdrop-blur-sm rounded-md px-2 py-0.5">
-                {card.isOnline
-                  ? <><Globe size={11} className="text-white" /><span className="font-['Poppins',sans-serif] text-[11px] text-white">Online</span></>
-                  : <><MapPin size={11} className="text-white" /><span className="font-['Poppins',sans-serif] text-[11px] text-white">{card.location}</span></>
-                }
-              </div>
-            )}
-
-            {/* "I did this" — hidden in compact preview mode and on the
-                Spread the Word pin (boosting yourself doesn't make sense). */}
-            {!compact && !card.pinToTop && (
-              <div className="absolute bottom-2 left-3 z-10">
-                <BoostButton onImage />
-              </div>
-            )}
-          </div>
-        ) : (
-          /* No image — show controls in top-right corner of card (skip in compact mode). */
-          !compact && (
-            <div className="relative h-8 shrink-0">
-              <div className="absolute top-2 right-3 flex items-center gap-1.5">
-                <TimeBadge light={false} />
-                <TopControls light={false} />
-              </div>
+          {/* Pencil + Bookmark — hidden in compact preview mode. Dark icons
+              on the brand fallback (light bg); white icons on photos. */}
+          {!compact && (
+            <div className="absolute top-2.5 right-3 flex items-center gap-1.5">
+              <TimeBadge light={showTopImage} />
+              <TopControls light={showTopImage} />
             </div>
-          )
-        )}
+          )}
+
+          {/* Type tag */}
+          {card.typeTag && (
+            <div className="absolute top-2.5 left-3 bg-white/90 backdrop-blur-sm border border-[#fb00ff] rounded-lg px-2.5 py-0.5">
+              <span className="font-['Poppins',sans-serif] font-bold text-[11px] text-[#fc20ff]">{card.typeTag}</span>
+            </div>
+          )}
+
+          {/* Location badge on image */}
+          {(card.isOnline || card.location) && (
+            <div className="absolute bottom-2 right-3 flex items-center gap-1 bg-black/50 backdrop-blur-sm rounded-md px-2 py-0.5">
+              {card.isOnline
+                ? <><Globe size={11} className="text-white" /><span className="font-['Poppins',sans-serif] text-[11px] text-white">Online</span></>
+                : <><MapPin size={11} className="text-white" /><span className="font-['Poppins',sans-serif] text-[11px] text-white">{card.location}</span></>
+              }
+            </div>
+          )}
+
+          {/* "I did this" — hidden in compact preview mode and on the
+              Spread the Word pin (boosting yourself doesn't make sense). */}
+          {!compact && !card.pinToTop && (
+            <div className="absolute bottom-2 left-3 z-10">
+              <BoostButton onImage />
+            </div>
+          )}
+        </div>
 
         {/* Content */}
         <div className={`relative flex flex-col flex-1 ${compact ? "gap-1 px-3 pb-2 pt-1.5" : "gap-2 px-4 pb-4 pt-3"}`}>
@@ -543,11 +546,6 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
               Read more →
             </button>
           )}
-
-          {/* Cards without a header image — show "I did this" inline since
-              we have no image to overlay it on. Skipped in compact mode so
-              the mini card stays a focused preview. */}
-          {!showTopImage && !compact && !card.pinToTop && <BoostButton />}
 
           {/* Author + Boost button — hidden in compact mode (mini preview). */}
           {!compact && (

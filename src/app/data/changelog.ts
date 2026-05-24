@@ -16,6 +16,21 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.1.51",
+    date: "2026-05-24",
+    title: "Admin: bulk-approve only the pending cards that have an image",
+    sections: [
+      {
+        heading: "Admin",
+        items: [
+          "New '✓ Approve N with images' button in the Pending-approval banner, sitting next to the existing '✓ Approve all N showing'. One click bulk-approves only the visible pending cards that already have a top image — leaving imageless ones in pending for you to upload an image to before they can go live.",
+          "The button only appears when some — but not all — visible pending cards have an image. If everything has an image, the existing 'Approve all' button covers it; if nothing does, the new button is hidden.",
+          "Background: the server rejects approval on any card without a topImageUrl or topImageKey. Before this change, hitting 'Approve all' on a mixed batch surfaced one error per imageless card and partially-approved the rest. The new button lets you separate the easy approvals from the cards that still need image uploads in one pass.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.1.50",
     date: "2026-05-24",
     title: "Upcoming events rise toward the top + new Broken-images admin tab",
