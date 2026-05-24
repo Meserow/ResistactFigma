@@ -596,16 +596,29 @@ export default function App() {
     const userSetting = matchPrefs?.setting ?? [];
     const localUpcomingIds = new Set<number>();
     if (userState) {
-      for (const c of cards) {
+      // Candidates: future-dated, state-local, setting-matching, approved.
+      const candidates = cards.filter((c) => {
         const d = (c as any).eventDate as string | undefined;
-        if (!d || d < todayISO) continue;
-        if (!cardIsLocalToState(c, userState)) continue;
-        // Respect the user's online/in-person filter — pinning an in-person
-        // rally when they picked Remote only would contradict the explicit
-        // preference. settingMatches returns true when the setting array is
-        // empty ("any"), so users without a preference still get the lift.
-        if (!settingMatches(c, userSetting)) continue;
-        if (c.adminApproved === false && !isAdminUser) continue;
+        if (!d || d < todayISO) return false;
+        if (!cardIsLocalToState(c, userState)) return false;
+        // Respect the user's online/in-person Match Me preference —
+        // pinning an in-person rally when they picked Remote only would
+        // contradict the explicit setting. settingMatches returns true
+        // when the setting array is empty ("any") so users without a
+        // preference still get the lift.
+        if (!settingMatches(c, userSetting)) return false;
+        if (c.adminApproved === false && !isAdminUser) return false;
+        return true;
+      });
+      // CRITICAL: route the candidates through the same applyFilters
+      // pipeline the rest of the feed uses. Without this, the pin band
+      // bypasses the navbar filter chips ("5 Minutes Max", Category,
+      // Location, Search, Show-Done) — surfacing a 3-hour PROTEST when
+      // the user has clicked "5 Minutes Max" is a contradiction of the
+      // explicit filter intent. Fixes the audit finding from v1.1.52
+      // (reports/audit-2026-05-24.md) where state-local protests
+      // bypassed quickActionsOnly.
+      for (const c of applyFilters(candidates)) {
         if (typeof c.id === "number") localUpcomingIds.add(c.id);
       }
     }
