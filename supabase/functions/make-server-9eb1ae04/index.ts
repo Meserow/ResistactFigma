@@ -304,6 +304,7 @@ const KNOWN_MIGRATION_FLAG_KEYS: readonly string[] = [
   "cleanup:clear-stray-offtopic:v1",
   "cleanup:dropped-seeds:v1",
   "cleanup:fake-seeds:v1",
+  "cleanup:fix-quickaction-mistags:v1",
   "cleanup:link-to-targeturl:v1",
   "cleanup:purge-fake-seeds:v2",
   "cleanup:reapprove-beanie:v1",
@@ -3453,6 +3454,32 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     // intentionally kept — Sierra Club is still actively campaigning on the same
     // URL, and Adopt-A-Corner runs through Jan 2029 (the "Jan 20" in the
     // description was a program kickoff, not a deadline).
+    // ── Fix mis-tagged quickAction flags (audit 2026-05-24) ────────────────
+    // These 15 cards had quickAction: true but their actions aren't actually
+    // 5-min (CRAFTING / joining a federation / in-person social events / etc).
+    // Clearing the flag drops them out of the "5 Minutes Max" filter; their
+    // timeCommitment falls back to the category default in timeBucketFor().
+    // PURCHASE cards (1304, 1313, 1337) are intentionally NOT in this list —
+    // buying a sticker / shirt / candle is genuinely a 5-min checkout flow.
+    // Audit source: reports/audit-2026-05-24.md
+    const fixQuickActionMistagsDone = await getMigrationFlag("cleanup:fix-quickaction-mistags:v1");
+    if (!fixQuickActionMistagsDone) {
+      const idsToFix = [31, 55, 128, 285, 315, 1010, 1076, 1097, 1265, 1269, 1302, 1334, 2033, 2035, 2085];
+      let fixed = 0;
+      for (const id of idsToFix) {
+        for (const prefix of ["action:", "user-action:"]) {
+          const existing = (await kv.get(`${prefix}${id}`)) as any;
+          if (existing && typeof existing === "object" && existing.quickAction === true) {
+            await kv.set(`${prefix}${id}`, { ...existing, quickAction: false });
+            fixed++;
+            break; // a given id lives in exactly one of the two stores
+          }
+        }
+      }
+      await setMigrationFlag("cleanup:fix-quickaction-mistags:v1");
+      console.log(`Cleared mis-tagged quickAction on ${fixed} of ${idsToFix.length} cards: ${idsToFix.join(", ")}`);
+    }
+
     const retirePastDatedDone = await getMigrationFlag("cleanup:retire-past-dated-2026-05:v1");
     if (!retirePastDatedDone) {
       const retireTitles = new Set([

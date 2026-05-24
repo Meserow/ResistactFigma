@@ -16,6 +16,26 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.1",
+    date: "2026-05-24",
+    title: "5 Minutes Max filter now actually only shows quick actions",
+    sections: [
+      {
+        heading: "Filters",
+        items: [
+          "Fixed a bug where the '5 Minutes Max' filter was showing multi-hour in-person protests (e.g. the Tukwila ICE protest and the Seattle NO WAR / NO KINGS rally). The state-local upcoming-events pin band that v1.2.0 added wasn't respecting filter chips — it was lifting any upcoming event in your Match Me state to the top of the feed even if a filter said you didn't want it. Now the pin band runs every candidate through the same filter pipeline as the rest of the grid, so '5 Minutes Max', Category, Location, and Search all apply to pinned events too.",
+        ],
+      },
+      {
+        heading: "Data cleanup",
+        items: [
+          "Audited every approved action with quickAction=true and cleared the flag on 15 cards that aren't actually 5-minute actions — cross-stitch projects, joining a rapid-response network, joining a faith federation, an in-person ice cream social, etc. PURCHASE cards (3 stickers/shirts/candles) were intentionally kept as quick — buying something is genuinely a 5-minute checkout flow.",
+          "Full audit report at reports/audit-2026-05-24.md for the curious.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.0",
     date: "2026-05-24",
     title: "State-local upcoming events pin to the top of Match Me, three new admin audit tools, and an automated inbox importer",
