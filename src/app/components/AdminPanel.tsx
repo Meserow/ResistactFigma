@@ -33,7 +33,16 @@ interface AdminPanelProps {
 }
 
 type TabFilter = "active" | "pending" | "approved" | "rejected" | "all";
-type PanelMode = "cards" | "users" | "nourl" | "matcher" | "online" | "bigimages" | "brokenimages";
+type PanelMode = "cards" | "users" | "nourl" | "matcher" | "online" | "bigimages" | "brokenimages" | "sameurl";
+
+interface SameUrlCard {
+  id: number;
+  title: string;
+  authorName: string;
+  targetUrl: string;
+  authorLink: string;
+  adminApproved?: boolean;
+}
 
 interface BigImageCard {
   id: number;
@@ -295,6 +304,11 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
   const [brokenOrigin, setBrokenOrigin] = useState<string>(() => window.location.origin);
   const [brokenScannedCount, setBrokenScannedCount] = useState<number>(0);
 
+  // ── Same-URL audit state (action url == author link) ─────────────────────────
+  const [sameUrlCards, setSameUrlCards] = useState<SameUrlCard[]>([]);
+  const [sameUrlLoading, setSameUrlLoading] = useState(false);
+  const [sameUrlError, setSameUrlError] = useState<string | null>(null);
+
   const authHeaders = {
     "Content-Type": "application/json",
     Authorization: `Bearer ${accessToken}`,
@@ -480,6 +494,22 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
   // edge function) — manual Refresh thereafter.
   useEffect(() => { if (mode === "brokenimages" && brokenImages.length === 0 && !brokenLoading) fetchBrokenImages(); }, [mode]);
 
+  async function fetchSameUrlCards() {
+    setSameUrlLoading(true);
+    setSameUrlError(null);
+    try {
+      const res = await fetch(`${API}/admin/actions/url-equals-authorlink`, { headers: authHeaders });
+      const data = await res.json();
+      if (!res.ok) { setSameUrlError(data.error ?? "Failed to load."); return; }
+      setSameUrlCards(data.cards ?? []);
+    } catch {
+      setSameUrlError("Network error.");
+    } finally {
+      setSameUrlLoading(false);
+    }
+  }
+  useEffect(() => { if (mode === "sameurl" && sameUrlCards.length === 0 && !sameUrlLoading) fetchSameUrlCards(); }, [mode]);
+
   async function handleApprove(userId: string) {
     setActionLoading(userId + ":approve");
     try {
@@ -569,17 +599,17 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
               <div>
                 <p className="font-['Poppins',sans-serif] font-bold text-gray-900 text-base leading-tight">Admin Panel</p>
                 <p className="font-['Poppins',sans-serif] text-gray-400 text-xs">
-                  {mode === "users" ? "Manage user approvals" : mode === "nourl" ? "Cards missing an action link or top image" : mode === "online" ? "Users active in the last 24 hours" : mode === "bigimages" ? "Stored images over 500 KB — optimize to shrink" : mode === "brokenimages" ? "Cards whose topImageUrl 404s — needs re-upload" : "Review submitted actions"}
+                  {mode === "users" ? "Manage user approvals" : mode === "nourl" ? "Cards missing an action link or top image" : mode === "online" ? "Users active in the last 24 hours" : mode === "bigimages" ? "Stored images over 500 KB — optimize to shrink" : mode === "brokenimages" ? "Cards whose topImageUrl 404s — needs re-upload" : mode === "sameurl" ? "Cards where action URL = author link — bulk-import default" : "Review submitted actions"}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={mode === "users" ? fetchUsers : mode === "nourl" ? fetchNoUrlCards : mode === "online" ? fetchOnlineUsers : mode === "bigimages" ? fetchBigImages : mode === "brokenimages" ? fetchBrokenImages : fetchPendingCards}
-                disabled={mode === "users" ? loading : mode === "nourl" ? noUrlLoading : mode === "online" ? onlineLoading : mode === "bigimages" ? bigImagesLoading : mode === "brokenimages" ? brokenLoading : cardsLoading}
+                onClick={mode === "users" ? fetchUsers : mode === "nourl" ? fetchNoUrlCards : mode === "online" ? fetchOnlineUsers : mode === "bigimages" ? fetchBigImages : mode === "brokenimages" ? fetchBrokenImages : mode === "sameurl" ? fetchSameUrlCards : fetchPendingCards}
+                disabled={mode === "users" ? loading : mode === "nourl" ? noUrlLoading : mode === "online" ? onlineLoading : mode === "bigimages" ? bigImagesLoading : mode === "brokenimages" ? brokenLoading : mode === "sameurl" ? sameUrlLoading : cardsLoading}
                 className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40"
               >
-                <RefreshCw size={15} className={(mode === "users" ? loading : mode === "nourl" ? noUrlLoading : mode === "online" ? onlineLoading : mode === "bigimages" ? bigImagesLoading : mode === "brokenimages" ? brokenLoading : cardsLoading) ? "animate-spin" : ""} />
+                <RefreshCw size={15} className={(mode === "users" ? loading : mode === "nourl" ? noUrlLoading : mode === "online" ? onlineLoading : mode === "bigimages" ? bigImagesLoading : mode === "brokenimages" ? brokenLoading : mode === "sameurl" ? sameUrlLoading : cardsLoading) ? "animate-spin" : ""} />
               </button>
               <button
                 onClick={onClose}
@@ -603,6 +633,7 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
               <option value="online">{`Online${onlineUsers.length > 0 ? ` (${onlineUsers.length})` : ""}`}</option>
               <option value="bigimages">{`Big images${bigImages.length > 0 ? ` (${bigImages.length})` : ""}`}</option>
               <option value="brokenimages">{`Broken images${brokenImages.length > 0 ? ` (${brokenImages.length})` : ""}`}</option>
+              <option value="sameurl">{`URL = Author link${sameUrlCards.length > 0 ? ` (${sameUrlCards.length})` : ""}`}</option>
               <option value="matcher">Matcher</option>
             </select>
           </div>
@@ -1223,6 +1254,54 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
                             <span className="ml-2 text-amber-700">
                               {b.error ? `network error: ${b.error.slice(0, 50)}` : `HTTP ${b.status}`}
                             </span>
+                            {b.adminApproved === false && (
+                              <span className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-semibold uppercase tracking-wide">Pending</span>
+                            )}
+                          </p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* ── URL = AUTHOR LINK mode ─────────────────────────────────────────────── */}
+          {mode === "sameurl" && (
+            <>
+              <div className="px-5 py-3 border-b border-gray-100 shrink-0">
+                <p className="font-['Poppins',sans-serif] text-xs text-gray-500">
+                  {sameUrlLoading && sameUrlCards.length === 0
+                    ? "Scanning…"
+                    : sameUrlCards.length === 0
+                      ? "No cards have action URL == author link."
+                      : `${sameUrlCards.length} card${sameUrlCards.length !== 1 ? "s" : ""} where action URL matches author link`}
+                </p>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                {sameUrlError ? (
+                  <div className="p-5 text-center">
+                    <p className="font-['Poppins',sans-serif] text-sm text-red-500">{sameUrlError}</p>
+                    <button onClick={fetchSameUrlCards} className="mt-3 text-xs text-[#23297e] underline font-['Poppins',sans-serif]">Retry</button>
+                  </div>
+                ) : sameUrlCards.length === 0 && !sameUrlLoading ? (
+                  <div className="flex flex-col items-center justify-center h-40 gap-2">
+                    <Link2 size={28} className="text-gray-200" />
+                    <p className="font-['Poppins',sans-serif] text-sm text-gray-400">All cards have distinct action / author links.</p>
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-gray-50">
+                    {sameUrlCards.map((b) => (
+                      <li key={b.id} className="px-5 py-3 flex items-start gap-3">
+                        <Link2 size={16} className="text-[#23297e] shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-['Poppins',sans-serif] font-semibold text-sm text-gray-800 truncate">
+                            <span className="text-gray-400 font-normal">#{b.id}</span> {b.title}
+                          </p>
+                          <p className="font-['Poppins',sans-serif] text-xs text-gray-400 truncate">{b.authorName}</p>
+                          <p className="font-['Poppins',sans-serif] text-[11px] text-gray-500 mt-0.5 truncate">
+                            <a href={b.targetUrl} target="_blank" rel="noopener noreferrer" className="font-mono underline decoration-dotted hover:text-[#23297e]">{b.targetUrl}</a>
                             {b.adminApproved === false && (
                               <span className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-semibold uppercase tracking-wide">Pending</span>
                             )}

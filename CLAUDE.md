@@ -33,3 +33,19 @@ After any meaningful batch of user-facing changes (same trigger as a commit — 
 - `notOnTopic: true` flags a card as potentially off-topic (auto-set on submission by a keyword heuristic).
 - Location canonical values: Remote, At Home, National, Multi-State, then US state names.
 - Never commit `.env` files or service role keys.
+
+## Inbox imports (Cowork harvest)
+
+A Cowork scheduled task drops weekly multi-platform harvest batches of grassroots resistance Acts into `data/inbox/` every Monday morning. The full workflow lives in `docs/INBOX_IMPORT.md` — read that doc before processing any inbox batch.
+
+Slash commands:
+- `/process-inbox` — import the newest dated batch into KV under `action:*` (IDs ≥ 1000, `adminApproved: false`), archive consumed files, bump version + CHANGELOG, open a PR from `develop` to `main` via `gh`. Never auto-merge.
+- `/audit-acts` — read-only health check on live Acts (dormant accounts, stale events, broken source links, validation drift, boost-only creep). Writes to `reports/`.
+
+Key rules from `docs/INBOX_IMPORT.md` that apply across the codebase:
+
+- Every Act is a verb-led thing a user does themselves — not an account to follow.
+- `boost_only: true` content is capped at 10% of any import batch and 10% of live Acts.
+- Harvested Acts always land with `adminApproved: false`. Approval happens through the admin panel, never automatically.
+- Validation is mandatory before insert. Never insert unvalidated harvest content into KV.
+- Inserts go through the Edge Function (`supabase/functions/make-server-9eb1ae04/index.ts`), not raw Supabase.

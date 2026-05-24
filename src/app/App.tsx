@@ -28,7 +28,7 @@ import { TierModal } from "./components/TierModal";
 import { CelebrationModal } from "./components/CelebrationModal";
 import { FeedbackModal } from "./components/FeedbackModal";
 import { SmacksPage, STATIC_SMACKS, type ReceiptCard } from "./components/SmacksPage";
-import { rankCards, score as scoreCard, loadPreferences, clearPreferences, applyMatcherConfig, fetchUserPreferences, pushUserPreferences, savePreferences, timeBucketFor, cardIsLocalToState, type Preferences, type UserContext } from "./lib/matcher";
+import { rankCards, score as scoreCard, loadPreferences, clearPreferences, applyMatcherConfig, fetchUserPreferences, pushUserPreferences, savePreferences, timeBucketFor, cardIsLocalToState, settingMatches, type Preferences, type UserContext } from "./lib/matcher";
 import svgPaths from "../imports/svg-77lgd1zdt6";
 import { projectId, publicAnonKey } from "/utils/supabase/info";
 import { supabase } from "./lib/supabase";
@@ -509,6 +509,16 @@ export default function App() {
   const demoteHyperLocal = !accessToken && !matchPrefs;
 
 
+  // Today's date as ISO string (YYYY-MM-DD) for expiry + sort comparisons.
+  // MUST be declared BEFORE the function declarations below — those close
+  // over `todayISO`, and a `const` in the temporal dead zone throws
+  // "Cannot access 'todayISO' before initialization" if the function is
+  // ever invoked before this line executes. Hoisted function declarations
+  // are callable immediately on entry to the component body, so the safest
+  // ordering is: declare the constants first, then the functions that
+  // close over them.
+  const todayISO = new Date().toISOString().slice(0, 10);
+
   // Upcoming-event boost — pushes time-sensitive cards toward the top of the
   // Popular sort. Closer event = bigger boost. Past events return 0 because
   // they're already filtered out of the visible feed (see gated[] above).
@@ -541,8 +551,6 @@ export default function App() {
     if (lb === 4) return base * 0.7;        // unspecified location
     return base;                            // Online / National / Multi-state untouched
   }
-  // Today's date as ISO string (YYYY-MM-DD) for expiry + sort comparisons.
-  const todayISO = new Date().toISOString().slice(0, 10);
   const isAdminUser = approval?.isAdmin === true;
   const pendingActsCount   = isAdminUser ? serverPendingActsCount : 0;
   const pendingSmacksCount = isAdminUser ? receipts.filter((r) => (r as any).adminApproved === false).length : 0;
@@ -585,12 +593,18 @@ export default function App() {
     // band are sorted by event date ASC (soonest first). Reuses the outer
     // `todayISO` constant declared above the useMemo.
     const userState = matchPrefs?.state ?? null;
+    const userSetting = matchPrefs?.setting ?? [];
     const localUpcomingIds = new Set<number>();
     if (userState) {
       for (const c of cards) {
         const d = (c as any).eventDate as string | undefined;
         if (!d || d < todayISO) continue;
         if (!cardIsLocalToState(c, userState)) continue;
+        // Respect the user's online/in-person filter — pinning an in-person
+        // rally when they picked Remote only would contradict the explicit
+        // preference. settingMatches returns true when the setting array is
+        // empty ("any"), so users without a preference still get the lift.
+        if (!settingMatches(c, userSetting)) continue;
         if (c.adminApproved === false && !isAdminUser) continue;
         if (typeof c.id === "number") localUpcomingIds.add(c.id);
       }
@@ -642,7 +656,23 @@ export default function App() {
     if (matchPrefs) {
       // Admins always see pending cards — pull them out so the score threshold
       // doesn't silently drop them, then append them after the ranked results.
-      const pendingForAdmin = isAdminUser ? filtered.filter((c) => c.adminApproved === false) : [];
+      // Admin-only "still pending" set surfaced in their match feed. Apply the
+      // same hard filters the matcher's `score()` uses (setting + state) so
+      // toggling "Remote only" or picking a state actually hides in-person /
+      // out-of-state pending cards from the matched view. Admins still see
+      // everything in the AdminPanel — this only narrows the consumer feed.
+      const pendingForAdmin = isAdminUser
+        ? filtered.filter((c) => {
+            if (c.adminApproved !== false) return false;
+            if (!settingMatches(c, matchPrefs.setting)) return false;
+            if (!matchPrefs.includeAnywhere && matchPrefs.state) {
+              if (!cardIsLocalToState(c, matchPrefs.state) && !(c.isOnline || c.location === "National" || c.location === "Multi-state")) {
+                return false;
+              }
+            }
+            return true;
+          })
+        : [];
       let rankable = isAdminUser ? filtered.filter((c) => c.adminApproved !== false) : filtered;
 
       // Hard time caps for the "I have very little time" buckets. The user
