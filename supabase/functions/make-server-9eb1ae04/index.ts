@@ -4804,6 +4804,76 @@ app.get("/make-server-9eb1ae04/admin/actions/big-images", async (c) => {
   }
 });
 
+// ─── GET /admin/actions/broken-images — list cards whose topImageUrl 404s ────
+// Admin-only. Walks every card from both stores, HEADs each `topImageUrl`. For
+// root-relative paths (e.g. "/people-power-united.jpg") prepends `origin`
+// (default https://resistact.org) so we can verify the file is actually being
+// served by the frontend. Slow (N HEAD requests); the admin UI calls it
+// on-demand. Returns cards whose check returned non-2xx or network error.
+const DEFAULT_FRONTEND_ORIGIN = "https://resistact.org";
+app.get("/make-server-9eb1ae04/admin/actions/broken-images", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const originRaw = c.req.query("origin") || DEFAULT_FRONTEND_ORIGIN;
+    if (!/^https?:\/\//.test(originRaw)) return c.json({ error: "origin must start with http(s)://" }, 400);
+    const origin = originRaw.replace(/\/$/, "");
+
+    // Collect all cards.
+    const cards: any[] = [];
+    for (const cc of (await kv.getByPrefix("action:")) as any[]) {
+      if (cc && typeof cc === "object" && typeof cc.id === "number") cards.push({ ...cc, _store: "action" });
+    }
+    const userIds = ((await kv.get("user-action:ids")) ?? []) as number[];
+    for (const id of userIds) {
+      const cc = (await kv.get(`user-action:${id}`)) as any;
+      if (cc && typeof cc === "object" && typeof cc.id === "number") cards.push({ ...cc, _store: "user-action" });
+    }
+
+    const candidates = cards.filter((cc) => typeof cc.topImageUrl === "string" && cc.topImageUrl.length > 0);
+    const broken: any[] = [];
+    const BATCH = 12;
+    for (let i = 0; i < candidates.length; i += BATCH) {
+      const slice = candidates.slice(i, i + BATCH);
+      const results = await Promise.all(slice.map(async (cc) => {
+        const raw = cc.topImageUrl as string;
+        const url = raw.startsWith("/") ? `${origin}${raw}` : raw;
+        try {
+          const r = await fetch(url, { method: "HEAD" });
+          if (r.ok) return null;
+          return { card: cc, status: r.status, fullUrl: url, error: null };
+        } catch (e) {
+          return { card: cc, status: 0, fullUrl: url, error: String(e) };
+        }
+      }));
+      for (const r of results) if (r) broken.push(r);
+    }
+
+    broken.sort((a, b) => (a.card.id ?? 0) - (b.card.id ?? 0));
+    return c.json({
+      origin,
+      scanned: candidates.length,
+      total: broken.length,
+      cards: broken.map((b) => ({
+        id: b.card.id,
+        title: b.card.title,
+        authorName: b.card.authorName,
+        topImageUrl: b.card.topImageUrl,
+        fullUrl: b.fullUrl,
+        status: b.status,
+        error: b.error,
+        adminApproved: b.card.adminApproved,
+        _store: b.card._store,
+      })),
+    });
+  } catch (err) {
+    console.log("Broken-images error:", err);
+    return c.json({ error: `Failed to scan broken images: ${err}` }, 500);
+  }
+});
+
 // ─── DELETE /actions/:id — admin-only card removal ────────────────────────────
 app.delete("/make-server-9eb1ae04/actions/:id", async (c) => {
   try {
