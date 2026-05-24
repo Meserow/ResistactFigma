@@ -16,6 +16,21 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.2",
+    date: "2026-05-24",
+    title: "Smacks now have a pencil-edit button (admin)",
+    sections: [
+      {
+        heading: "Admin",
+        items: [
+          "Smack tiles now show a pencil icon next to the delete trash icon (for approved smacks) and next to the Approve button (for pending smacks). One click opens an edit modal pre-populated with the smack's title, image, caption, source URL, source label, and tags — same field surface as the Add Smack modal.",
+          "The pencil only appears on KV-stored smacks (ids below 5000). Hardcoded static smacks (the ResistAct hero, the cross-stitch voodoo doll, etc. — ids 5000+) live in code, so editing them still requires a code change — the pencil is hidden for those.",
+          "Image swap supported: upload a new file via the orange button (same flow as Add Smack), or paste a new URL directly.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.1",
     date: "2026-05-24",
     title: "5 Minutes Max filter now actually only shows quick actions",

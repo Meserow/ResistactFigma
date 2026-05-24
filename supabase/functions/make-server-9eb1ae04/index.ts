@@ -5460,6 +5460,51 @@ app.post("/make-server-9eb1ae04/admin/receipts/create", async (c) => {
   }
 });
 
+// ─── PUT /admin/receipts/:id — admin edits a receipt's text fields ───────────
+// Static smacks (id ≥ 5000 in src/app/components/SmacksPage.tsx) are hardcoded
+// in the client and CAN'T be edited through this endpoint — they live in code,
+// not KV. Only KV-stored receipts (id < 5000) are mutable. The client gates
+// the pencil button accordingly.
+app.put("/make-server-9eb1ae04/admin/receipts/:id", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const id = Number(c.req.param("id"));
+    const existing = (await kv.get(`receipt:${id}`)) as any;
+    if (!existing) return c.json({ error: `Receipt ${id} not found` }, 404);
+
+    const body = await c.req.json<{
+      title?: string;
+      caption?: string;
+      imageUrl?: string;
+      sourceUrl?: string;
+      sourceLabel?: string;
+      tags?: string[];
+    }>();
+
+    // Whitelist editable fields — don't let an admin overwrite id, createdAt,
+    // createdBy, or the approval state through this endpoint.
+    const updated = {
+      ...existing,
+      ...(body.title       !== undefined && { title: body.title }),
+      ...(body.caption     !== undefined && { caption: body.caption }),
+      ...(body.imageUrl    !== undefined && { imageUrl: body.imageUrl }),
+      ...(body.sourceUrl   !== undefined && { sourceUrl: body.sourceUrl }),
+      ...(body.sourceLabel !== undefined && { sourceLabel: body.sourceLabel }),
+      ...(Array.isArray(body.tags) && { tags: body.tags }),
+      updatedBy: admin.user.id,
+      updatedAt: new Date().toISOString(),
+    };
+    await kv.set(`receipt:${id}`, updated);
+    console.log(`Admin ${admin.record.name} edited receipt #${id}: "${updated.title}"`);
+    return c.json({ receipt: updated });
+  } catch (err) {
+    return c.json({ error: `Edit failed: ${err}` }, 500);
+  }
+});
+
 // ─── POST /admin/approve-receipt/:id — approve a pending receipt ──────────────
 app.post("/make-server-9eb1ae04/admin/approve-receipt/:id", async (c) => {
   try {

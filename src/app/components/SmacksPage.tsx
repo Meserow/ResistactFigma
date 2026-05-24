@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   X, Upload, Loader2, Share2, Copy, Check, Download,
-  ExternalLink, Plus, Tag, Flame, Trash2, ZoomIn,
+  ExternalLink, Plus, Tag, Flame, Trash2, ZoomIn, Pencil,
 } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
 import type { UserApproval } from "../lib/supabase";
@@ -270,6 +270,10 @@ interface SmacksPageProps {
   onReceiptAdded?: (r: ReceiptCard) => void;
   onReceiptDeleted?: (id: number) => void;
   onReceiptApproved?: (id: number) => void;
+  /** Called when an admin saves edits to an existing KV-stored smack. The
+   *  parent should merge the returned receipt into its receipts state so
+   *  the change reflects across the whole app. */
+  onReceiptUpdated?: (r: ReceiptCard) => void;
   pendingFilterVersion?: number;
   onComplete?: (id: number) => void;
   completedSmackIds?: Set<number>;
@@ -282,7 +286,7 @@ interface SmacksPageProps {
   onSortByChange?: (s: "top" | "new" | "pending") => void;
 }
 
-export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds = [], searchQuery = "", accessToken, approval, onReceiptAdded, onReceiptDeleted, onReceiptApproved, pendingFilterVersion, onComplete, completedSmackIds, activeTags: activeTagsProp, onActiveTagsChange, sortBy: sortByProp, onSortByChange }: SmacksPageProps) {
+export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds = [], searchQuery = "", accessToken, approval, onReceiptAdded, onReceiptDeleted, onReceiptApproved, onReceiptUpdated, pendingFilterVersion, onComplete, completedSmackIds, activeTags: activeTagsProp, onActiveTagsChange, sortBy: sortByProp, onSortByChange }: SmacksPageProps) {
   const isAdmin = approval?.isAdmin === true;
   const canSubmit = !!accessToken && (approval?.status === "approved");
 
@@ -711,6 +715,12 @@ export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds =
   // ── Admin: add receipt modal ─────────────────────────────────────────────────
   const [addOpen, setAddOpen] = useState(false);
 
+  // ── Admin: edit smack modal ──────────────────────────────────────────────────
+  // Holds the id of the receipt currently being edited via the pencil button.
+  // Null when no modal is open. Only KV-stored receipts (id < 5000) are
+  // editable — the pencil button is hidden for static smacks.
+  const [editingId, setEditingId] = useState<number | null>(null);
+
   // ── Boosts ──────────────────────────────────────────────────────────────────
   const [boostedReceipts, setBoostedReceipts] = useState<Set<number>>(() => {
     try {
@@ -864,6 +874,7 @@ export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds =
             onBoost={() => handleReceiptBoost(r.id)}
             onApprove={() => handleApprove(r.id)}
             onDelete={() => handleDelete(r.id)}
+            onEdit={() => setEditingId(r.id)}
           />
         ))}
       </div>
@@ -1165,13 +1176,33 @@ export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds =
           onAdded={(r) => { onReceiptAdded?.(r); setAddOpen(false); }}
         />
       )}
+
+      {/* ── Admin: Edit Smack modal — opens when the pencil button on a
+          KV-stored receipt is clicked. Static smacks (id ≥ 5000) live in
+          code so the pencil is hidden for them. ── */}
+      {editingId !== null && (() => {
+        const r = receipts.find((x) => x.id === editingId);
+        if (!r) return null;
+        return (
+          <EditSmackModal
+            receipt={r}
+            accessToken={accessToken}
+            allTags={ALL_TAGS}
+            onClose={() => setEditingId(null)}
+            onSaved={(updated) => {
+              onReceiptUpdated?.(updated);
+              setEditingId(null);
+            }}
+          />
+        );
+      })()}
     </div>
   );
 }
 
 // ─── Receipt tile ──────────────────────────────────────────────────────────────
 function ReceiptTile({
-  receipt, isAdmin, boostCount, isBoosted, isShared, onShare, onBoost, onApprove, onDelete,
+  receipt, isAdmin, boostCount, isBoosted, isShared, onShare, onBoost, onApprove, onDelete, onEdit,
 }: {
   receipt: ReceiptCard;
   isAdmin: boolean;
@@ -1182,7 +1213,11 @@ function ReceiptTile({
   onBoost: () => void;
   onApprove: () => void;
   onDelete: () => void;
+  onEdit: () => void;
 }) {
+  // Static smacks (hardcoded in STATIC_SMACKS, id ≥ 5000) live in code and
+  // can't be edited via the API. Only KV-stored receipts get the pencil.
+  const isEditable = receipt.id < 5000;
   const [tileLightboxOpen, setTileLightboxOpen] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   return (
@@ -1197,6 +1232,16 @@ function ReceiptTile({
             ⚠ Pending
           </span>
           <div className="flex items-center gap-1.5">
+            {isEditable && (
+              <button
+                type="button"
+                onClick={onEdit}
+                className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white border border-red-200 hover:bg-red-100 text-red-700 font-['Poppins',sans-serif] font-bold text-[10px] uppercase tracking-wide transition-colors"
+                title="Edit before approving"
+              >
+                <Pencil size={10} /> Edit
+              </button>
+            )}
             <button
               type="button"
               onClick={onApprove}
@@ -1271,7 +1316,10 @@ function ReceiptTile({
             {boostCount > 0 && <span className="opacity-80">· {boostCount}</span>}
           </button>
         </div>
-        {/* Admin delete */}
+        {/* Admin edit + delete cluster (approved smacks only — pending ones
+            already show approve/delete in the pending header). The pencil
+            only appears for KV-stored receipts; static smacks (id ≥ 5000)
+            hide it since editing them requires a code change. */}
         {receipt.adminApproved && isAdmin && (
           confirmingDelete ? (
             <div
@@ -1291,14 +1339,26 @@ function ReceiptTile({
               >No</button>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); setConfirmingDelete(true); }}
-              className="absolute top-2 left-2 w-7 h-7 flex items-center justify-center rounded-full bg-white/90 text-gray-400 hover:text-red-600 hover:bg-white shadow-sm transition-colors"
-              title="Delete"
-            >
-              <Trash2 size={13} />
-            </button>
+            <div className="absolute top-2 left-2 z-10 flex items-center gap-1.5">
+              {isEditable && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onEdit(); }}
+                  className="w-7 h-7 flex items-center justify-center rounded-full bg-white/90 text-gray-400 hover:text-[#23297e] hover:bg-white shadow-sm transition-colors"
+                  title="Edit this smack"
+                >
+                  <Pencil size={13} />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setConfirmingDelete(true); }}
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-white/90 text-gray-400 hover:text-red-600 hover:bg-white shadow-sm transition-colors"
+                title="Delete"
+              >
+                <Trash2 size={13} />
+              </button>
+            </div>
           )
         )}
       </button>
@@ -1586,6 +1646,214 @@ function AddReceiptModal({
           >
             {saving ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
             {saving ? "Saving…" : isAdmin ? "Save" : "Submit for Review"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Admin: Edit Receipt modal ────────────────────────────────────────────────
+// Mirrors AddReceiptModal's field surface (title / image / caption / source /
+// tags) but pre-populated from an existing receipt and submitting via PUT.
+// Only callable by admins — static smacks (id ≥ 5000) live in code and aren't
+// editable through this flow; the pencil button is hidden for them.
+function EditSmackModal({
+  receipt, accessToken, allTags, onClose, onSaved,
+}: {
+  receipt: ReceiptCard;
+  accessToken: string | null;
+  allTags: string[];
+  onClose: () => void;
+  onSaved: (r: ReceiptCard) => void;
+}) {
+  const [title,       setTitle]       = useState(receipt.title ?? "");
+  const [imageUrl,    setImageUrl]    = useState(receipt.imageUrl ?? "");
+  const [caption,     setCaption]     = useState(receipt.caption ?? "");
+  const [sourceUrl,   setSourceUrl]   = useState(receipt.sourceUrl ?? "");
+  const [sourceLabel, setSourceLabel] = useState(receipt.sourceLabel ?? "");
+  const [selectedTags, setSelectedTags] = useState<string[]>(receipt.tags ?? []);
+  const [customTag,   setCustomTag]   = useState("");
+  const [uploading,   setUploading]   = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [saving,      setSaving]      = useState(false);
+  const [error,       setError]       = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { setUploadError("Image files only."); return; }
+    if (file.size > 10 * 1024 * 1024) { setUploadError("Max 10 MB."); return; }
+    setUploadError(null);
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`${API}/actions/upload-image`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) { setUploadError(data.error ?? "Upload failed."); return; }
+      setImageUrl(data.url);
+    } catch { setUploadError("Network error during upload."); }
+    finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  function toggleTag(t: string) {
+    setSelectedTags((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]);
+  }
+  function addCustomTag() {
+    const t = customTag.trim();
+    if (t && !selectedTags.includes(t)) setSelectedTags((prev) => [...prev, t]);
+    setCustomTag("");
+  }
+
+  async function handleSave() {
+    if (!title.trim() || !imageUrl.trim()) {
+      setError("Title and image are required."); return;
+    }
+    setError(null);
+    setSaving(true);
+    try {
+      const res = await fetch(`${API}/admin/receipts/${receipt.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({
+          title: title.trim(),
+          imageUrl: imageUrl.trim(),
+          caption: caption.trim(),
+          sourceUrl: sourceUrl.trim(),
+          sourceLabel: sourceLabel.trim(),
+          tags: selectedTags,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error ?? "Failed to save."); return; }
+      onSaved(data.receipt as ReceiptCard);
+    } catch { setError("Network error."); }
+    finally { setSaving(false); }
+  }
+
+  const inputCls = "w-full px-3.5 py-2.5 border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#ed6624]/30 focus:border-[#ed6624] placeholder:text-gray-400 placeholder:italic";
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[92vh] flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="bg-[#23297e] px-5 py-4 flex items-center gap-3 shrink-0">
+          <Pencil size={16} className="text-white shrink-0" />
+          <p className="flex-1 font-['Poppins',sans-serif] font-bold text-white text-base">
+            Edit smack <span className="text-white/60 font-normal text-xs ml-1">#{receipt.id}</span>
+          </p>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          <div>
+            <label className="block font-['Poppins',sans-serif] text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Title *</label>
+            <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className={inputCls} />
+          </div>
+
+          <div>
+            <label className="block font-['Poppins',sans-serif] text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Image *</label>
+            <div className="flex items-center gap-2 mb-2">
+              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="flex items-center gap-1.5 px-3 py-2 bg-[#ed6624] hover:bg-[#c2521b] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-semibold text-xs rounded-lg transition-colors"
+              >
+                {uploading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+                {uploading ? "Uploading…" : "Replace image"}
+              </button>
+              <span className="font-['Poppins',sans-serif] text-[11px] text-gray-400">or edit URL ↓</span>
+            </div>
+            <input type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className={inputCls} />
+            {imageUrl && (
+              <div className="mt-2 rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
+                <img src={imageUrl} alt="Preview" className="w-full h-auto max-h-48 object-contain" onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = "none"; }} />
+              </div>
+            )}
+            {uploadError && <p className="mt-1 text-[11px] text-red-500 font-['Poppins',sans-serif]">{uploadError}</p>}
+          </div>
+
+          <div>
+            <label className="block font-['Poppins',sans-serif] text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Ready-to-post caption</label>
+            <textarea rows={3} value={caption} onChange={(e) => setCaption(e.target.value)} className={`${inputCls} resize-none`} />
+            <p className={`text-right text-[11px] mt-0.5 font-['Poppins',sans-serif] ${caption.length > 280 ? "text-red-500" : "text-gray-400"}`}>{caption.length}/280</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block font-['Poppins',sans-serif] text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Source URL</label>
+              <input type="url" value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} className={inputCls} />
+            </div>
+            <div>
+              <label className="block font-['Poppins',sans-serif] text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">Source label</label>
+              <input type="text" value={sourceLabel} onChange={(e) => setSourceLabel(e.target.value)} className={inputCls} />
+            </div>
+          </div>
+
+          <div>
+            <label className="block font-['Poppins',sans-serif] text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">Tags</label>
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {allTags.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => toggleTag(t)}
+                  className={`px-2.5 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all border ${
+                    selectedTags.includes(t)
+                      ? "bg-[#23297e] text-white border-[#23297e]"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-[#23297e]"
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text" value={customTag}
+                onChange={(e) => setCustomTag(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomTag(); } }}
+                placeholder="Add a custom tag…"
+                className={`${inputCls} flex-1`}
+              />
+              <button type="button" onClick={addCustomTag} className="px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-['Poppins',sans-serif] text-sm font-semibold transition-colors">
+                Add
+              </button>
+            </div>
+          </div>
+
+          {error && <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2 font-['Poppins',sans-serif]">{error}</p>}
+        </div>
+
+        <div className="shrink-0 px-5 py-4 border-t border-gray-100 flex gap-3">
+          <button onClick={onClose} className="flex-1 py-2.5 border border-gray-200 rounded-xl font-['Poppins',sans-serif] font-semibold text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving || !title.trim() || !imageUrl.trim()}
+            className="flex-1 py-2.5 bg-[#23297e] hover:bg-[#1a2060] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-bold text-sm rounded-xl transition-colors flex items-center justify-center gap-2"
+          >
+            {saving ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
+            {saving ? "Saving…" : "Save changes"}
           </button>
         </div>
       </div>

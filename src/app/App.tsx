@@ -1568,6 +1568,12 @@ export default function App() {
                 prev.map((r) => (r.id === id ? { ...r, adminApproved: true } : r))
               )
             }
+            onReceiptUpdated={(updated) => {
+              setReceipts((prev) =>
+                prev.map((r) => (r.id === updated.id ? { ...r, ...updated } : r))
+              );
+              showToast("Smack updated");
+            }}
             pendingFilterVersion={smacksPendingVersion}
             onComplete={handleComplete}
             completedSmackIds={completedCards}
