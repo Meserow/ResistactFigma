@@ -509,8 +509,32 @@ export default function App() {
   const demoteHyperLocal = !accessToken && !matchPrefs;
 
 
+  // Upcoming-event boost — pushes time-sensitive cards toward the top of the
+  // Popular sort. Closer event = bigger boost. Past events return 0 because
+  // they're already filtered out of the visible feed (see gated[] above).
+  // Tuned to the engagement-score scale (raw boosts + completions, typically
+  // 0-50 for the busiest cards), so a "tomorrow" event meaningfully tiers
+  // with the most popular evergreen cards but doesn't unconditionally beat
+  // a 100-boost flagship card. Tweak the magnitudes here if events need to
+  // surface harder or softer.
+  function upcomingEventBoost(c: ActionCardData): number {
+    if (!c.eventDate) return 0;
+    if (c.eventDate < todayISO) return 0;
+    const today = Date.parse(todayISO);
+    const event = Date.parse(c.eventDate);
+    if (Number.isNaN(today) || Number.isNaN(event)) return 0;
+    const daysUntil = Math.max(0, Math.round((event - today) / 86_400_000));
+    if (daysUntil === 0)   return 40;   // happening today
+    if (daysUntil === 1)   return 30;   // tomorrow
+    if (daysUntil <= 3)    return 20;   // within 3 days
+    if (daysUntil <= 7)    return 12;   // within a week
+    if (daysUntil <= 14)   return 6;    // within two weeks
+    if (daysUntil <= 30)   return 3;    // within a month
+    return 1;                           // scheduled but far out — small lift
+  }
+
   function effectiveScore(c: ActionCardData): number {
-    const base = engagementScore(c);
+    const base = engagementScore(c) + upcomingEventBoost(c);
     if (!demoteHyperLocal) return base;
     const lb = locationBucket(c);
     if (lb === 3) return base * 0.35;       // specific state / city
@@ -632,13 +656,14 @@ export default function App() {
       return pinFirst(completedLast([...filtered].sort((a, b) => (b.id ?? 0) - (a.id ?? 0))));
     }
 
-    // ── Popular: pure engagement sort — boosts + completions DESC ──────────────
-    // Event cards with a future date are NOT pinned; they compete on engagement
-    // just like everything else. A zero-engagement event shouldn't jump the queue.
-    // `effectiveScore` is identical to `engagementScore` for logged-in users
-    // and Match-Me users; for anonymous users with no known location it
-    // additionally penalises hyper-local actions so Online/National rise.
-    // Round to integer so scores like 12.6 and 13 still tier together cleanly.
+    // ── Popular: engagement sort with an upcoming-event lift ──────────────────
+    // `effectiveScore` = engagement (boosts + completions) + upcomingEventBoost.
+    // The event boost gives time-sensitive cards a meaningful chance to surface
+    // even with low engagement — a protest tomorrow needs to be visible NOW,
+    // not after it accumulates a month of clicks. For anonymous users with no
+    // known location, `effectiveScore` additionally penalises hyper-local
+    // actions so Online/National rise. Round to integer so scores like 12.6
+    // and 13 still tier together cleanly.
     const byScore = new Map<number, ActionCardData[]>();
     for (const c of filtered) {
       const s = Math.round(effectiveScore(c));

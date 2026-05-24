@@ -593,7 +593,32 @@ export function score(card: ActionCardData, prefs: Preferences, ctx?: UserContex
   // appear in Quick Matches regardless of tone slider position.
   const highlightBonus = (card as any).firstTimerFriendly ? 7 : 0;
 
-  return toneScore - tonePenalty + timeScore + amplifyBonus + engagementScore + stateBonus + boostBonus + highlightBonus;
+  // Upcoming-event bonus — pushes time-sensitive cards up in Match Me
+  // results. Past events return 0 (they're filtered out of the visible feed
+  // before they reach the matcher anyway). Magnitudes are tuned to the
+  // 0-10 scale used by the other component scores above — tomorrow's event
+  // gets roughly the same lift as a strong state match.
+  const eventDate = (card as any).eventDate as string | undefined;
+  let eventProximityBonus = 0;
+  if (eventDate) {
+    const todayISO = new Date().toISOString().slice(0, 10);
+    if (eventDate >= todayISO) {
+      const today = Date.parse(todayISO);
+      const event = Date.parse(eventDate);
+      if (!Number.isNaN(today) && !Number.isNaN(event)) {
+        const daysUntil = Math.max(0, Math.round((event - today) / 86_400_000));
+        if      (daysUntil === 0)  eventProximityBonus = 10; // today
+        else if (daysUntil === 1)  eventProximityBonus = 8;  // tomorrow
+        else if (daysUntil <= 3)   eventProximityBonus = 6;
+        else if (daysUntil <= 7)   eventProximityBonus = 4;
+        else if (daysUntil <= 14)  eventProximityBonus = 2;
+        else if (daysUntil <= 30)  eventProximityBonus = 1;
+        else                       eventProximityBonus = 0.5;
+      }
+    }
+  }
+
+  return toneScore - tonePenalty + timeScore + amplifyBonus + engagementScore + stateBonus + boostBonus + highlightBonus + eventProximityBonus;
 }
 
 // ─── Top N ────────────────────────────────────────────────────────────────────

@@ -16,6 +16,28 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.1.50",
+    date: "2026-05-24",
+    title: "Upcoming events rise toward the top + new Broken-images admin tab",
+    sections: [
+      {
+        heading: "Sorting",
+        items: [
+          "Actions with an upcoming event date now get a sort lift — the closer the event, the bigger the lift. A protest tomorrow will surface near the top of the feed even if it has zero boosts yet; an event in a month gets a small bump; events past today are still hidden as before.",
+          "The lift applies to the default 'Popular' sort and to Match Me results. The explicit 'A–Z' and 'Newest' sorts are unchanged — those are user-chosen orderings, so we leave them alone.",
+          "Tuned so a strong evergreen card with lots of engagement can still outrank a low-engagement event happening next week — events compete fairly with popular cards rather than always jumping the queue. If a flagship action has 100 boosts and the protest tomorrow has 0, the flagship still wins; if the flagship has 20 boosts, the protest passes it.",
+        ],
+      },
+      {
+        heading: "Admin",
+        items: [
+          "New 'Broken images' tab in the admin panel. It scans every card's top-image URL and lists any that 404 or fail to load, with the HTTP status / error and a Pending badge if the card is unapproved. Use this when a third-party site (Indivisible, NAACP, etc.) rotates an image and our cached link goes dead — you can find the dead ones in one place instead of hunting through the feed.",
+          "The scan is slow (one HEAD request per card through the edge function) so it runs on tab-entry and then manual Re-scan only. Frontend origin is pre-filled but editable — useful for checking what resistact.org sees vs. what localhost sees.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.1.49",
     date: "2026-05-24",
     title: "Seven new actions imported from a TSV scout batch, all waiting in Admin → Pending",
