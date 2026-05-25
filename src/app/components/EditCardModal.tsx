@@ -20,7 +20,7 @@ const SELECT_CLS = (val: string | null | undefined) =>
 // Alphabetical order so editors can find labels quickly. Includes every
 // category that exists in production card data plus "Other" as a catch-all.
 // Production-data audit ran via /actions API on 2026-05-25 informed this
-// list (previously was missing Show Up, Host, Witness, Call/Write, Learn,
+// list (previously was missing Show Up, Host, Witness, Call, Learn,
 // Bird-Dog, Letter Writing, Irreverence — combined ~150 active cards).
 // "Art Piece" intentionally NOT a separate option — it merges into
 // Art/Performance Art via normaliseCategory in App.tsx.
@@ -30,7 +30,7 @@ const CATEGORY_OPTIONS: { label: string; color: string }[] = [
   { label: "Bird-Dog",             color: "#5a3e9e" },
   { label: "Boost",                color: "#8a00e6" },
   { label: "Boycott",              color: "#23297e" },
-  { label: "Call/Write",           color: "#c2185b" },
+  { label: "Call",                 color: "#c2185b" },
   { label: "Crafting",             color: "#c34e00" },
   { label: "Email Campaign",       color: "#e44b4b" },
   { label: "Flash Mob",            color: "#ff00d5" },

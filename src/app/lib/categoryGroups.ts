@@ -28,7 +28,7 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   },
   {
     heading: "Reach Out",
-    categories: ["Call/Write", "Email Campaign", "Letter to Editor", "Letter Writing", "Petition", "Social Media"],
+    categories: ["Call", "Email Campaign", "Letter to Editor", "Letter Writing", "Petition", "Social Media"],
   },
   {
     heading: "Show Up",

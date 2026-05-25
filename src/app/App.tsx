@@ -83,12 +83,15 @@ const HEADERS = { "Content-Type": "application/json", Authorization: `Bearer ${p
 //
 // Also folds legacy/duplicate category names into a single canonical bucket:
 //   "Art Piece" / "ART PIECE" → "Art/Performance Art"
-//   "Call/write" / "CALL/WRITE" → "Call/Write" (consistent slash + caps)
+//   "Call/write" / "CALL/WRITE" → "Call" (renamed from "Call/Write" — the
+//   bucket only ever contained phone-call actions; letter-writing has its
+//   own category. Old data is folded forward here so any KV records still
+//   carrying the old label render under the new one.)
 const TITLE_CASE_STOPWORDS = new Set(["of", "to", "a", "the", "and", "or", "in", "on", "for", "at"]);
 const CATEGORY_ALIASES: Record<string, string> = {
   "art piece": "Art/Performance Art",
   "art/performance art": "Art/Performance Art",
-  "call/write": "Call/Write",
+  "call/write": "Call",
 };
 function normaliseCategory(s: string | undefined | null): string {
   const trimmed = (s ?? "").trim();
@@ -2096,7 +2099,7 @@ export default function App() {
                 onClick={() => { setScrollNudgeVisible(false); setMatchOpen(true); }}
                 className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-white hover:bg-gray-50 text-[#fd8e33] font-['Poppins',sans-serif] font-extrabold text-[15px] rounded-xl shadow-sm transition-colors whitespace-nowrap"
               >
-                ✨ Open Quick Acts for Me Tool →
+                ✨ Refine My Matches →
               </button>
             </div>
           </div>

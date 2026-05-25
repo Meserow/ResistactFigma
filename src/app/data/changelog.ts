@@ -16,6 +16,39 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.54",
+    date: "2026-05-25",
+    title: "Call/Write → Call · scroll nudge button reworded",
+    sections: [
+      {
+        heading: "Category cleanup",
+        items: [
+          "Renamed the \"Call/Write\" category to just \"Call.\" The bucket only ever held phone-call actions — letter-writing has its own Letter Writing and Letter to Editor categories, so the slash label was misleading.",
+          "Live cards still carrying the old label are renamed at the server on next Edge Function deploy (one-time KV migration). In the meantime, the client folds the old label forward at render time so users always see \"Call.\"",
+        ],
+      },
+      {
+        heading: "Copy",
+        items: [
+          "Reworded the lower-right scroll-nudge toast button from \"Open Quick Acts for Me Tool\" to \"Refine My Matches\" — matches what the same button at the top of the page already says.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.53",
+    date: "2026-05-25",
+    title: "Indivisible-authored cards: shared banner image",
+    sections: [
+      {
+        heading: "Data",
+        items: [
+          "25 Indivisible-authored cards that had no banner image (showing only the generic ResistAct logo fallback) now share a dedicated Indivisible banner. Cards that already had a real image are untouched. Direct KV write — takes effect on next page load; no edge function deploy needed.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.52",
     date: "2026-05-25",
     title: "Persistent bottom banner — acts, tag, facts + smacks in one row",
