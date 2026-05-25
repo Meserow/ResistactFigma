@@ -65,7 +65,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
   "Art/Performance Art": "#896312",
   "Bird-Dog":            "#5a3e9e",
   "Boost":               "#8a00e6",
-  "Boycott":             "#23297e",
+  "Boycott":             "#7c2d12",
   "Call":                "#c2185b",
   "Crafting":            "#c34e00",
   "Email Campaign":      "#e44b4b",

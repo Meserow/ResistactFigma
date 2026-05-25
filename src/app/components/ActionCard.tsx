@@ -22,6 +22,13 @@ export interface ActionCardData {
   title: string;
   targetUrl?: string;
   description: string;
+  /** Optional one-line hand-authored summary that renders as the
+   *  subtitle below the title on the card. When present, takes
+   *  priority over any colon/em-dash split of the title. Keep it
+   *  ~5–10 words: "what is this Act, in plainer language than the
+   *  title". When absent, the title's split (if any) is used; if
+   *  there's no split either, no subtitle renders. */
+  synopsis?: string;
   typeTag?: string;
   location?: string;
   isOnline?: boolean;
@@ -155,26 +162,30 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
   // the tens, this should drift upward so the flicker stays meaningful.
   const HOT_BOOST_THRESHOLD = 5;
   function ActionRow() {
-    const showBoost = !card.pinToTop;
-    const animatedBoosts = useAnimatedNumber(card.boosts ?? 0);
+    const boostCount = card.boosts ?? 0;
+    const showBoost = !card.pinToTop && boostCount > 0;
+    const showDone = effectiveCount > 0;
+    const animatedBoosts = useAnimatedNumber(boostCount);
     const animatedDones = useAnimatedNumber(effectiveCount);
-    const isHotBoost = (card.boosts ?? 0) >= HOT_BOOST_THRESHOLD;
+    const isHotBoost = boostCount >= HOT_BOOST_THRESHOLD;
+    // Empty placeholder when both stats are zero — keeps the flex layout
+    // stable (justify-between still pushes the author block to the right)
+    // without rendering any visible badges. Quiet by default; the badges
+    // only earn space once there's something to count.
     return (
       <div className="flex items-center gap-1.5 shrink-0">
-        {/* Boost stat — orange identity; flickers on hot cards. */}
         {showBoost && (
-          <span className="inline-flex items-center gap-1 h-7 px-2 rounded-full bg-[#ed6624]/10 text-[#ed6624] font-['Poppins',sans-serif] font-bold text-[12px] whitespace-nowrap">
+          <span className="inline-flex items-center gap-1 px-1 text-gray-400 font-['Poppins',sans-serif] font-medium text-[11px] whitespace-nowrap">
             <span aria-hidden className={isHotBoost ? "resistact-anim-flicker inline-block" : "inline-block"}>🔥</span>
             <span>{animatedBoosts.toLocaleString()}</span>
           </span>
         )}
-        {/* Done stat — green identity */}
-        <span className="inline-flex items-center gap-1 h-7 px-2 rounded-full bg-[#0d8c6e]/10 text-[#0d8c6e] font-['Poppins',sans-serif] font-bold text-[12px] whitespace-nowrap">
-          <span aria-hidden>✓</span>
-          <span>{animatedDones.toLocaleString()}</span>
-        </span>
-        {/* Flag + Share used to sit here; both moved into CardDetailsModal
-            (top-right header) so the grid footer stays as quiet stats. */}
+        {showDone && (
+          <span className="inline-flex items-center gap-1 px-1 text-gray-400 font-['Poppins',sans-serif] font-medium text-[11px] whitespace-nowrap">
+            <span aria-hidden>✓</span>
+            <span>{animatedDones.toLocaleString()}</span>
+          </span>
+        )}
       </div>
     );
   }
@@ -232,7 +243,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           // haven't asked the OS for reduced motion (vestibular safety).
           // hover:z-10 keeps the lifted card painting above its neighbors
           // in the grid rather than getting clipped at edges.
-          className={`resistact-card-shine resistact-banner-host transform-gpu cursor-pointer bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:shadow-lg motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10`}
+          className={`resistact-card-shine resistact-banner-host transform-gpu cursor-pointer bg-white rounded-2xl border border-gray-200 flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:border-gray-300 hover:shadow-md motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10`}
           onClick={card.pinToTop ? () => setShareOpen(true) : () => setDetailsOpen(true)}
         >
           {/* Illustration — use uploaded image if available, else navy illustration */}
@@ -256,7 +267,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           </div>
 
           {/* Content */}
-          <div className={`relative flex flex-col flex-1 ${compact ? "gap-1 px-3 pb-2 pt-1.5" : "gap-2 px-4 pb-4 pt-3"}`}>
+          <div className={`relative flex flex-col flex-1 ${compact ? "gap-1 px-3 pb-2 pt-1.5" : "gap-3 px-5 pb-5 pt-4"}`}>
             {/* Category hidden on the pinToTop Spread the Word card —
                 it's the hero card, not a category-bucketed Act. */}
             {!card.pinToTop && (
@@ -344,7 +355,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           end-to-end in the modal. */}
       <div
         onClick={() => setDetailsOpen(true)}
-        className={`resistact-banner-host transform-gpu cursor-pointer bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:shadow-lg motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10 ${isPending ? "ring-2 ring-red-400" : ""}`}
+        className={`resistact-banner-host transform-gpu cursor-pointer bg-white rounded-2xl border border-gray-200 flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:border-gray-300 hover:shadow-md motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10 ${isPending ? "ring-2 ring-red-400" : ""}`}
       >
         {/* ── Admin: pending approval banner ── */}
         {isPending && !compact && (
@@ -444,7 +455,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
         )}
 
         {/* Content */}
-        <div className={`relative flex flex-col flex-1 ${compact ? "gap-1 px-3 pb-2 pt-1.5" : "gap-2 px-4 pb-4 pt-2"}`}>
+        <div className={`relative flex flex-col flex-1 ${compact ? "gap-1 px-3 pb-2 pt-1.5" : "gap-3 px-5 pb-5 pt-4"}`}>
           {/* Category — only renders in compact (Quick Match preview)
               mode here. Non-compact moved the category onto a pill
               overlay on the banner's bottom-left. */}
@@ -460,30 +471,37 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           {/* Title — full content-area width since the controls (bookmark,
               edit) are overlaid on the banner image now, not in the content
               area. */}
-          {/* Title — if the title contains a " — " em-dash OR a ": " colon
-              in the middle, treat the part after as a subtitle (smaller,
-              regular weight, gray). Patterns:
-                "Headline — location / scope" → split on em-dash, drop it
-                "Topic: Detail"               → split on colon, keep colon
-                                                on the head ("Topic:")
-              When both are present, split on whichever appears first so
-              the head stays the natural opening phrase. */}
+          {/* Title with optional subtitle.
+              Subtitle source (in priority order):
+                1. card.synopsis if hand-authored — gives editorial control
+                   over what shows below the title.
+                2. Title split: if the title contains " — " em-dash or
+                   ": " colon, the part after becomes the subtitle.
+                     "Headline — location / scope" → drops em-dash
+                     "Topic: Detail"               → keeps colon on head
+                   When both are present, splits on whichever appears
+                   first so the head stays the natural opening phrase.
+                3. Nothing — no subtitle row renders.
+              Description is intentionally NOT used as a fallback;
+              auto-derived summaries read worse than no subtitle. */}
           {(() => {
             const t = card.title;
             const emDashIdx = t.indexOf(" — ");
             const colonIdx = t.indexOf(": ");
             let head = t;
-            let tail = "";
-            const colonFirst =
-              colonIdx >= 0 && (emDashIdx < 0 || colonIdx < emDashIdx);
-            const emDashFirst =
-              emDashIdx >= 0 && (colonIdx < 0 || emDashIdx < colonIdx);
-            if (colonFirst) {
-              head = t.slice(0, colonIdx + 1); // include the colon
-              tail = t.slice(colonIdx + 2);
-            } else if (emDashFirst) {
-              head = t.slice(0, emDashIdx);
-              tail = t.slice(emDashIdx + 3);
+            let tail: string = (card.synopsis ?? "").trim();
+            if (!tail) {
+              const colonFirst =
+                colonIdx >= 0 && (emDashIdx < 0 || colonIdx < emDashIdx);
+              const emDashFirst =
+                emDashIdx >= 0 && (colonIdx < 0 || emDashIdx < colonIdx);
+              if (colonFirst) {
+                head = t.slice(0, colonIdx + 1); // include the colon
+                tail = t.slice(colonIdx + 2);
+              } else if (emDashFirst) {
+                head = t.slice(0, emDashIdx);
+                tail = t.slice(emDashIdx + 3);
+              }
             }
             return (
               <h3 className={`font-['Poppins',sans-serif] font-bold text-gray-900 leading-snug ${compact ? "text-[13px]" : "text-[15px]"}`}>
