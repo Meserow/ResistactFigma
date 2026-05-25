@@ -16,6 +16,99 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.56",
+    date: "2026-05-25",
+    title: "Stronger card-banner fade — editorial feel",
+    sections: [
+      {
+        heading: "Visual",
+        items: [
+          "Pushed the card-banner desaturation from 0.55 to 0.35 so the grid reads calmer — the photos hold their shape but stop fighting each other for attention. Hover still pops a focused card back to full color.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.55",
+    date: "2026-05-25",
+    title: "Fixed duplicate ALL-CAPS + Title-Case category pills",
+    sections: [
+      {
+        heading: "Bug fix",
+        items: [
+          "Category pill row was showing both \"BOOST\" and \"Boost\", \"CRAFTING\" and \"Crafting\", \"ART PIECE\" and \"Art/Performance Art\", etc — because some upstream cards were skipping the per-card category normalization that resolveCard does. Added a defensive normalizing pass at the chip-render layer so all variants fold into the canonical title-case bucket before deduplication. Pill list should read as one chip per category now.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.54",
+    date: "2026-05-25",
+    title: "Call/Write → Call · scroll nudge button reworded",
+    sections: [
+      {
+        heading: "Category cleanup",
+        items: [
+          "Renamed the \"Call/Write\" category to just \"Call.\" The bucket only ever held phone-call actions — letter-writing has its own Letter Writing and Letter to Editor categories, so the slash label was misleading.",
+          "Live cards still carrying the old label are renamed at the server on next Edge Function deploy (one-time KV migration). In the meantime, the client folds the old label forward at render time so users always see \"Call.\"",
+        ],
+      },
+      {
+        heading: "Copy",
+        items: [
+          "Reworded the lower-right scroll-nudge toast button from \"Open Quick Acts for Me Tool\" to \"Refine My Matches\" — matches what the same button at the top of the page already says.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.53",
+    date: "2026-05-25",
+    title: "Indivisible-authored cards: shared banner image",
+    sections: [
+      {
+        heading: "Data",
+        items: [
+          "25 Indivisible-authored cards that had no banner image (showing only the generic ResistAct logo fallback) now share a dedicated Indivisible banner. Cards that already had a real image are untouched. Direct KV write — takes effect on next page load; no edge function deploy needed.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.52",
+    date: "2026-05-25",
+    title: "Persistent bottom banner — acts, tag, facts + smacks in one row",
+    sections: [
+      {
+        heading: "Bottom banner",
+        items: [
+          "Restructured the always-on bottom banner into three sections: the acts count sits on the left, the \"Pick one. Do it. Share it. Come back tomorrow.\" tag is centered, and facts + smacks counts sit on the right. The count no longer gets jammed inside the call-to-action sentence.",
+          "Mobile-friendly: on narrow screens the side labels (acts/facts/smacks) collapse to just the colored numbers so the center tag stays readable.",
+          "Removed the duplicate facts/smacks block from the page-bottom footer (it's now in the persistent banner, so the footer only carries the copyright + disclaimer).",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.51",
+    date: "2026-05-25",
+    title: "Cleaner card art — location pill no longer cuts across the logo, Quick Match skips placeholder cards",
+    sections: [
+      {
+        heading: "Card layout",
+        items: [
+          "Fixed the location pill cutting across the ResistAct logo on cards without their own art. The pill now caps at 55% of the card width with a tidy ellipsis instead of stretching across the banner — long sentence-style location values from older imports no longer collide with the centered fallback logo.",
+        ],
+      },
+      {
+        heading: "Quick Match",
+        items: [
+          "Quick Match no longer fills the carousel with cards that fall back to the generic ResistAct logo banner. Cards with real banner art are prioritized; placeholder-image cards only show up if filtering would otherwise leave the carousel under-full.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.50",
     date: "2026-05-25",
     title: "Category cleanup — 30+ Acts redistributed, color drift fixed",

@@ -474,12 +474,14 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           {/* Location badge on image — white pill with dark-gray text for
               better readability against varied banner photos (the previous
               black/50 backdrop disappeared on dark photos and felt heavy on
-              light ones). */}
+              light ones). Capped at 55% of card width with truncation so long
+              location strings (e.g. sentence-style values from older imports)
+              don't grow the pill across the centered fallback logo. */}
           {(card.isOnline || card.location) && (
-            <div className="absolute bottom-2 right-3 flex items-center gap-1 bg-white/95 backdrop-blur-sm rounded-md px-2 py-0.5 shadow-sm">
+            <div className="absolute bottom-2 right-3 max-w-[55%] flex items-center gap-1 bg-white/95 backdrop-blur-sm rounded-md px-2 py-0.5 shadow-sm">
               {card.isOnline
-                ? <><Globe size={11} className="text-gray-700" /><span className="font-['Poppins',sans-serif] text-[11px] text-gray-700">Online</span></>
-                : <><MapPin size={11} className="text-gray-700" /><span className="font-['Poppins',sans-serif] text-[11px] text-gray-700">{card.location}</span></>
+                ? <><Globe size={11} className="text-gray-700 shrink-0" /><span className="font-['Poppins',sans-serif] text-[11px] text-gray-700 truncate">Online</span></>
+                : <><MapPin size={11} className="text-gray-700 shrink-0" /><span className="font-['Poppins',sans-serif] text-[11px] text-gray-700 truncate">{card.location}</span></>
               }
             </div>
           )}

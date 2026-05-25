@@ -83,12 +83,15 @@ const HEADERS = { "Content-Type": "application/json", Authorization: `Bearer ${p
 //
 // Also folds legacy/duplicate category names into a single canonical bucket:
 //   "Art Piece" / "ART PIECE" → "Art/Performance Art"
-//   "Call/write" / "CALL/WRITE" → "Call/Write" (consistent slash + caps)
+//   "Call/write" / "CALL/WRITE" → "Call" (renamed from "Call/Write" — the
+//   bucket only ever contained phone-call actions; letter-writing has its
+//   own category. Old data is folded forward here so any KV records still
+//   carrying the old label render under the new one.)
 const TITLE_CASE_STOPWORDS = new Set(["of", "to", "a", "the", "and", "or", "in", "on", "for", "at"]);
 const CATEGORY_ALIASES: Record<string, string> = {
   "art piece": "Art/Performance Art",
   "art/performance art": "Art/Performance Art",
-  "call/write": "Call/Write",
+  "call/write": "Call",
 };
 function normaliseCategory(s: string | undefined | null): string {
   const trimmed = (s ?? "").trim();
@@ -839,9 +842,16 @@ export default function App() {
   // Drives the Category pills in the navbar — built from approved cards only
   // so no empty-result pills appear.
   const dynamicCategories = useMemo(() => {
+    // Pass every category through normaliseCategory again before deduping.
+    // resolveCard already does this when cards enter state, but writing the
+    // dedupe at the chip-render layer is cheap insurance against any code
+    // path that creates an ActionCardData without going through resolveCard
+    // (or against stale module / HMR glitches that leave a raw "BOOST"
+    // alongside a normalized "Boost"). Without this, the navbar's category
+    // pill row would render both "BOOST" and "Boost" as separate chips.
     const set = new Set<string>();
     for (const c of approvedCards) {
-      const cat = (c.category ?? "").trim();
+      const cat = normaliseCategory(c.category);
       if (cat) set.add(cat);
     }
     return Array.from(set).sort();
@@ -2040,21 +2050,43 @@ export default function App() {
       </main>
 
       {/* Always-on tagline footer: motivational reminder pinned to the bottom
-          of the viewport. The scroll nudge toast sits in the lower-right
-          (not full-width) so it no longer covers this. The acts count rides
-          along here (moved from the bottom-of-page footer) so the message and
-          the live size of the catalog appear together at all times. */}
+          of the viewport. Three columns — acts count (left), the call-to-action
+          tag (center), facts + smacks counts (right) — so the live library
+          size always appears alongside the message. On narrow screens the
+          word labels (acts/facts/smacks) drop to just the colored numbers
+          so the center tag stays on one line. */}
       <div className="fixed bottom-0 inset-x-0 z-30 bg-white border-t border-gray-200 shadow-[0_-1px_3px_rgba(0,0,0,0.08)]">
-        <p className="font-['Poppins',sans-serif] text-center text-[14px] md:text-base py-5 px-4 leading-tight">
-          <strong className="font-bold text-[#23297e]">
-            Pick one
-            {synced && (
-              <> of <span className="text-[#ed6624]">{displayedCards.length}</span> acts</>
-            )}
-            . <span className="text-[#ed6624]">Do it.</span> Share it.
-          </strong>{" "}
-          <em className="italic font-bold text-[#ed6624]">Come back tomorrow.</em>
-        </p>
+        <div className="flex items-center justify-between gap-2 md:gap-5 py-4 px-3 md:px-6">
+          {/* Left: acts count */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <div className="w-2 h-2 rounded-full bg-[#ed6624]" />
+            <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
+              <strong className="text-[#ed6624] font-bold">{synced ? displayedCards.length : "—"}</strong><span className="hidden md:inline">{" "}acts</span>
+            </span>
+          </div>
+          {/* Center: call-to-action tag */}
+          <p className="font-['Poppins',sans-serif] text-center text-[12px] md:text-base leading-tight min-w-0 flex-1">
+            <strong className="font-bold text-[#23297e]">
+              Pick one. <span className="text-[#ed6624]">Do it.</span> Share it.
+            </strong>{" "}
+            <em className="italic font-bold text-[#ed6624]">Come back tomorrow.</em>
+          </p>
+          {/* Right: facts + smacks counts */}
+          <div className="flex items-center gap-2 md:gap-3 shrink-0">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-[#127f05]" />
+              <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
+                <strong className="text-[#127f05] font-bold">{FACT_CARDS.length}</strong><span className="hidden md:inline">{" "}facts</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-[#23297e]" />
+              <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
+                <strong className="text-[#23297e] font-bold">{receipts.length + STATIC_SMACKS.length}</strong><span className="hidden md:inline">{" "}smacks</span>
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Scroll nudge — lower-right orange toast after scrolling past ~8 cards.
@@ -2074,7 +2106,7 @@ export default function App() {
                 onClick={() => { setScrollNudgeVisible(false); setMatchOpen(true); }}
                 className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-white hover:bg-gray-50 text-[#fd8e33] font-['Poppins',sans-serif] font-extrabold text-[15px] rounded-xl shadow-sm transition-colors whitespace-nowrap"
               >
-                ✨ Open Quick Acts for Me Tool →
+                ✨ Refine My Matches →
               </button>
             </div>
           </div>
@@ -2094,22 +2126,8 @@ export default function App() {
 
       {/* Footer */}
       <footer className="mt-12 border-t border-gray-200 py-8 px-8 text-center">
-        {/* Library size stats (facts + smacks only — acts count moved to the
-            persistent "Pick one of N acts" footer). */}
-        <div className="flex items-center justify-center gap-5 mb-4">
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-[#127f05]" />
-            <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
-              <strong className="text-[#127f05] font-bold">{FACT_CARDS.length}</strong>{" "}facts
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-[#23297e]" />
-            <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
-              <strong className="text-[#23297e] font-bold">{receipts.length + STATIC_SMACKS.length}</strong>{" "}smacks
-            </span>
-          </div>
-        </div>
+        {/* Library size stats (acts/facts/smacks) live in the persistent
+            bottom banner now, so they don't render here. */}
         <p className="font-['Poppins',sans-serif] text-sm text-gray-400">
           © 2026 ResistAct · Building grassroots resistance, one act at a time.
         </p>
