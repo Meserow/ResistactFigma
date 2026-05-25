@@ -304,7 +304,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           // haven't asked the OS for reduced motion (vestibular safety).
           // hover:z-10 keeps the lifted card painting above its neighbors
           // in the grid rather than getting clipped at edges.
-          className={`resistact-card-shine bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:shadow-lg motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10 ${card.pinToTop ? "cursor-pointer" : ""}`}
+          className={`resistact-card-shine resistact-banner-host bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:shadow-lg motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10 ${card.pinToTop ? "cursor-pointer" : ""}`}
           onClick={card.pinToTop ? () => setShareOpen(true) : undefined}
         >
           {/* Illustration — use uploaded image if available, else navy illustration */}
@@ -312,9 +312,9 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
               top of the navy hero image, every 5.5s. Featured cards are the
               ones we want to draw the eye to — the shimmer says "look here"
               without flashing or strobing. */}
-          <div className={`resistact-anim-shimmer relative ${compact ? "h-[70px]" : "h-[160px]"} shrink-0 bg-[#23297e] flex items-center justify-center overflow-hidden`}>
+          <div className={`resistact-anim-shimmer relative ${compact ? "h-[70px]" : "h-[108px]"} shrink-0 bg-[#23297e] flex items-center justify-center overflow-hidden`}>
             {card.topImage
-              ? <img src={card.topImage} alt={card.title} className="absolute inset-0 w-full h-full object-cover object-top" />
+              ? <img src={card.topImage} alt={card.title} className="resistact-banner-desat absolute inset-0 w-full h-full object-cover object-top" />
               : card.featuredIllustration
             }
             <div className="absolute top-2.5 right-3 flex items-center gap-1.5">
@@ -399,7 +399,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
     <>
       {/* Hover state: see the featured-card branch above for rationale.
           Same lift + scale + microtilt, gated behind motion-safe. */}
-      <div className={`bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:shadow-lg motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10 ${isPending ? "ring-2 ring-red-400" : ""}`}>
+      <div className={`resistact-banner-host bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:shadow-lg motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10 ${isPending ? "ring-2 ring-red-400" : ""}`}>
         {/* ── Admin: pending approval banner ── */}
         {isPending && !compact && (
           <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-red-50 border-b border-red-200 shrink-0">
@@ -420,12 +420,12 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
             generic ResistAct logo banner. We render the same wrapper either
             way so badges, controls, location pill and "I did this" sit in
             identical positions whether or not we have real art. */}
-        <div className={`relative ${compact ? "h-[70px]" : "h-[160px]"} shrink-0 ${showTopImage && card.imageContain ? "bg-gray-50" : ""} ${!showTopImage ? "bg-[#fff8f3]" : ""}`}>
+        <div className={`relative ${compact ? "h-[70px]" : "h-[108px]"} shrink-0 ${showTopImage && card.imageContain ? "bg-gray-50" : ""} ${!showTopImage ? "bg-[#fff8f3]" : ""}`}>
           {showTopImage ? (
             <ImageWithFallback
               src={card.topImage}
               alt={card.title}
-              className={`w-full h-full ${card.imageContain ? "object-contain p-2" : "object-cover object-top"}`}
+              className={`resistact-banner-desat w-full h-full ${card.imageContain ? "object-contain p-2" : "object-cover object-top"}`}
               onError={() => setImageFailed(true)}
             />
           ) : (

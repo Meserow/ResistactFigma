@@ -1,4 +1,7 @@
 /node_modules
+# macOS Finder metadata — never commit these
+.DS_Store
+**/.DS_Store
 # build output
 dist/
 # Supabase CLI machine-local cache

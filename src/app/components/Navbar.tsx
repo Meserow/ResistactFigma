@@ -572,42 +572,13 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
           <span className="font-['Poppins',sans-serif] text-gray-400 text-[10px] uppercase tracking-widest font-semibold shrink-0 mr-1">Filter by</span>
         )}
 
-        {/* Quick-actions toggle (Acts tab only) */}
-        {activeTab === "acts" && onQuickActionsChange && (
-          <button
-            onClick={() => onQuickActionsChange(!quickActionsOnly)}
-            className={`shrink-0 mr-1 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
-              quickActionsOnly
-                ? "border-[#ed6624] text-[#ed6624] bg-[#ed6624]/10"
-                : "border-transparent text-gray-600 hover:bg-white hover:shadow-sm hover:border-gray-200"
-            }`}
-            title="Show only actions that take 5 minutes or less"
-          >
-            <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center ${quickActionsOnly ? "bg-[#ed6624] border-[#ed6624]" : "border-gray-300"}`}>
-              {quickActionsOnly && <X size={10} className="text-white rotate-45" strokeWidth={3} />}
-            </span>
-            <Zap size={13} className={quickActionsOnly ? "text-[#ed6624]" : "text-gray-400"} fill={quickActionsOnly ? "#ed6624" : "none"} />
-            5 Minutes Max
-          </button>
-        )}
+        {/* 5 Minutes Max toggle moved INTO the Acts branch below, where it's
+            stacked vertically with the Location dropdown to free horizontal
+            space for the category pill row. Smacks/Facts tabs don't show it. */}
 
-        {/* Show Done toggle (Acts tab only, when user has completions) */}
-        {activeTab === "acts" && onShowDoneChange && (completedCount ?? 0) > 0 && (
-          <button
-            onClick={() => onShowDoneChange(!showDone)}
-            className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
-              showDone
-                ? "border-[#23297e] text-[#23297e] bg-[#23297e]/10"
-                : "border-transparent text-gray-600 hover:bg-white hover:shadow-sm hover:border-gray-200"
-            }`}
-            title={showDone ? "Hide completed acts" : "Show completed acts"}
-          >
-            <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center ${showDone ? "bg-[#23297e] border-[#23297e]" : "border-gray-300"}`}>
-              {showDone && <X size={10} className="text-white rotate-45" strokeWidth={3} />}
-            </span>
-            Show Done
-          </button>
-        )}
+        {/* Show Done toggle moved into the Sort dropdown — see right group below.
+            Keeps the filter row focused on filters; "show/hide completed" is a
+            view modifier that pairs better with sort order. */}
 
         {activeTab === "receipts" ? (
           /* ── Smacks: tag chips + Top/New/Pending sort, rendered here in the
@@ -747,27 +718,49 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
             )}
           </div>
         ) : (
-          /* ── Acts: Location dropdown + Category pills (mirrors Facts UX) ── */
+          /* ── Acts: stacked [5 Min Max / Location] + Category pills ── */
           <>
-            {/* Location dropdown — first */}
-            <div className="relative shrink-0">
-              <button
-                onClick={() => setOpenFilter(locOpen ? null : "Location")}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
-                  locSelected.length > 0
-                    ? "border-[#23297e] text-[#23297e] bg-[#23297e]/5"
-                    : "border-transparent text-gray-600 hover:bg-white hover:shadow-sm hover:border-gray-200"
-                }`}
-              >
-                <MapPin size={13} className={locSelected.length > 0 ? "text-[#23297e]" : "text-gray-400"} />
-                Location
-                {locSelected.length > 0 && (
-                  <span className="w-4 h-4 rounded-full bg-[#ed6624] text-white text-[9px] flex items-center justify-center font-bold shrink-0">
-                    {locSelected.length}
+            {/* Vertical stack: 5 Minutes Max on top, Location below. Two small
+                pills sharing one narrow column instead of taking two horizontal
+                slots, so the Category pill row has more width to spread into. */}
+            <div className="shrink-0 flex flex-col gap-1 mr-1">
+              {/* 5 Minutes Max toggle */}
+              {onQuickActionsChange && (
+                <button
+                  onClick={() => onQuickActionsChange(!quickActionsOnly)}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
+                    quickActionsOnly
+                      ? "border-[#ed6624] text-[#ed6624] bg-[#ed6624]/10"
+                      : "border-transparent text-gray-600 hover:bg-white hover:shadow-sm hover:border-gray-200"
+                  }`}
+                  title="Show only actions that take 5 minutes or less"
+                >
+                  <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${quickActionsOnly ? "bg-[#ed6624] border-[#ed6624]" : "border-gray-300"}`}>
+                    {quickActionsOnly && <X size={10} className="text-white rotate-45" strokeWidth={3} />}
                   </span>
-                )}
-                <ChevronDown size={13} className={`text-[#5a5a5a] transition-transform duration-150 ${locOpen ? "rotate-180" : ""}`} />
-              </button>
+                  <Zap size={12} className={quickActionsOnly ? "text-[#ed6624]" : "text-gray-400"} fill={quickActionsOnly ? "#ed6624" : "none"} />
+                  5 Minutes Max
+                </button>
+              )}
+              {/* Location dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setOpenFilter(locOpen ? null : "Location")}
+                  className={`w-full flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
+                    locSelected.length > 0
+                      ? "border-[#23297e] text-[#23297e] bg-[#23297e]/5"
+                      : "border-transparent text-gray-600 hover:bg-white hover:shadow-sm hover:border-gray-200"
+                  }`}
+                >
+                  <MapPin size={12} className={locSelected.length > 0 ? "text-[#23297e]" : "text-gray-400"} />
+                  Location
+                  {locSelected.length > 0 && (
+                    <span className="w-4 h-4 rounded-full bg-[#ed6624] text-white text-[9px] flex items-center justify-center font-bold shrink-0">
+                      {locSelected.length}
+                    </span>
+                  )}
+                  <ChevronDown size={12} className={`text-[#5a5a5a] ml-auto transition-transform duration-150 ${locOpen ? "rotate-180" : ""}`} />
+                </button>
               {locOpen && (
                 <div className="absolute top-full left-0 mt-1.5 w-56 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50 flex flex-col max-h-[min(28rem,80vh)]">
                   <p className="px-4 pt-1 pb-2 font-['Poppins',sans-serif] text-[10px] uppercase tracking-widest text-gray-400 font-semibold border-b border-gray-50 shrink-0">
@@ -796,10 +789,37 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                   )}
                 </div>
               )}
+              </div>{/* END Location relative wrapper */}
+            </div>{/* END 5MinMax + Location vertical stack */}
+
+            {/* Category — inline scrollable pills on desktop (sm and up); the
+                same checkbox dropdown on phones where there's no room. Picks
+                breakpoint at sm (640px). Pills row uses overflow-x-auto so a
+                long category list scrolls horizontally rather than wrapping. */}
+            {/* Desktop: pills for every category, wrapping to as many rows
+                as needed (typically two). Switched from horizontal scroll to
+                flex-wrap because the full category list never fits one row. */}
+            <div className="hidden sm:flex flex-1 min-w-0 flex-wrap items-center gap-y-1.5 gap-x-1">
+              {actsCats.map((option) => {
+                const selected = actsCatsSelected.includes(option);
+                return (
+                  <button
+                    key={option}
+                    onClick={() => toggleFilterOption("Category", option)}
+                    className={`shrink-0 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
+                      selected
+                        ? "bg-[#23297e] text-white border-[#23297e]"
+                        : "bg-white text-gray-600 border-gray-200 hover:border-[#23297e] hover:text-[#23297e]"
+                    }`}
+                  >
+                    {option}
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Category dropdown — mirrors Location dropdown */}
-            <div className="relative shrink-0">
+            {/* Mobile: dropdown (existing behavior preserved) */}
+            <div className="sm:hidden relative shrink-0">
               <button
                 onClick={() => setOpenFilter(openFilter === "Category" ? null : "Category")}
                 className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
@@ -885,7 +905,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                 <ChevronDown size={13} className={`text-[#5a5a5a] transition-transform duration-150 ${openFilter === "sort" ? "rotate-180" : ""}`} />
               </button>
               {openFilter === "sort" && (
-                <div className="absolute top-full right-0 mt-1.5 w-40 bg-white border border-gray-100 rounded-2xl shadow-xl py-1.5 z-50">
+                <div className="absolute top-full right-0 mt-1.5 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl py-1.5 z-50">
                   {(["popular", "newest", "az"] as const).map((opt) => (
                     <button
                       key={opt}
@@ -900,32 +920,38 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                       {sortBy === opt && <span className="w-1.5 h-1.5 rounded-full bg-[#23297e]" />}
                     </button>
                   ))}
+                  {/* Show completed acts toggle — only visible once the user
+                      has actually completed something (otherwise the toggle
+                      has no effect and is just noise). Divider line above
+                      separates it visually from the sort order options. */}
+                  {onShowDoneChange && (completedCount ?? 0) > 0 && (
+                    <>
+                      <div className="border-t border-gray-100 my-1" />
+                      <button
+                        onClick={() => { onShowDoneChange(!showDone); }}
+                        className={`w-full text-left px-4 py-2 font-['Poppins',sans-serif] text-sm transition-colors flex items-center justify-between gap-2 ${
+                          showDone
+                            ? "text-[#23297e] font-semibold bg-[#23297e]/5"
+                            : "text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${showDone ? "bg-[#23297e] border-[#23297e]" : "border-gray-300"}`}>
+                            {showDone && <X size={10} className="text-white rotate-45" strokeWidth={3} />}
+                          </span>
+                          Show completed acts
+                        </span>
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
             </div>
           )}
 
-          {/* Stats */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-[#ed6624]" />
-              <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
-                <strong className="text-[#23297e] font-bold">{statsSynced ? statsActsCount : "—"}</strong>{" "}acts
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-[#127f05]" />
-              <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
-                <strong className="text-[#127f05] font-bold">{FACT_CARDS.length}</strong>{" "}facts
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-[#23297e]" />
-              <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
-                <strong className="text-[#23297e] font-bold">{statsSmacksCount ?? "—"}</strong>{" "}smacks
-              </span>
-            </div>
-          </div>
+          {/* Stats moved to the page footer (see App.tsx <footer>) to reclaim
+              horizontal space in the navbar for the category pill row. The
+              counts are still available — just in a calmer spot. */}
         </div>{/* END RIGHT GROUP */}
       </div>
 

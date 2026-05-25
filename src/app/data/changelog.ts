@@ -16,6 +16,144 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.12",
+    date: "2026-05-25",
+    title: "MAJOR BUG FIX: dozens of card images that looked \"missing\" now show",
+    sections: [
+      {
+        heading: "Critical bug fix",
+        items: [
+          "ResistAct's image component was silently breaking every card banner that pointed to a JPG/PNG in the public/ folder unless that image happened to have a sibling .webp file. It assumed all images had webp pairs (only the Smacks did), built a <picture> element pointing at the missing .webp, the browser tried to load it, got a 404, and didn't fall back to the perfectly-good .jpg next to it. Result: dozens of cards (Pretti Good beanie, ACLU, 5 Calls, MoveOn, Indivisible, Mobilize, every Tesla Takedown org logo, etc.) looked imageless even though the actual image files were intact on disk and on S3.",
+          "Disabled the auto-webp logic until we add a real build-time webp generator. All affected cards should immediately show their banner image again on hard reload.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.11",
+    date: "2026-05-25",
+    title: "5 Minutes Max + Location stacked vertically",
+    sections: [
+      {
+        heading: "Navigation",
+        items: [
+          "On the Acts page, the \"5 Minutes Max\" toggle and the \"Location\" dropdown now sit stacked in one narrow column instead of taking two horizontal slots. Reclaims more space so the category pill row spreads out further before wrapping.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.10",
+    date: "2026-05-25",
+    title: "Library counts moved to the footer",
+    sections: [
+      {
+        heading: "Navigation",
+        items: [
+          "The \"661 acts · 102 facts · 36 smacks\" stats no longer take up real estate at the top right of the navbar. They now sit calmly above the copyright in the footer, freeing horizontal space so the category pill row stays readable.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.9",
+    date: "2026-05-25",
+    title: "Categories wrap to multiple rows + no more imageless cards on the public feed",
+    sections: [
+      {
+        heading: "Navigation",
+        items: [
+          "Category pills now wrap to as many rows as needed (usually two) instead of trying to fit on one horizontally-scrolling line. You see every category at a glance.",
+        ],
+      },
+      {
+        heading: "Bug fix",
+        items: [
+          "Cards without a header image will no longer show on the public Acts feed. Tightened the approval gate two ways: (1) cards now have to be explicitly `adminApproved: true` (not just missing the false flag), and (2) any imageless card is hidden from non-admin viewers as a defense-in-depth guard. Admins still see imageless cards in the Pending tab so they can add an image.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.8",
+    date: "2026-05-25",
+    title: "\"Show completed acts\" moved into the Sort menu",
+    sections: [
+      {
+        heading: "Navigation",
+        items: [
+          "The \"Show Done\" toggle no longer takes up its own slot in the filter row. It now lives inside the Sort dropdown (with a divider line above it) so the top bar stays focused on filters. Only shows up once you've actually marked an Act as done.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.7",
+    date: "2026-05-25",
+    title: "Stale browser cache can no longer flash deleted/pending cards",
+    sections: [
+      {
+        heading: "Bug fix",
+        items: [
+          "ResistAct stashes the first page of Acts in your browser's localStorage so the next visit paints instantly. But that snapshot could include cards that have since been deleted, demoted, or had images removed — and on first paint they'd flash briefly before the live sync replaced them. Now the cache only revives cards that were explicitly `adminApproved: true` when saved. No more ghost cards.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.6",
+    date: "2026-05-25",
+    title: "All Acts categories live in the top bar now",
+    sections: [
+      {
+        heading: "Navigation",
+        items: [
+          "Categories on the Acts page are now inline pills across the top bar instead of being hidden behind a \"Category\" dropdown. You can see every category at a glance, click any pill to filter, click again to clear. On phones (under 640px) the dropdown still appears, since there's no room for the pill row there.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.5",
+    date: "2026-05-25",
+    title: "Cards without images get hidden from the public again",
+    sections: [
+      {
+        heading: "Bug fix",
+        items: [
+          "Some action cards without header images were leaking onto the public feed even though they were supposed to be in the admin Pending queue. Re-bumped the \"approved-without-image-cleanup\" migration so it runs again on next deploy and flips all imageless approved cards back to pending. Also bumped the seed version so the new image URLs wired up earlier this week actually land in KV.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.4",
+    date: "2026-05-25",
+    title: "Shorter card banners — more cards on screen, less visual weight",
+    sections: [
+      {
+        heading: "Visual Polish",
+        items: [
+          "Cut the action-card banner image height from 160px to 108px (about a third shorter). Cards take less vertical space, so more fit on screen and the title/description finally outweigh the image. Pairs with yesterday's saturation change to make the Acts grid feel calmer.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.3",
+    date: "2026-05-25",
+    title: "Calmer Acts grid — banner images desaturate at rest",
+    sections: [
+      {
+        heading: "Visual Polish",
+        items: [
+          "Acts page felt overwhelming because 12 cards in a row were each showing a wildly different brightly-colored banner image. Banner images now sit at 55% saturation by default, then pop back to full color when you hover the card you're considering. The grid reads calmer; the card you're focused on still feels alive.",
+          "Tweak the strength later by editing the 0.55 in the .resistact-banner-desat rule (animations.ts) — 0.7 is subtle, 0.3 is editorial.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.2",
     date: "2026-05-24",
     title: "Smacks now have a pencil-edit button (admin)",

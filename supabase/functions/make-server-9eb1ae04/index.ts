@@ -315,7 +315,7 @@ const KNOWN_MIGRATION_FLAG_KEYS: readonly string[] = [
   "cleanup:tiktok-youtube-rekey:v1",
   "migrate:spotsused-to-boosts:v1",
   "migration:admin-approved:v1",
-  "migration:approved-without-image-cleanup:v1",
+  "migration:approved-without-image-cleanup:v2",
   "migration:cancel-your-10min:v1",
   "migration:common-cause-actions:v1",
   "migration:creators-import-2026-05-batch2:v1",
@@ -340,7 +340,7 @@ const KNOWN_MIGRATION_FLAG_KEYS: readonly string[] = [
   "migration:tsv-batch-2026-05-17:v1",
   "migration:user-cards:v1",
   "seed:ellen:v1",
-  "seed:org-actions:v25",
+  "seed:org-actions:v26",
   "seed:receipts:v2",
 ];
 
@@ -1473,13 +1473,13 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       console.log("Set boosts = 950 on action:1 (Spread the Word).");
     }
 
-    const orgsSeeded = await getMigrationFlag("seed:org-actions:v25");
+    const orgsSeeded = await getMigrationFlag("seed:org-actions:v26");
     if (!orgsSeeded) {
       // Mark the seed as done UP FRONT — if the request times out partway
       // through the 260-card loop, the next request still skips the loop
       // instead of dying again. The cards already written stay; missing ones
       // get filled in on the next version bump.
-      await setMigrationFlag("seed:org-actions:v25");
+      await setMigrationFlag("seed:org-actions:v26");
       let count = 0;
       for (const card of SEED_CARDS) {
         // Seed every card in SEED_CARDS (no longer skipping ids <1000).
@@ -2451,7 +2451,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
     //
     // The PUT-leak and migration source-code holes are closed in this same
     // release, so this cleanup is one-shot — bad state can't recur.
-    const approvedNoImageCleanupDone = await getMigrationFlag("migration:approved-without-image-cleanup:v1");
+    const approvedNoImageCleanupDone = await getMigrationFlag("migration:approved-without-image-cleanup:v2");
     if (!approvedNoImageCleanupDone) {
       let flipped = 0;
       const flippedIds: number[] = [];
@@ -2466,7 +2466,7 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           flippedIds.push(c.id);
         }
       }
-      await setMigrationFlag("migration:approved-without-image-cleanup:v1");
+      await setMigrationFlag("migration:approved-without-image-cleanup:v2");
       console.log(`Approved-without-image cleanup: flipped ${flipped} cards back to pending. IDs: ${flippedIds.join(", ")}`);
     }
 
