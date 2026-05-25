@@ -919,17 +919,23 @@ export default function App() {
   // Server wins if it has prefs (so prefs follow the account across devices).
   // Otherwise, push the anonymous-session local prefs up so they get stored on
   // the new account. Best-effort — failures don't block anything.
+  //
+  // NOTE: previously this function also auto-applied the saved prefs to the
+  // live feed via setMatchPrefs(remote|local). That behavior was removed —
+  // users now see the full unfiltered grid on load and have to explicitly
+  // open the Refine Your Matches wizard and click "These Matches Look Good!"
+  // to apply. Preferences still sync silently (localStorage ↔ user record)
+  // so when they DO open the wizard, their sliders / picks are already
+  // populated from where they left off.
   async function syncMatchPreferencesOnLogin(token: string) {
     try {
       const remote = await fetchUserPreferences(token);
       if (remote) {
         savePreferences(remote);
-        setMatchPrefs(remote);
       } else {
         const local = loadPreferences();
         if (local) {
           await pushUserPreferences(token, local);
-          setMatchPrefs(local);
         }
       }
     } catch (err) {
@@ -1156,11 +1162,21 @@ export default function App() {
     fetchStats();
   }, []);
 
-  // ── When any filter is active, eagerly fetch the rest of the cards so
-  //    client-side filtering sees the full dataset (server pagination would
-  //    otherwise hide matching cards behind the Load More button). ───────────
+  // ── Eagerly fetch the rest of the cards once the initial paint is in.
+  //    Previously gated on `hasActiveFilters` — i.e. only fetched the long
+  //    tail when the user activated a filter. That created a race: if the
+  //    user typed in the search box before the full dataset arrived, the
+  //    search ran against the first 20 cards and the user thought a card
+  //    was missing (real bug report: searching "refer" returned 4 cards
+  //    instead of 5 because Refer-an-artist-at-risk lived at id=1180,
+  //    past the initial batch). Now the prefetch fires as soon as we have
+  //    serverTotal — regardless of filter state — so the in-memory cards
+  //    array always catches up to the full server set within a few seconds
+  //    of page load. The Load More UI is still driven by display-limit
+  //    pagination, so initial paint stays fast (we render the first 20
+  //    cards immediately and stream the rest into state in the background).
   useEffect(() => {
-    if (!hasActiveFilters || !synced || loadingMore) return;
+    if (!synced || loadingMore) return;
     if (cards.length >= serverTotal) return;
 
     let cancelled = false;
@@ -1194,7 +1210,7 @@ export default function App() {
     })();
 
     return () => { cancelled = true; };
-  }, [hasActiveFilters, synced, serverTotal]);
+  }, [synced, serverTotal]);
 
   // Reset display limit whenever filters/search change so the view refreshes
   // from the top rather than showing a truncated filtered list.

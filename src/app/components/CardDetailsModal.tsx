@@ -68,10 +68,13 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
           <X size={20} />
         </button>
 
-        {/* Header image — sized to match the grid card's banner ratio rather
-            than ballooning to 260px which dominated narrow viewports. */}
+        {/* Header image — large on desktop (360px) so the banner reads as a
+            real piece of the experience, not a thumbnail. Phone still
+            moderate (180px) so the title + buttons stay above the fold on
+            small screens. Modal capped at max-h-[90vh] either way — content
+            scrolls inside if it overflows. */}
         {card.topImage && (
-          <div className={`relative h-[140px] sm:h-[180px] shrink-0 ${card.imageContain ? "bg-gray-50" : ""}`}>
+          <div className={`relative h-[180px] sm:h-[360px] shrink-0 ${card.imageContain ? "bg-gray-50" : ""}`}>
             <ImageWithFallback
               src={card.topImage}
               alt={card.title}

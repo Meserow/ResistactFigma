@@ -16,6 +16,84 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.49",
+    date: "2026-05-25",
+    title: "Smacks tag pills match Acts + Facts styling",
+    sections: [
+      {
+        heading: "Visual polish",
+        items: [
+          "Smacks tag chips on the navbar were heavier (font-semibold, px-3, leading Tag icon) and read as a different control than the Acts category and Facts category pills. Switched to the shared chip style — px-2.5, font-medium, no leading icon. All three tabs now use the same pill treatment.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.48",
+    date: "2026-05-25",
+    title: "Recategorized 11 phone-call Acts into Call/Write",
+    sections: [
+      {
+        heading: "Categories",
+        items: [
+          "11 Acts whose titles start with \"Call\" were scattered across EMAIL CAMPAIGN, MENTAL HEALTH, TRAINING, and Petition. Pulled them into a single Call/Write bucket (pink) so phone-call actions are findable together — Indivisible legislator-call scripts, the 5 Calls weekly habit, the CCIJ ICE rapid-response hotline, and the Trans Lifeline / LGBT Help Center peer-support hotlines. The broader gray CALL/WRITE bucket (postcards, public comments, social posts, video calls-to-action) is unchanged.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.47",
+    date: "2026-05-25",
+    title: "Match preferences no longer auto-apply on login",
+    sections: [
+      {
+        heading: "UX",
+        items: [
+          "Stopped auto-applying saved Refine Your Matches preferences when the user signs in. Users now see the full unfiltered Acts grid on load and have to explicitly open the wizard + click \"These Matches Look Good!\" to filter. Their saved sliders / picks still persist in the background (localStorage ↔ user record), so when they DO open the wizard their previous state is restored — they just don't get a surprise-filtered feed.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.46",
+    date: "2026-05-25",
+    title: "Read more modal: desktop banner up to 360px",
+    sections: [
+      {
+        heading: "Read more modal",
+        items: [
+          "Banner image on desktop bumped from 260px → 360px so the image reads as a real piece of the experience, not a thumbnail. Phone stays at 180px.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.45",
+    date: "2026-05-25",
+    title: "Read more modal: taller header image (desktop)",
+    sections: [
+      {
+        heading: "Read more modal",
+        items: [
+          "Banner image grew from 140/180px → 180/260px so the header has real presence on desktop. Phone stays at the smaller 180px so the title + buttons don't fall below the fold on small screens. Modal still capped at max-h-90vh so anything that overflows scrolls.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.44",
+    date: "2026-05-25",
+    title: "Search now finds cards beyond the first 20",
+    sections: [
+      {
+        heading: "Critical bug fix",
+        items: [
+          "Search and filters were running against only the first 20 cards because the full dataset prefetch waited for a filter to be active before firing. Symptom: searching \"refer\" on resistact.org returned 4 cards instead of 5 — \"Refer an artist at risk\" (card id 1180) was past the initial batch and hadn't loaded yet. Fix: prefetch the remaining cards as soon as the initial 20 land, regardless of filter state. The in-memory cards array now catches up to the full 825 within seconds of page load, so search always sees everything.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.43",
     date: "2026-05-25",
     title: "Renamed the match-tool button",
