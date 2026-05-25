@@ -130,58 +130,51 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
   // can actually mark themselves done; on the grid it's now read-only.
   const effectiveCount = Math.max(completionsCount, isCompleted ? 1 : 0);
 
-  // ── Stats row — read-only boost + done counters that sit in the footer
-  //    where the "I did this!" pill used to live. The actual mark-done /
-  //    boost actions live inside CardDetailsModal now, keeping the grid
-  //    quiet. Spread the Word (pinToTop) suppresses the boost half — that
-  //    card can't be boosted. */
-  function StatsRow() {
-    const showBoost = !card.pinToTop;
-    return (
-      <div className="flex items-center gap-3 shrink-0 font-['Poppins',sans-serif] text-[12px]">
-        {showBoost && (
-          <span className="inline-flex items-center gap-1 font-bold text-[#ed6624] whitespace-nowrap">
-            <span aria-hidden>🔥</span>
-            <span>{(card.boosts ?? 0).toLocaleString()}</span>
-          </span>
-        )}
-        <span className="inline-flex items-center gap-1 font-bold text-[#0d8c6e] whitespace-nowrap">
-          <span aria-hidden>✓</span>
-          <span>{effectiveCount.toLocaleString()}</span>
-        </span>
-      </div>
-    );
-  }
-
   // Boost button used to live here as both an image overlay and an
   // inline action; it now lives only inside CardDetailsModal so the
   // card grid stays calm. onBoost / isBoosted props are still passed
   // through to the modal.
 
-  // ── Floating share button (top-right of content area, below image) ───────
-  function FloatingShareButton() {
+  // ── ActionRow — quartet of pills/circles that lives in the card footer.
+  //    Boost and Done stats: rounded pills with icon + count, color-tinted.
+  //    Flag and Share: icon-only circles. All share h-7 and rounded-full so
+  //    they read as one cohesive control set rather than two separate ones.
+  function ActionRow() {
+    const showBoost = !card.pinToTop;
     return (
-      <div className="absolute top-2 right-2 flex items-center gap-1.5 z-10">
-        {/* Flag is hidden on the pinned "Spread the Word" card — that card
-            isn't user-submitted content, so it can't be reported. */}
+      <div className="flex items-center gap-1.5 shrink-0">
+        {/* Boost stat — orange identity */}
+        {showBoost && (
+          <span className="inline-flex items-center gap-1 h-7 px-2 rounded-full bg-[#ed6624]/10 text-[#ed6624] font-['Poppins',sans-serif] font-bold text-[12px] whitespace-nowrap">
+            <span aria-hidden>🔥</span>
+            <span>{(card.boosts ?? 0).toLocaleString()}</span>
+          </span>
+        )}
+        {/* Done stat — green identity */}
+        <span className="inline-flex items-center gap-1 h-7 px-2 rounded-full bg-[#0d8c6e]/10 text-[#0d8c6e] font-['Poppins',sans-serif] font-bold text-[12px] whitespace-nowrap">
+          <span aria-hidden>✓</span>
+          <span>{effectiveCount.toLocaleString()}</span>
+        </span>
+        {/* Flag — hidden on Spread the Word (not user-submitted content). */}
         {!card.pinToTop && (
           <button
             onClick={(e) => { e.stopPropagation(); setFlagOpen(true); }}
             title="Report a problem with this act"
             aria-label={`Report ${card.title}`}
-            className="w-7 h-7 flex items-center justify-center rounded-full bg-white/90 text-gray-400 hover:text-red-500 hover:bg-white backdrop-blur-sm transition-colors"
+            className="w-7 h-7 flex items-center justify-center rounded-full bg-gray-100 text-gray-400 hover:text-red-500 hover:bg-gray-200 transition-colors"
           >
             <Flag size={12} />
           </button>
         )}
+        {/* Share */}
         <button
           onClick={(e) => { e.stopPropagation(); card.pinToTop ? setShareOpen(true) : openShare(); }}
           title={card.pinToTop ? "Spread the word!" : "Share"}
           aria-label={`Share ${card.title}`}
-          className={`w-7 h-7 flex items-center justify-center rounded-full backdrop-blur-sm transition-colors ${
+          className={`w-7 h-7 flex items-center justify-center rounded-full transition-colors ${
             card.pinToTop
               ? "bg-[#ed6624] text-white hover:bg-[#c2521b]"
-              : "bg-white/90 text-gray-500 hover:text-[#ed6624] hover:bg-white"
+              : "bg-gray-100 text-gray-500 hover:text-[#ed6624] hover:bg-gray-200"
           }`}
         >
           {card.pinToTop ? <Flame size={13} /> : <Share2 size={13} />}
@@ -316,10 +309,12 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
               </button>
             )}
 
-            {/* Stats (left) + author (right) — author moves to the right
-                corner so stats lead the eye. */}
+            {/* Action circles (left) + author (right). Stats + Flag +
+                Share share the row as one unified pill set. Spread the
+                Word suppresses both Flag (not user-submitted) and Boost
+                (can't boost yourself). */}
             <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-100">
-              <StatsRow />
+              <ActionRow />
 
               <div className="flex items-center gap-2.5 min-w-0 justify-end">
                 <div className="min-w-0 text-right">
@@ -331,8 +326,6 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
                 )}
               </div>
             </div>
-
-            {!compact && <FloatingShareButton />}
           </div>
         </div>
         {shareOpen && (
@@ -413,18 +406,18 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
              inline chips). Bookmark / share controls live in absolute top-
              right of the whole card. Pending banner sits above this block. */
           <div className="relative flex items-stretch gap-3 p-3 pb-2">
-            {/* Top-right controls — flag + share (FloatingShareButton) and
-                the bookmark/edit pair (TopControls). Absolute on the card so
-                they hover over both the text column and the image. */}
-            <FloatingShareButton />
-            <div className="absolute top-2 right-9 z-10 flex items-center gap-1.5">
+            {/* Bookmark + edit cluster — sits on top-right of the card.
+                Flag and Share moved into the footer ActionRow, so this
+                area is slim now (~36px) and the text column needs only
+                a hair of right padding to clear it. */}
+            <div className="absolute top-2.5 right-3 z-10 flex items-center gap-1.5">
               <TopControls light={false} />
             </div>
 
-            {/* Left: category + title + inline chips. pr-16 reserves space
-                so long titles wrap before colliding with the absolute
-                top-right control cluster. */}
-            <div className="flex-1 min-w-0 flex flex-col gap-1 pr-16">
+            {/* Left: category + title + inline chips. Minimal pr-9 so
+                titles get the most horizontal room possible without
+                running under the bookmark/edit icons in the top-right. */}
+            <div className="flex-1 min-w-0 flex flex-col gap-1 pr-9">
               <span
                 className="font-['Poppins',sans-serif] font-bold tracking-wider text-[11px] uppercase"
                 style={{ color: card.categoryColor }}
@@ -518,12 +511,13 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
             </button>
           )}
 
-          {/* Stats (left) + author (right) — hidden in compact mode. The
-              author block sits on the right now so the stats catch the
-              eye first; author is supporting context, not the headline. */}
+          {/* Action circles (left) + author (right). Stats + Flag + Share
+              share the row as one unified pill set; author lands in the
+              right corner so the stats lead the eye. Hidden in compact
+              mode (Quick Match preview is too small for this density). */}
           {!compact && (
             <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-100">
-              <StatsRow />
+              <ActionRow />
 
               {/* Author */}
               <div className="flex items-center gap-2.5 min-w-0 justify-end">

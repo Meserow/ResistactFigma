@@ -16,6 +16,26 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.64",
+    date: "2026-05-25",
+    title: "Unified action row · titles get more room",
+    sections: [
+      {
+        heading: "Card layout",
+        items: [
+          "Pulled Flag and Share down from the top-right corner of the card and into the footer alongside Boost and Done. All four are now styled as one cohesive row: Boost and Done as small rounded pills with their color tint and count, Flag and Share as icon-only circles — same height (h-7), same rounded-full shape. Reads as a single control set, not two scattered clusters.",
+          "Spread the Word still suppresses Flag (not user-submitted) and Boost (can't boost yourself); only Done and Share render there.",
+        ],
+      },
+      {
+        heading: "Title space",
+        items: [
+          "Freed up horizontal space for card titles. With Flag and Share out of the absolute top-right, the text column drops from pr-16 to pr-9 and only needs to clear the slim bookmark + edit pair. Long titles like \"Boost Randy Rainbow's Anti-Trump Musical Parodies on TikTok\" now wrap to two lines instead of three.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.63",
     date: "2026-05-25",
     title: "Card footer: stats lead, author follows · KYR chip into the modal · Spread the Word loses its category label",
