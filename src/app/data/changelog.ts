@@ -16,6 +16,19 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.49",
+    date: "2026-05-25",
+    title: "Smacks tag pills match Acts + Facts styling",
+    sections: [
+      {
+        heading: "Visual polish",
+        items: [
+          "Smacks tag chips on the navbar were heavier (font-semibold, px-3, leading Tag icon) and read as a different control than the Acts category and Facts category pills. Switched to the shared chip style — px-2.5, font-medium, no leading icon. All three tabs now use the same pill treatment.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.48",
     date: "2026-05-25",
     title: "Recategorized 11 phone-call Acts into Call/Write",

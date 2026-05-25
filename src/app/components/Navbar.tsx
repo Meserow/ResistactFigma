@@ -603,13 +603,12 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                 <button
                   key={tag}
                   onClick={() => onSmacksTagToggle?.(tag)}
-                  className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-semibold transition-all border whitespace-nowrap ${
+                  className={`px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
                     selected
                       ? "bg-[#23297e] text-white border-[#23297e]"
                       : "bg-white text-gray-600 border-gray-200 hover:border-[#23297e] hover:text-[#23297e]"
                   }`}
                 >
-                  <Tag size={10} />
                   {tag}
                 </button>
               );
