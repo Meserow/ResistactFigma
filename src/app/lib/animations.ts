@@ -178,4 +178,25 @@ export const GAMIFICATION_KEYFRAMES = `
   .resistact-card-shine:hover::before {
     animation: resistact-card-gloss 650ms ease-in-out forwards;
   }
+
+  /* Banner desaturation — calms the grid by muting per-card photo color so
+     12 cards in a row don't fight each other. On hover, the focused card
+     pops back to full color. Only applied to real photo content; the brand
+     fallback logo is already light and stays as-is.
+       .resistact-banner-host  → outer card wrapper, the hover target
+       .resistact-banner-desat → the banner <img> itself
+     Tweak the 0.55 to taste:
+       0.70 = subtle, "still colored just less neon"
+       0.55 = noticeably muted, magazine feel (current default)
+       0.30 = strong, editorial */
+  .resistact-banner-desat {
+    filter: saturate(0.55);
+    transition: filter 250ms ease-out;
+  }
+  .resistact-banner-host:hover .resistact-banner-desat {
+    filter: saturate(1);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .resistact-banner-desat { transition: none; }
+  }
 `;

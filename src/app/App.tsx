@@ -169,9 +169,17 @@ function readCardsCache(): { cards: ActionCardData[]; total: number } | null {
     const parsed = JSON.parse(raw) as CardsCachePayload;
     if (!parsed?.savedAt || Date.now() - parsed.savedAt > CARDS_CACHE_TTL_MS) return null;
     if (!Array.isArray(parsed.rawCards) || parsed.rawCards.length === 0) return null;
+    // Defense-in-depth: never resurrect a card from cache unless it was
+    // EXPLICITLY adminApproved at the time we cached it. Stops a stale cache
+    // (or a future bug elsewhere) from briefly flashing pending / deleted /
+    // imageless cards to public visitors on first paint before the live sync
+    // overwrites them. Admins also won't see pending cards until the live
+    // sync arrives, but pending-review is not a first-paint-critical surface.
+    const approvedOnly = parsed.rawCards.filter((c) => (c as any).adminApproved === true);
+    if (approvedOnly.length === 0) return null;
     return {
-      cards: parsed.rawCards.map(resolveCard),
-      total: parsed.total ?? parsed.rawCards.length,
+      cards: approvedOnly.map(resolveCard),
+      total: parsed.total ?? approvedOnly.length,
     };
   } catch {
     return null;

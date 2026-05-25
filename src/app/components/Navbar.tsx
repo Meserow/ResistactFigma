@@ -798,8 +798,32 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               )}
             </div>
 
-            {/* Category dropdown — mirrors Location dropdown */}
-            <div className="relative shrink-0">
+            {/* Category — inline scrollable pills on desktop (sm and up); the
+                same checkbox dropdown on phones where there's no room. Picks
+                breakpoint at sm (640px). Pills row uses overflow-x-auto so a
+                long category list scrolls horizontally rather than wrapping. */}
+            {/* Desktop: pills for every category */}
+            <div className="hidden sm:flex flex-1 min-w-0 items-center gap-1 overflow-x-auto">
+              {actsCats.map((option) => {
+                const selected = actsCatsSelected.includes(option);
+                return (
+                  <button
+                    key={option}
+                    onClick={() => toggleFilterOption("Category", option)}
+                    className={`shrink-0 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
+                      selected
+                        ? "bg-[#23297e] text-white border-[#23297e]"
+                        : "bg-white text-gray-600 border-gray-200 hover:border-[#23297e] hover:text-[#23297e]"
+                    }`}
+                  >
+                    {option}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Mobile: dropdown (existing behavior preserved) */}
+            <div className="sm:hidden relative shrink-0">
               <button
                 onClick={() => setOpenFilter(openFilter === "Category" ? null : "Category")}
                 className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
