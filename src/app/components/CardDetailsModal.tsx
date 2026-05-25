@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { ExternalLink, Flame, Globe, MapPin, X } from "lucide-react";
+import { createPortal } from "react-dom";
+import { CheckCircle2, ExternalLink, Flame, Globe, MapPin, X } from "lucide-react";
 import type { ActionCardData } from "./ActionCard";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 
@@ -7,6 +8,14 @@ interface CardDetailsModalProps {
   card: ActionCardData;
   onClose: () => void;
   onShare?: () => void;
+  /** "I did this!" toggle handler. When passed, the modal renders the
+      completion pill below the primary action. */
+  onComplete?: (id: number) => void;
+  isCompleted?: boolean;
+  /** Boost handler — mirrors the on-card boost button so the user can
+      boost from inside the modal without dismissing it. */
+  onBoost?: (id: number) => void;
+  isBoosted?: boolean;
 }
 
 /**
@@ -14,7 +23,7 @@ interface CardDetailsModalProps {
  * `line-clamp-5` cuts it off in the grid view. Click the "Read more" link on a
  * card to open this; click overlay / Escape / X to close.
  */
-export function CardDetailsModal({ card, onClose, onShare }: CardDetailsModalProps) {
+export function CardDetailsModal({ card, onClose, onShare, onComplete, isCompleted, onBoost, isBoosted }: CardDetailsModalProps) {
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -30,18 +39,26 @@ export function CardDetailsModal({ card, onClose, onShare }: CardDetailsModalPro
 
   const link = card.targetUrl ?? card.authorLink;
 
-  return (
+  // CRITICAL: render through a portal to document.body so the modal escapes
+  // any ancestor's CSS `transform` containing block. ActionCard applies a
+  // hover transform (translate + scale + rotate) which, when the user clicks
+  // "Read more" while still hovering the card, makes `position: fixed`
+  // resolve relative to the card instead of the viewport. The visible
+  // symptom: the modal renders INSIDE the card cell rather than centered
+  // over the page. createPortal hoists the modal DOM out of the card's
+  // subtree so `fixed` works as intended.
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="card-details-title"
       onClick={onClose}
-      className="hero-modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-[#0d1b2a]/60 p-4 sm:p-6"
+      className="hero-modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-[#0d1b2a]/80 backdrop-blur-sm p-4 sm:p-6"
     >
       <div
         ref={cardRef}
         onClick={(e) => e.stopPropagation()}
-        className="hero-modal-card relative w-full max-w-[640px] max-h-[90vh] overflow-y-auto rounded-[12px] bg-white shadow-2xl"
+        className="hero-modal-card relative w-full max-w-[560px] max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl"
       >
         <button
           onClick={onClose}
@@ -51,9 +68,10 @@ export function CardDetailsModal({ card, onClose, onShare }: CardDetailsModalPro
           <X size={20} />
         </button>
 
-        {/* Header image */}
+        {/* Header image — sized to match the grid card's banner ratio rather
+            than ballooning to 260px which dominated narrow viewports. */}
         {card.topImage && (
-          <div className={`relative h-[200px] sm:h-[260px] shrink-0 ${card.imageContain ? "bg-gray-50" : ""}`}>
+          <div className={`relative h-[140px] sm:h-[180px] shrink-0 ${card.imageContain ? "bg-gray-50" : ""}`}>
             <ImageWithFallback
               src={card.topImage}
               alt={card.title}
@@ -63,29 +81,31 @@ export function CardDetailsModal({ card, onClose, onShare }: CardDetailsModalPro
               <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
             )}
             {(card.isOnline || card.location) && (
-              <div className="absolute bottom-3 right-3 flex items-center gap-1 bg-black/55 backdrop-blur-sm rounded-md px-2.5 py-1">
+              <div className="absolute bottom-3 right-3 flex items-center gap-1 bg-white/95 backdrop-blur-sm rounded-md px-2.5 py-1 shadow-sm">
                 {card.isOnline
-                  ? <><Globe size={12} className="text-white" /><span className="font-['Poppins',sans-serif] text-[12px] text-white">Online</span></>
-                  : <><MapPin size={12} className="text-white" /><span className="font-['Poppins',sans-serif] text-[12px] text-white">{card.location}</span></>
+                  ? <><Globe size={12} className="text-gray-700" /><span className="font-['Poppins',sans-serif] text-[12px] text-gray-700">Online</span></>
+                  : <><MapPin size={12} className="text-gray-700" /><span className="font-['Poppins',sans-serif] text-[12px] text-gray-700">{card.location}</span></>
                 }
               </div>
             )}
           </div>
         )}
 
-        <div className="p-6 sm:p-8">
+        <div className="p-5 sm:p-7">
           {/* Category */}
           <span
-            className="font-['Poppins',sans-serif] font-bold text-[11px] uppercase tracking-wider"
+            className="font-['Poppins',sans-serif] font-bold text-[11px] tracking-wide"
             style={{ color: card.categoryColor }}
           >
             {card.category}
           </span>
 
-          {/* Title */}
+          {/* Title — scaled down from the previous 22/26px which wrapped 4–5
+              lines for long titles on narrow viewports. 17/20 keeps the heading
+              authoritative without taking over the modal. */}
           <h2
             id="card-details-title"
-            className="mt-2 font-['Poppins',sans-serif] font-bold text-[22px] sm:text-[26px] text-gray-900 leading-tight"
+            className="mt-1.5 font-['Poppins',sans-serif] font-bold text-[17px] sm:text-[20px] text-gray-900 leading-snug"
           >
             {card.title}
           </h2>
@@ -110,26 +130,63 @@ export function CardDetailsModal({ card, onClose, onShare }: CardDetailsModalPro
             {card.description}
           </p>
 
-          {/* Primary action */}
-          {onShare ? (
-            <button
-              onClick={() => { onClose(); onShare(); }}
-              className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-[#ed6624] px-5 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#c2521b]"
-            >
-              <Flame size={14} /> Spread the Word!
-            </button>
-          ) : link ? (
-            <a
-              href={link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-[#ed6624] px-5 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#c2521b]"
-            >
-              I want to ResistAct! <ExternalLink size={14} />
-            </a>
-          ) : null}
+          {/* Action row — primary link out on the left, then the
+              "I did this!" toggle and Boost. All actions live here so the
+              user can preview-then-act without leaving the modal. */}
+          <div className="mt-6 flex flex-wrap items-center gap-2">
+            {onShare ? (
+              <button
+                onClick={() => { onClose(); onShare(); }}
+                className="inline-flex items-center gap-1.5 rounded-full bg-[#ed6624] px-5 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#c2521b]"
+              >
+                <Flame size={14} /> Spread the Word!
+              </button>
+            ) : link ? (
+              <a
+                href={link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-full bg-[#ed6624] px-5 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#c2521b]"
+              >
+                I want to ResistAct! <ExternalLink size={14} />
+              </a>
+            ) : null}
+
+            {/* "I did this!" toggle — same color identity as the on-card pill
+                (teal when complete, light teal when idle). */}
+            {onComplete && (
+              <button
+                onClick={() => onComplete(card.id)}
+                className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 font-['Poppins',sans-serif] text-sm font-bold transition-colors ${
+                  isCompleted
+                    ? "bg-[#0d8c6e] text-white hover:bg-[#0a7159]"
+                    : "bg-[#0d8c6e]/10 text-[#0d8c6e] hover:bg-[#0d8c6e]/20"
+                }`}
+              >
+                <CheckCircle2 size={14} />
+                {isCompleted ? "Done · undo" : "I did this!"}
+              </button>
+            )}
+
+            {/* Boost — orange identity, mirrors the on-image boost button. */}
+            {onBoost && (
+              <button
+                onClick={() => onBoost(card.id)}
+                className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 font-['Poppins',sans-serif] text-sm font-bold transition-colors ${
+                  isBoosted
+                    ? "bg-[#ed6624]/80 text-white hover:bg-[#ed6624]"
+                    : "bg-[#ed6624]/10 text-[#ed6624] hover:bg-[#ed6624]/20"
+                }`}
+              >
+                <Flame size={14} />
+                {isBoosted ? "Boosted" : "Boost"}
+                {typeof card.boosts === "number" && card.boosts > 0 ? <span className="opacity-80">· {card.boosts}</span> : null}
+              </button>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

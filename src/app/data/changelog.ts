@@ -16,6 +16,277 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.29",
+    date: "2026-05-25",
+    title: "Push checkpoint — May 25 batch",
+    sections: [
+      {
+        heading: "Today's highlights",
+        items: [
+          "Acts grid feels calmer: card banners desaturated at rest (full color on hover), banner heights cut by a third, image-bug behind dozens of \"missing images\" found + fixed (webp generator wired into prebuild).",
+          "Filter bar reorganized: categories wrap to multiple rows, Location is a pill at the end, Remote Only + 5 Minutes Max are pills, Sort moved into the result-count banner.",
+          "Read-more modal redesigned + portaled so it opens centered over the page; clicking anywhere on a card opens the modal first, then act from inside (link out / I did this / Boost).",
+          "Library counts moved: \"Pick one of N acts. Do it. Share it. Come back tomorrow.\" in the persistent footer. Facts + smacks counts in the page footer.",
+          "Admin edit-card dropdown now lists all 35 categories actually in use (was missing 8). New Video category added. Art Piece folds into Art/Performance Art at display time.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.28",
+    date: "2026-05-25",
+    title: "Click-a-card → modal first. Act from inside the modal.",
+    sections: [
+      {
+        heading: "UX",
+        items: [
+          "Clicking anywhere on an action card now opens the Read More modal first, instead of going straight to the external link. Read the full description, see the image at a comfortable size, then decide what to do.",
+          "The modal now carries the full action toolkit: the primary link out (\"I want to ResistAct! →\"), the \"I did this!\" toggle (teal pill, same identity as the on-card pill), and Boost (orange, with running count). Preview-then-act stays inside one focused surface.",
+          "Card title and image area no longer link out directly — click-the-card opens the modal in all cases. Boost / Bookmark / Share / Edit / I-did-this pills on the card still work via inline stop-propagation, so power users can still act without opening the modal.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.27",
+    date: "2026-05-25",
+    title: "Read-more modal now opens correctly over the page (portal fix)",
+    sections: [
+      {
+        heading: "Critical bug fix",
+        items: [
+          "The \"Read more\" modal was rendering INSIDE the card cell instead of as a full-page overlay. Root cause: ActionCard applies a CSS hover transform (lift + scale + slight rotate) — when you clicked Read more while still hovering, that transform created a containing block that captured the modal's position:fixed. The modal then anchored to the card, not the viewport. Quick Match read-more worked because those cards aren't in a hovered transform state when clicked. Now uses React's createPortal to hoist the modal DOM out of the card subtree entirely, so it always overlays the whole page correctly.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.26",
+    date: "2026-05-25",
+    title: "Read-more modal redesigned",
+    sections: [
+      {
+        heading: "Read more modal",
+        items: [
+          "Title font dropped from 22/26px to 17/20px so long card titles stop wrapping across 4–5 lines on narrow viewports.",
+          "Backdrop darkened (60%→80% opacity) and gained a backdrop-blur so the page behind the modal stops competing visually.",
+          "Header image reduced from 200/260px to 140/180px — the title and description now have proportional weight instead of being dominated by the banner.",
+          "Modal max width narrowed from 640px to 560px to feel less sprawling on desktop.",
+          "Category label is mixed-case (matches the card grid change earlier today). Online/Location badge uses the same white-pill treatment as the card grid.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.25",
+    date: "2026-05-25",
+    title: "Sort moved next to the live result count",
+    sections: [
+      {
+        heading: "Navigation",
+        items: [
+          "Sort lives inside the results banner now, right beside the live count. Three banner variants: \"Showing all 825 actions — unfiltered\" (gray banner with Find my match + Sort), \"X actions match your filters\" (new — light navy banner shown when categories / search / location filters are active), and \"Matched for you. Showing N actions.\" (orange Match banner — Sort sits next to Edit / Clear).",
+          "Show completed acts toggle moved with Sort — still inside the Sort dropdown menu under a divider line.",
+          "Reclaimed the entire right side of the navbar: it's now empty unless filters are active (in which case Clear all is the only thing there).",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.24",
+    date: "2026-05-25",
+    title: "\"Remote Only\" pill added to the filter row",
+    sections: [
+      {
+        heading: "Navigation",
+        items: [
+          "New \"Remote Only\" pill in the filter pill row, right before 5 Minutes Max. Toggles the Remote / online-only filter in one click instead of opening the Location dropdown. Composes with any selected states the same way picking Remote in the dropdown does.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.23",
+    date: "2026-05-25",
+    title: "Reverted Remote-exclusivity (composes with states again)",
+    sections: [
+      {
+        heading: "Navigation",
+        items: [
+          "Location filter \"Remote\" is back to behaving like any other location chip — it composes with state picks instead of being mutually exclusive. Label is back to \"Remote\" instead of \"Remote Only.\"",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.22",
+    date: "2026-05-25",
+    title: "Hidden time bomb: TikTok CDN URLs expire after ~2 weeks",
+    sections: [
+      {
+        heading: "Bug fix",
+        items: [
+          "Discovered that 6 cards (Randy Rainbow, Secret Handshake game, Trump Parody Opera, Tom Morello protest song, This Hour Has 22 Minutes, Iranian Embassy memes) had their banner images set to TikTok CDN URLs with `x-expires` parameters. Those URLs silently 403 after ~2 weeks. The card looked imageless on a fresh browser but appeared fine on your laptop because the browser had cached it before expiry. Replaced all 6 with the TikTok SVG logo fallback (`topImageKey: org_tiktok`) so they have a stable image until an admin uploads a permanent one.",
+          "Client-side filter now also treats any URL pointing at `tiktokcdn` or `cdninstagram` hosts as effectively no-image (because both rotate signed URLs and silently expire). Cards using those hosts are hidden from non-admin viewers; admins still see them in the Pending tab so the image can be rehosted.",
+        ],
+      },
+      {
+        heading: "Server",
+        items: [
+          "Reverted the `approved-without-image-cleanup:v2` migration bump from earlier today — that fix is no longer needed (the imageless cards were actually a rendering bug, not stale approval state). Kept the `seed:org-actions:v26` bump so the new image URLs and TikTok-logo fallbacks push to production on next deploy.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.21",
+    date: "2026-05-25",
+    title: "Cleaner filter bar, calmer card design, smarter Location filter",
+    sections: [
+      {
+        heading: "Bug fixes",
+        items: [
+          "\"Read more →\" link in the standard card now uses the same orange-underline styling as the featured/Quick Match version — visual consistency across both card variants.",
+          "Online/Location badge on card banners now uses a white pill with dark gray text + a subtle shadow, instead of black/white, so it stays readable on any banner photo.",
+        ],
+      },
+      {
+        heading: "Filter behavior",
+        items: [
+          "Location filter: \"Remote Only\" is now mutually exclusive with state picks. Checking Remote Only clears any selected states; checking a state clears Remote Only. Stops the contradictory {Remote, California} state from being possible.",
+        ],
+      },
+      {
+        heading: "Visual polish",
+        items: [
+          "Category labels on each card are now mixed-case (\"Crafting\", \"Email Campaign\") instead of ALL-CAPS — calmer, easier to scan in a wall of cards.",
+          "\"Clear all\" button moved into the right column above the Sort dropdown, so the left side stays cleanly focused on filters.",
+        ],
+      },
+      {
+        heading: "Footer",
+        items: [
+          "The total number of acts now rides inside the persistent \"Pick one. Do it. Share it. Come back tomorrow.\" message at the bottom of the page — it reads \"Pick one of <strong>825</strong> acts.\" The bottom-of-page footer now shows only facts and smacks counts.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.20",
+    date: "2026-05-25",
+    title: "Complete category list in the admin edit modal + Video category",
+    sections: [
+      {
+        heading: "Admin",
+        items: [
+          "Added the 8 categories that were missing from the admin edit-card dropdown but ARE active in production data: Bird-Dog, Call/Write, Host, Irreverence, Learn, Letter Writing, Show Up, Witness. Combined those amounted to ~150 cards that couldn't be edited cleanly.",
+          "Added new Video category for video-based actions.",
+          "Re-sorted the dropdown alphabetically so editors can find labels quickly.",
+        ],
+      },
+      {
+        heading: "Data cleanup",
+        items: [
+          "\"Art Piece\" cards now display under the canonical \"Art/Performance Art\" category. The merge happens client-side via normaliseCategory — no data migration required.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.19",
+    date: "2026-05-25",
+    title: "\"Remote\" reads as \"Remote Only\" in the Location dropdown",
+    sections: [
+      {
+        heading: "Navigation",
+        items: [
+          "Clearer wording — the first option in the Location dropdown now reads \"Remote Only\" so it's obvious it's a strict online-only filter rather than \"anywhere including remote.\"",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.18",
+    date: "2026-05-25",
+    title: "5 Minutes Max joins the pill row",
+    sections: [
+      {
+        heading: "Navigation",
+        items: [
+          "5 Minutes Max moved from the right side of the filter bar into the pill row, sitting right after the Location pill. All filters now live in one continuous row of pills; the right side is just Sort.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.17",
+    date: "2026-05-25",
+    title: "Sort dropdown styled lighter",
+    sections: [
+      {
+        heading: "Navigation",
+        items: [
+          "Sort dropdown no longer has a border or background. Reads as plain text that's clickable rather than a button. Font size dropped to match the 5 Minutes Max toggle stacked above it, so the right-side column feels cohesive.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.16",
+    date: "2026-05-25",
+    title: "Dropped the \"Filter by\" label",
+    sections: [
+      {
+        heading: "Navigation",
+        items: [
+          "Removed the tiny \"Filter by\" label at the start of the filter row. The pills speak for themselves.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.15",
+    date: "2026-05-25",
+    title: "Location joins the category pill row",
+    sections: [
+      {
+        heading: "Navigation",
+        items: [
+          "Location is now styled exactly like the category pills and sits at the end of the category row, with a small map-pin icon and a chevron. Clicking it still opens the same state-picker dropdown — only the visual treatment changed. Result: one continuous wrap-friendly row of filter pills instead of a separate Location column on the left.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.14",
+    date: "2026-05-25",
+    title: "Filter bar reshuffle — \"Filter by\" label promoted, 5 Min Max moved next to Sort",
+    sections: [
+      {
+        heading: "Navigation",
+        items: [
+          "The \"Filter by\" tiny uppercase label now sits ABOVE the Location pill instead of inline left of it.",
+          "5 Minutes Max moved from the left side of the filter bar to a vertical stack with Sort on the right side. Now there's a clean \"filter\" column on the left (Filter by / Location / Category pills) and a clean \"view options\" column on the right (5 Minutes Max / Sort).",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.13",
+    date: "2026-05-25",
+    title: "WebP image optimization re-enabled, safely",
+    sections: [
+      {
+        heading: "Performance",
+        items: [
+          "Added a build-time WebP generator (scripts/generate-webp-siblings.mjs). Every JPG/PNG in the public/ folder now gets a sibling .webp file written automatically before each build. Backfilled 64 new .webp files in this release.",
+          "Re-enabled the auto-WebP behavior in the image component now that we can guarantee every public image has a webp twin. Browsers that support webp (Chrome, Edge, Firefox, Safari 14+) load the smaller webp version; older browsers fall back to the original .jpg/.png. No more silent rendering failures.",
+          "Net effect: card banners stay sharp, page weight drops noticeably on large PNG-heavy pages, and the bug that made dozens of cards look imageless cannot happen again.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.12",
     date: "2026-05-25",
     title: "MAJOR BUG FIX: dozens of card images that looked \"missing\" now show",

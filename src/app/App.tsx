@@ -6,6 +6,7 @@ import { GAMIFICATION_KEYFRAMES } from "./lib/animations";
 import { burstConfetti } from "./lib/confetti";
 import fistIcon from "../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
 import { Navbar } from "./components/Navbar";
+import { SortDropdown } from "./components/SortDropdown";
 import { ActionCard, ActionCardData } from "./components/ActionCard";
 import { FactCard } from "./components/FactCard";
 import { FACT_CARDS } from "./data/factCards";
@@ -79,12 +80,22 @@ const HEADERS = { "Content-Type": "application/json", Authorization: `Bearer ${p
 // (which happened when some server seeds were uppercased and the client UI
 // uses Title Case). Treats common short prepositions / articles as lowercase
 // so "Letter to Editor" stays correct rather than becoming "Letter To Editor".
+//
+// Also folds legacy/duplicate category names into a single canonical bucket:
+//   "Art Piece" / "ART PIECE" → "Art/Performance Art"
+//   "Call/write" / "CALL/WRITE" → "Call/Write" (consistent slash + caps)
 const TITLE_CASE_STOPWORDS = new Set(["of", "to", "a", "the", "and", "or", "in", "on", "for", "at"]);
+const CATEGORY_ALIASES: Record<string, string> = {
+  "art piece": "Art/Performance Art",
+  "art/performance art": "Art/Performance Art",
+  "call/write": "Call/Write",
+};
 function normaliseCategory(s: string | undefined | null): string {
   const trimmed = (s ?? "").trim();
   if (!trimmed) return "";
-  return trimmed
-    .toLowerCase()
+  const lower = trimmed.toLowerCase();
+  if (CATEGORY_ALIASES[lower]) return CATEGORY_ALIASES[lower];
+  return lower
     .split(/\s+/)
     .map((w, i) =>
       i === 0 || !TITLE_CASE_STOPWORDS.has(w)
@@ -581,7 +592,17 @@ export default function App() {
       // client-side guard stops imageless cards from leaking onto the public
       // feed. Admins still see them so they can review + add an image.
       if (!isAdminUser) {
-        const hasImage = Boolean((card as any).topImageUrl) || Boolean((card as any).topImageKey) || Boolean((card as any).topImage);
+        // A URL counts as "no image" if it points at a CDN we know expires
+        // its signed-URL payloads — tiktokcdn-us / tiktokcdn rotates signed
+        // URLs every couple weeks and silently returns 403 after that.
+        // Instagram's `cdninstagram.com` does the same (`oh=` / `oe=` ttl).
+        // Treating those as missing means cards with dead URLs get hidden
+        // from the public until an admin re-hosts the image. Admins still
+        // see them so they can edit + replace.
+        const url = (card as any).topImageUrl as string | undefined;
+        const isLikelyExpired = typeof url === "string" && /(?:tiktokcdn|cdninstagram)/i.test(url);
+        const hasUsableUrl = Boolean(url) && !isLikelyExpired;
+        const hasImage = hasUsableUrl || Boolean((card as any).topImageKey) || Boolean((card as any).topImage);
         if (!hasImage) return false;
       }
       // Completed cards stay in the feed but get sorted to the bottom (see
@@ -1666,18 +1687,47 @@ export default function App() {
               : displayedCards;
             return (
           <>
-            {/* Unfiltered banner — nudges users to try the match tool */}
+            {/* Unfiltered banner — nudges users to try the match tool.
+                Also carries the Sort dropdown so the sort control lives
+                next to the live result count. */}
             {!matchPrefs && !hasActiveFilters && activeTab === "acts" && synced && (
               <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5">
                 <p className="font-['Poppins',sans-serif] text-sm text-gray-600">
                   Showing all <strong className="text-[#23297e]">{displayedCards.length}</strong> actions — unfiltered.
                 </p>
-                <button
-                  onClick={() => setMatchOpen(true)}
-                  className="shrink-0 font-['Poppins',sans-serif] text-xs font-bold text-[#ed6624] hover:text-[#e07a28] hover:underline transition-colors whitespace-nowrap"
-                >
-                  ✨ Find my match →
-                </button>
+                <div className="flex items-center gap-4 shrink-0">
+                  <SortDropdown
+                    sortBy={sortBy}
+                    onSortChange={setSortBy}
+                    showDone={showDone}
+                    onShowDoneChange={setShowDone}
+                    completedCount={myCompletions?.total ?? 0}
+                  />
+                  <button
+                    onClick={() => setMatchOpen(true)}
+                    className="font-['Poppins',sans-serif] text-xs font-bold text-[#ed6624] hover:text-[#e07a28] hover:underline transition-colors whitespace-nowrap"
+                  >
+                    ✨ Find my match →
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Filtered banner — shown when categories / search / location /
+                quick-actions filters are active (but no Match preferences).
+                Mirrors the unfiltered banner style; carries the Sort control. */}
+            {!matchPrefs && hasActiveFilters && activeTab === "acts" && synced && !showPendingActsOnly && (
+              <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-[#23297e]/30 bg-[#23297e]/5 px-4 py-2.5">
+                <p className="font-['Poppins',sans-serif] text-sm text-gray-700">
+                  <strong className="text-[#23297e]">{displayedCards.length}</strong> {displayedCards.length === 1 ? "action" : "actions"} match your filters.
+                </p>
+                <SortDropdown
+                  sortBy={sortBy}
+                  onSortChange={setSortBy}
+                  showDone={showDone}
+                  onShowDoneChange={setShowDone}
+                  completedCount={myCompletions?.total ?? 0}
+                />
               </div>
             )}
 
@@ -1871,7 +1921,14 @@ export default function App() {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0 self-start">
+                  <div className="flex items-center gap-3 shrink-0 self-start">
+                    <SortDropdown
+                      sortBy={sortBy}
+                      onSortChange={setSortBy}
+                      showDone={showDone}
+                      onShowDoneChange={setShowDone}
+                      completedCount={myCompletions?.total ?? 0}
+                    />
                     <button
                       onClick={() => setMatchOpen(true)}
                       className="font-['Poppins',sans-serif] text-xs font-semibold text-[#23297e] hover:underline"
@@ -1968,10 +2025,18 @@ export default function App() {
 
       {/* Always-on tagline footer: motivational reminder pinned to the bottom
           of the viewport. The scroll nudge toast sits in the lower-right
-          (not full-width) so it no longer covers this. */}
+          (not full-width) so it no longer covers this. The acts count rides
+          along here (moved from the bottom-of-page footer) so the message and
+          the live size of the catalog appear together at all times. */}
       <div className="fixed bottom-0 inset-x-0 z-30 bg-white border-t border-gray-200 shadow-[0_-1px_3px_rgba(0,0,0,0.08)]">
         <p className="font-['Poppins',sans-serif] text-center text-[14px] md:text-base py-5 px-4 leading-tight">
-          <strong className="font-bold text-[#23297e]">Pick one. <span className="text-[#ed6624]">Do it.</span> Share it.</strong>{" "}
+          <strong className="font-bold text-[#23297e]">
+            Pick one
+            {synced && (
+              <> of <span className="text-[#ed6624]">{displayedCards.length}</span> acts</>
+            )}
+            . <span className="text-[#ed6624]">Do it.</span> Share it.
+          </strong>{" "}
           <em className="italic font-bold text-[#ed6624]">Come back tomorrow.</em>
         </p>
       </div>
@@ -2013,15 +2078,9 @@ export default function App() {
 
       {/* Footer */}
       <footer className="mt-12 border-t border-gray-200 py-8 px-8 text-center">
-        {/* Library size stats (moved here from the navbar to reclaim space for
-            the category pill row). Same data, same dot colors, just calmer. */}
+        {/* Library size stats (facts + smacks only — acts count moved to the
+            persistent "Pick one of N acts" footer). */}
         <div className="flex items-center justify-center gap-5 mb-4">
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-[#ed6624]" />
-            <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
-              <strong className="text-[#23297e] font-bold">{synced ? displayedCards.length : "—"}</strong>{" "}acts
-            </span>
-          </div>
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-[#127f05]" />
             <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">

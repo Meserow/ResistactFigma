@@ -2,7 +2,7 @@ import logoImg from "../../assets/resistact-logo-horizontal.webp";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import type { ReactNode } from "react";
 import { FACT_CARDS } from "../data/factCards";
-import { Bell, Bookmark, ChevronDown, Clock, Flag, Flame, Info, Loader2, LogOut, MapPin, Menu, MessageCircle, Search, ShieldCheck, SlidersHorizontal, Sparkles, Tag, X, Zap } from "lucide-react";
+import { Bell, Bookmark, ChevronDown, Clock, Flag, Flame, Globe, Info, Loader2, LogOut, MapPin, Menu, MessageCircle, Search, ShieldCheck, SlidersHorizontal, Sparkles, Tag, X, Zap } from "lucide-react";
 import type { UserApproval } from "../lib/supabase";
 import { TierProgress } from "./TierProgress";
 import { getUserTier } from "../lib/tiers";
@@ -568,9 +568,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
             an intro instead. The left group still gets a flex-1 spacer so the right group
             (Sort + counts) stays anchored to the right. */}
         <div className="flex-1 min-w-0 flex items-center gap-1">
-        {activeTab !== "receipts" && (
-          <span className="font-['Poppins',sans-serif] text-gray-400 text-[10px] uppercase tracking-widest font-semibold shrink-0 mr-1">Filter by</span>
-        )}
+        {/* "Filter by" label removed — the pills are self-explanatory. */}
 
         {/* 5 Minutes Max toggle moved INTO the Acts branch below, where it's
             stacked vertically with the Location dropdown to free horizontal
@@ -718,87 +716,13 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
             )}
           </div>
         ) : (
-          /* ── Acts: stacked [5 Min Max / Location] + Category pills ── */
+          /* ── Acts: Category pills + Location pill at the end ── */
           <>
-            {/* Vertical stack: 5 Minutes Max on top, Location below. Two small
-                pills sharing one narrow column instead of taking two horizontal
-                slots, so the Category pill row has more width to spread into. */}
-            <div className="shrink-0 flex flex-col gap-1 mr-1">
-              {/* 5 Minutes Max toggle */}
-              {onQuickActionsChange && (
-                <button
-                  onClick={() => onQuickActionsChange(!quickActionsOnly)}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
-                    quickActionsOnly
-                      ? "border-[#ed6624] text-[#ed6624] bg-[#ed6624]/10"
-                      : "border-transparent text-gray-600 hover:bg-white hover:shadow-sm hover:border-gray-200"
-                  }`}
-                  title="Show only actions that take 5 minutes or less"
-                >
-                  <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${quickActionsOnly ? "bg-[#ed6624] border-[#ed6624]" : "border-gray-300"}`}>
-                    {quickActionsOnly && <X size={10} className="text-white rotate-45" strokeWidth={3} />}
-                  </span>
-                  <Zap size={12} className={quickActionsOnly ? "text-[#ed6624]" : "text-gray-400"} fill={quickActionsOnly ? "#ed6624" : "none"} />
-                  5 Minutes Max
-                </button>
-              )}
-              {/* Location dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setOpenFilter(locOpen ? null : "Location")}
-                  className={`w-full flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
-                    locSelected.length > 0
-                      ? "border-[#23297e] text-[#23297e] bg-[#23297e]/5"
-                      : "border-transparent text-gray-600 hover:bg-white hover:shadow-sm hover:border-gray-200"
-                  }`}
-                >
-                  <MapPin size={12} className={locSelected.length > 0 ? "text-[#23297e]" : "text-gray-400"} />
-                  Location
-                  {locSelected.length > 0 && (
-                    <span className="w-4 h-4 rounded-full bg-[#ed6624] text-white text-[9px] flex items-center justify-center font-bold shrink-0">
-                      {locSelected.length}
-                    </span>
-                  )}
-                  <ChevronDown size={12} className={`text-[#5a5a5a] ml-auto transition-transform duration-150 ${locOpen ? "rotate-180" : ""}`} />
-                </button>
-              {locOpen && (
-                <div className="absolute top-full left-0 mt-1.5 w-56 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50 flex flex-col max-h-[min(28rem,80vh)]">
-                  <p className="px-4 pt-1 pb-2 font-['Poppins',sans-serif] text-[10px] uppercase tracking-widest text-gray-400 font-semibold border-b border-gray-50 shrink-0">
-                    Location
-                  </p>
-                  <div className="overflow-y-auto flex-1">
-                    {locOptions.map((option) => (
-                      <label key={option} className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={locSelected.includes(option)}
-                          onChange={() => toggleFilterOption("Location", option)}
-                          className="accent-[#23297e] w-3.5 h-3.5 rounded shrink-0"
-                        />
-                        <span className="font-['Poppins',sans-serif] text-sm text-gray-700">{option}</span>
-                      </label>
-                    ))}
-                  </div>
-                  {locSelected.length > 0 && (
-                    <button
-                      onClick={() => onFilterChange("Location", [])}
-                      className="w-full text-center text-xs text-red-400 hover:text-red-600 py-2 border-t border-gray-50 mt-1 font-['Poppins',sans-serif] font-medium transition-colors shrink-0"
-                    >
-                      Clear filter
-                    </button>
-                  )}
-                </div>
-              )}
-              </div>{/* END Location relative wrapper */}
-            </div>{/* END 5MinMax + Location vertical stack */}
-
-            {/* Category — inline scrollable pills on desktop (sm and up); the
-                same checkbox dropdown on phones where there's no room. Picks
-                breakpoint at sm (640px). Pills row uses overflow-x-auto so a
-                long category list scrolls horizontally rather than wrapping. */}
-            {/* Desktop: pills for every category, wrapping to as many rows
-                as needed (typically two). Switched from horizontal scroll to
-                flex-wrap because the full category list never fits one row. */}
+            {/* Desktop: every category as a pill that wraps to as many rows
+                as needed, with the Location pill appended at the very end.
+                Location pill matches the category pill styling exactly so it
+                reads as one continuous filter row — but it opens a dropdown
+                instead of being a simple toggle. */}
             <div className="hidden sm:flex flex-1 min-w-0 flex-wrap items-center gap-y-1.5 gap-x-1">
               {actsCats.map((option) => {
                 const selected = actsCatsSelected.includes(option);
@@ -816,6 +740,89 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                   </button>
                 );
               })}
+              {/* Location pill — same chip style as the categories, but opens
+                  a dropdown panel for state/region selection rather than being
+                  a single-toggle. Sits at the very end of the wrapping row. */}
+              <div className="relative shrink-0">
+                <button
+                  onClick={() => setOpenFilter(locOpen ? null : "Location")}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
+                    locSelected.length > 0
+                      ? "bg-[#23297e] text-white border-[#23297e]"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-[#23297e] hover:text-[#23297e]"
+                  }`}
+                >
+                  <MapPin size={11} className={locSelected.length > 0 ? "text-white" : "text-gray-400"} />
+                  Location
+                  {locSelected.length > 0 && (
+                    <span className="ml-0.5 w-4 h-4 rounded-full bg-[#ed6624] text-white text-[9px] flex items-center justify-center font-bold shrink-0">
+                      {locSelected.length}
+                    </span>
+                  )}
+                  <ChevronDown size={11} className={`transition-transform duration-150 ${locOpen ? "rotate-180" : ""}`} />
+                </button>
+                {locOpen && (
+                  <div className="absolute top-full left-0 mt-1.5 w-56 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50 flex flex-col max-h-[min(28rem,80vh)]">
+                    <p className="px-4 pt-1 pb-2 font-['Poppins',sans-serif] text-[10px] uppercase tracking-widest text-gray-400 font-semibold border-b border-gray-50 shrink-0">
+                      Location
+                    </p>
+                    <div className="overflow-y-auto flex-1">
+                      {locOptions.map((option) => (
+                        <label key={option} className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={locSelected.includes(option)}
+                            onChange={() => toggleFilterOption("Location", option)}
+                            className="accent-[#23297e] w-3.5 h-3.5 rounded shrink-0"
+                          />
+                          <span className="font-['Poppins',sans-serif] text-sm text-gray-700">{option}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {locSelected.length > 0 && (
+                      <button
+                        onClick={() => onFilterChange("Location", [])}
+                        className="w-full text-center text-xs text-red-400 hover:text-red-600 py-2 border-t border-gray-50 mt-1 font-['Poppins',sans-serif] font-medium transition-colors shrink-0"
+                      >
+                        Clear filter
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+              {/* Remote Only pill — shortcut for adding "Remote" to the
+                  Location filter. Composes with any selected states (same as
+                  picking Remote inside the Location dropdown). Sits right
+                  before 5 Minutes Max so quick toggles cluster together. */}
+              <button
+                onClick={() => toggleFilterOption("Location", "Remote")}
+                className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
+                  locSelected.includes("Remote")
+                    ? "bg-[#23297e] text-white border-[#23297e]"
+                    : "bg-white text-gray-600 border-gray-200 hover:border-[#23297e] hover:text-[#23297e]"
+                }`}
+                title="Show only remote / online actions"
+              >
+                <Globe size={11} className={locSelected.includes("Remote") ? "text-white" : "text-gray-400"} />
+                Remote Only
+              </button>
+              {/* 5 Minutes Max pill — same chip style as categories. Toggles
+                  the quickAction-only filter. Sits at the very end after the
+                  Location pill so quick filters are all clustered together. */}
+              {onQuickActionsChange && (
+                <button
+                  onClick={() => onQuickActionsChange(!quickActionsOnly)}
+                  className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
+                    quickActionsOnly
+                      ? "bg-[#ed6624] text-white border-[#ed6624]"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-[#ed6624] hover:text-[#ed6624]"
+                  }`}
+                  title="Show only actions that take 5 minutes or less"
+                >
+                  <Zap size={11} className={quickActionsOnly ? "text-white" : "text-gray-400"} fill={quickActionsOnly ? "#ffffff" : "none"} />
+                  5 Minutes Max
+                </button>
+              )}
             </div>
 
             {/* Mobile: dropdown (existing behavior preserved) */}
@@ -869,90 +876,26 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
           </>
         )}
 
-        {/* Clear all — clears filter chips AND the search box */}
+        </div>{/* END LEFT GROUP */}
+
+        {/* RIGHT GROUP — only shown when there are filters to clear. Sort
+            moved to the result banner; stats moved to the persistent footer. */}
         {totalActiveAll > 0 && (
+        <div className="shrink-0 flex items-center gap-2 pl-3 border-l border-gray-200">
+          {/* Clear all — clears filter chips, search box, and quick-actions */}
           <button
             onClick={() => {
               Object.keys(activeTab === "facts" ? FACTS_FILTER_OPTIONS : ACTS_FILTER_OPTIONS).forEach((f) => onFilterChange(f, []));
               if (hasActiveSearch) onSearchChange("");
               if (quickActionsOnly && onQuickActionsChange) onQuickActionsChange(false);
             }}
-            className="shrink-0 ml-1 flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-['Poppins',sans-serif] font-semibold text-red-400 hover:text-red-600 hover:bg-red-50 transition-all border border-transparent hover:border-red-100"
+            className="flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg text-xs font-['Poppins',sans-serif] font-semibold text-red-400 hover:text-red-600 hover:bg-red-50 transition-all"
           >
             <X size={11} />
             Clear all ({totalActiveAll})
           </button>
-        )}
-        </div>{/* END LEFT GROUP */}
-
-        {/* RIGHT GROUP — fixed width, always visible on the right */}
-        <div className="shrink-0 flex items-center gap-3 pl-3 border-l border-gray-200">
-          {/* Sort by dropdown */}
-          {onSortChange && activeTab === "acts" && (
-            <div className="relative">
-              <button
-                onClick={() => setOpenFilter(openFilter === "sort" ? null : "sort")}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
-                  sortBy !== "popular"
-                    ? "border-[#23297e] text-[#23297e] bg-[#23297e]/5"
-                    : "border-transparent text-gray-600 hover:bg-white hover:shadow-sm hover:border-gray-200"
-                }`}
-              >
-                <span className="text-gray-400 text-[10px] uppercase tracking-widest font-semibold">Sort</span>
-                <span className="font-medium">
-                  {sortBy === "popular" ? "Popular" : sortBy === "newest" ? "Newest" : "A–Z"}
-                </span>
-                <ChevronDown size={13} className={`text-[#5a5a5a] transition-transform duration-150 ${openFilter === "sort" ? "rotate-180" : ""}`} />
-              </button>
-              {openFilter === "sort" && (
-                <div className="absolute top-full right-0 mt-1.5 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl py-1.5 z-50">
-                  {(["popular", "newest", "az"] as const).map((opt) => (
-                    <button
-                      key={opt}
-                      onClick={() => { onSortChange(opt); setOpenFilter(null); }}
-                      className={`w-full text-left px-4 py-2 font-['Poppins',sans-serif] text-sm transition-colors flex items-center justify-between ${
-                        sortBy === opt
-                          ? "text-[#23297e] font-semibold bg-[#23297e]/5"
-                          : "text-gray-700 hover:bg-gray-50"
-                      }`}
-                    >
-                      {opt === "popular" ? "Popular" : opt === "newest" ? "Newest" : "A–Z"}
-                      {sortBy === opt && <span className="w-1.5 h-1.5 rounded-full bg-[#23297e]" />}
-                    </button>
-                  ))}
-                  {/* Show completed acts toggle — only visible once the user
-                      has actually completed something (otherwise the toggle
-                      has no effect and is just noise). Divider line above
-                      separates it visually from the sort order options. */}
-                  {onShowDoneChange && (completedCount ?? 0) > 0 && (
-                    <>
-                      <div className="border-t border-gray-100 my-1" />
-                      <button
-                        onClick={() => { onShowDoneChange(!showDone); }}
-                        className={`w-full text-left px-4 py-2 font-['Poppins',sans-serif] text-sm transition-colors flex items-center justify-between gap-2 ${
-                          showDone
-                            ? "text-[#23297e] font-semibold bg-[#23297e]/5"
-                            : "text-gray-700 hover:bg-gray-50"
-                        }`}
-                      >
-                        <span className="flex items-center gap-2">
-                          <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${showDone ? "bg-[#23297e] border-[#23297e]" : "border-gray-300"}`}>
-                            {showDone && <X size={10} className="text-white rotate-45" strokeWidth={3} />}
-                          </span>
-                          Show completed acts
-                        </span>
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Stats moved to the page footer (see App.tsx <footer>) to reclaim
-              horizontal space in the navbar for the category pill row. The
-              counts are still available — just in a calmer spot. */}
-        </div>{/* END RIGHT GROUP */}
+        </div>
+        )}{/* END RIGHT GROUP */}
       </div>
 
       {/* ── Mobile persistent tab + filter bar — sticks below top bar ── */}
