@@ -1,6 +1,6 @@
 import { memo, useEffect, useState } from "react";
 import { Bookmark, BookmarkCheck, CheckCircle2, Clock, Flag, Flame, Globe, MapPin, Pencil, Share2 } from "lucide-react";
-import { useAnimatedNumber, useHasChanged } from "../lib/animations";
+import { useHasChanged } from "../lib/animations";
 import { ShareModal } from "./ShareModal";
 import { SpreadTheWordModal } from "./SpreadTheWordModal";
 import { CardDetailsModal } from "./CardDetailsModal";
@@ -124,52 +124,32 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
   const isDescriptionLong = (card.description?.length ?? 0) > (compact ? 140 : READ_MORE_THRESHOLD);
 
   const completionsCount = card.completions ?? 0;
-  // Effective count for display — same logic the inline span used, lifted out
-  // so the animated-number hook can read it consistently.
+  // Effective done count — `isCompleted` bumps it by 1 so the user sees
+  // their own click reflected immediately even before the server count
+  // catches up. Still surfaced through CardDetailsModal where the user
+  // can actually mark themselves done; on the grid it's now read-only.
   const effectiveCount = Math.max(completionsCount, isCompleted ? 1 : 0);
-  // Tween the integer toward effectiveCount on every change. On first render
-  // it just shows the current value (no tween from 0) because
-  // useAnimatedNumber seeds its "from" ref to the initial target.
-  const animatedCount = useAnimatedNumber(effectiveCount);
-  // `pop` is true after the user has caused at least one change to the count
-  // (i.e., they clicked the button). We use it to add a one-shot pop class
-  // to the button — but keyed so it re-fires on each new change.
-  const countHasChanged = useHasChanged(effectiveCount);
 
-  // ── "I did this" pill — overlaid on the header image so it reads on any
-  //    background. Uses a translucent white capsule with a green check.
-  function CompletionPill({ onImage = false }: { onImage?: boolean }) {
-    const completedClasses = "bg-[#0d8c6e] text-white shadow-md hover:bg-[#0a7159]";
-    const idleOnImageClasses =
-      "bg-white/85 backdrop-blur-sm text-[#0d8c6e] shadow-sm hover:bg-white";
-    const idleOffImageClasses =
-      "bg-[#0d8c6e]/10 text-[#0d8c6e] hover:bg-[#0d8c6e]/20";
-
+  // ── Stats row — read-only boost + done counters that sit in the footer
+  //    where the "I did this!" pill used to live. The actual mark-done /
+  //    boost actions live inside CardDetailsModal now, keeping the grid
+  //    quiet. Spread the Word (pinToTop) suppresses the boost half — that
+  //    card can't be boosted. */
+  function StatsRow() {
+    const showBoost = !card.pinToTop;
     return (
-      <button
-        onClick={(e) => { e.stopPropagation(); onComplete?.(card.id); }}
-        title={isCompleted ? 'Undo "I did this"' : 'Mark as done'}
-        aria-label={isCompleted ? "Undo I did this" : "I did this"}
-        // `key={effectiveCount}` on the pop wrapper re-mounts that span when
-        // the count changes, so the CSS animation re-fires every click rather
-        // than only on the first one. The outer button stays stable so React
-        // doesn't tear down the click handler.
-        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] font-bold text-[12px] whitespace-nowrap shrink-0 transition-all ${
-          isCompleted ? completedClasses : (onImage ? idleOnImageClasses : idleOffImageClasses)
-        }`}
-      >
-        {isCompleted && <span aria-hidden>✓</span>}
-        <span>{isCompleted ? "DONE!" : "I did this!"}</span>
-        {effectiveCount > 0 && (
-          <span
-            key={effectiveCount}
-            className={`opacity-80 ${countHasChanged ? "resistact-anim-pop" : ""}`}
-            style={{ display: "inline-block" }}
-          >
-            · {animatedCount.toLocaleString()}
+      <div className="flex items-center gap-3 shrink-0 font-['Poppins',sans-serif] text-[12px]">
+        {showBoost && (
+          <span className="inline-flex items-center gap-1 font-bold text-[#ed6624] whitespace-nowrap">
+            <span aria-hidden>🔥</span>
+            <span>{(card.boosts ?? 0).toLocaleString()}</span>
           </span>
         )}
-      </button>
+        <span className="inline-flex items-center gap-1 font-bold text-[#0d8c6e] whitespace-nowrap">
+          <span aria-hidden>✓</span>
+          <span>{effectiveCount.toLocaleString()}</span>
+        </span>
+      </div>
     );
   }
 
@@ -314,11 +294,16 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
               {card.title}
             </h3>
 
-            <p className={`font-['Poppins',sans-serif] text-gray-600 leading-relaxed flex-1 ${compact ? "text-[12px] line-clamp-3" : "text-[13px] line-clamp-2"}`}>
-              {card.description}
-            </p>
+            {/* Description: compact-only, matches the regular card. The
+                full message lives in the share modal that opens on click. */}
+            {compact && (
+              <p className="font-['Poppins',sans-serif] text-gray-600 leading-relaxed flex-1 text-[12px] line-clamp-3">
+                {card.description}
+              </p>
+            )}
+            {!compact && <div className="flex-1" />}
 
-            {isDescriptionLong && (
+            {compact && isDescriptionLong && (
               <button
                 onClick={(e) => { e.stopPropagation(); setDetailsOpen(true); }}
                 className="self-end font-['Poppins',sans-serif] italic text-[12px] font-normal text-[#ed6624] underline underline-offset-2 decoration-[#ed6624]/40 hover:decoration-[#ed6624]"
@@ -327,7 +312,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
               </button>
             )}
 
-            {/* Author + Boost button */}
+            {/* Author + read-only stats */}
             <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-100">
               <div className="flex items-center gap-2.5 min-w-0">
                 {card.authorAvatar && (
@@ -339,7 +324,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
                 </div>
               </div>
 
-              <CompletionPill />
+              <StatsRow />
             </div>
 
             {!compact && <FloatingShareButton />}
@@ -484,12 +469,19 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
             {card.title}
           </h3>
 
-          {/* Description — line-clamp without flex-1 in compact so the clamp
-              actually applies (flex-1 fights line-clamp by forcing the element
-              to fill remaining height). */}
-          <p className={`font-['Poppins',sans-serif] text-gray-600 leading-relaxed ${compact ? "text-[12px] line-clamp-3 flex-1" : "text-[13px] line-clamp-3 flex-1"}`}>
-            {card.description}
-          </p>
+          {/* Description used to live here; it's been moved to modal-only
+              so the grid stays calm. The compact (Quick Match preview)
+              variant keeps the description because that view is the user's
+              only look at the card before deciding. */}
+          {compact && (
+            <p className="font-['Poppins',sans-serif] text-gray-600 leading-relaxed text-[12px] line-clamp-3 flex-1">
+              {card.description}
+            </p>
+          )}
+          {/* Spacer that takes the place of the description on non-compact
+              cards — keeps the footer (author + stats) anchored to the
+              bottom of the card so heights stay aligned across the grid. */}
+          {!compact && <div className="flex-1" />}
 
           {/* Universal Know-Your-Rights chip on PROTEST / FLASH MOB cards in
               the main feed. Hidden in compact (sample matches) mode to keep
@@ -511,7 +503,11 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
             );
           })()}
 
-          {isDescriptionLong && (
+          {/* Read More link only shows in compact (Quick Match preview)
+              mode, where the description is still rendered above. On the
+              main grid the entire card is clickable and there's no
+              description to truncate, so the link would be redundant. */}
+          {compact && isDescriptionLong && (
             <button
               onClick={(e) => { e.stopPropagation(); setDetailsOpen(true); }}
               className="self-end font-['Poppins',sans-serif] italic text-[12px] font-normal text-[#ed6624] underline underline-offset-2 decoration-[#ed6624]/40 hover:decoration-[#ed6624]"
@@ -520,7 +516,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
             </button>
           )}
 
-          {/* Author + Boost button — hidden in compact mode (mini preview). */}
+          {/* Author + read-only stats — hidden in compact mode (mini preview). */}
           {!compact && (
             <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-100">
               {/* Author */}
@@ -551,7 +547,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
                 </div>
               </div>
 
-              <CompletionPill />
+              <StatsRow />
             </div>
           )}
         </div>

@@ -16,6 +16,22 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.61",
+    date: "2026-05-25",
+    title: "Card grid: descriptions and \"I did this!\" move to the modal — stats take their place",
+    sections: [
+      {
+        heading: "Cleaner card grid",
+        items: [
+          "Removed the description text from cards on the Acts grid. The full description still lives inside the card-details modal that opens on click; the grid now reads as title + author + stats, so more cards fit per scroll and the eye can scan instead of read.",
+          "Replaced the \"I did this!\" pill on each card with a quiet read-only stats row: 🔥 boost count and ✓ done count. The action itself still lives inside the modal alongside Boost — the grid stays a preview, the modal is where you act.",
+          "Spread the Word card hides the boost stat (it can't be boosted) and shows just the share/done count.",
+          "Quick Match preview cards keep the description + Read More link — that compact view is the user's only look at the card before deciding.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.60",
     date: "2026-05-25",
     title: "Boost button moves into the card-details modal only",
