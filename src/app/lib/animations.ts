@@ -213,4 +213,20 @@ export const GAMIFICATION_KEYFRAMES = `
     .resistact-banner-desat,
     .resistact-banner-half-desat { transition: none; }
   }
+
+  /* Hot-card flicker — applied to the 🔥 emoji on cards with boost counts
+     above the HOT_BOOST_THRESHOLD in ActionCard. A slow 2s opacity + scale
+     pulse signals "this one is moving" without flashing or strobing.
+     Reduced-motion users get a steady icon — no animation. */
+  @keyframes resistact-anim-flicker-kf {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.7; transform: scale(1.15); }
+  }
+  .resistact-anim-flicker {
+    animation: resistact-anim-flicker-kf 2s ease-in-out infinite;
+    will-change: opacity, transform;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .resistact-anim-flicker { animation: none; }
+  }
 `;

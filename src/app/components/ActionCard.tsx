@@ -1,6 +1,6 @@
 import { memo, useEffect, useState } from "react";
-import { Bookmark, BookmarkCheck, CheckCircle2, Clock, Flag, Flame, Globe, MapPin, Pencil, Share2 } from "lucide-react";
-import { useHasChanged } from "../lib/animations";
+import { CheckCircle2, Clock, Flag, Flame, Globe, MapPin, Pencil, Share2 } from "lucide-react";
+import { useAnimatedNumber } from "../lib/animations";
 import { ShareModal } from "./ShareModal";
 import { SpreadTheWordModal } from "./SpreadTheWordModal";
 import { CardDetailsModal } from "./CardDetailsModal";
@@ -137,23 +137,34 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
 
   // ── ActionRow — quartet of pills/circles that lives in the card footer.
   //    Boost and Done stats: rounded pills with icon + count, color-tinted.
+  //    Counts tick-up via useAnimatedNumber so bumps don't pop in instantly.
   //    Flag and Share: icon-only circles. All share h-7 and rounded-full so
   //    they read as one cohesive control set rather than two separate ones.
+  //    Cards with boosts >= HOT_BOOST_THRESHOLD get a slow flicker on the
+  //    🔥 emoji to signal "this one is moving" without screaming for
+  //    attention.
+  // 5 is roughly the top-of-distribution today (max boost in the catalog
+  // is single digits). If/when the data grows and boost counts rise into
+  // the tens, this should drift upward so the flicker stays meaningful.
+  const HOT_BOOST_THRESHOLD = 5;
   function ActionRow() {
     const showBoost = !card.pinToTop;
+    const animatedBoosts = useAnimatedNumber(card.boosts ?? 0);
+    const animatedDones = useAnimatedNumber(effectiveCount);
+    const isHotBoost = (card.boosts ?? 0) >= HOT_BOOST_THRESHOLD;
     return (
       <div className="flex items-center gap-1.5 shrink-0">
-        {/* Boost stat — orange identity */}
+        {/* Boost stat — orange identity; flickers on hot cards. */}
         {showBoost && (
           <span className="inline-flex items-center gap-1 h-7 px-2 rounded-full bg-[#ed6624]/10 text-[#ed6624] font-['Poppins',sans-serif] font-bold text-[12px] whitespace-nowrap">
-            <span aria-hidden>🔥</span>
-            <span>{(card.boosts ?? 0).toLocaleString()}</span>
+            <span aria-hidden className={isHotBoost ? "resistact-anim-flicker inline-block" : "inline-block"}>🔥</span>
+            <span>{animatedBoosts.toLocaleString()}</span>
           </span>
         )}
         {/* Done stat — green identity */}
         <span className="inline-flex items-center gap-1 h-7 px-2 rounded-full bg-[#0d8c6e]/10 text-[#0d8c6e] font-['Poppins',sans-serif] font-bold text-[12px] whitespace-nowrap">
           <span aria-hidden>✓</span>
-          <span>{effectiveCount.toLocaleString()}</span>
+          <span>{animatedDones.toLocaleString()}</span>
         </span>
         {/* Flag — hidden on Spread the Word (not user-submitted content). */}
         {!card.pinToTop && (
@@ -199,46 +210,28 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
     );
   }
 
-  // Bookmark icon: fire a spring-pop animation on tap. `useHasChanged` gates
-  // the first-mount case so the bounce only happens when the user actually
-  // toggles the bookmark, not when the card renders with an already-saved
-  // state.
-  const bookmarkHasChanged = useHasChanged(!!isBookmarked);
-
-  // ── Shared top-right controls (pencil + bookmark) ──────────────────────────
+  // ── Shared top-right controls (edit pencil only — bookmark moved to modal) ─
   // On image (`light`), the icons sit inside a translucent dark pill so they
   // stay legible regardless of the photo behind them — bright/light images
   // were swallowing the white icon previously.
+  // TopControls now holds only the admin "edit" pencil. Bookmark moved
+  // into CardDetailsModal as a labeled button so non-admin users
+  // actually discover the feature. For non-admins (canEdit=false), this
+  // component renders nothing — the caller should skip rendering its
+  // wrapper too so the absolute-positioned slot doesn't reserve space.
   function TopControls({ light = true }: { light?: boolean }) {
+    if (!canEdit) return null;
     const btnCls = light
       ? "w-7 h-7 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-sm text-white hover:bg-black/55 transition-colors"
       : "text-gray-500 hover:text-[#23297e] transition-colors";
     return (
       <div className="flex items-center gap-1">
-        {canEdit && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onEdit?.(card.id); }}
-            title="Edit this act"
-            className={btnCls}
-          >
-            <Pencil size={14} />
-          </button>
-        )}
         <button
-          onClick={(e) => { e.stopPropagation(); onBookmark?.(card.id); }}
-          aria-label={isBookmarked ? "Remove bookmark" : "Bookmark"}
+          onClick={(e) => { e.stopPropagation(); onEdit?.(card.id); }}
+          title="Edit this act"
           className={btnCls}
         >
-          {/* `key={String(isBookmarked)}` re-mounts the icon wrapper on toggle
-              so the CSS pop animation re-fires each time, not just on first
-              mount. Gated by `bookmarkHasChanged` so a card that loads with
-              isBookmarked=true doesn't pop on page load. */}
-          <span
-            key={String(isBookmarked)}
-            className={bookmarkHasChanged ? "resistact-anim-bookmark inline-block" : "inline-block"}
-          >
-            {isBookmarked ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
-          </span>
+          <Pencil size={14} />
         </button>
       </div>
     );
@@ -342,6 +335,8 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
             isCompleted={isCompleted}
             onBoost={card.pinToTop ? undefined : onBoost}
             isBoosted={isBoosted}
+            onBookmark={onBookmark}
+            isBookmarked={isBookmarked}
           />
         )}
         {flagOpen && (
@@ -414,10 +409,11 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
               <TopControls light={false} />
             </div>
 
-            {/* Left: category + title + inline chips. Minimal pr-9 so
-                titles get the most horizontal room possible without
-                running under the bookmark/edit icons in the top-right. */}
-            <div className="flex-1 min-w-0 flex flex-col gap-1 pr-9">
+            {/* Left: category + title + inline chips. pr-7 reserves
+                just enough room to clear the (admin-only) edit pencil
+                in the top-right; for non-admins the cluster is empty
+                so the extra padding is harmless. */}
+            <div className="flex-1 min-w-0 flex flex-col gap-1 pr-7">
               <span
                 className="font-['Poppins',sans-serif] font-bold tracking-wider text-[11px] uppercase"
                 style={{ color: card.categoryColor }}
@@ -561,6 +557,8 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           isCompleted={isCompleted}
           onBoost={onBoost}
           isBoosted={isBoosted}
+          onBookmark={onBookmark}
+          isBookmarked={isBookmarked}
         />
       )}
       {flagOpen && (

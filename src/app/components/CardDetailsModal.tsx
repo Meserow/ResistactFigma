@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { CheckCircle2, ExternalLink, Flame, Globe, MapPin, X } from "lucide-react";
+import { Bookmark, BookmarkCheck, CheckCircle2, ExternalLink, Flame, Globe, MapPin, X } from "lucide-react";
 import type { ActionCardData } from "./ActionCard";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 
@@ -16,6 +16,11 @@ interface CardDetailsModalProps {
       boost from inside the modal without dismissing it. */
   onBoost?: (id: number) => void;
   isBoosted?: boolean;
+  /** Bookmark handler + state — surfaced in the modal action row with
+      a labeled button so users discover the bookmark feature (it used
+      to be just an icon at the top of the card). */
+  onBookmark?: (id: number) => void;
+  isBookmarked?: boolean;
 }
 
 /**
@@ -23,7 +28,7 @@ interface CardDetailsModalProps {
  * `line-clamp-5` cuts it off in the grid view. Click the "Read more" link on a
  * card to open this; click overlay / Escape / X to close.
  */
-export function CardDetailsModal({ card, onClose, onShare, onComplete, isCompleted, onBoost, isBoosted }: CardDetailsModalProps) {
+export function CardDetailsModal({ card, onClose, onShare, onComplete, isCompleted, onBoost, isBoosted, onBookmark, isBookmarked }: CardDetailsModalProps) {
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -161,20 +166,26 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
           <div className="mt-6 flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2">
               {/* "I did this!" toggle — same color identity as the on-card pill
-                  (teal when complete, light teal when idle). */}
-              {onComplete && (
-                <button
-                  onClick={() => onComplete(card.id)}
-                  className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 font-['Poppins',sans-serif] text-sm font-bold transition-colors ${
-                    isCompleted
-                      ? "bg-[#0d8c6e] text-white hover:bg-[#0a7159]"
-                      : "bg-[#0d8c6e]/10 text-[#0d8c6e] hover:bg-[#0d8c6e]/20"
-                  }`}
-                >
-                  <CheckCircle2 size={14} />
-                  {isCompleted ? "Done · undo" : "I did this!"}
-                </button>
-              )}
+                  (teal when complete, light teal when idle). Shows the running
+                  done count so users see the social proof + their own click. */}
+              {onComplete && (() => {
+                const baseCount = card.completions ?? 0;
+                const displayedCount = Math.max(baseCount, isCompleted ? 1 : 0);
+                return (
+                  <button
+                    onClick={() => onComplete(card.id)}
+                    className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 font-['Poppins',sans-serif] text-sm font-bold transition-colors ${
+                      isCompleted
+                        ? "bg-[#0d8c6e] text-white hover:bg-[#0a7159]"
+                        : "bg-[#0d8c6e]/10 text-[#0d8c6e] hover:bg-[#0d8c6e]/20"
+                    }`}
+                  >
+                    <CheckCircle2 size={14} />
+                    {isCompleted ? "Done · undo" : "I did this!"}
+                    {displayedCount > 0 && <span className="opacity-80">· {displayedCount}</span>}
+                  </button>
+                );
+              })()}
 
               {/* Boost — orange identity, mirrors the on-image boost button. */}
               {onBoost && (
@@ -189,6 +200,23 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
                   <Flame size={14} />
                   {isBoosted ? "Boosted" : "Boost"}
                   {typeof card.boosts === "number" && card.boosts > 0 ? <span className="opacity-80">· {card.boosts}</span> : null}
+                </button>
+              )}
+
+              {/* Bookmark — moved from the card's top-right icon-only control
+                  into the modal as a labeled button so the feature is
+                  discoverable. Navy identity to distinguish from done/boost. */}
+              {onBookmark && (
+                <button
+                  onClick={() => onBookmark(card.id)}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 font-['Poppins',sans-serif] text-sm font-bold transition-colors ${
+                    isBookmarked
+                      ? "bg-[#23297e] text-white hover:bg-[#1a2060]"
+                      : "bg-[#23297e]/10 text-[#23297e] hover:bg-[#23297e]/20"
+                  }`}
+                >
+                  {isBookmarked ? <BookmarkCheck size={14} /> : <Bookmark size={14} />}
+                  {isBookmarked ? "Bookmarked" : "Bookmark"}
                 </button>
               )}
             </div>

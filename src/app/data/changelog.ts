@@ -16,6 +16,33 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.65",
+    date: "2026-05-25",
+    title: "Bookmark moves to modal · I-did-this shows count · hot-card flicker · stats tick-up",
+    sections: [
+      {
+        heading: "Modal action row",
+        items: [
+          "\"I did this!\" pill in the modal now shows the running done count next to the label, matching the way the Boost button has always shown its count.",
+          "Bookmark moved from the icon-only top-right corner of the card into the modal as a labeled \"Bookmark\" button with the bookmark icon. Now actually discoverable for users who weren't reading the tiny outline icon as an action.",
+        ],
+      },
+      {
+        heading: "Card grid",
+        items: [
+          "Removed the bookmark icon from the top-right corner of each card (it now lives in the modal). Only the admin edit pencil stays up there, and it renders only when canEdit is true — non-admins see nothing in that slot. Text column padding tightens accordingly.",
+        ],
+      },
+      {
+        heading: "Card animations",
+        items: [
+          "Stats tick up smoothly: when a boost or done count changes, the digit animates from old → new instead of popping. Restored useAnimatedNumber on both pills.",
+          "Hot-card flicker: cards with boost counts at or above the threshold (currently 5, near the top of the catalog distribution) get a slow 2s opacity + scale pulse on the 🔥 emoji. Quiet enough to scan past, lively enough to notice. Honors prefers-reduced-motion.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.64",
     date: "2026-05-25",
     title: "Unified action row · titles get more room",
