@@ -286,9 +286,13 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
 
           {/* Content */}
           <div className={`relative flex flex-col flex-1 ${compact ? "gap-1 px-3 pb-2 pt-1.5" : "gap-2 px-4 pb-4 pt-3"}`}>
-            <span className={`font-['Poppins',sans-serif] font-bold tracking-wider uppercase ${compact ? "text-[10px]" : "text-[11px]"}`} style={{ color: card.categoryColor }}>
-              {card.category}
-            </span>
+            {/* Category hidden on the pinToTop Spread the Word card —
+                it's the hero card, not a category-bucketed Act. */}
+            {!card.pinToTop && (
+              <span className={`font-['Poppins',sans-serif] font-bold tracking-wider uppercase ${compact ? "text-[10px]" : "text-[11px]"}`} style={{ color: card.categoryColor }}>
+                {card.category}
+              </span>
+            )}
 
             <h3 className={`font-['Poppins',sans-serif] font-bold text-gray-900 leading-snug ${compact ? "text-[13px]" : "text-[15px]"}`}>
               {card.title}
@@ -312,19 +316,20 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
               </button>
             )}
 
-            {/* Author + read-only stats */}
+            {/* Stats (left) + author (right) — author moves to the right
+                corner so stats lead the eye. */}
             <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-100">
-              <div className="flex items-center gap-2.5 min-w-0">
-                {card.authorAvatar && (
-                  <ImageWithFallback src={card.authorAvatar} alt={card.authorName} className="w-8 h-8 rounded-full object-cover ring-1 ring-gray-200 shrink-0" />
-                )}
-                <div className="min-w-0">
+              <StatsRow />
+
+              <div className="flex items-center gap-2.5 min-w-0 justify-end">
+                <div className="min-w-0 text-right">
                   <p className="font-['Poppins',sans-serif] font-semibold text-[12px] text-gray-800 truncate leading-tight">{card.authorName}</p>
                   <p className="font-['Poppins',sans-serif] text-[11px] text-gray-400 truncate leading-tight">{card.authorRole}</p>
                 </div>
+                {card.authorAvatar && (
+                  <ImageWithFallback src={card.authorAvatar} alt={card.authorName} className="w-8 h-8 rounded-full object-cover ring-1 ring-gray-200 shrink-0" />
+                )}
               </div>
-
-              <StatsRow />
             </div>
 
             {!compact && <FloatingShareButton />}
@@ -496,25 +501,9 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
               bottom of the card so heights stay aligned across the grid. */}
           {!compact && <div className="flex-1" />}
 
-          {/* Universal Know-Your-Rights chip on PROTEST / FLASH MOB cards in
-              the main feed. Hidden in compact (sample matches) mode to keep
-              the modal short — users will see it when they open the card. */}
-          {!compact && (() => {
-            const cat = (card.category ?? "").toUpperCase();
-            if (cat !== "PROTEST" && cat !== "FLASH MOB") return null;
-            return (
-              <a
-                href="https://www.aclu.org/know-your-rights/protesters-rights"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="self-start inline-flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-2 py-0.5 font-['Poppins',sans-serif] text-[11px] font-semibold text-amber-800 hover:bg-amber-100 transition-colors"
-                title="ACLU protesters' rights guide"
-              >
-                ⚠ In-person — know your rights
-              </a>
-            );
-          })()}
+          {/* Know-Your-Rights chip moved to CardDetailsModal — keeps the
+              grid clean and shows the safety reminder right where the
+              user is about to act on a PROTEST / FLASH MOB card. */}
 
           {/* Read More link only shows in compact (Quick Match preview)
               mode, where the description is still rendered above. On the
@@ -529,19 +518,16 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
             </button>
           )}
 
-          {/* Author + read-only stats — hidden in compact mode (mini preview). */}
+          {/* Stats (left) + author (right) — hidden in compact mode. The
+              author block sits on the right now so the stats catch the
+              eye first; author is supporting context, not the headline. */}
           {!compact && (
             <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-100">
+              <StatsRow />
+
               {/* Author */}
-              <div className="flex items-center gap-2.5 min-w-0">
-                {card.authorAvatar && (
-                  <ImageWithFallback
-                    src={card.authorAvatar}
-                    alt={card.authorName}
-                    className="rounded-full object-cover ring-1 ring-gray-200 shrink-0 w-8 h-8"
-                  />
-                )}
-                <div className="min-w-0">
+              <div className="flex items-center gap-2.5 min-w-0 justify-end">
+                <div className="min-w-0 text-right">
                   <p className="font-['Poppins',sans-serif] font-semibold text-[12px] text-gray-800 truncate leading-tight">
                     {card.authorName}
                   </p>
@@ -558,9 +544,14 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
                     </p>
                   )}
                 </div>
+                {card.authorAvatar && (
+                  <ImageWithFallback
+                    src={card.authorAvatar}
+                    alt={card.authorName}
+                    className="rounded-full object-cover ring-1 ring-gray-200 shrink-0 w-8 h-8"
+                  />
+                )}
               </div>
-
-              <StatsRow />
             </div>
           )}
         </div>

@@ -133,6 +133,27 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
             {card.description}
           </p>
 
+          {/* Know-Your-Rights chip — surfaces a safety reminder right
+              before the user takes action on a PROTEST or FLASH MOB
+              card. Lived on the grid card itself in older builds; moved
+              here so the chip lands in the same field of view as the
+              "I want to ResistAct!" link-out. */}
+          {(() => {
+            const cat = (card.category ?? "").toUpperCase();
+            if (cat !== "PROTEST" && cat !== "FLASH MOB") return null;
+            return (
+              <a
+                href="https://www.aclu.org/know-your-rights/protesters-rights"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 self-start inline-flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 font-['Poppins',sans-serif] text-[12px] font-semibold text-amber-800 hover:bg-amber-100 transition-colors"
+                title="ACLU protesters' rights guide"
+              >
+                ⚠ In-person — know your rights
+              </a>
+            );
+          })()}
+
           {/* Action row — secondary actions ("I did this!" + Boost) cluster
               on the left, primary link-out ("I want to ResistAct!") anchors
               on the right so the eye lands on the primary CTA last. Wraps

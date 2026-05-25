@@ -16,6 +16,21 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.63",
+    date: "2026-05-25",
+    title: "Card footer: stats lead, author follows · KYR chip into the modal · Spread the Word loses its category label",
+    sections: [
+      {
+        heading: "Card layout",
+        items: [
+          "Flipped the card footer: 🔥 boost and ✓ done counters now sit on the left, the author block moves to the right corner with text right-aligned. Stats lead the eye; author is supporting context.",
+          "Moved the \"⚠ In-person — know your rights\" chip off the grid and into the card-details modal, where it sits right above the action row on PROTEST / FLASH MOB cards. Same field of view as the link-out, so the safety reminder lands at the moment of decision.",
+          "Spread the Word card no longer shows the \"BOOST\" category label — it's the hero card, not a category-bucketed Act, so the label was just noise.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.62",
     date: "2026-05-25",
     title: "Card grid rebuilt — image on the right, text on the left, color creeps back",
