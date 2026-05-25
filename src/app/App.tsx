@@ -2040,21 +2040,43 @@ export default function App() {
       </main>
 
       {/* Always-on tagline footer: motivational reminder pinned to the bottom
-          of the viewport. The scroll nudge toast sits in the lower-right
-          (not full-width) so it no longer covers this. The acts count rides
-          along here (moved from the bottom-of-page footer) so the message and
-          the live size of the catalog appear together at all times. */}
+          of the viewport. Three columns — acts count (left), the call-to-action
+          tag (center), facts + smacks counts (right) — so the live library
+          size always appears alongside the message. On narrow screens the
+          word labels (acts/facts/smacks) drop to just the colored numbers
+          so the center tag stays on one line. */}
       <div className="fixed bottom-0 inset-x-0 z-30 bg-white border-t border-gray-200 shadow-[0_-1px_3px_rgba(0,0,0,0.08)]">
-        <p className="font-['Poppins',sans-serif] text-center text-[14px] md:text-base py-5 px-4 leading-tight">
-          <strong className="font-bold text-[#23297e]">
-            Pick one
-            {synced && (
-              <> of <span className="text-[#ed6624]">{displayedCards.length}</span> acts</>
-            )}
-            . <span className="text-[#ed6624]">Do it.</span> Share it.
-          </strong>{" "}
-          <em className="italic font-bold text-[#ed6624]">Come back tomorrow.</em>
-        </p>
+        <div className="flex items-center justify-between gap-2 md:gap-5 py-4 px-3 md:px-6">
+          {/* Left: acts count */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <div className="w-2 h-2 rounded-full bg-[#ed6624]" />
+            <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
+              <strong className="text-[#ed6624] font-bold">{synced ? displayedCards.length : "—"}</strong><span className="hidden md:inline">{" "}acts</span>
+            </span>
+          </div>
+          {/* Center: call-to-action tag */}
+          <p className="font-['Poppins',sans-serif] text-center text-[12px] md:text-base leading-tight min-w-0 flex-1">
+            <strong className="font-bold text-[#23297e]">
+              Pick one. <span className="text-[#ed6624]">Do it.</span> Share it.
+            </strong>{" "}
+            <em className="italic font-bold text-[#ed6624]">Come back tomorrow.</em>
+          </p>
+          {/* Right: facts + smacks counts */}
+          <div className="flex items-center gap-2 md:gap-3 shrink-0">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-[#127f05]" />
+              <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
+                <strong className="text-[#127f05] font-bold">{FACT_CARDS.length}</strong><span className="hidden md:inline">{" "}facts</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-[#23297e]" />
+              <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
+                <strong className="text-[#23297e] font-bold">{receipts.length + STATIC_SMACKS.length}</strong><span className="hidden md:inline">{" "}smacks</span>
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Scroll nudge — lower-right orange toast after scrolling past ~8 cards.
@@ -2094,22 +2116,8 @@ export default function App() {
 
       {/* Footer */}
       <footer className="mt-12 border-t border-gray-200 py-8 px-8 text-center">
-        {/* Library size stats (facts + smacks only — acts count moved to the
-            persistent "Pick one of N acts" footer). */}
-        <div className="flex items-center justify-center gap-5 mb-4">
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-[#127f05]" />
-            <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
-              <strong className="text-[#127f05] font-bold">{FACT_CARDS.length}</strong>{" "}facts
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-[#23297e]" />
-            <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
-              <strong className="text-[#23297e] font-bold">{receipts.length + STATIC_SMACKS.length}</strong>{" "}smacks
-            </span>
-          </div>
-        </div>
+        {/* Library size stats (acts/facts/smacks) live in the persistent
+            bottom banner now, so they don't render here. */}
         <p className="font-['Poppins',sans-serif] text-sm text-gray-400">
           © 2026 ResistAct · Building grassroots resistance, one act at a time.
         </p>

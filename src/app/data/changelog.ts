@@ -16,6 +16,21 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.52",
+    date: "2026-05-25",
+    title: "Persistent bottom banner — acts, tag, facts + smacks in one row",
+    sections: [
+      {
+        heading: "Bottom banner",
+        items: [
+          "Restructured the always-on bottom banner into three sections: the acts count sits on the left, the \"Pick one. Do it. Share it. Come back tomorrow.\" tag is centered, and facts + smacks counts sit on the right. The count no longer gets jammed inside the call-to-action sentence.",
+          "Mobile-friendly: on narrow screens the side labels (acts/facts/smacks) collapse to just the colored numbers so the center tag stays readable.",
+          "Removed the duplicate facts/smacks block from the page-bottom footer (it's now in the persistent banner, so the footer only carries the copyright + disclaimer).",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.51",
     date: "2026-05-25",
     title: "Cleaner card art — location pill no longer cuts across the logo, Quick Match skips placeholder cards",
