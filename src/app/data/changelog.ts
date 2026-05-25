@@ -16,6 +16,20 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.60",
+    date: "2026-05-25",
+    title: "Boost button moves into the card-details modal only",
+    sections: [
+      {
+        heading: "Cleaner card grid",
+        items: [
+          "Removed the orange \"🔥 Boost\" pill that sat on every card image. Boost still works — it just lives inside the card-details modal now, alongside \"I did this!\" and the link-out. The grid stays calmer; the action lives where the user is already paying attention.",
+          "\"I did this!\" stays on the card. Open the card to boost.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.59",
     date: "2026-05-25",
     title: "Card banners go full grayscale — Spread the Word stays the lone color anchor",

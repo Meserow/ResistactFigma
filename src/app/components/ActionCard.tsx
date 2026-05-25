@@ -173,33 +173,10 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
     );
   }
 
-  // ── Boost button — sibling of CompletionPill in style. Used as the image
-  //    overlay (translucent white pill) and as the inline action when there
-  //    is no header image.
-  function BoostButton({ onImage = false }: { onImage?: boolean }) {
-    const boostedClasses = "bg-[#ed6624]/80 text-white shadow-md";
-    const idleOnImageClasses =
-      "bg-white/85 backdrop-blur-sm text-[#ed6624] shadow-sm hover:bg-white";
-    const idleOffImageClasses =
-      "bg-[#ed6624]/10 text-[#ed6624] hover:bg-[#ed6624]/20";
-
-    return (
-      <button
-        onClick={(e) => { e.stopPropagation(); onBoost?.(card.id); }}
-        aria-label={isBoosted ? "Boosted" : "Boost"}
-        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] font-bold text-[12px] whitespace-nowrap shrink-0 transition-all ${
-          isBoosted ? boostedClasses : (onImage ? idleOnImageClasses : idleOffImageClasses)
-        }`}
-      >
-        <span aria-hidden>🔥</span>
-        <span>{isBoosted ? "Boosted!" : "Boost"}</span>
-        {(() => {
-          const n = Math.max(card.boosts ?? 0, isBoosted ? 1 : 0);
-          return n > 0 ? <span className="opacity-80">· {n.toLocaleString()}</span> : null;
-        })()}
-      </button>
-    );
-  }
+  // Boost button used to live here as both an image overlay and an
+  // inline action; it now lives only inside CardDetailsModal so the
+  // card grid stays calm. onBoost / isBoosted props are still passed
+  // through to the modal.
 
   // ── Floating share button (top-right of content area, below image) ───────
   function FloatingShareButton() {
@@ -321,13 +298,10 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
               {!compact && <TimeBadge light={true} />}
               <TopControls light={true} />
             </div>
-            {/* Spread the Word (pinToTop) doesn't show a boost — boosting yourself
-                doesn't make sense; share is the action. */}
-            {!card.pinToTop && (
-              <div className="absolute bottom-2 left-3 z-10">
-                <BoostButton onImage />
-              </div>
-            )}
+            {/* Boost lives only inside the card-details modal now — keeping
+                it off the card itself declutters the grid; users still
+                get to it after opening the card. Spread the Word never
+                showed a boost anyway. */}
           </div>
 
           {/* Content */}
@@ -486,13 +460,10 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
             </div>
           )}
 
-          {/* "I did this" — hidden in compact preview mode and on the
-              Spread the Word pin (boosting yourself doesn't make sense). */}
-          {!compact && !card.pinToTop && (
-            <div className="absolute bottom-2 left-3 z-10">
-              <BoostButton onImage />
-            </div>
-          )}
+          {/* Boost button used to sit here as an image overlay; it's been
+              moved into the card-details modal only, so the grid stays
+              calm and the modal becomes the single place to take action
+              (link out, "I did this!", boost). */}
         </div>
 
         {/* Content */}
