@@ -185,12 +185,13 @@ export const GAMIFICATION_KEYFRAMES = `
      fallback logo is already light and stays as-is.
        .resistact-banner-host  → outer card wrapper, the hover target
        .resistact-banner-desat → the banner <img> itself
-     Tweak the 0.55 to taste:
+     Tweak the value to taste:
        0.70 = subtle, "still colored just less neon"
-       0.55 = noticeably muted, magazine feel (current default)
-       0.30 = strong, editorial */
+       0.55 = noticeably muted, magazine feel
+       0.35 = strong, editorial (current default)
+       0.20 = nearly grayscale */
   .resistact-banner-desat {
-    filter: saturate(0.55);
+    filter: saturate(0.35);
     transition: filter 250ms ease-out;
   }
   .resistact-banner-host:hover .resistact-banner-desat {

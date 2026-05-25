@@ -842,9 +842,16 @@ export default function App() {
   // Drives the Category pills in the navbar — built from approved cards only
   // so no empty-result pills appear.
   const dynamicCategories = useMemo(() => {
+    // Pass every category through normaliseCategory again before deduping.
+    // resolveCard already does this when cards enter state, but writing the
+    // dedupe at the chip-render layer is cheap insurance against any code
+    // path that creates an ActionCardData without going through resolveCard
+    // (or against stale module / HMR glitches that leave a raw "BOOST"
+    // alongside a normalized "Boost"). Without this, the navbar's category
+    // pill row would render both "BOOST" and "Boost" as separate chips.
     const set = new Set<string>();
     for (const c of approvedCards) {
-      const cat = (c.category ?? "").trim();
+      const cat = normaliseCategory(c.category);
       if (cat) set.add(cat);
     }
     return Array.from(set).sort();

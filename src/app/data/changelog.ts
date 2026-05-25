@@ -16,6 +16,32 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.56",
+    date: "2026-05-25",
+    title: "Stronger card-banner fade — editorial feel",
+    sections: [
+      {
+        heading: "Visual",
+        items: [
+          "Pushed the card-banner desaturation from 0.55 to 0.35 so the grid reads calmer — the photos hold their shape but stop fighting each other for attention. Hover still pops a focused card back to full color.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.55",
+    date: "2026-05-25",
+    title: "Fixed duplicate ALL-CAPS + Title-Case category pills",
+    sections: [
+      {
+        heading: "Bug fix",
+        items: [
+          "Category pill row was showing both \"BOOST\" and \"Boost\", \"CRAFTING\" and \"Crafting\", \"ART PIECE\" and \"Art/Performance Art\", etc — because some upstream cards were skipping the per-card category normalization that resolveCard does. Added a defensive normalizing pass at the chip-render layer so all variants fold into the canonical title-case bucket before deduplication. Pill list should read as one chip per category now.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.54",
     date: "2026-05-25",
     title: "Call/Write → Call · scroll nudge button reworded",
