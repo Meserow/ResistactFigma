@@ -16,6 +16,28 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.50",
+    date: "2026-05-25",
+    title: "Category cleanup — 30+ Acts redistributed, color drift fixed",
+    sections: [
+      {
+        heading: "Category cleanup",
+        items: [
+          "Untangled the catch-all gray CALL/WRITE bucket. 19 Acts redistributed to their proper homes: 11 to Social Media (TikTok films, quote-tweets, Threads posts, screenshot-and-post actions), 4 to Letter Writing (postcards to officials + formal public comments on federal rules), 1 to Letter to Editor, 3 to Call/Write (the actual phone calls + the United We Dream text-bank shift).",
+          "Merged the BOOST color split. The 72 \"Follow & boost @handle.bsky.social\" bulk-imported Bluesky cards were rendering in gray while the original \"Subscribe + share <newsroom>\" Boost cards rendered in purple. Same concept, just import drift — unified everything to the purple #8a00e6 swatch.",
+          "Fixed the Personal Commitment color split. 4 Acts (save threatened gov pages, banned-book reading, election reminders, No War Is Holy sticker) were drifting in Protest-blue; now consistent with the rest of the category in purple.",
+          "Fixed 7 single-card color outliers + mis-categorizations: an Epstein Protest Walk Interest Meeting was the wrong blue; an FFI volunteer card and FFI alert-subscription card had color drift; a DOJ-accredited rep training card was off-color; a Faith in Action federation card was tagged PRAYER instead of Join a Group; a #DivestMusk pension resolution card was tagged Letter Writing instead of Join a Group; a Twin Cities organizing panel was the wrong shade of green; the lone \"Video\" category card was folded into Social Media.",
+        ],
+      },
+      {
+        heading: "Under the hood",
+        items: [
+          "Added 10 missing entries to the bulk-import category-color table (BOOST, CALL/WRITE, LETTER WRITING, FLASH MOB, PURCHASE, plus the catch-all gray categories) so future weekly imports stay on-color instead of drifting back to whatever the harvest pipeline picks.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.49",
     date: "2026-05-25",
     title: "Smacks tag pills match Acts + Facts styling",
