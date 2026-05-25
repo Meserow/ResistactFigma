@@ -16,6 +16,33 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.58",
+    date: "2026-05-25",
+    title: "Self-link \"go follow this author\" cards sent back to admin review",
+    sections: [
+      {
+        heading: "Admin / data",
+        items: [
+          "Added a one-time server-side migration that un-approves every card whose author link points to the same place as its action URL — i.e. \"go follow @handle\" cards where the only action is to visit the author's own profile. URL match is normalized (trim, lowercase, strip trailing slash, ignore http vs https). The flagged cards land back in admin review so the team can decide which ones genuinely earn a slot under the 10% boost-only cap.",
+          "Takes effect on next Edge Function deploy. Runs once and is gated behind a version key.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.57",
+    date: "2026-05-25",
+    title: "Fixed broken \"Resistance starter pack\" Bluesky card",
+    sections: [
+      {
+        heading: "Data fix",
+        items: [
+          "The \"Subscribe to a 50-person Resistance starter pack\" card on Bluesky had a generic URL pointing to the 50501 profile instead of a real starter pack. Verified via Bluesky's API and updated to 50501's actual \"Voices of the Resistance\" starter pack (123 vetted journalists / experts / organizers). Retitled accordingly and noted the alternate \"50501: The People's Movement\" pack (26 organizers) in the description.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.56",
     date: "2026-05-25",
     title: "Stronger card-banner fade — editorial feel",

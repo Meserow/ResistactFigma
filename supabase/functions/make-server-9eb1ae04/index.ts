@@ -3708,6 +3708,53 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       console.log(`Renamed ${updated} cards: Call/Write → Call.`);
     }
 
+    // One-time: un-approve every card whose authorLink points to the same
+    // place as targetUrl. These are "go follow / boost the author" cards
+    // where the action is just visiting the author's own profile — a soft
+    // boost-only pattern that crept past approval. Flipping adminApproved
+    // back to false pulls them out of the public feed and back into
+    // admin review so the team can decide which ones earn their slot
+    // (per the 10% boost-only cap in docs/INBOX_IMPORT.md).
+    //
+    // URL match is normalized: trim, lowercase, strip a single trailing
+    // slash, and ignore http vs https. This catches near-duplicates like
+    // https://x.com vs https://x.com/ or HTTP vs HTTPS variants without
+    // false-positiving on different paths or query strings.
+    const unapproveSelfLinkDone = await getMigrationFlag("cleanup:unapprove-self-link-cards:v1");
+    if (!unapproveSelfLinkDone) {
+      const normalizeUrl = (u: unknown): string => {
+        if (typeof u !== "string") return "";
+        let s = u.trim().toLowerCase();
+        if (!s) return "";
+        s = s.replace(/^https?:\/\//, "");
+        if (s.endsWith("/")) s = s.slice(0, -1);
+        return s;
+      };
+      let unapproved = 0;
+      const flippedIds: number[] = [];
+      for (const prefix of ["action:", "user-action:"]) {
+        const all = (await kv.getByPrefix(prefix)) as any[];
+        for (const card of all) {
+          if (!card || typeof card !== "object" || typeof card.id !== "number") continue;
+          if (card.adminApproved === false) continue; // already pending — skip
+          const a = normalizeUrl(card.authorLink);
+          const t = normalizeUrl(card.targetUrl);
+          if (!a || !t) continue;
+          if (a !== t) continue;
+          await kv.set(`${prefix}${card.id}`, {
+            ...card,
+            adminApproved: false,
+            updatedAt: new Date().toISOString(),
+            updatedBy: "cleanup:unapprove-self-link",
+          });
+          flippedIds.push(card.id);
+          unapproved++;
+        }
+      }
+      await setMigrationFlag("cleanup:unapprove-self-link-cards:v1");
+      console.log(`Un-approved ${unapproved} self-link cards (authorLink ≈ targetUrl). IDs: ${flippedIds.join(", ")}`);
+    }
+
     // PERF: in-process cache + parallel KV reads. The catalog (~600 cards)
     // changes infrequently relative to read traffic (admins approve cards
     // every few minutes; boosts trickle; user submissions are sparse), so
