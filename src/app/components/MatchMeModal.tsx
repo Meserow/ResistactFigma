@@ -251,7 +251,15 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJo
     // ResistAct" card (and any other pinToTop card) — it's omnipresent at
     // the top of the live feed, so showing it as a Quick Match here is
     // redundant and crowds out actual matched picks.
-    const eligible = cards.filter((c) => !c.pinToTop);
+    //
+    // Also excludes cards that fall back to the generic ResistAct logo
+    // banner (no topImage). Those look identical to each other in the
+    // carousel and undersell the matcher; users complained that Quick
+    // Match looked broken when several placeholder cards stacked up.
+    // A fallback below re-includes them if filtering thins the pool too
+    // far to fill the carousel.
+    const hasRealImage = (c: ActionCardData) => !!(c.topImage ?? "").trim();
+    const eligible = cards.filter((c) => !c.pinToTop && hasRealImage(c));
     const ranked = rankCards(eligible, prefs, carouselCtx);
     // completedIds is typed Set<number> | number[]; normalise to a check
     // that works on either shape. Still used below to skip cards the user

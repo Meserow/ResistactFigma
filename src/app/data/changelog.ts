@@ -16,6 +16,25 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.51",
+    date: "2026-05-25",
+    title: "Cleaner card art — location pill no longer cuts across the logo, Quick Match skips placeholder cards",
+    sections: [
+      {
+        heading: "Card layout",
+        items: [
+          "Fixed the location pill cutting across the ResistAct logo on cards without their own art. The pill now caps at 55% of the card width with a tidy ellipsis instead of stretching across the banner — long sentence-style location values from older imports no longer collide with the centered fallback logo.",
+        ],
+      },
+      {
+        heading: "Quick Match",
+        items: [
+          "Quick Match no longer fills the carousel with cards that fall back to the generic ResistAct logo banner. Cards with real banner art are prioritized; placeholder-image cards only show up if filtering would otherwise leave the carousel under-full.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.50",
     date: "2026-05-25",
     title: "Category cleanup — 30+ Acts redistributed, color drift fixed",
