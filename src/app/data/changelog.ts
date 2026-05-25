@@ -16,6 +16,78 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.12",
+    date: "2026-05-25",
+    title: "MAJOR BUG FIX: dozens of card images that looked \"missing\" now show",
+    sections: [
+      {
+        heading: "Critical bug fix",
+        items: [
+          "ResistAct's image component was silently breaking every card banner that pointed to a JPG/PNG in the public/ folder unless that image happened to have a sibling .webp file. It assumed all images had webp pairs (only the Smacks did), built a <picture> element pointing at the missing .webp, the browser tried to load it, got a 404, and didn't fall back to the perfectly-good .jpg next to it. Result: dozens of cards (Pretti Good beanie, ACLU, 5 Calls, MoveOn, Indivisible, Mobilize, every Tesla Takedown org logo, etc.) looked imageless even though the actual image files were intact on disk and on S3.",
+          "Disabled the auto-webp logic until we add a real build-time webp generator. All affected cards should immediately show their banner image again on hard reload.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.11",
+    date: "2026-05-25",
+    title: "5 Minutes Max + Location stacked vertically",
+    sections: [
+      {
+        heading: "Navigation",
+        items: [
+          "On the Acts page, the \"5 Minutes Max\" toggle and the \"Location\" dropdown now sit stacked in one narrow column instead of taking two horizontal slots. Reclaims more space so the category pill row spreads out further before wrapping.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.10",
+    date: "2026-05-25",
+    title: "Library counts moved to the footer",
+    sections: [
+      {
+        heading: "Navigation",
+        items: [
+          "The \"661 acts · 102 facts · 36 smacks\" stats no longer take up real estate at the top right of the navbar. They now sit calmly above the copyright in the footer, freeing horizontal space so the category pill row stays readable.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.9",
+    date: "2026-05-25",
+    title: "Categories wrap to multiple rows + no more imageless cards on the public feed",
+    sections: [
+      {
+        heading: "Navigation",
+        items: [
+          "Category pills now wrap to as many rows as needed (usually two) instead of trying to fit on one horizontally-scrolling line. You see every category at a glance.",
+        ],
+      },
+      {
+        heading: "Bug fix",
+        items: [
+          "Cards without a header image will no longer show on the public Acts feed. Tightened the approval gate two ways: (1) cards now have to be explicitly `adminApproved: true` (not just missing the false flag), and (2) any imageless card is hidden from non-admin viewers as a defense-in-depth guard. Admins still see imageless cards in the Pending tab so they can add an image.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.8",
+    date: "2026-05-25",
+    title: "\"Show completed acts\" moved into the Sort menu",
+    sections: [
+      {
+        heading: "Navigation",
+        items: [
+          "The \"Show Done\" toggle no longer takes up its own slot in the filter row. It now lives inside the Sort dropdown (with a divider line above it) so the top bar stays focused on filters. Only shows up once you've actually marked an Act as done.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.7",
     date: "2026-05-25",
     title: "Stale browser cache can no longer flash deleted/pending cards",

@@ -569,8 +569,21 @@ export default function App() {
     const gated = cards.filter((card) => {
       // Hide expired events from everyone
       if (card.eventDate && card.eventDate < todayISO) return false;
-      // Hide unapproved cards from non-admins — admins see them with a PENDING badge
-      if (card.adminApproved === false && !isAdminUser) return false;
+      // Hide unapproved cards from non-admins. Tightened from `=== false` to
+      // `!== true` so cards with `adminApproved: undefined` ALSO get hidden
+      // from the public — explicit approval is required, not just absence of
+      // an explicit false. Admins still see everything (with a PENDING badge
+      // on the unapproved ones).
+      if (card.adminApproved !== true && !isAdminUser) return false;
+      // Defense in depth: even an approved card hidden from public if it has
+      // no image. Server-side `approved-without-image-cleanup` migration is
+      // the authoritative fix, but until that's redeployed and re-run, this
+      // client-side guard stops imageless cards from leaking onto the public
+      // feed. Admins still see them so they can review + add an image.
+      if (!isAdminUser) {
+        const hasImage = Boolean((card as any).topImageUrl) || Boolean((card as any).topImageKey) || Boolean((card as any).topImage);
+        if (!hasImage) return false;
+      }
       // Completed cards stay in the feed but get sorted to the bottom (see
       // `completedLast` below) so users can still find things they've done
       // without them dominating the top.
@@ -2000,6 +2013,28 @@ export default function App() {
 
       {/* Footer */}
       <footer className="mt-12 border-t border-gray-200 py-8 px-8 text-center">
+        {/* Library size stats (moved here from the navbar to reclaim space for
+            the category pill row). Same data, same dot colors, just calmer. */}
+        <div className="flex items-center justify-center gap-5 mb-4">
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-[#ed6624]" />
+            <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
+              <strong className="text-[#23297e] font-bold">{synced ? displayedCards.length : "—"}</strong>{" "}acts
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-[#127f05]" />
+            <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
+              <strong className="text-[#127f05] font-bold">{FACT_CARDS.length}</strong>{" "}facts
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-[#23297e]" />
+            <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
+              <strong className="text-[#23297e] font-bold">{receipts.length + STATIC_SMACKS.length}</strong>{" "}smacks
+            </span>
+          </div>
+        </div>
         <p className="font-['Poppins',sans-serif] text-sm text-gray-400">
           © 2026 ResistAct · Building grassroots resistance, one act at a time.
         </p>
