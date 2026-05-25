@@ -304,8 +304,8 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           // haven't asked the OS for reduced motion (vestibular safety).
           // hover:z-10 keeps the lifted card painting above its neighbors
           // in the grid rather than getting clipped at edges.
-          className={`resistact-card-shine resistact-banner-host bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:shadow-lg motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10 ${card.pinToTop ? "cursor-pointer" : ""}`}
-          onClick={card.pinToTop ? () => setShareOpen(true) : undefined}
+          className={`resistact-card-shine resistact-banner-host cursor-pointer bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:shadow-lg motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10`}
+          onClick={card.pinToTop ? () => setShareOpen(true) : () => setDetailsOpen(true)}
         >
           {/* Illustration — use uploaded image if available, else navy illustration */}
           {/* `resistact-anim-shimmer` overlays a diagonal highlight sweep on
@@ -332,16 +332,12 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
 
           {/* Content */}
           <div className={`relative flex flex-col flex-1 ${compact ? "gap-1 px-3 pb-2 pt-1.5" : "gap-2 px-4 pb-4 pt-3"}`}>
-            <span className={`font-['Poppins',sans-serif] font-bold uppercase tracking-wider ${compact ? "text-[10px]" : "text-[11px]"}`} style={{ color: card.categoryColor }}>
+            <span className={`font-['Poppins',sans-serif] font-bold tracking-wide ${compact ? "text-[10px]" : "text-[11px]"}`} style={{ color: card.categoryColor }}>
               {card.category}
             </span>
 
             <h3 className={`font-['Poppins',sans-serif] font-bold text-gray-900 leading-snug ${compact ? "text-[13px]" : "text-[15px]"}`}>
-              {(card.targetUrl || card.authorLink) ? (
-                <a href={card.targetUrl ?? card.authorLink} target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-[#23297e] transition-colors">
-                  {card.title}
-                </a>
-              ) : card.title}
+              {card.title}
             </h3>
 
             <p className="font-['Poppins',sans-serif] text-[13px] text-gray-600 leading-relaxed line-clamp-2 flex-1">
@@ -385,6 +381,10 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
             card={card}
             onClose={() => setDetailsOpen(false)}
             onShare={card.pinToTop ? () => setShareOpen(true) : undefined}
+            onComplete={card.pinToTop ? undefined : onComplete}
+            isCompleted={isCompleted}
+            onBoost={card.pinToTop ? undefined : onBoost}
+            isBoosted={isBoosted}
           />
         )}
         {flagOpen && (
@@ -399,7 +399,16 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
     <>
       {/* Hover state: see the featured-card branch above for rationale.
           Same lift + scale + microtilt, gated behind motion-safe. */}
-      <div className={`resistact-banner-host bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:shadow-lg motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10 ${isPending ? "ring-2 ring-red-400" : ""}`}>
+      {/* Whole card opens the Read More modal. Inner buttons (boost,
+          bookmark, share, edit, "I did this!") still work because they
+          call e.stopPropagation() before their own handlers. The modal
+          itself carries the primary action (link out), the I-did-this
+          toggle, and the boost — so the card preview-then-act flow lives
+          end-to-end in the modal. */}
+      <div
+        onClick={() => setDetailsOpen(true)}
+        className={`resistact-banner-host cursor-pointer bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:shadow-lg motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10 ${isPending ? "ring-2 ring-red-400" : ""}`}
+      >
         {/* ── Admin: pending approval banner ── */}
         {isPending && !compact && (
           <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-red-50 border-b border-red-200 shrink-0">
@@ -442,17 +451,9 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
           )}
 
-          {/* Stretched link — image area opens the same URL as the title.
-              Placed before badges/buttons so they remain clickable. */}
-          {(card.targetUrl || card.authorLink) && (
-            <a
-              href={card.targetUrl ?? card.authorLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={card.title}
-              className="absolute inset-0"
-            />
-          )}
+          {/* Stretched link removed — the whole card now opens the Read
+              More modal instead of going directly to the external URL.
+              The modal carries the link-out as its primary action button. */}
 
           {/* Pencil + Bookmark — hidden in compact preview mode. Dark icons
               on the brand fallback (light bg); white icons on photos. */}
@@ -470,12 +471,15 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
             </div>
           )}
 
-          {/* Location badge on image */}
+          {/* Location badge on image — white pill with dark-gray text for
+              better readability against varied banner photos (the previous
+              black/50 backdrop disappeared on dark photos and felt heavy on
+              light ones). */}
           {(card.isOnline || card.location) && (
-            <div className="absolute bottom-2 right-3 flex items-center gap-1 bg-black/50 backdrop-blur-sm rounded-md px-2 py-0.5">
+            <div className="absolute bottom-2 right-3 flex items-center gap-1 bg-white/95 backdrop-blur-sm rounded-md px-2 py-0.5 shadow-sm">
               {card.isOnline
-                ? <><Globe size={11} className="text-white" /><span className="font-['Poppins',sans-serif] text-[11px] text-white">Online</span></>
-                : <><MapPin size={11} className="text-white" /><span className="font-['Poppins',sans-serif] text-[11px] text-white">{card.location}</span></>
+                ? <><Globe size={11} className="text-gray-700" /><span className="font-['Poppins',sans-serif] text-[11px] text-gray-700">Online</span></>
+                : <><MapPin size={11} className="text-gray-700" /><span className="font-['Poppins',sans-serif] text-[11px] text-gray-700">{card.location}</span></>
               }
             </div>
           )}
@@ -496,7 +500,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
 
           {/* Category */}
           <span
-            className={`font-['Poppins',sans-serif] font-bold uppercase tracking-wider ${compact ? "text-[10px]" : "text-[11px]"}`}
+            className={`font-['Poppins',sans-serif] font-bold tracking-wide ${compact ? "text-[10px]" : "text-[11px]"}`}
             style={{ color: card.categoryColor }}
           >
             {card.category}
@@ -504,11 +508,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
 
           {/* Title */}
           <h3 className={`font-['Poppins',sans-serif] font-bold text-gray-900 leading-snug ${compact ? "text-[13px]" : "text-[15px] pr-8"}`}>
-            {(card.targetUrl || card.authorLink) ? (
-              <a href={card.targetUrl ?? card.authorLink} target="_blank" rel="noopener noreferrer" className="hover:underline hover:text-[#23297e] transition-colors">
-                {card.title}
-              </a>
-            ) : card.title}
+            {card.title}
           </h3>
 
           {/* Description — line-clamp without flex-1 in compact so the clamp
@@ -541,7 +541,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           {isDescriptionLong && (
             <button
               onClick={(e) => { e.stopPropagation(); setDetailsOpen(true); }}
-              className="self-end font-['Poppins',sans-serif] italic text-[12px] font-normal text-[#23297e] hover:underline"
+              className="self-end font-['Poppins',sans-serif] italic text-[12px] font-normal text-[#ed6624] underline underline-offset-2 decoration-[#ed6624]/40 hover:decoration-[#ed6624]"
             >
               Read more →
             </button>
@@ -587,7 +587,14 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
         <ShareModal cardId={card.id} title={card.title} description={card.description} onClose={() => setShareOpen(false)} />
       )}
       {detailsOpen && (
-        <CardDetailsModal card={card} onClose={() => setDetailsOpen(false)} />
+        <CardDetailsModal
+          card={card}
+          onClose={() => setDetailsOpen(false)}
+          onComplete={onComplete}
+          isCompleted={isCompleted}
+          onBoost={onBoost}
+          isBoosted={isBoosted}
+        />
       )}
       {flagOpen && (
         <FlagCardModal cardId={card.id} cardTitle={card.title} accessToken={accessToken} onClose={() => setFlagOpen(false)} />

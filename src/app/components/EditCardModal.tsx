@@ -17,19 +17,32 @@ const SELECT_CLS = (val: string | null | undefined) =>
   `${INPUT_BASE} !pr-10 ${val ? "text-gray-800" : "text-gray-400 italic"}`;
 
 // ─── Category list — kept in sync with AskFlowModal ───────────────────────────
+// Alphabetical order so editors can find labels quickly. Includes every
+// category that exists in production card data plus "Other" as a catch-all.
+// Production-data audit ran via /actions API on 2026-05-25 informed this
+// list (previously was missing Show Up, Host, Witness, Call/Write, Learn,
+// Bird-Dog, Letter Writing, Irreverence — combined ~150 active cards).
+// "Art Piece" intentionally NOT a separate option — it merges into
+// Art/Performance Art via normaliseCategory in App.tsx.
 const CATEGORY_OPTIONS: { label: string; color: string }[] = [
   { label: "Act of Kindness",      color: "#127f05" },
   { label: "Art/Performance Art",  color: "#896312" },
+  { label: "Bird-Dog",             color: "#5a3e9e" },
   { label: "Boost",                color: "#8a00e6" },
   { label: "Boycott",              color: "#23297e" },
+  { label: "Call/Write",           color: "#c2185b" },
   { label: "Crafting",             color: "#c34e00" },
   { label: "Email Campaign",       color: "#e44b4b" },
   { label: "Flash Mob",            color: "#ff00d5" },
   { label: "Funding",              color: "#127f05" },
+  { label: "Host",                 color: "#b45309" },
   { label: "Housing",              color: "#896312" },
+  { label: "Irreverence",          color: "#ff00d5" },
   { label: "Join a Group",         color: "#0891b2" },
   { label: "Labor",                color: "#127f05" },
+  { label: "Learn",                color: "#126d89" },
   { label: "Letter to Editor",     color: "#c34e00" },
+  { label: "Letter Writing",       color: "#c34e00" },
   { label: "Meeting",              color: "#23297e" },
   { label: "Mental Health",        color: "#ff00d5" },
   { label: "News Story",           color: "#896312" },
@@ -37,12 +50,15 @@ const CATEGORY_OPTIONS: { label: string; color: string }[] = [
   { label: "Petition",             color: "#05737f" },
   { label: "Prayer",               color: "#8a00e6" },
   { label: "Professional Skills",  color: "#126d89" },
-  { label: "Purchase",             color: "#b45309" },
   { label: "Protest",              color: "#23297e" },
+  { label: "Purchase",             color: "#b45309" },
+  { label: "Show Up",              color: "#23297e" },
   { label: "Social Media",         color: "#e44b4b" },
   { label: "Spread Positivity",    color: "#8a00e6" },
   { label: "Training",             color: "#126d89" },
   { label: "Transportation",       color: "#126d89" },
+  { label: "Video",                color: "#e44b4b" },
+  { label: "Witness",              color: "#767574" },
   { label: "Other",                color: "#767574" },
 ];
 
