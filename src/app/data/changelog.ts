@@ -16,6 +16,196 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.43",
+    date: "2026-05-25",
+    title: "Renamed the match-tool button",
+    sections: [
+      {
+        heading: "Hero",
+        items: [
+          "Button label changed from \"Quick Act Matching Tool\" → \"Refine Your Matches\" with subtitle \"Your preferences stay saved.\" The new copy hints at persistence and refinement rather than novelty.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.42",
+    date: "2026-05-25",
+    title: "Quick Match preview: dialed description back to 3 lines",
+    sections: [
+      {
+        heading: "Quick Match",
+        items: [
+          "Reverted Quick Matches preview tile description from 4 lines to 3 — 4 was overflowing without leaving room for Read more. 3-line clamp + 140-char Read more threshold reads as a balanced summary.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.41",
+    date: "2026-05-25",
+    title: "News Story moved to Other",
+    sections: [
+      {
+        heading: "Quick Match",
+        items: [
+          "Moved News Story out of the \"Reach Out\" chip group and into \"Other\" — it's a consume-and-share action, not an outbound contact action like the other Reach Out chips.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.40",
+    date: "2026-05-25",
+    title: "Quick Match preview cards show more description",
+    sections: [
+      {
+        heading: "Quick Match",
+        items: [
+          "Preview cards in the Quick Matches grid (compact mode) now show up to 4 lines of description instead of 2. \"Read more →\" only kicks in for descriptions over ~200 chars (was 90). Fills the tile's vertical space rather than leaving a gap above the I-did-this row.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.39",
+    date: "2026-05-25",
+    title: "State picker moved to page 1 + alphabetized category chips",
+    sections: [
+      {
+        heading: "Quick Match",
+        items: [
+          "State dropdown (\"Your state — optional, for in-person nearby\") moved from page 2 of the wizard to page 1 directly under the Location slider, so all location-shaped settings live together.",
+          "Category chips within each Match-these group row are now alphabetized — Make/Do reads Art/Performance Art → Boycott → Crafting → Flash Mob → Protest → Video, and so on for every row. Easier to scan than the previous curated order.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.38",
+    date: "2026-05-25",
+    title: "Quick Match: two clean pages, no more Skip-these",
+    sections: [
+      {
+        heading: "Quick Match",
+        items: [
+          "Removed the \"Skip these\" section entirely. The positive \"Match these\" picker covers the same intent without the cognitive load of ticking 22 things to exclude one.",
+          "Tone sliders (anger / comedy / subversion / hope / energy) moved to page 2 of the wizard under a \"Sharpen your matches — dial in tone\" header. Page 1 is now focused: Time + Location + Match these categories + Quick Matches preview. Page 2 is refinement: tone + identity (vulnerable groups).",
+          "Boost category moved from \"Money / Stuff\" to \"Care\" in the category chip grid.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.37",
+    date: "2026-05-25",
+    title: "Quick Match flow reordered + Video in Make/Do",
+    sections: [
+      {
+        heading: "Quick Match",
+        items: [
+          "Step 0 reorganized so the wizard flows in priority order: Time + Location at the top (the two fundamentals), then category pickers (Match these / Skip these), then tone sliders in a new \"Sharpen your matches — dial in tone\" section. Tone is refinement, so it lives below the things that decide what shows at all.",
+          "Renamed the \"Sharpen your matches\" CTA button to \"Tell us more about you\" so it doesn't collide with the new section header. Button still leads to step 1 (vulnerable groups).",
+          "Video category moved from the catch-all \"Other\" group into \"Make / Do\" alongside Crafting / Art/Performance Art / Flash Mob / Protest / Boycott.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.36",
+    date: "2026-05-25",
+    title: "Witness + Bird-Dog grouped under Show Up",
+    sections: [
+      {
+        heading: "Quick Match",
+        items: [
+          "Witness and Bird-Dog moved into the \"Show Up\" chip group alongside Meeting, Join a Group, Training, Professional Skills, and Labor. Also included the explicit \"Show Up\" category itself so it lives next to its theme.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.35",
+    date: "2026-05-25",
+    title: "Quick Matches cleanup",
+    sections: [
+      {
+        heading: "Quick Match",
+        items: [
+          "\"Spread the Word about ResistAct\" no longer appears in Quick Matches. It's pinned at the top of the live feed already; surfacing it here too crowded out actual matched picks.",
+          "Boycott moved from \"Other\" to \"Make / Do\" in the category chip grid (where Crafting / Protest / Flash Mob / Art/Performance Art live).",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.34",
+    date: "2026-05-25",
+    title: "Call/Write + Letter Writing grouped under \"Reach Out\"",
+    sections: [
+      {
+        heading: "Quick Match",
+        items: [
+          "Quick Match category chip grid now groups Call/Write and Letter Writing under \"Reach Out\" alongside Petition / Email Campaign / Letter to Editor / News Story / Social Media. Previously these were in the synthetic \"Other\" fallback bucket because they hadn't been explicitly placed.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.33",
+    date: "2026-05-25",
+    title: "Phone Acts filters actually work now",
+    sections: [
+      {
+        heading: "Critical bug fix",
+        items: [
+          "On mobile (below 768px), the Acts page filter row was rendering visual placeholder buttons that DID NOTHING — no onClick, no dropdown, no state. Users could see Category / Location / etc. labels but tapping them was a dead end. Replaced with working Category dropdown, Location dropdown, Remote Only toggle, and 5 Min Max toggle. Bug had been latent since the mobile filter row was first added.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.32",
+    date: "2026-05-25",
+    title: "Quick Match: pick categories you want, + thumbs-up button",
+    sections: [
+      {
+        heading: "Quick Match",
+        items: [
+          "New \"Match these categories\" picker in the wizard. Pick one or more categories (e.g. Crafting + Protest + Petition) and the matcher hard-filters to only those. Leave blank for \"any category.\" Picking a category here removes it from the \"Skip these\" list automatically (they're contradictory).",
+          "Matcher algorithm updated: `score()` now drops to 0 for cards whose category isn't in the user's `includedCategories` picks, the same way it already drops to 0 for excluded categories. Hard filter at the engine layer — both the matched feed AND the Quick Matches preview respect it.",
+          "Thumbs-up \"Great match\" button added next to the existing thumbs-down on each Quick Matches tile. Clicking turns the button into a soft-green \"Thanks!\" confirmation; the corresponding thumbs-down disables to prevent contradictory feedback on the same card.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.31",
+    date: "2026-05-25",
+    title: "Picking a state turns Remote Only off",
+    sections: [
+      {
+        heading: "Navigation",
+        items: [
+          "Location filter: adding a state in the dropdown now automatically unchecks Remote Only — picking a state implies in-person, which contradicts \"online only.\" Clicking Remote Only when states are already picked still just adds Remote without disturbing them, so users can opt back into both if they want.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.30",
+    date: "2026-05-25",
+    title: "Modal CTA anchored to the right",
+    sections: [
+      {
+        heading: "Read more modal",
+        items: [
+          "\"I want to ResistAct! →\" now anchors to the right side of the action row. \"I did this!\" and Boost cluster on the left. The eye lands on the primary call-to-action last. On narrow viewports the row stacks gracefully.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.29",
     date: "2026-05-25",
     title: "Push checkpoint — May 25 batch",

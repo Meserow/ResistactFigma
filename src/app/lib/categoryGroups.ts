@@ -16,30 +16,35 @@ export interface CategoryGroup {
   categories: string[];
 }
 
+// Categories within each row are kept ALPHABETIZED — easier to scan, and
+// the user doesn't have to remember where a category sits in an arbitrary
+// curated order. New categories: just drop them into the right group and
+// re-sort the array (or rely on `Array#sort` at the call site — but the
+// data here is the source of truth).
 export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     heading: "Make / Do",
-    categories: ["Crafting", "Art/Performance Art", "Flash Mob", "Protest"],
+    categories: ["Art/Performance Art", "Boycott", "Crafting", "Flash Mob", "Protest", "Video"],
   },
   {
     heading: "Reach Out",
-    categories: ["Petition", "Email Campaign", "Letter to Editor", "News Story", "Social Media"],
+    categories: ["Call/Write", "Email Campaign", "Letter to Editor", "Letter Writing", "Petition", "Social Media"],
   },
   {
     heading: "Show Up",
-    categories: ["Meeting", "Join a Group", "Training", "Professional Skills", "Labor"],
+    categories: ["Bird-Dog", "Join a Group", "Labor", "Meeting", "Professional Skills", "Show Up", "Training", "Witness"],
   },
   {
     heading: "Care",
-    categories: ["Act of Kindness", "Mental Health", "Spread Positivity", "Prayer"],
+    categories: ["Act of Kindness", "Boost", "Mental Health", "Prayer", "Spread Positivity"],
   },
   {
     heading: "Money / Stuff",
-    categories: ["Funding", "Purchase", "Boost", "Housing", "Transportation"],
+    categories: ["Funding", "Housing", "Purchase", "Transportation"],
   },
   {
     heading: "Other",
-    categories: ["Boycott", "Personal Commitment", "Other"],
+    categories: ["News Story", "Other", "Personal Commitment"],
   },
 ];
 

@@ -210,9 +210,22 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
 
   function toggleFilterOption(filterName: string, option: string) {
     const current = activeFilters[filterName] ?? [];
-    const next = current.includes(option)
-      ? current.filter((s) => s !== option)
-      : [...current, option];
+    const isAdding = !current.includes(option);
+    let next = isAdding
+      ? [...current, option]
+      : current.filter((s) => s !== option);
+
+    // ── Location: one-way exclusion of "Remote" ───────────────────────────
+    // The Remote Only pill and the Location dropdown share the underlying
+    // filter array. Adding a state implicitly means "I want in-person stuff
+    // in this state," which contradicts the Remote pill being on — so
+    // adding any non-Remote location drops Remote. Clicking Remote Only
+    // when states are checked still just adds Remote without disturbing the
+    // state picks (so the user can opt back into both if they want).
+    if (filterName === "Location" && isAdding && option !== "Remote") {
+      next = next.filter((s) => s !== "Remote");
+    }
+
     onFilterChange(filterName, next);
   }
 
@@ -985,12 +998,139 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
             })()}
           </div>
         ) : (
+          /* ── Mobile Acts filter row — Category dropdown + Location dropdown
+              + Remote Only + 5 Min Max toggles. The previous version here
+              rendered placeholder buttons with NO onClick handlers — the
+              user could see filters but tapping them did nothing. ───── */
           <div className="flex gap-1.5 overflow-x-auto px-4 pb-2" style={{ scrollbarWidth: "none" }}>
-            {Object.keys(ACTS_FILTER_OPTIONS).map((f) => (
-              <button key={f} className="flex-none flex items-center gap-1 px-3 py-1 bg-white border border-gray-200 rounded-full text-xs font-['Poppins',sans-serif] text-gray-600 whitespace-nowrap">
-                {f} <ChevronDown size={11} />
+            {/* Category dropdown */}
+            {(() => {
+              const isOpen = openFilter === "acts-cat-mobile";
+              const selectedCount = actsCatsSelected.length;
+              return (
+                <div className="relative shrink-0">
+                  <button
+                    onClick={() => setOpenFilter(isOpen ? null : "acts-cat-mobile")}
+                    className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
+                      selectedCount > 0
+                        ? "bg-[#23297e] text-white border-[#23297e]"
+                        : "bg-white text-gray-600 border-gray-200"
+                    }`}
+                  >
+                    Category
+                    {selectedCount > 0 && (
+                      <span className="w-4 h-4 rounded-full bg-[#ed6624] text-white text-[9px] flex items-center justify-center font-bold shrink-0">
+                        {selectedCount}
+                      </span>
+                    )}
+                    <ChevronDown size={11} className={isOpen ? "rotate-180" : ""} />
+                  </button>
+                  {isOpen && (
+                    <div className="absolute top-full left-0 mt-1.5 w-64 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50 max-h-80 overflow-y-auto">
+                      <p className="px-4 pt-1 pb-2 font-['Poppins',sans-serif] text-[10px] uppercase tracking-widest text-gray-400 font-semibold border-b border-gray-50">
+                        Category
+                      </p>
+                      {actsCats.map((option) => (
+                        <label key={option} className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={actsCatsSelected.includes(option)}
+                            onChange={() => toggleFilterOption("Category", option)}
+                            className="accent-[#23297e] w-3.5 h-3.5 rounded shrink-0"
+                          />
+                          <span className="font-['Poppins',sans-serif] text-sm text-gray-700">{option}</span>
+                        </label>
+                      ))}
+                      {selectedCount > 0 && (
+                        <button
+                          onClick={() => onFilterChange("Category", [])}
+                          className="w-full text-center text-xs text-red-400 hover:text-red-600 py-2 border-t border-gray-50 mt-1 font-['Poppins',sans-serif] font-medium transition-colors"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Location dropdown */}
+            {(() => {
+              const isOpen = openFilter === "acts-loc-mobile";
+              return (
+                <div className="relative shrink-0">
+                  <button
+                    onClick={() => setOpenFilter(isOpen ? null : "acts-loc-mobile")}
+                    className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
+                      locSelected.length > 0
+                        ? "bg-[#23297e] text-white border-[#23297e]"
+                        : "bg-white text-gray-600 border-gray-200"
+                    }`}
+                  >
+                    <MapPin size={11} />
+                    Location
+                    {locSelected.length > 0 && (
+                      <span className="w-4 h-4 rounded-full bg-[#ed6624] text-white text-[9px] flex items-center justify-center font-bold shrink-0">
+                        {locSelected.length}
+                      </span>
+                    )}
+                    <ChevronDown size={11} className={isOpen ? "rotate-180" : ""} />
+                  </button>
+                  {isOpen && (
+                    <div className="absolute top-full left-0 mt-1.5 w-56 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50 max-h-80 overflow-y-auto">
+                      {locOptions.map((option) => (
+                        <label key={option} className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={locSelected.includes(option)}
+                            onChange={() => toggleFilterOption("Location", option)}
+                            className="accent-[#23297e] w-3.5 h-3.5 rounded shrink-0"
+                          />
+                          <span className="font-['Poppins',sans-serif] text-sm text-gray-700">{option}</span>
+                        </label>
+                      ))}
+                      {locSelected.length > 0 && (
+                        <button
+                          onClick={() => onFilterChange("Location", [])}
+                          className="w-full text-center text-xs text-red-400 hover:text-red-600 py-2 border-t border-gray-50 mt-1 font-['Poppins',sans-serif] font-medium transition-colors"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Remote Only toggle */}
+            <button
+              onClick={() => toggleFilterOption("Location", "Remote")}
+              className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
+                locSelected.includes("Remote")
+                  ? "bg-[#23297e] text-white border-[#23297e]"
+                  : "bg-white text-gray-600 border-gray-200"
+              }`}
+            >
+              <Globe size={11} />
+              Remote Only
+            </button>
+
+            {/* 5 Minutes Max toggle */}
+            {onQuickActionsChange && (
+              <button
+                onClick={() => onQuickActionsChange(!quickActionsOnly)}
+                className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
+                  quickActionsOnly
+                    ? "bg-[#ed6624] text-white border-[#ed6624]"
+                    : "bg-white text-gray-600 border-gray-200"
+                }`}
+              >
+                <Zap size={11} fill={quickActionsOnly ? "#ffffff" : "none"} />
+                5 Min Max
               </button>
-            ))}
+            )}
           </div>
         )}
       </div>

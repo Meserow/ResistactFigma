@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, EyeOff, Flame, Laugh, Lock, MapPin, Sparkles, Sunrise, ThumbsDown, VenetianMask, X, Zap } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, EyeOff, Flame, Laugh, Lock, MapPin, Sparkles, Sunrise, ThumbsDown, ThumbsUp, VenetianMask, X, Zap } from "lucide-react";
 import logoImg from "../../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
 import type { LucideIcon } from "lucide-react";
 import { ToneRangeSlider } from "./ToneSlider";
@@ -247,21 +247,21 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJo
   // user could see three Multi-state Tesla protests scoring higher than any
   // Louisiana-specific action — technically correct, but unhelpful.
   const matches = useMemo(() => {
-    // Slot 1 is always "Spread the Word about ResistAct" (id=1) until the
-    // user has marked it done — it's the cheapest, most-impactful first
-    // action and reinforces the social-graph growth flywheel.
-    const ranked = rankCards(cards, prefs, carouselCtx);
-    // completedIds is typed Set<number> | number[]; normalise to a check that
-    // works on either shape.
+    // Quick Matches deliberately excludes the pinned "Spread the Word about
+    // ResistAct" card (and any other pinToTop card) — it's omnipresent at
+    // the top of the live feed, so showing it as a Quick Match here is
+    // redundant and crowds out actual matched picks.
+    const eligible = cards.filter((c) => !c.pinToTop);
+    const ranked = rankCards(eligible, prefs, carouselCtx);
+    // completedIds is typed Set<number> | number[]; normalise to a check
+    // that works on either shape. Still used below to skip cards the user
+    // has already marked done.
     const isCompleted = (id: number) => {
       const c = userCtx.completedIds;
       if (!c) return false;
       return c instanceof Set ? c.has(id) : c.includes(id);
     };
-    const spreadCard =
-      !isCompleted(1)
-        ? cards.find((c) => c.id === 1) ?? null
-        : null;
+    const spreadCard: ActionCardData | null = null; // intentionally not surfaced here anymore
 
     // Walk the ranking and fill 12 slots with UNIQUE images so the
     // carousel doesn't show two Tesla cards back-to-back. Falls back to score
@@ -411,17 +411,59 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJo
           )}
 
           {step === 1 && (
-            <StepGroups
-              value={prefs.vulnerableGroups}
-              onToggle={toggleGroup}
-              onClear={() => setPrefs((p) => ({ ...p, vulnerableGroups: [] }))}
-              focusDonations={prefs.focusDonations}
-              onFocusDonationsChange={(v) => setPrefs((p) => ({ ...p, focusDonations: v }))}
-              state={prefs.state}
-              onStateChange={(s) => setPrefs((p) => ({ ...p, state: s }))}
-              includeAnywhere={prefs.includeAnywhere}
-              onIncludeAnywhereChange={(v) => setPrefs((p) => ({ ...p, includeAnywhere: v }))}
-            />
+            <div>
+              {/* ── Sharpen your matches — tone sliders (page 2 of the wizard).
+                  Moved here from step 0 so the first page stays focused on
+                  the fundamentals (time, location, categories) and the
+                  second page handles refinement (tone) + identity
+                  (vulnerable groups). ─────────────────────────────────── */}
+              <div className="mb-4">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Sparkles size={12} strokeWidth={1.75} className="text-[#23297e] shrink-0" />
+                  <span className="font-['Poppins',sans-serif] text-xs font-bold uppercase tracking-wider text-gray-700">
+                    Sharpen your matches
+                  </span>
+                  <span className="font-['Poppins',sans-serif] text-[11.5px] text-gray-500">— dial in tone</span>
+                </div>
+                <div className="pl-5 grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-1">
+                  {(["anger", "comedy", "subversion", "hope", "energy"] as const).map((k) => {
+                    const { Icon, label, stops } = TONE_LABELS[k];
+                    const tone = prefs.tone;
+                    const stop = stops[tone[k]];
+                    return (
+                      <div key={k} className="flex flex-col gap-0">
+                        <div className="flex items-center gap-1.5 pl-1">
+                          <Icon size={12} strokeWidth={1.75} className="text-gray-500 shrink-0" />
+                          <span className="font-['Poppins',sans-serif] font-medium text-[12px] text-gray-800">
+                            {label}
+                          </span>
+                          <span className="font-['Poppins',sans-serif] text-[10.5px] text-gray-500 truncate">
+                            · <span className="font-medium text-[#ed6624]">{stop.label}</span> — {stop.desc}
+                          </span>
+                        </div>
+                        <div className="pl-5">
+                          <ToneRangeSlider
+                            value={tone[k]}
+                            onChange={(v) => setPrefs((p) => ({ ...p, tone: { ...p.tone, [k]: v } }))}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <StepGroups
+                value={prefs.vulnerableGroups}
+                onToggle={toggleGroup}
+                onClear={() => setPrefs((p) => ({ ...p, vulnerableGroups: [] }))}
+                focusDonations={prefs.focusDonations}
+                onFocusDonationsChange={(v) => setPrefs((p) => ({ ...p, focusDonations: v }))}
+                state={prefs.state}
+                onStateChange={(s) => setPrefs((p) => ({ ...p, state: s }))}
+                includeAnywhere={prefs.includeAnywhere}
+                onIncludeAnywhereChange={(v) => setPrefs((p) => ({ ...p, includeAnywhere: v }))}
+              />
+            </div>
           )}
         </div>
 
@@ -507,6 +549,18 @@ function StepToneAndPreview({
   // We use this set both to (a) skip the flagged card when computing
   // replacement matches, and (b) gray-out the slot if no replacement exists.
   const [flagged, setFlagged] = useState<Set<number>>(new Set());
+  // Positive-feedback set — cards the user marked as "great match" via the
+  // thumbs-up button. Records analytics + lets us swap the button into a
+  // "Thanks!" confirmation state. Purely local to the wizard session.
+  const [praised, setPraised] = useState<Set<number>>(new Set());
+  function handleGreatMatch(card: ActionCardData) {
+    if (praised.has(card.id)) return;
+    setPraised((prev) => new Set(prev).add(card.id));
+    // Analytics intentionally not wired here yet — add a track() call once
+    // a GA event name is agreed on. The user just wanted a positive-signal
+    // affordance; the click is recorded in component state for now.
+    void card;
+  }
   const [carouselPage, setCarouselPage] = useState(0);
   const PAGE_SIZE = 4;
   // Whether the "Skip these — categories I can't or won't do" disclosure is
@@ -599,6 +653,26 @@ function StepToneAndPreview({
   function clearExcludedCategories() {
     onPrefsChange((p) => ({ ...p, excludedCategories: [] }));
   }
+  // ── Include-categories handlers ────────────────────────────────────────────
+  // Positive selection: when non-empty, ONLY cards whose category is in this
+  // set survive the matcher. Mutually independent from excludedCategories —
+  // an included category can't simultaneously be excluded, so toggling on
+  // here removes from the excluded list (and vice versa).
+  function toggleIncludedCategory(category: string) {
+    onPrefsChange((p) => {
+      const current = p.includedCategories ?? [];
+      const next = current.includes(category)
+        ? current.filter((c) => c !== category)
+        : [...current, category];
+      // If we just added a category to the include list, make sure it's not
+      // also in the exclude list (those are contradictory).
+      const excluded = (p.excludedCategories ?? []).filter((c) => !next.includes(c));
+      return { ...p, includedCategories: next, excludedCategories: excluded };
+    });
+  }
+  function clearIncludedCategories() {
+    onPrefsChange((p) => ({ ...p, includedCategories: [] }));
+  }
   function acceptHidePrompt() {
     if (!pendingHidePrompt) return;
     const cat = pendingHidePrompt;
@@ -640,6 +714,7 @@ function StepToneAndPreview({
     return groups;
   }, [cards]);
   const excludedSet = new Set(prefs.excludedCategories ?? []);
+  const includedSet = new Set(prefs.includedCategories ?? []);
 
   return (
     <div>
@@ -718,110 +793,123 @@ function StepToneAndPreview({
             </div>
           );
         })()}
-        {(["anger", "comedy", "subversion", "hope", "energy"] as const).map((k) => {
-          const { Icon, label, stops } = TONE_LABELS[k];
-          const stop = stops[tone[k]];
-          return (
-            <div key={k} className="flex flex-col gap-0">
-              <div className="flex items-center gap-1.5 pl-1">
-                <Icon size={12} strokeWidth={1.75} className="text-gray-500 shrink-0" />
-                <span className="font-['Poppins',sans-serif] font-medium text-[12px] text-gray-800">
-                  {label}
-                </span>
-                <span className="font-['Poppins',sans-serif] text-[10.5px] text-gray-500 truncate">
-                  · <span className="font-medium text-[#ed6624]">{stop.label}</span> — {stop.desc}
-                </span>
-              </div>
-              <div className="pl-5">
-                <ToneRangeSlider
-                  value={tone[k]}
-                  onChange={(v) => setTone({ ...tone, [k]: v })}
+        {/* State picker — moved here from page 2 so the location-shaped
+            settings (online/in-person + which state) live together. */}
+        <div className="flex flex-col gap-0">
+          <div className="flex items-center gap-1.5 pl-1">
+            <MapPin size={12} strokeWidth={1.75} className="text-gray-500 shrink-0" />
+            <span className="font-['Poppins',sans-serif] font-medium text-[12px] text-gray-800">
+              Your state
+            </span>
+            <span className="font-['Poppins',sans-serif] text-[10.5px] text-gray-500 truncate">
+              · optional — for in-person nearby
+            </span>
+          </div>
+          <div className="pl-5 flex flex-wrap items-center gap-2 mt-1">
+            <select
+              value={prefs.state ?? ""}
+              onChange={(e) => onPrefsChange((p) => ({ ...p, state: e.target.value || null }))}
+              className={`rounded-lg border border-gray-300 pl-3 pr-8 py-1 font-['Poppins',sans-serif] text-xs focus:outline-none focus:ring-2 focus:ring-[#23297e]/30 focus:border-[#23297e] ${
+                prefs.state ? "text-gray-800" : "text-gray-400 italic"
+              }`}
+            >
+              <option value="">— pick your state —</option>
+              {STATE_OPTIONS.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+            {prefs.state && (
+              <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={prefs.includeAnywhere}
+                  onChange={(e) => onPrefsChange((p) => ({ ...p, includeAnywhere: e.target.checked }))}
+                  className="w-3.5 h-3.5 rounded accent-[#ed6624]"
                 />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* ── Skip these — collapsible category-exclusion chip grid ─────────
-          Disclosure-style section between the tone sliders and the Quick
-          Matches preview. Collapsed by default so users who don't need it
-          aren't slowed down by a long chip wall. Each chip toggles between
-          "included" (default, full-colour) and "excluded" (dimmed +
-          strikethrough). Excluded categories are hard-filtered from the
-          matched feed by the corresponding guard in `score()`. */}
-      <div className="border-t border-gray-200 pt-3 mt-3">
-        <button
-          type="button"
-          onClick={() => setShowSkipCategories((v) => !v)}
-          aria-expanded={showSkipCategories}
-          className="w-full flex items-center justify-between gap-2 text-left group"
-        >
-          <span className="flex items-center gap-1.5">
-            <EyeOff size={12} strokeWidth={1.75} className="text-gray-500 shrink-0" />
-            <span className="font-['Poppins',sans-serif] text-xs font-bold uppercase tracking-wider text-gray-500 group-hover:text-[#23297e] transition-colors">
-              Skip these
-            </span>
-            <span className="font-['Poppins',sans-serif] text-[11.5px] text-gray-500">
-              — categories I can't or won't do
-            </span>
-            {excludedSet.size > 0 && (
-              <span className="font-['Poppins',sans-serif] text-[11px] font-semibold text-[#ed6624]">
-                · {excludedSet.size} hidden
-              </span>
-            )}
-          </span>
-          {showSkipCategories
-            ? <ChevronUp size={14} className="text-gray-400 shrink-0" />
-            : <ChevronDown size={14} className="text-gray-400 shrink-0" />}
-        </button>
-
-        {showSkipCategories && (
-          <div className="mt-2 space-y-2">
-            {chipGroups.map((group) => (
-              <div key={group.heading} className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-2">
-                <span className="font-['Poppins',sans-serif] text-[10px] font-bold uppercase tracking-wider text-gray-400 sm:w-[88px] sm:pt-1 shrink-0">
-                  {group.heading}
+                <span className="font-['Poppins',sans-serif] text-[11px] text-gray-600">
+                  Show all states, prioritize mine
                 </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {group.categories.map((cat) => {
-                    const isExcluded = excludedSet.has(cat);
-                    return (
-                      <button
-                        key={cat}
-                        type="button"
-                        onClick={() => toggleExcludedCategory(cat)}
-                        aria-pressed={isExcluded}
-                        className={`px-2.5 py-1 rounded-full text-[11px] font-['Poppins',sans-serif] font-medium transition-all border ${
-                          isExcluded
-                            ? "bg-gray-100 text-gray-400 border-gray-200 line-through"
-                            : "bg-white text-gray-700 border-gray-300 hover:border-[#23297e] hover:text-[#23297e]"
-                        }`}
-                      >
-                        {cat}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-            {excludedSet.size > 0 && (
-              <div className="pt-1 flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={clearExcludedCategories}
-                  className="font-['Poppins',sans-serif] text-[11px] font-semibold text-[#ed6624] hover:text-[#c2521b] transition-colors"
-                >
-                  Show all again
-                </button>
-                <span className="font-['Poppins',sans-serif] text-[10.5px] text-gray-400">
-                  ({excludedSet.size} {excludedSet.size === 1 ? "category" : "categories"} hidden)
-                </span>
-              </div>
+              </label>
             )}
           </div>
-        )}
+        </div>
+        {/* Tone sliders (anger / comedy / subversion / hope / energy) moved
+            down into the "Sharpen your matches" section below — after the
+            category pickers — so the top of the wizard stays focused on the
+            two fundamental filters (Time, Location). */}
       </div>
+
+      {/* ── Include these — category INCLUDE chip grid (positive picker) ──
+          When the user picks one or more, ONLY cards in those categories
+          survive the matcher. Empty = "any category" (default). Sits ABOVE
+          the Skip-these section because including is more common than
+          excluding — most users land here knowing what they want to do
+          rather than what they want to avoid. */}
+      <div className="border-t border-gray-200 pt-3 mt-3">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <span className="flex items-center gap-1.5">
+            <Sparkles size={12} strokeWidth={1.75} className="text-[#23297e] shrink-0" />
+            <span className="font-['Poppins',sans-serif] text-xs font-bold uppercase tracking-wider text-gray-700">
+              Match these categories
+            </span>
+            {includedSet.size > 0 ? (
+              <span className="font-['Poppins',sans-serif] text-[11px] font-semibold text-[#23297e]">
+                · {includedSet.size} picked
+              </span>
+            ) : (
+              <span className="font-['Poppins',sans-serif] text-[11.5px] text-gray-500">— pick one or more, or leave blank for all</span>
+            )}
+          </span>
+          {includedSet.size > 0 && (
+            <button
+              type="button"
+              onClick={clearIncludedCategories}
+              className="font-['Poppins',sans-serif] text-[11px] font-semibold text-[#ed6624] hover:text-[#c2521b] transition-colors"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+        <div className="space-y-2">
+          {chipGroups.map((group) => (
+            <div key={"inc-" + group.heading} className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-2">
+              <span className="font-['Poppins',sans-serif] text-[10px] font-bold uppercase tracking-wider text-gray-400 sm:w-[88px] sm:pt-1 shrink-0">
+                {group.heading}
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {group.categories.map((cat) => {
+                  const isIncluded = includedSet.has(cat);
+                  return (
+                    <button
+                      key={"inc-" + cat}
+                      type="button"
+                      onClick={() => toggleIncludedCategory(cat)}
+                      aria-pressed={isIncluded}
+                      className={`px-2.5 py-1 rounded-full text-[11px] font-['Poppins',sans-serif] font-medium transition-all border ${
+                        isIncluded
+                          ? "bg-[#23297e] text-white border-[#23297e]"
+                          : "bg-white text-gray-700 border-gray-300 hover:border-[#23297e] hover:text-[#23297e]"
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* "Skip these" exclude-categories section removed — was redundant
+          with the positive "Match these" picker above. Users now express
+          intent only by picking what they want, not what they avoid. The
+          underlying `excludedCategories` mechanism still exists in the
+          matcher (e.g. for future re-introduction or for the dismissal-
+          learning prompt below the Quick Matches preview). */}
+
+      {/* "Sharpen your matches" tone sliders moved to step 1 (the second
+          wizard page). They live above the vulnerable-groups section there. */}
 
       <div className="border-t border-gray-200 pt-3 mt-3">
         <h3 className="font-['Poppins',sans-serif] text-xs font-bold uppercase tracking-wider text-gray-500 mb-0.5">
@@ -878,20 +966,39 @@ function StepToneAndPreview({
                       <div className={`flex-1 min-h-0 rounded-2xl ring-1 ring-gray-200 transition-opacity ${isFlagged ? "opacity-40" : ""}`}>
                         <ActionCard card={m} compact />
                       </div>
-                      <div className="flex justify-center">
+                      <div className="flex items-center justify-center gap-1.5">
+                        {/* Thumbs-up = great match — positive feedback. Stays
+                            visible after click as a green "Thanks!" pill. */}
+                        <button
+                          onClick={() => handleGreatMatch(m)}
+                          disabled={praised.has(m.id) || isFlagged}
+                          aria-label={praised.has(m.id) ? "Marked as great match" : "Mark as great match"}
+                          title={praised.has(m.id) ? "Thanks — feedback recorded" : "Great match? Let us know."}
+                          className={`inline-flex items-center justify-center rounded-full border w-8 h-8 transition ${
+                            praised.has(m.id)
+                              ? "border-[#0d8c6e] bg-[#0d8c6e]/10 text-[#0d8c6e] cursor-default"
+                              : isFlagged
+                                ? "border-gray-200 text-gray-300 opacity-50 cursor-default"
+                                : "border-[#0d8c6e] text-gray-700 hover:bg-[#0d8c6e]/10 hover:text-[#0d8c6e]"
+                          }`}
+                        >
+                          <ThumbsUp size={14} strokeWidth={2} className="shrink-0" />
+                        </button>
+                        {/* Thumbs-down — bad match (existing behavior). */}
                         <button
                           onClick={() => handleBadMatch(m)}
-                          disabled={isFlagged}
+                          disabled={isFlagged || praised.has(m.id)}
                           aria-label={isFlagged ? "Marked as bad match" : "Flag as bad match"}
                           title={isFlagged ? "Thanks — feedback recorded" : "Bad match? Let us know."}
-                          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-['Poppins',sans-serif] text-xs transition ${
+                          className={`inline-flex items-center justify-center rounded-full border w-8 h-8 transition ${
                             isFlagged
                               ? "border-gray-200 text-gray-400 opacity-60 cursor-default"
-                              : "border-[#ed6624] text-gray-700 hover:bg-[#ed6624]/10 hover:text-[#ed6624]"
+                              : praised.has(m.id)
+                                ? "border-gray-200 text-gray-300 opacity-50 cursor-default"
+                                : "border-[#ed6624] text-gray-700 hover:bg-[#ed6624]/10 hover:text-[#ed6624]"
                           }`}
                         >
                           <ThumbsDown size={14} strokeWidth={2} className="shrink-0" />
-                          <span>{isFlagged ? "Thanks!" : "Not a great match"}</span>
                         </button>
                       </div>
                     </li>
@@ -953,10 +1060,10 @@ function StepToneAndPreview({
             >
               <span className="flex items-center gap-1.5 text-sm font-semibold leading-tight">
                 <Sparkles size={13} strokeWidth={2} />
-                Sharpen your matches
+                Tell us more about you
               </span>
               <span className="text-[11px] font-normal italic text-[#23297e]/70 leading-tight mt-0.5">
-                Tell us more about who you are
+                Amplify groups you're standing with
               </span>
             </button>
             <button
@@ -1020,42 +1127,7 @@ function StepGroups({
 }) {
   return (
     <div>
-      {/* ── Where are you? (state picker) ───────────────────────────────── */}
-      <div className="mb-4">
-        <h3 className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-base leading-tight mb-0.5">
-          Where could you show up for in-person actions?
-        </h3>
-        <p className="font-['Poppins',sans-serif] text-xs text-gray-500 mb-2">
-          Optional. We'll surface nearby in-person actions when they match your other settings.
-        </p>
-        <div className="flex flex-wrap items-center gap-2">
-          <select
-            value={state ?? ""}
-            onChange={(e) => onStateChange(e.target.value || null)}
-            className={`rounded-lg border border-gray-300 pl-3 pr-10 py-1.5 font-['Poppins',sans-serif] text-sm focus:outline-none focus:ring-2 focus:ring-[#23297e]/30 focus:border-[#23297e] ${
-              state ? "text-gray-800" : "text-gray-400 italic"
-            }`}
-          >
-            <option value="">— pick your state —</option>
-            {STATE_OPTIONS.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-          {state && (
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={includeAnywhere}
-                onChange={(e) => onIncludeAnywhereChange(e.target.checked)}
-                className="w-4 h-4 rounded accent-[#ed6624]"
-              />
-              <span className="font-['Poppins',sans-serif] text-sm text-gray-600">
-                Show all states, prioritize mine
-              </span>
-            </label>
-          )}
-        </div>
-      </div>
+      {/* State picker moved to page 1 (next to the Location slider). */}
 
       {/* ── Targeted-group affinity ──────────────────────────────────────── */}
       <div className="mb-4">
