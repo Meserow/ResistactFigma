@@ -309,6 +309,10 @@ const KNOWN_MIGRATION_FLAG_KEYS: readonly string[] = [
   "cleanup:purge-fake-seeds:v2",
   "cleanup:reapprove-beanie:v1",
   "cleanup:recategorize-call-cards:v1",
+  "cleanup:cw-redistribute:v1",
+  "cleanup:boost-color-merge:v1",
+  "cleanup:personal-commitment-color:v1",
+  "cleanup:category-outliers-2026-05:v1",
   "cleanup:reset-boosts-5:v1",
   "cleanup:reset-boosts-5:v3",
   "cleanup:retire-past-dated-2026-05:v1",
@@ -591,10 +595,10 @@ const SEED_CARDS = [
   { id: 1224, category: "TRAINING", categoryColor: "#126d89", actionType: "Online", title: "Apply to candidate training (women)", description: "Apply for free women's candidate training. They've run thousands of women — training is rigorous, free, ongoing.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Vote Run Lead", authorRole: "Movement Organization", targetUrl: "https://voterunlead.org/", topImageKey: "org_vote-run-lead", amplifiesGroups: ["woman"] },
   { id: 1225, category: "TRAINING", categoryColor: "#126d89", actionType: "Online", title: "Apply to candidate training (Dem women)", description: "Apply to candidate training for Democratic women. Six-month program; alumni include 1,200+ elected officials.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Emerge America", authorRole: "Movement Organization", targetUrl: "https://emergeamerica.org/", topImageKey: "org_emerge-america", amplifiesGroups: ["woman"] },
   { id: 1226, category: "TRAINING", categoryColor: "#126d89", actionType: "Online", title: "Apply to candidate training (Black women)", description: "Apply to Black women's candidate training. Pipeline org for the most underrepresented group in elected office.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Higher Heights for America", authorRole: "Movement Organization", targetUrl: "https://higherheightsforamerica.org/", topImageKey: "org_higher-heights-for-america", amplifiesGroups: ["woman"] },
-  { id: 1230, category: "PERSONAL COMMITMENT", categoryColor: "#23297e", actionType: "Online", title: "Save threatened gov pages with one click", description: "One-click archive of any threatened gov page. Save before Trump's admin scrubs it — works on any URL.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Wayback Machine 'Save Page Now'", authorRole: "Movement Organization", targetUrl: "https://web.archive.org/save", topImageKey: "org_wayback-machine-save-page-now" },
-  { id: 1231, category: "PERSONAL COMMITMENT", categoryColor: "#23297e", actionType: "Online", title: "Pick a banned book + read it", description: "Pick a banned book + read it. Live, sortable list — read what they don't want in school libraries.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "PEN America banned-books list", authorRole: "Movement Organization", targetUrl: "https://pen.org/banned-books-list-2022/", topImageKey: "org_pen-america-banned-books-list" },
-  { id: 1232, category: "PERSONAL COMMITMENT", categoryColor: "#23297e", actionType: "Online", title: "Set election reminders (every contest)", description: "Set election reminders for every contest. Off-cycle elections (judges, school boards) are where MAGA quietly stacks boards.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Vote.org", authorRole: "Movement Organization", targetUrl: "https://www.vote.org/", topImageKey: "org_vote-org" },
-  { id: 1233, category: "PROFESSIONAL SKILLS", categoryColor: "#126d89", actionType: "Online", title: "Find DOJ-accredited rep training", description: "Free DOJ-accredited rep training. Trump's mass deportation needs more accredited reps — non-lawyers can do this.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "CLINIC (Catholic Legal Immigration Network)", authorRole: "Movement Organization", targetUrl: "https://www.cliniclegal.org/", topImageKey: "org_clinic-catholic-legal-immigration-network", amplifiesGroups: ["immigrant"] },
+  { id: 1230, category: "PERSONAL COMMITMENT", categoryColor: "#5e1f7a", actionType: "Online", title: "Save threatened gov pages with one click", description: "One-click archive of any threatened gov page. Save before Trump's admin scrubs it — works on any URL.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Wayback Machine 'Save Page Now'", authorRole: "Movement Organization", targetUrl: "https://web.archive.org/save", topImageKey: "org_wayback-machine-save-page-now" },
+  { id: 1231, category: "PERSONAL COMMITMENT", categoryColor: "#5e1f7a", actionType: "Online", title: "Pick a banned book + read it", description: "Pick a banned book + read it. Live, sortable list — read what they don't want in school libraries.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "PEN America banned-books list", authorRole: "Movement Organization", targetUrl: "https://pen.org/banned-books-list-2022/", topImageKey: "org_pen-america-banned-books-list" },
+  { id: 1232, category: "PERSONAL COMMITMENT", categoryColor: "#5e1f7a", actionType: "Online", title: "Set election reminders (every contest)", description: "Set election reminders for every contest. Off-cycle elections (judges, school boards) are where MAGA quietly stacks boards.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Vote.org", authorRole: "Movement Organization", targetUrl: "https://www.vote.org/", topImageKey: "org_vote-org" },
+  { id: 1233, category: "PROFESSIONAL SKILLS", categoryColor: "#1f635c", actionType: "Online", title: "Find DOJ-accredited rep training", description: "Free DOJ-accredited rep training. Trump's mass deportation needs more accredited reps — non-lawyers can do this.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "CLINIC (Catholic Legal Immigration Network)", authorRole: "Movement Organization", targetUrl: "https://www.cliniclegal.org/", topImageKey: "org_clinic-catholic-legal-immigration-network", amplifiesGroups: ["immigrant"] },
   // MoveOn front-page petitions — https://front.moveon.org/petitions/
   { id: 1234, category: "PETITION", categoryColor: "#05737f", actionType: "Online", title: "Mandate that ICE agents show their face and identification", description: "Demand Congress require immigration agents to display agency ID and name badges, like other law enforcement.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "MoveOn", authorRole: "Movement Organization", targetUrl: "https://sign.moveon.org/petitions/unmask-ice", topImageKey: "org_moveon", amplifiesGroups: ["immigrant"] },
   { id: 1235, category: "PETITION", categoryColor: "#05737f", actionType: "Online", title: "Keep the U.S. out of forever wars", description: "Oppose U.S. military action in Iran. Tell Congress to prevent another Middle Eastern war.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "MoveOn", authorRole: "Movement Organization", targetUrl: "https://sign.moveon.org/petitions/no-war-with-iran-18", topImageKey: "org_moveon" },
@@ -674,7 +678,7 @@ const SEED_CARDS = [
   { id: 1301, category: "EMAIL CAMPAIGN", categoryColor: "#c2185b", actionType: "Online", title: "Email Your Senator: Kill the 'Kill Nonprofits' Bill (H.R. 9495)", description: "H.R. 9495 lets the government strip tax-exempt status from any nonprofit it labels 'terrorist supporting' — meaning the NAACP, ACLU, Planned Parenthood, any org that criticizes the administration. This is the infrastructure for silencing civil society. Email your senator to stop it.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "NAACP", authorRole: "Civil Rights Organization", authorLink: "https://naacp.org/", targetUrl: "https://naacp.org/actions/oppose-hr-9495-protect-nonprofit-organizations", topImageUrl: "https://naacp.org/sites/default/files/styles/hero_desktop/public/images/pexels-life-matters-4613879-%281%29.jpg.webp?itok=G50qUJOv", toneOverride: { anger: 3, comedy: 0, subversion: 0, hope: 1, energy: 1 }, adminApproved: false },
 
   // ── Dissent Pins resistance merch ─────────────────────────────────────────────
-  { id: 1302, category: "PERSONAL COMMITMENT", categoryColor: "#23297e", actionType: "Online", title: "Slap a 'No War Is Holy' Sticker on Your Car (or Laptop)", description: "Tired of hearing Trump claim divine favor for his wars? This UV-laminated bumper sticker (5.25″ × 3″) pushes back on the gospel of holy wars. Weather-resistant for indoor or outdoor use — sticker or car magnet. From Dissent Pins.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Dissent Pins", authorRole: "Resistance Merch", authorLink: "https://dissentpins.com/", targetUrl: "https://dissentpins.com/collections/best-sellers/products/no-war-is-holy-bumper-sticker", topImageUrl: "https://dissentpins.com/cdn/shop/files/NoWarIsHolyStickerMock-up_2000x2000.jpg?v=1776273173", toneOverride: { anger: 2, comedy: 1, subversion: 2, hope: 1, energy: 1 }, adminApproved: false },
+  { id: 1302, category: "PERSONAL COMMITMENT", categoryColor: "#5e1f7a", actionType: "Online", title: "Slap a 'No War Is Holy' Sticker on Your Car (or Laptop)", description: "Tired of hearing Trump claim divine favor for his wars? This UV-laminated bumper sticker (5.25″ × 3″) pushes back on the gospel of holy wars. Weather-resistant for indoor or outdoor use — sticker or car magnet. From Dissent Pins.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Dissent Pins", authorRole: "Resistance Merch", authorLink: "https://dissentpins.com/", targetUrl: "https://dissentpins.com/collections/best-sellers/products/no-war-is-holy-bumper-sticker", topImageUrl: "https://dissentpins.com/cdn/shop/files/NoWarIsHolyStickerMock-up_2000x2000.jpg?v=1776273173", toneOverride: { anger: 2, comedy: 1, subversion: 2, hope: 1, energy: 1 }, adminApproved: false },
   { id: 1303, category: "PURCHASE", categoryColor: "#b45309", actionType: "Online", title: "Buy a Fifth Amendment Sticker — 50% to Immigrant Rights Orgs", description: "The Fifth Amendment protects everyone in the U.S. — citizens and non-citizens alike. Show it. 50% of profits go directly to immigrant rights organizations doing legal defense and community education, including Hands Off NYC, Illinois Coalition for Immigrant Rights, and Portland Immigrant Rights Coalition. 8.3″ wide, UV-laminated.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Dissent Pins", authorRole: "Resistance Merch", authorLink: "https://dissentpins.com/", targetUrl: "https://dissentpins.com/collections/best-sellers/products/fifth-amendment-bumper-sticker", topImageUrl: "https://dissentpins.com/cdn/shop/files/FifthAmendmentBumperSticker_1500x1500.png?v=1752677646", toneOverride: { anger: 2, comedy: 0, subversion: 1, hope: 2, energy: 1 }, amplifiesGroups: ["immigrant"], adminApproved: false },
   { id: 1304, category: "PURCHASE", categoryColor: "#b45309", actionType: "Online", title: "Buy an Abolish ICE Liberty Sticker — 50% to Immigrant Rights Orgs", description: "Show solidarity with neighbors under threat from ICE enforcement. 50% of profits fund five immigrant rights organizations doing legal defense and community education. UV-laminated sticker (6.5″ × 4.4″) or car magnet.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Dissent Pins", authorRole: "Resistance Merch", authorLink: "https://dissentpins.com/", targetUrl: "https://dissentpins.com/collections/best-sellers/products/abolish-ice-liberty-bumper-sticker-or-car-magnet", topImageUrl: "https://dissentpins.com/cdn/shop/files/AbolishICELibertycarmagnetonblue2000x2000_2000x2000.jpg?v=1766517162", toneOverride: { anger: 3, comedy: 0, subversion: 2, hope: 2, energy: 2 }, amplifiesGroups: ["immigrant"], adminApproved: false },
   { id: 1305, category: "PURCHASE", categoryColor: "#b45309", actionType: "Online", title: "Buy a FCK ICE Tee — 100% to Immigrant Defense Funds", description: "Wear your resistance and fund it. 100% of profits go directly to Minnesota Immigrant Rapid Response Fund, Immigrant Law Center of Minnesota, and UNIDOSMN. Light blue, 100% cotton, sizes XS–4XL. Made with Vermont-based New Duds.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Dissent Pins", authorRole: "Resistance Merch", authorLink: "https://dissentpins.com/", targetUrl: "https://dissentpins.com/collections/best-sellers/products/fckice-tshirt", topImageUrl: "https://dissentpins.com/cdn/shop/files/FCKICEHoodieUGCJoinbrandsDanTinklerMar202612000x2000_1024x.jpg?v=1773673949", toneOverride: { anger: 3, comedy: 1, subversion: 2, hope: 2, energy: 2 }, amplifiesGroups: ["immigrant"], adminApproved: false },
@@ -3491,6 +3495,133 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       console.log(`Recategorized ${updated} of ${ids.length} call cards to Call/Write.`);
     }
 
+    // One-time: redistribute the 19 catch-all gray CALL/WRITE cards into
+    // their proper buckets. Most were social-media posts / TikTok films /
+    // quote-tweets that got mis-bucketed. See changelog 1.2.50 for details.
+    const cwRedistributeDone = await getMigrationFlag("cleanup:cw-redistribute:v1");
+    if (!cwRedistributeDone) {
+      const moves: Array<[number, string, string]> = [
+        // [id, new category, new color]
+        // → Social Media (#e44b4b): posts, threads, tweets, films, stitches
+        [2331, "Social Media",    "#e44b4b"],
+        [2334, "Social Media",    "#e44b4b"],
+        [2336, "Social Media",    "#e44b4b"],
+        [2343, "Social Media",    "#e44b4b"],
+        [2353, "Social Media",    "#e44b4b"],
+        [2354, "Social Media",    "#e44b4b"],
+        [2360, "Social Media",    "#e44b4b"],
+        [2362, "Social Media",    "#e44b4b"],
+        [2373, "Social Media",    "#e44b4b"],
+        [2377, "Social Media",    "#e44b4b"],
+        [2383, "Social Media",    "#e44b4b"],
+        // → Letter Writing (#2d7a6b): postcards + formal public comments
+        [2255, "Letter Writing",  "#2d7a6b"],
+        [2257, "Letter Writing",  "#2d7a6b"],
+        [2301, "Letter Writing",  "#2d7a6b"],
+        [2312, "Letter Writing",  "#2d7a6b"],
+        // → Letter to Editor (#3f5c8c)
+        [2297, "Letter to Editor","#3f5c8c"],
+        // → Call/Write (#c2185b): the actual call actions + text-bank shift
+        [2240, "Call/Write",      "#c2185b"],
+        [2280, "Call/Write",      "#c2185b"],
+        [2316, "Call/Write",      "#c2185b"],
+      ];
+      let updated = 0;
+      for (const [id, category, categoryColor] of moves) {
+        for (const prefix of ["action:", "user-action:"]) {
+          const existing = (await kv.get(`${prefix}${id}`)) as any;
+          if (existing && typeof existing === "object") {
+            await kv.set(`${prefix}${id}`, { ...existing, category, categoryColor });
+            updated++;
+            break;
+          }
+        }
+      }
+      await setMigrationFlag("cleanup:cw-redistribute:v1");
+      console.log(`Redistributed ${updated} of ${moves.length} gray CALL/WRITE cards.`);
+    }
+
+    // One-time: merge the BOOST color split. 72 bulk-imported Bluesky
+    // "Follow & boost @handle" cards landed with #3f3f3f (gray) instead of
+    // #8a00e6 (purple) used by the original BOOST newsroom-amplification
+    // cards. Same concept, just import drift. Scans all action/user-action
+    // records since the affected IDs aren't in SEED_CARDS.
+    const boostColorMergeDone = await getMigrationFlag("cleanup:boost-color-merge:v1");
+    if (!boostColorMergeDone) {
+      let updated = 0;
+      for (const prefix of ["action:", "user-action:"]) {
+        const all = (await kv.getByPrefix(prefix)) as any[];
+        for (const card of all) {
+          if (
+            card && typeof card === "object" &&
+            typeof card.id === "number" &&
+            (card.category === "BOOST" || card.category === "Boost") &&
+            card.categoryColor === "#3f3f3f"
+          ) {
+            await kv.set(`${prefix}${card.id}`, { ...card, categoryColor: "#8a00e6" });
+            updated++;
+          }
+        }
+      }
+      await setMigrationFlag("cleanup:boost-color-merge:v1");
+      console.log(`Merged ${updated} gray BOOST cards to purple #8a00e6.`);
+    }
+
+    // One-time: reconcile the PERSONAL COMMITMENT color drift. 4 cards
+    // landed with #23297e (Protest blue) instead of the canonical #5e1f7a
+    // (per BULK_IMPORT_CATEGORY_COLORS). Source SEED_CARDS already updated.
+    const pcColorDone = await getMigrationFlag("cleanup:personal-commitment-color:v1");
+    if (!pcColorDone) {
+      let updated = 0;
+      for (const prefix of ["action:", "user-action:"]) {
+        const all = (await kv.getByPrefix(prefix)) as any[];
+        for (const card of all) {
+          if (
+            card && typeof card === "object" &&
+            typeof card.id === "number" &&
+            (card.category === "PERSONAL COMMITMENT" || card.category === "Personal Commitment") &&
+            card.categoryColor === "#23297e"
+          ) {
+            await kv.set(`${prefix}${card.id}`, { ...card, categoryColor: "#5e1f7a" });
+            updated++;
+          }
+        }
+      }
+      await setMigrationFlag("cleanup:personal-commitment-color:v1");
+      console.log(`Reconciled ${updated} Personal Commitment cards to #5e1f7a.`);
+    }
+
+    // One-time: fix 8 singleton category-color outliers and mis-categorizations
+    // discovered during the 2026-05-25 color audit. Each is a one-off drift
+    // from import or a mis-bucketed card.
+    const outliersDone = await getMigrationFlag("cleanup:category-outliers-2026-05:v1");
+    if (!outliersDone) {
+      const fixes: Array<[number, string, string]> = [
+        // [id, category, categoryColor]
+        [ 230, "Meeting",             "#5a3e9e"], // was MEETING/#23297e (Protest blue) — color drift
+        [ 237, "Join a Group",        "#9c2779"], // was JOIN A GROUP/#0891b2 — color drift
+        [ 238, "Email Campaign",      "#c2185b"], // was EMAIL CAMPAIGN/#e44b4b (Social red) — color drift
+        [1233, "Professional Skills", "#1f635c"], // was PROFESSIONAL SKILLS/#126d89 — color drift (canonical color in SEED_CARDS already fixed)
+        [2033, "Join a Group",        "#9c2779"], // was PRAYER/#8a00e6 — Faith in Action federation is a group, not a prayer act
+        [2034, "Join a Group",        "#9c2779"], // was LETTER WRITING/#3f3f3f — leading a divestment resolution campaign
+        [2109, "Training",            "#126d89"], // was TRAINING/#1a6b3c — color drift
+        [2365, "Social Media",        "#e44b4b"], // was Video/#e44b4b — lone "Video" category folded into Social Media
+      ];
+      let updated = 0;
+      for (const [id, category, categoryColor] of fixes) {
+        for (const prefix of ["action:", "user-action:"]) {
+          const existing = (await kv.get(`${prefix}${id}`)) as any;
+          if (existing && typeof existing === "object") {
+            await kv.set(`${prefix}${id}`, { ...existing, category, categoryColor });
+            updated++;
+            break;
+          }
+        }
+      }
+      await setMigrationFlag("cleanup:category-outliers-2026-05:v1");
+      console.log(`Fixed ${updated} of ${fixes.length} category/color outliers.`);
+    }
+
     const fixQuickActionMistagsDone = await getMigrationFlag("cleanup:fix-quickaction-mistags:v1");
     if (!fixQuickActionMistagsDone) {
       const idsToFix = [31, 55, 128, 285, 315, 1010, 1076, 1097, 1265, 1269, 1302, 1334, 2033, 2035, 2085];
@@ -4346,15 +4477,22 @@ app.post("/make-server-9eb1ae04/admin/approve-action/:id", async (c) => {
 const BULK_IMPORT_CATEGORY_COLORS: Record<string, string> = {
   "ACT OF KINDNESS": "#0d8c6e",
   "ART PIECE": "#896312",
+  "BIRD-DOG": "#3f3f3f",
+  "BOOST": "#8a00e6",
   "BOYCOTT": "#7a1f7a",
+  "CALL/WRITE": "#c2185b",
   "CRAFTING": "#c34e00",
   "EMAIL CAMPAIGN": "#c2185b",
+  "FLASH MOB": "#ff00d5",
   "FUNDING": "#127f05",
+  "HOST": "#3f3f3f",
   "HOUSING": "#0a5b89",
   "IRREVERENCE": "#9333ea",
   "JOIN A GROUP": "#9c2779",
   "LABOR": "#a83f1c",
+  "LEARN": "#3f3f3f",
   "LETTER TO EDITOR": "#3f5c8c",
+  "LETTER WRITING": "#2d7a6b",
   "MEETING": "#5a3e9e",
   "MENTAL HEALTH": "#6b5b95",
   "NEWS STORY": "#3b4a73",
@@ -4364,10 +4502,13 @@ const BULK_IMPORT_CATEGORY_COLORS: Record<string, string> = {
   "PRAYER": "#7d6321",
   "PROFESSIONAL SKILLS": "#1f635c",
   "PROTEST": "#23297e",
+  "PURCHASE": "#b45309",
+  "SHOW UP": "#3f3f3f",
   "SOCIAL MEDIA": "#e44b4b",
   "SPREAD POSITIVITY": "#d97706",
   "TRAINING": "#126d89",
   "TRANSPORTATION": "#0a6e3f",
+  "WITNESS": "#3f3f3f",
 };
 
 function normalizeBulkImportUrl(u: string): string {
