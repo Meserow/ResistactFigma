@@ -16,6 +16,20 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.59",
+    date: "2026-05-25",
+    title: "Card banners go full grayscale — Spread the Word stays the lone color anchor",
+    sections: [
+      {
+        heading: "Visual",
+        items: [
+          "Every Act banner is now black & white in the grid. Hover still pops the focused card back to full color, so the photo is one click of attention away.",
+          "Exception: the pinned \"Spread the Word about ResistAct\" card stays at 50% saturation so the orange/navy brand colors anchor the otherwise grayscale feed.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.58",
     date: "2026-05-25",
     title: "Self-link \"go follow this author\" cards sent back to admin review",

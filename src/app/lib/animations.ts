@@ -183,21 +183,33 @@ export const GAMIFICATION_KEYFRAMES = `
      12 cards in a row don't fight each other. On hover, the focused card
      pops back to full color. Only applied to real photo content; the brand
      fallback logo is already light and stays as-is.
-       .resistact-banner-host  → outer card wrapper, the hover target
-       .resistact-banner-desat → the banner <img> itself
+       .resistact-banner-host       → outer card wrapper, the hover target
+       .resistact-banner-desat      → b/w banner (default for all cards)
+       .resistact-banner-half-desat → 50%-saturated banner, currently used
+                                       only by the pinToTop "Spread the
+                                       Word" card so it stays a little
+                                       brand-color anchor in a grayscale
+                                       grid
      Tweak the value to taste:
+       1.00 = full color
        0.70 = subtle, "still colored just less neon"
-       0.55 = noticeably muted, magazine feel
-       0.35 = strong, editorial (current default)
-       0.20 = nearly grayscale */
+       0.50 = half-saturated (Spread the Word default)
+       0.35 = strong, editorial
+       0.00 = full grayscale (current default for everything else) */
   .resistact-banner-desat {
-    filter: saturate(0.35);
+    filter: saturate(0);
     transition: filter 250ms ease-out;
   }
-  .resistact-banner-host:hover .resistact-banner-desat {
+  .resistact-banner-half-desat {
+    filter: saturate(0.5);
+    transition: filter 250ms ease-out;
+  }
+  .resistact-banner-host:hover .resistact-banner-desat,
+  .resistact-banner-host:hover .resistact-banner-half-desat {
     filter: saturate(1);
   }
   @media (prefers-reduced-motion: reduce) {
-    .resistact-banner-desat { transition: none; }
+    .resistact-banner-desat,
+    .resistact-banner-half-desat { transition: none; }
   }
 `;

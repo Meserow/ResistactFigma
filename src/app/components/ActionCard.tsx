@@ -314,7 +314,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
               without flashing or strobing. */}
           <div className={`resistact-anim-shimmer relative ${compact ? "h-[70px]" : "h-[108px]"} shrink-0 bg-[#23297e] flex items-center justify-center overflow-hidden`}>
             {card.topImage
-              ? <img src={card.topImage} alt={card.title} className="resistact-banner-desat absolute inset-0 w-full h-full object-cover object-top" />
+              ? <img src={card.topImage} alt={card.title} className={`${card.pinToTop ? "resistact-banner-half-desat" : "resistact-banner-desat"} absolute inset-0 w-full h-full object-cover object-top`} />
               : card.featuredIllustration
             }
             <div className="absolute top-2.5 right-3 flex items-center gap-1.5">
