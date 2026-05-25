@@ -130,10 +130,46 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
             {card.description}
           </p>
 
-          {/* Action row — primary link out on the left, then the
-              "I did this!" toggle and Boost. All actions live here so the
-              user can preview-then-act without leaving the modal. */}
-          <div className="mt-6 flex flex-wrap items-center gap-2">
+          {/* Action row — secondary actions ("I did this!" + Boost) cluster
+              on the left, primary link-out ("I want to ResistAct!") anchors
+              on the right so the eye lands on the primary CTA last. Wraps
+              to a single column on narrow viewports. */}
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* "I did this!" toggle — same color identity as the on-card pill
+                  (teal when complete, light teal when idle). */}
+              {onComplete && (
+                <button
+                  onClick={() => onComplete(card.id)}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 font-['Poppins',sans-serif] text-sm font-bold transition-colors ${
+                    isCompleted
+                      ? "bg-[#0d8c6e] text-white hover:bg-[#0a7159]"
+                      : "bg-[#0d8c6e]/10 text-[#0d8c6e] hover:bg-[#0d8c6e]/20"
+                  }`}
+                >
+                  <CheckCircle2 size={14} />
+                  {isCompleted ? "Done · undo" : "I did this!"}
+                </button>
+              )}
+
+              {/* Boost — orange identity, mirrors the on-image boost button. */}
+              {onBoost && (
+                <button
+                  onClick={() => onBoost(card.id)}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 font-['Poppins',sans-serif] text-sm font-bold transition-colors ${
+                    isBoosted
+                      ? "bg-[#ed6624]/80 text-white hover:bg-[#ed6624]"
+                      : "bg-[#ed6624]/10 text-[#ed6624] hover:bg-[#ed6624]/20"
+                  }`}
+                >
+                  <Flame size={14} />
+                  {isBoosted ? "Boosted" : "Boost"}
+                  {typeof card.boosts === "number" && card.boosts > 0 ? <span className="opacity-80">· {card.boosts}</span> : null}
+                </button>
+              )}
+            </div>
+
+            {/* Primary CTA — right-anchored so it reads as the "go do it" call */}
             {onShare ? (
               <button
                 onClick={() => { onClose(); onShare(); }}
@@ -151,38 +187,6 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
                 I want to ResistAct! <ExternalLink size={14} />
               </a>
             ) : null}
-
-            {/* "I did this!" toggle — same color identity as the on-card pill
-                (teal when complete, light teal when idle). */}
-            {onComplete && (
-              <button
-                onClick={() => onComplete(card.id)}
-                className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 font-['Poppins',sans-serif] text-sm font-bold transition-colors ${
-                  isCompleted
-                    ? "bg-[#0d8c6e] text-white hover:bg-[#0a7159]"
-                    : "bg-[#0d8c6e]/10 text-[#0d8c6e] hover:bg-[#0d8c6e]/20"
-                }`}
-              >
-                <CheckCircle2 size={14} />
-                {isCompleted ? "Done · undo" : "I did this!"}
-              </button>
-            )}
-
-            {/* Boost — orange identity, mirrors the on-image boost button. */}
-            {onBoost && (
-              <button
-                onClick={() => onBoost(card.id)}
-                className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 font-['Poppins',sans-serif] text-sm font-bold transition-colors ${
-                  isBoosted
-                    ? "bg-[#ed6624]/80 text-white hover:bg-[#ed6624]"
-                    : "bg-[#ed6624]/10 text-[#ed6624] hover:bg-[#ed6624]/20"
-                }`}
-              >
-                <Flame size={14} />
-                {isBoosted ? "Boosted" : "Boost"}
-                {typeof card.boosts === "number" && card.boosts > 0 ? <span className="opacity-80">· {card.boosts}</span> : null}
-              </button>
-            )}
           </div>
         </div>
       </div>

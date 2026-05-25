@@ -112,6 +112,11 @@ export interface Preferences {
    * (e.g. "Petition", "Crafting", "Email Campaign"). Empty array = no
    * exclusions (default). */
   excludedCategories: string[];
+  /** Categories the user has explicitly opted INTO. When non-empty, ONLY
+   * cards whose category is in this set survive the matcher's filter — a
+   * positive selection that complements `excludedCategories` (negative
+   * selection). Empty array = "any category" (default). */
+  includedCategories: string[];
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -126,6 +131,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   focusDonations: false,
   tone: { anger: 1, comedy: 1, subversion: 1, hope: 1, energy: 1 },
   excludedCategories: [],
+  includedCategories: [],
 };
 
 // ─── Category → tone defaults ─────────────────────────────────────────────────
@@ -490,6 +496,11 @@ export function score(card: ActionCardData, prefs: Preferences, ctx?: UserContex
   // the user accepts the offer to hide it going forward.
   if (prefs.excludedCategories && prefs.excludedCategories.length > 0 &&
       prefs.excludedCategories.includes(card.category)) return 0;
+  // Hard filter: positive category selection. When the user explicitly picks
+  // one or more categories in the Quick Match Tool, ONLY cards in those
+  // categories pass. Empty array = "any category" (no filter).
+  if (prefs.includedCategories && prefs.includedCategories.length > 0 &&
+      !prefs.includedCategories.includes(card.category)) return 0;
 
   // Hard filter: extreme OVERSHOOT only. When the user explicitly picks
   // "None" (slider=0) for a tone, showing them a card with "Full mockery"
@@ -807,6 +818,9 @@ function normalizePreferences(parsed: any): Preferences {
     // becomes a no-op for legacy users.
     excludedCategories: Array.isArray(parsed.excludedCategories)
       ? parsed.excludedCategories.filter((c: unknown): c is string => typeof c === "string")
+      : [],
+    includedCategories: Array.isArray(parsed.includedCategories)
+      ? parsed.includedCategories.filter((c: unknown): c is string => typeof c === "string")
       : [],
   };
 }

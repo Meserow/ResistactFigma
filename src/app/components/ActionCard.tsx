@@ -119,9 +119,9 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
   useEffect(() => { setImageFailed(false); }, [card.topImage]);
   const showTopImage = !!card.topImage && !imageFailed;
 
-  // Compact (Quick Matches preview) only shows 2 lines, so the threshold for
-  // surfacing "Read more →" is lower than the full card's 3-line clamp.
-  const isDescriptionLong = (card.description?.length ?? 0) > (compact ? 90 : READ_MORE_THRESHOLD);
+  // Compact (Quick Matches preview): 3 lines is the sweet spot — enough to
+  // tell what the action is, not so much that the tile drowns in text.
+  const isDescriptionLong = (card.description?.length ?? 0) > (compact ? 140 : READ_MORE_THRESHOLD);
 
   const completionsCount = card.completions ?? 0;
   // Effective count for display — same logic the inline span used, lifted out
@@ -340,7 +340,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
               {card.title}
             </h3>
 
-            <p className="font-['Poppins',sans-serif] text-[13px] text-gray-600 leading-relaxed line-clamp-2 flex-1">
+            <p className={`font-['Poppins',sans-serif] text-gray-600 leading-relaxed flex-1 ${compact ? "text-[12px] line-clamp-3" : "text-[13px] line-clamp-2"}`}>
               {card.description}
             </p>
 
@@ -514,7 +514,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           {/* Description — line-clamp without flex-1 in compact so the clamp
               actually applies (flex-1 fights line-clamp by forcing the element
               to fill remaining height). */}
-          <p className={`font-['Poppins',sans-serif] text-gray-600 leading-relaxed ${compact ? "text-[12px] line-clamp-2" : "text-[13px] line-clamp-3 flex-1"}`}>
+          <p className={`font-['Poppins',sans-serif] text-gray-600 leading-relaxed ${compact ? "text-[12px] line-clamp-3 flex-1" : "text-[13px] line-clamp-3 flex-1"}`}>
             {card.description}
           </p>
 
