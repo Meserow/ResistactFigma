@@ -286,7 +286,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
 
           {/* Content */}
           <div className={`relative flex flex-col flex-1 ${compact ? "gap-1 px-3 pb-2 pt-1.5" : "gap-2 px-4 pb-4 pt-3"}`}>
-            <span className={`font-['Poppins',sans-serif] font-bold tracking-wide ${compact ? "text-[10px]" : "text-[11px]"}`} style={{ color: card.categoryColor }}>
+            <span className={`font-['Poppins',sans-serif] font-bold tracking-wider uppercase ${compact ? "text-[10px]" : "text-[11px]"}`} style={{ color: card.categoryColor }}>
               {card.category}
             </span>
 
@@ -384,102 +384,115 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
             </button>
           </div>
         )}
-        {/* Top image — uses the card's own photo if available, else a
-            generic ResistAct logo banner. We render the same wrapper either
-            way so badges, controls, location pill and "I did this" sit in
-            identical positions whether or not we have real art. */}
-        <div className={`relative ${compact ? "h-[70px]" : "h-[108px]"} shrink-0 ${showTopImage && card.imageContain ? "bg-gray-50" : ""} ${!showTopImage ? "bg-[#fff8f3]" : ""}`}>
-          {showTopImage ? (
-            <ImageWithFallback
-              src={card.topImage}
-              alt={card.title}
-              className={`resistact-banner-desat w-full h-full ${card.imageContain ? "object-contain p-2" : "object-cover object-top"}`}
-              onError={() => setImageFailed(true)}
-            />
-          ) : (
-            <img
-              src={cardFallbackImg}
-              alt=""
-              aria-hidden="true"
-              className={`w-full h-full object-contain ${compact ? "p-2" : "p-4"}`}
-            />
-          )}
-          {/* Gradient overlay for readability — only on real photos. Skipped
-              for logo-fit cards and the brand fallback (both are light bg). */}
-          {showTopImage && !card.imageContain && (
-            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-          )}
-
-          {/* Stretched link removed — the whole card now opens the Read
-              More modal instead of going directly to the external URL.
-              The modal carries the link-out as its primary action button. */}
-
-          {/* Pencil + Bookmark — hidden in compact preview mode. Dark icons
-              on the brand fallback (light bg); white icons on photos. */}
-          {!compact && (
-            <div className="absolute top-2.5 right-3 flex items-center gap-1.5">
-              <TimeBadge light={showTopImage} />
-              <TopControls light={showTopImage} />
+        {compact ? (
+          /* Compact (Quick Match preview) keeps the old banner-on-top
+             layout — the preview is small enough that the horizontal
+             split would feel cramped. */
+          <div className={`relative h-[70px] shrink-0 ${showTopImage && card.imageContain ? "bg-gray-50" : ""} ${!showTopImage ? "bg-[#fff8f3]" : ""}`}>
+            {showTopImage ? (
+              <ImageWithFallback
+                src={card.topImage}
+                alt={card.title}
+                className={`resistact-banner-desat w-full h-full ${card.imageContain ? "object-contain p-2" : "object-cover object-top"}`}
+                onError={() => setImageFailed(true)}
+              />
+            ) : (
+              <img src={cardFallbackImg} alt="" aria-hidden="true" className="w-full h-full object-contain p-2" />
+            )}
+            {showTopImage && !card.imageContain && (
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+            )}
+          </div>
+        ) : (
+          /* Non-compact: image-right square + text-left (category + title +
+             inline chips). Bookmark / share controls live in absolute top-
+             right of the whole card. Pending banner sits above this block. */
+          <div className="relative flex items-stretch gap-3 p-3 pb-2">
+            {/* Top-right controls — flag + share (FloatingShareButton) and
+                the bookmark/edit pair (TopControls). Absolute on the card so
+                they hover over both the text column and the image. */}
+            <FloatingShareButton />
+            <div className="absolute top-2 right-9 z-10 flex items-center gap-1.5">
+              <TopControls light={false} />
             </div>
-          )}
 
-          {/* Type tag */}
-          {card.typeTag && (
-            <div className="absolute top-2.5 left-3 bg-white/90 backdrop-blur-sm border border-[#fb00ff] rounded-lg px-2.5 py-0.5">
-              <span className="font-['Poppins',sans-serif] font-bold text-[11px] text-[#fc20ff]">{card.typeTag}</span>
+            {/* Left: category + title + inline chips. pr-16 reserves space
+                so long titles wrap before colliding with the absolute
+                top-right control cluster. */}
+            <div className="flex-1 min-w-0 flex flex-col gap-1 pr-16">
+              <span
+                className="font-['Poppins',sans-serif] font-bold tracking-wider text-[11px] uppercase"
+                style={{ color: card.categoryColor }}
+              >
+                {card.category}
+              </span>
+              <h3 className="font-['Poppins',sans-serif] font-bold text-gray-900 leading-snug text-[15px]">
+                {card.title}
+              </h3>
+              {/* Inline meta row: time, location, type tag — replaces the
+                  badges that used to overlay the banner image. */}
+              {(card.timeCommitment || card.isOnline || card.location || card.typeTag) && (
+                <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                  <TimeBadge light={false} />
+                  {(card.isOnline || card.location) && (
+                    <span className="inline-flex items-center gap-1 max-w-full bg-gray-100 text-gray-700 rounded-md px-2 py-0.5 font-['Poppins',sans-serif] text-[11px]">
+                      {card.isOnline
+                        ? <><Globe size={11} className="text-gray-700 shrink-0" />Online</>
+                        : <><MapPin size={11} className="text-gray-700 shrink-0" /><span className="truncate">{card.location}</span></>
+                      }
+                    </span>
+                  )}
+                  {card.typeTag && (
+                    <span className="inline-flex items-center bg-white border border-[#fb00ff] rounded-md px-2 py-0.5 font-['Poppins',sans-serif] font-bold text-[11px] text-[#fc20ff]">
+                      {card.typeTag}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
-          )}
 
-          {/* Location badge on image — white pill with dark-gray text for
-              better readability against varied banner photos (the previous
-              black/50 backdrop disappeared on dark photos and felt heavy on
-              light ones). Capped at 55% of card width with truncation so long
-              location strings (e.g. sentence-style values from older imports)
-              don't grow the pill across the centered fallback logo. */}
-          {(card.isOnline || card.location) && (
-            <div className="absolute bottom-2 right-3 max-w-[55%] flex items-center gap-1 bg-white/95 backdrop-blur-sm rounded-md px-2 py-0.5 shadow-sm">
-              {card.isOnline
-                ? <><Globe size={11} className="text-gray-700 shrink-0" /><span className="font-['Poppins',sans-serif] text-[11px] text-gray-700 truncate">Online</span></>
-                : <><MapPin size={11} className="text-gray-700 shrink-0" /><span className="font-['Poppins',sans-serif] text-[11px] text-gray-700 truncate">{card.location}</span></>
-              }
+            {/* Right: square image (or fallback logo on neutral peach bg). */}
+            <div className={`relative w-20 h-20 shrink-0 rounded-lg overflow-hidden ${showTopImage && card.imageContain ? "bg-gray-50" : ""} ${!showTopImage ? "bg-[#fff8f3]" : ""}`}>
+              {showTopImage ? (
+                <ImageWithFallback
+                  src={card.topImage}
+                  alt={card.title}
+                  className={`resistact-banner-desat w-full h-full ${card.imageContain ? "object-contain p-1" : "object-cover"}`}
+                  onError={() => setImageFailed(true)}
+                />
+              ) : (
+                <img src={cardFallbackImg} alt="" aria-hidden="true" className="w-full h-full object-contain p-2" />
+              )}
             </div>
-          )}
-
-          {/* Boost button used to sit here as an image overlay; it's been
-              moved into the card-details modal only, so the grid stays
-              calm and the modal becomes the single place to take action
-              (link out, "I did this!", boost). */}
-        </div>
+          </div>
+        )}
 
         {/* Content */}
-        <div className={`relative flex flex-col flex-1 ${compact ? "gap-1 px-3 pb-2 pt-1.5" : "gap-2 px-4 pb-4 pt-3"}`}>
-          {/* Floating share button — top-right of content area, below header. Hidden in compact. */}
-          {!compact && <FloatingShareButton />}
+        <div className={`relative flex flex-col flex-1 ${compact ? "gap-1 px-3 pb-2 pt-1.5" : "gap-2 px-4 pb-4 pt-2"}`}>
+          {/* Category + title only render in compact mode here — non-compact
+              moved them into the image-right header block above. */}
+          {compact && (
+            <>
+              <span
+                className="font-['Poppins',sans-serif] font-bold tracking-wide text-[10px]"
+                style={{ color: card.categoryColor }}
+              >
+                {card.category}
+              </span>
+              <h3 className="font-['Poppins',sans-serif] font-bold text-gray-900 leading-snug text-[13px]">
+                {card.title}
+              </h3>
+            </>
+          )}
 
-          {/* Category */}
-          <span
-            className={`font-['Poppins',sans-serif] font-bold tracking-wide ${compact ? "text-[10px]" : "text-[11px]"}`}
-            style={{ color: card.categoryColor }}
-          >
-            {card.category}
-          </span>
-
-          {/* Title */}
-          <h3 className={`font-['Poppins',sans-serif] font-bold text-gray-900 leading-snug ${compact ? "text-[13px]" : "text-[15px] pr-8"}`}>
-            {card.title}
-          </h3>
-
-          {/* Description used to live here; it's been moved to modal-only
-              so the grid stays calm. The compact (Quick Match preview)
-              variant keeps the description because that view is the user's
-              only look at the card before deciding. */}
+          {/* Compact-only description preview — the user's only look at the
+              card before deciding in Quick Match. */}
           {compact && (
             <p className="font-['Poppins',sans-serif] text-gray-600 leading-relaxed text-[12px] line-clamp-3 flex-1">
               {card.description}
             </p>
           )}
-          {/* Spacer that takes the place of the description on non-compact
-              cards — keeps the footer (author + stats) anchored to the
+          {/* Spacer keeps the footer (author + stats) anchored to the
               bottom of the card so heights stay aligned across the grid. */}
           {!compact && <div className="flex-1" />}
 

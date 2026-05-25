@@ -195,9 +195,10 @@ export const GAMIFICATION_KEYFRAMES = `
        0.70 = subtle, "still colored just less neon"
        0.50 = half-saturated (Spread the Word default)
        0.35 = strong, editorial
-       0.00 = full grayscale (current default for everything else) */
+       0.20 = whisper of color (current default for everything else)
+       0.00 = full grayscale */
   .resistact-banner-desat {
-    filter: saturate(0);
+    filter: saturate(0.2);
     transition: filter 250ms ease-out;
   }
   .resistact-banner-half-desat {

@@ -7,6 +7,7 @@ import type { UserApproval } from "../lib/supabase";
 import { TierProgress } from "./TierProgress";
 import { getUserTier } from "../lib/tiers";
 import { UserAvatar } from "./UserAvatar";
+import { colorForCategory } from "../lib/categoryGroups";
 
 function ResistActLogo() {
   return (
@@ -738,15 +739,17 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
             <div className="hidden sm:flex flex-1 min-w-0 flex-wrap items-center gap-y-1.5 gap-x-1">
               {actsCats.map((option) => {
                 const selected = actsCatsSelected.includes(option);
+                const catColor = colorForCategory(option);
                 return (
                   <button
                     key={option}
                     onClick={() => toggleFilterOption("Category", option)}
                     className={`shrink-0 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
                       selected
-                        ? "bg-[#23297e] text-white border-[#23297e]"
+                        ? "text-white"
                         : "bg-white text-gray-600 border-gray-200 hover:border-[#23297e] hover:text-[#23297e]"
                     }`}
+                    style={selected ? { background: catColor, borderColor: catColor } : undefined}
                   >
                     {option}
                   </button>

@@ -16,6 +16,34 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.62",
+    date: "2026-05-25",
+    title: "Card grid rebuilt — image on the right, text on the left, color creeps back",
+    sections: [
+      {
+        heading: "New card layout",
+        items: [
+          "Cards on the Acts grid are no longer a full-width banner stacked over text. The image is now a small square on the right; the category (now ALL CAPS) and the title live on the left. Time, online/location, and type-tag chips sit inline under the title. Cards are shorter, scannable, and the eye can land on the title without a banner getting in the way.",
+          "Spread the Word stays the hero — it keeps its full banner illustration at 50% saturation as the lone color anchor in the grid.",
+          "Compact (Quick Match preview) cards keep the old banner-on-top layout because that view is small enough the horizontal split would feel cramped.",
+        ],
+      },
+      {
+        heading: "Color",
+        items: [
+          "Brought back a whisper of color: card banners go from full grayscale (saturate 0) to a faint saturate(0.2). Hover still pops the focused card back to full color.",
+          "Category filter chips now use the category's own color when selected. Click PROTEST and the chip turns navy; click CALL and it turns pink. The relationship between chip color and category color across the grid is now consistent.",
+        ],
+      },
+      {
+        heading: "Under the hood",
+        items: [
+          "Extracted the category-to-color map into a shared CATEGORY_COLORS lookup (lib/categoryGroups.ts) plus a colorForCategory() helper, so the Navbar chip and any future component pull from one place instead of redefining it.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.61",
     date: "2026-05-25",
     title: "Card grid: descriptions and \"I did this!\" move to the modal — stats take their place",
