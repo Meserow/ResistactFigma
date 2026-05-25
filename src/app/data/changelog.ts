@@ -16,6 +16,19 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.66",
+    date: "2026-05-25",
+    title: "Card category color now always matches the filter chip",
+    sections: [
+      {
+        heading: "Color drift fix",
+        items: [
+          "On the card grid, the colored category label (e.g. \"LETTER TO EDITOR\") now reads from the canonical CATEGORY_COLORS map instead of each card's stored categoryColor field. Same source of truth as the filter chip in the Navbar, so selecting a filter and seeing the matching cards renders in one consistent color. Cleans up mismatches that crept in over many import batches (a card stored as navy categoryColor for \"Letter to Editor\" now renders red-brown like every other LTE card and the chip itself).",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.65",
     date: "2026-05-25",
     title: "Bookmark moves to modal · I-did-this shows count · hot-card flicker · stats tick-up",
