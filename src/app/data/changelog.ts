@@ -16,6 +16,180 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.66",
+    date: "2026-05-25",
+    title: "Card category color now always matches the filter chip",
+    sections: [
+      {
+        heading: "Color drift fix",
+        items: [
+          "On the card grid, the colored category label (e.g. \"LETTER TO EDITOR\") now reads from the canonical CATEGORY_COLORS map instead of each card's stored categoryColor field. Same source of truth as the filter chip in the Navbar, so selecting a filter and seeing the matching cards renders in one consistent color. Cleans up mismatches that crept in over many import batches (a card stored as navy categoryColor for \"Letter to Editor\" now renders red-brown like every other LTE card and the chip itself).",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.65",
+    date: "2026-05-25",
+    title: "Bookmark moves to modal · I-did-this shows count · hot-card flicker · stats tick-up",
+    sections: [
+      {
+        heading: "Modal action row",
+        items: [
+          "\"I did this!\" pill in the modal now shows the running done count next to the label, matching the way the Boost button has always shown its count.",
+          "Bookmark moved from the icon-only top-right corner of the card into the modal as a labeled \"Bookmark\" button with the bookmark icon. Now actually discoverable for users who weren't reading the tiny outline icon as an action.",
+        ],
+      },
+      {
+        heading: "Card grid",
+        items: [
+          "Removed the bookmark icon from the top-right corner of each card (it now lives in the modal). Only the admin edit pencil stays up there, and it renders only when canEdit is true — non-admins see nothing in that slot. Text column padding tightens accordingly.",
+        ],
+      },
+      {
+        heading: "Card animations",
+        items: [
+          "Stats tick up smoothly: when a boost or done count changes, the digit animates from old → new instead of popping. Restored useAnimatedNumber on both pills.",
+          "Hot-card flicker: cards with boost counts at or above the threshold (currently 5, near the top of the catalog distribution) get a slow 2s opacity + scale pulse on the 🔥 emoji. Quiet enough to scan past, lively enough to notice. Honors prefers-reduced-motion.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.64",
+    date: "2026-05-25",
+    title: "Unified action row · titles get more room",
+    sections: [
+      {
+        heading: "Card layout",
+        items: [
+          "Pulled Flag and Share down from the top-right corner of the card and into the footer alongside Boost and Done. All four are now styled as one cohesive row: Boost and Done as small rounded pills with their color tint and count, Flag and Share as icon-only circles — same height (h-7), same rounded-full shape. Reads as a single control set, not two scattered clusters.",
+          "Spread the Word still suppresses Flag (not user-submitted) and Boost (can't boost yourself); only Done and Share render there.",
+        ],
+      },
+      {
+        heading: "Title space",
+        items: [
+          "Freed up horizontal space for card titles. With Flag and Share out of the absolute top-right, the text column drops from pr-16 to pr-9 and only needs to clear the slim bookmark + edit pair. Long titles like \"Boost Randy Rainbow's Anti-Trump Musical Parodies on TikTok\" now wrap to two lines instead of three.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.63",
+    date: "2026-05-25",
+    title: "Card footer: stats lead, author follows · KYR chip into the modal · Spread the Word loses its category label",
+    sections: [
+      {
+        heading: "Card layout",
+        items: [
+          "Flipped the card footer: 🔥 boost and ✓ done counters now sit on the left, the author block moves to the right corner with text right-aligned. Stats lead the eye; author is supporting context.",
+          "Moved the \"⚠ In-person — know your rights\" chip off the grid and into the card-details modal, where it sits right above the action row on PROTEST / FLASH MOB cards. Same field of view as the link-out, so the safety reminder lands at the moment of decision.",
+          "Spread the Word card no longer shows the \"BOOST\" category label — it's the hero card, not a category-bucketed Act, so the label was just noise.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.62",
+    date: "2026-05-25",
+    title: "Card grid rebuilt — image on the right, text on the left, color creeps back",
+    sections: [
+      {
+        heading: "New card layout",
+        items: [
+          "Cards on the Acts grid are no longer a full-width banner stacked over text. The image is now a small square on the right; the category (now ALL CAPS) and the title live on the left. Time, online/location, and type-tag chips sit inline under the title. Cards are shorter, scannable, and the eye can land on the title without a banner getting in the way.",
+          "Spread the Word stays the hero — it keeps its full banner illustration at 50% saturation as the lone color anchor in the grid.",
+          "Compact (Quick Match preview) cards keep the old banner-on-top layout because that view is small enough the horizontal split would feel cramped.",
+        ],
+      },
+      {
+        heading: "Color",
+        items: [
+          "Brought back a whisper of color: card banners go from full grayscale (saturate 0) to a faint saturate(0.2). Hover still pops the focused card back to full color.",
+          "Category filter chips now use the category's own color when selected. Click PROTEST and the chip turns navy; click CALL and it turns pink. The relationship between chip color and category color across the grid is now consistent.",
+        ],
+      },
+      {
+        heading: "Under the hood",
+        items: [
+          "Extracted the category-to-color map into a shared CATEGORY_COLORS lookup (lib/categoryGroups.ts) plus a colorForCategory() helper, so the Navbar chip and any future component pull from one place instead of redefining it.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.61",
+    date: "2026-05-25",
+    title: "Card grid: descriptions and \"I did this!\" move to the modal — stats take their place",
+    sections: [
+      {
+        heading: "Cleaner card grid",
+        items: [
+          "Removed the description text from cards on the Acts grid. The full description still lives inside the card-details modal that opens on click; the grid now reads as title + author + stats, so more cards fit per scroll and the eye can scan instead of read.",
+          "Replaced the \"I did this!\" pill on each card with a quiet read-only stats row: 🔥 boost count and ✓ done count. The action itself still lives inside the modal alongside Boost — the grid stays a preview, the modal is where you act.",
+          "Spread the Word card hides the boost stat (it can't be boosted) and shows just the share/done count.",
+          "Quick Match preview cards keep the description + Read More link — that compact view is the user's only look at the card before deciding.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.60",
+    date: "2026-05-25",
+    title: "Boost button moves into the card-details modal only",
+    sections: [
+      {
+        heading: "Cleaner card grid",
+        items: [
+          "Removed the orange \"🔥 Boost\" pill that sat on every card image. Boost still works — it just lives inside the card-details modal now, alongside \"I did this!\" and the link-out. The grid stays calmer; the action lives where the user is already paying attention.",
+          "\"I did this!\" stays on the card. Open the card to boost.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.59",
+    date: "2026-05-25",
+    title: "Card banners go full grayscale — Spread the Word stays the lone color anchor",
+    sections: [
+      {
+        heading: "Visual",
+        items: [
+          "Every Act banner is now black & white in the grid. Hover still pops the focused card back to full color, so the photo is one click of attention away.",
+          "Exception: the pinned \"Spread the Word about ResistAct\" card stays at 50% saturation so the orange/navy brand colors anchor the otherwise grayscale feed.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.58",
+    date: "2026-05-25",
+    title: "Self-link \"go follow this author\" cards sent back to admin review",
+    sections: [
+      {
+        heading: "Admin / data",
+        items: [
+          "Added a one-time server-side migration that un-approves every card whose author link points to the same place as its action URL — i.e. \"go follow @handle\" cards where the only action is to visit the author's own profile. URL match is normalized (trim, lowercase, strip trailing slash, ignore http vs https). The flagged cards land back in admin review so the team can decide which ones genuinely earn a slot under the 10% boost-only cap.",
+          "Takes effect on next Edge Function deploy. Runs once and is gated behind a version key.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.57",
+    date: "2026-05-25",
+    title: "Fixed broken \"Resistance starter pack\" Bluesky card",
+    sections: [
+      {
+        heading: "Data fix",
+        items: [
+          "The \"Subscribe to a 50-person Resistance starter pack\" card on Bluesky had a generic URL pointing to the 50501 profile instead of a real starter pack. Verified via Bluesky's API and updated to 50501's actual \"Voices of the Resistance\" starter pack (123 vetted journalists / experts / organizers). Retitled accordingly and noted the alternate \"50501: The People's Movement\" pack (26 organizers) in the description.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.56",
     date: "2026-05-25",
     title: "Stronger card-banner fade — editorial feel",

@@ -1,12 +1,13 @@
 import { memo, useEffect, useState } from "react";
-import { Bookmark, BookmarkCheck, CheckCircle2, Clock, Flag, Flame, Globe, MapPin, Pencil, Share2 } from "lucide-react";
-import { useAnimatedNumber, useHasChanged } from "../lib/animations";
+import { CheckCircle2, Clock, Globe, MapPin, Pencil } from "lucide-react";
+import { useAnimatedNumber } from "../lib/animations";
 import { ShareModal } from "./ShareModal";
 import { SpreadTheWordModal } from "./SpreadTheWordModal";
 import { CardDetailsModal } from "./CardDetailsModal";
 import { FlagCardModal } from "./FlagCardModal";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import cardFallbackImg from "../../assets/resistact-card-fallback.webp";
+import { colorForCategory } from "../lib/categoryGroups";
 
 // Approximate threshold for when the description gets clamped in the grid view.
 // We use a character count rather than measuring DOM because measuring on every
@@ -21,6 +22,13 @@ export interface ActionCardData {
   title: string;
   targetUrl?: string;
   description: string;
+  /** Optional one-line hand-authored summary that renders as the
+   *  subtitle below the title on the card. When present, takes
+   *  priority over any colon/em-dash split of the title. Keep it
+   *  ~5–10 words: "what is this Act, in plainer language than the
+   *  title". When absent, the title's split (if any) is used; if
+   *  there's no split either, no subtitle renders. */
+  synopsis?: string;
   typeTag?: string;
   location?: string;
   isOnline?: boolean;
@@ -111,6 +119,12 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
   const [shareOpen, setShareOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
+  // Pull the category color from the canonical map rather than card.categoryColor.
+  // Per-card stored colors have drifted over many imports — same category, different
+  // colors on different cards. The filter chip in the Navbar already uses
+  // CATEGORY_COLORS, and we want the on-card label to match it visually.
+  const categoryColor = colorForCategory(card.category);
+
   function openShare() {
     setShareOpen(true);
   }
@@ -124,111 +138,54 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
   const isDescriptionLong = (card.description?.length ?? 0) > (compact ? 140 : READ_MORE_THRESHOLD);
 
   const completionsCount = card.completions ?? 0;
-  // Effective count for display — same logic the inline span used, lifted out
-  // so the animated-number hook can read it consistently.
+  // Effective done count — `isCompleted` bumps it by 1 so the user sees
+  // their own click reflected immediately even before the server count
+  // catches up. Still surfaced through CardDetailsModal where the user
+  // can actually mark themselves done; on the grid it's now read-only.
   const effectiveCount = Math.max(completionsCount, isCompleted ? 1 : 0);
-  // Tween the integer toward effectiveCount on every change. On first render
-  // it just shows the current value (no tween from 0) because
-  // useAnimatedNumber seeds its "from" ref to the initial target.
-  const animatedCount = useAnimatedNumber(effectiveCount);
-  // `pop` is true after the user has caused at least one change to the count
-  // (i.e., they clicked the button). We use it to add a one-shot pop class
-  // to the button — but keyed so it re-fires on each new change.
-  const countHasChanged = useHasChanged(effectiveCount);
 
-  // ── "I did this" pill — overlaid on the header image so it reads on any
-  //    background. Uses a translucent white capsule with a green check.
-  function CompletionPill({ onImage = false }: { onImage?: boolean }) {
-    const completedClasses = "bg-[#0d8c6e] text-white shadow-md hover:bg-[#0a7159]";
-    const idleOnImageClasses =
-      "bg-white/85 backdrop-blur-sm text-[#0d8c6e] shadow-sm hover:bg-white";
-    const idleOffImageClasses =
-      "bg-[#0d8c6e]/10 text-[#0d8c6e] hover:bg-[#0d8c6e]/20";
+  // Boost button used to live here as both an image overlay and an
+  // inline action; it now lives only inside CardDetailsModal so the
+  // card grid stays calm. onBoost / isBoosted props are still passed
+  // through to the modal.
 
+  // ── ActionRow — quartet of pills/circles that lives in the card footer.
+  //    Boost and Done stats: rounded pills with icon + count, color-tinted.
+  //    Counts tick-up via useAnimatedNumber so bumps don't pop in instantly.
+  //    Flag and Share: icon-only circles. All share h-7 and rounded-full so
+  //    they read as one cohesive control set rather than two separate ones.
+  //    Cards with boosts >= HOT_BOOST_THRESHOLD get a slow flicker on the
+  //    🔥 emoji to signal "this one is moving" without screaming for
+  //    attention.
+  // 5 is roughly the top-of-distribution today (max boost in the catalog
+  // is single digits). If/when the data grows and boost counts rise into
+  // the tens, this should drift upward so the flicker stays meaningful.
+  const HOT_BOOST_THRESHOLD = 5;
+  function ActionRow() {
+    const boostCount = card.boosts ?? 0;
+    const showBoost = !card.pinToTop && boostCount > 0;
+    const showDone = effectiveCount > 0;
+    const animatedBoosts = useAnimatedNumber(boostCount);
+    const animatedDones = useAnimatedNumber(effectiveCount);
+    const isHotBoost = boostCount >= HOT_BOOST_THRESHOLD;
+    // Empty placeholder when both stats are zero — keeps the flex layout
+    // stable (justify-between still pushes the author block to the right)
+    // without rendering any visible badges. Quiet by default; the badges
+    // only earn space once there's something to count.
     return (
-      <button
-        onClick={(e) => { e.stopPropagation(); onComplete?.(card.id); }}
-        title={isCompleted ? 'Undo "I did this"' : 'Mark as done'}
-        aria-label={isCompleted ? "Undo I did this" : "I did this"}
-        // `key={effectiveCount}` on the pop wrapper re-mounts that span when
-        // the count changes, so the CSS animation re-fires every click rather
-        // than only on the first one. The outer button stays stable so React
-        // doesn't tear down the click handler.
-        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] font-bold text-[12px] whitespace-nowrap shrink-0 transition-all ${
-          isCompleted ? completedClasses : (onImage ? idleOnImageClasses : idleOffImageClasses)
-        }`}
-      >
-        {isCompleted && <span aria-hidden>✓</span>}
-        <span>{isCompleted ? "DONE!" : "I did this!"}</span>
-        {effectiveCount > 0 && (
-          <span
-            key={effectiveCount}
-            className={`opacity-80 ${countHasChanged ? "resistact-anim-pop" : ""}`}
-            style={{ display: "inline-block" }}
-          >
-            · {animatedCount.toLocaleString()}
+      <div className="flex items-center gap-1.5 shrink-0">
+        {showBoost && (
+          <span className="inline-flex items-center gap-1 px-1 text-gray-400 font-['Poppins',sans-serif] font-medium text-[11px] whitespace-nowrap">
+            <span aria-hidden className={isHotBoost ? "resistact-anim-flicker inline-block" : "inline-block"}>🔥</span>
+            <span>{animatedBoosts.toLocaleString()}</span>
           </span>
         )}
-      </button>
-    );
-  }
-
-  // ── Boost button — sibling of CompletionPill in style. Used as the image
-  //    overlay (translucent white pill) and as the inline action when there
-  //    is no header image.
-  function BoostButton({ onImage = false }: { onImage?: boolean }) {
-    const boostedClasses = "bg-[#ed6624]/80 text-white shadow-md";
-    const idleOnImageClasses =
-      "bg-white/85 backdrop-blur-sm text-[#ed6624] shadow-sm hover:bg-white";
-    const idleOffImageClasses =
-      "bg-[#ed6624]/10 text-[#ed6624] hover:bg-[#ed6624]/20";
-
-    return (
-      <button
-        onClick={(e) => { e.stopPropagation(); onBoost?.(card.id); }}
-        aria-label={isBoosted ? "Boosted" : "Boost"}
-        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] font-bold text-[12px] whitespace-nowrap shrink-0 transition-all ${
-          isBoosted ? boostedClasses : (onImage ? idleOnImageClasses : idleOffImageClasses)
-        }`}
-      >
-        <span aria-hidden>🔥</span>
-        <span>{isBoosted ? "Boosted!" : "Boost"}</span>
-        {(() => {
-          const n = Math.max(card.boosts ?? 0, isBoosted ? 1 : 0);
-          return n > 0 ? <span className="opacity-80">· {n.toLocaleString()}</span> : null;
-        })()}
-      </button>
-    );
-  }
-
-  // ── Floating share button (top-right of content area, below image) ───────
-  function FloatingShareButton() {
-    return (
-      <div className="absolute top-2 right-2 flex items-center gap-1.5 z-10">
-        {/* Flag is hidden on the pinned "Spread the Word" card — that card
-            isn't user-submitted content, so it can't be reported. */}
-        {!card.pinToTop && (
-          <button
-            onClick={(e) => { e.stopPropagation(); setFlagOpen(true); }}
-            title="Report a problem with this act"
-            aria-label={`Report ${card.title}`}
-            className="w-7 h-7 flex items-center justify-center rounded-full bg-white/90 text-gray-400 hover:text-red-500 hover:bg-white backdrop-blur-sm transition-colors"
-          >
-            <Flag size={12} />
-          </button>
+        {showDone && (
+          <span className="inline-flex items-center gap-1 px-1 text-gray-400 font-['Poppins',sans-serif] font-medium text-[11px] whitespace-nowrap">
+            <span aria-hidden>✓</span>
+            <span>{animatedDones.toLocaleString()}</span>
+          </span>
         )}
-        <button
-          onClick={(e) => { e.stopPropagation(); card.pinToTop ? setShareOpen(true) : openShare(); }}
-          title={card.pinToTop ? "Spread the word!" : "Share"}
-          aria-label={`Share ${card.title}`}
-          className={`w-7 h-7 flex items-center justify-center rounded-full backdrop-blur-sm transition-colors ${
-            card.pinToTop
-              ? "bg-[#ed6624] text-white hover:bg-[#c2521b]"
-              : "bg-white/90 text-gray-500 hover:text-[#ed6624] hover:bg-white"
-          }`}
-        >
-          {card.pinToTop ? <Flame size={13} /> : <Share2 size={13} />}
-        </button>
       </div>
     );
   }
@@ -249,46 +206,28 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
     );
   }
 
-  // Bookmark icon: fire a spring-pop animation on tap. `useHasChanged` gates
-  // the first-mount case so the bounce only happens when the user actually
-  // toggles the bookmark, not when the card renders with an already-saved
-  // state.
-  const bookmarkHasChanged = useHasChanged(!!isBookmarked);
-
-  // ── Shared top-right controls (pencil + bookmark) ──────────────────────────
+  // ── Shared top-right controls (edit pencil only — bookmark moved to modal) ─
   // On image (`light`), the icons sit inside a translucent dark pill so they
   // stay legible regardless of the photo behind them — bright/light images
   // were swallowing the white icon previously.
+  // TopControls now holds only the admin "edit" pencil. Bookmark moved
+  // into CardDetailsModal as a labeled button so non-admin users
+  // actually discover the feature. For non-admins (canEdit=false), this
+  // component renders nothing — the caller should skip rendering its
+  // wrapper too so the absolute-positioned slot doesn't reserve space.
   function TopControls({ light = true }: { light?: boolean }) {
+    if (!canEdit) return null;
     const btnCls = light
       ? "w-7 h-7 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-sm text-white hover:bg-black/55 transition-colors"
       : "text-gray-500 hover:text-[#23297e] transition-colors";
     return (
       <div className="flex items-center gap-1">
-        {canEdit && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onEdit?.(card.id); }}
-            title="Edit this act"
-            className={btnCls}
-          >
-            <Pencil size={14} />
-          </button>
-        )}
         <button
-          onClick={(e) => { e.stopPropagation(); onBookmark?.(card.id); }}
-          aria-label={isBookmarked ? "Remove bookmark" : "Bookmark"}
+          onClick={(e) => { e.stopPropagation(); onEdit?.(card.id); }}
+          title="Edit this act"
           className={btnCls}
         >
-          {/* `key={String(isBookmarked)}` re-mounts the icon wrapper on toggle
-              so the CSS pop animation re-fires each time, not just on first
-              mount. Gated by `bookmarkHasChanged` so a card that loads with
-              isBookmarked=true doesn't pop on page load. */}
-          <span
-            key={String(isBookmarked)}
-            className={bookmarkHasChanged ? "resistact-anim-bookmark inline-block" : "inline-block"}
-          >
-            {isBookmarked ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
-          </span>
+          <Pencil size={14} />
         </button>
       </div>
     );
@@ -304,7 +243,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           // haven't asked the OS for reduced motion (vestibular safety).
           // hover:z-10 keeps the lifted card painting above its neighbors
           // in the grid rather than getting clipped at edges.
-          className={`resistact-card-shine resistact-banner-host cursor-pointer bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:shadow-lg motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10`}
+          className={`resistact-card-shine resistact-banner-host transform-gpu cursor-pointer bg-white rounded-2xl border border-gray-200 flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:border-gray-300 hover:shadow-md motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10`}
           onClick={card.pinToTop ? () => setShareOpen(true) : () => setDetailsOpen(true)}
         >
           {/* Illustration — use uploaded image if available, else navy illustration */}
@@ -312,39 +251,45 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
               top of the navy hero image, every 5.5s. Featured cards are the
               ones we want to draw the eye to — the shimmer says "look here"
               without flashing or strobing. */}
-          <div className={`resistact-anim-shimmer relative ${compact ? "h-[70px]" : "h-[108px]"} shrink-0 bg-[#23297e] flex items-center justify-center overflow-hidden`}>
+          <div className={`resistact-anim-shimmer relative ${compact ? "h-[70px]" : "h-[106px]"} shrink-0 bg-[#23297e] flex items-center justify-center overflow-hidden`}>
             {card.topImage
-              ? <img src={card.topImage} alt={card.title} className="resistact-banner-desat absolute inset-0 w-full h-full object-cover object-top" />
+              ? <img src={card.topImage} alt={card.title} className={`${card.pinToTop ? "resistact-banner-half-desat" : "resistact-banner-desat"} absolute inset-0 w-full h-full object-cover object-top`} />
               : card.featuredIllustration
             }
             <div className="absolute top-2.5 right-3 flex items-center gap-1.5">
               {!compact && <TimeBadge light={true} />}
               <TopControls light={true} />
             </div>
-            {/* Spread the Word (pinToTop) doesn't show a boost — boosting yourself
-                doesn't make sense; share is the action. */}
-            {!card.pinToTop && (
-              <div className="absolute bottom-2 left-3 z-10">
-                <BoostButton onImage />
-              </div>
-            )}
+            {/* Boost lives only inside the card-details modal now — keeping
+                it off the card itself declutters the grid; users still
+                get to it after opening the card. Spread the Word never
+                showed a boost anyway. */}
           </div>
 
           {/* Content */}
-          <div className={`relative flex flex-col flex-1 ${compact ? "gap-1 px-3 pb-2 pt-1.5" : "gap-2 px-4 pb-4 pt-3"}`}>
-            <span className={`font-['Poppins',sans-serif] font-bold tracking-wide ${compact ? "text-[10px]" : "text-[11px]"}`} style={{ color: card.categoryColor }}>
-              {card.category}
-            </span>
+          <div className={`relative flex flex-col flex-1 ${compact ? "gap-1 px-3 pb-2 pt-1.5" : "gap-3 px-5 pb-5 pt-4"}`}>
+            {/* Category hidden on the pinToTop Spread the Word card —
+                it's the hero card, not a category-bucketed Act. */}
+            {!card.pinToTop && (
+              <span className={`font-['Poppins',sans-serif] font-bold tracking-wider uppercase ${compact ? "text-[10px]" : "text-[11px]"}`} style={{ color: categoryColor }}>
+                {card.category}
+              </span>
+            )}
 
             <h3 className={`font-['Poppins',sans-serif] font-bold text-gray-900 leading-snug ${compact ? "text-[13px]" : "text-[15px]"}`}>
               {card.title}
             </h3>
 
-            <p className={`font-['Poppins',sans-serif] text-gray-600 leading-relaxed flex-1 ${compact ? "text-[12px] line-clamp-3" : "text-[13px] line-clamp-2"}`}>
-              {card.description}
-            </p>
+            {/* Description: compact-only, matches the regular card. The
+                full message lives in the share modal that opens on click. */}
+            {compact && (
+              <p className="font-['Poppins',sans-serif] text-gray-600 leading-relaxed flex-1 text-[12px] line-clamp-3">
+                {card.description}
+              </p>
+            )}
+            {!compact && <div className="flex-1" />}
 
-            {isDescriptionLong && (
+            {compact && isDescriptionLong && (
               <button
                 onClick={(e) => { e.stopPropagation(); setDetailsOpen(true); }}
                 className="self-end font-['Poppins',sans-serif] italic text-[12px] font-normal text-[#ed6624] underline underline-offset-2 decoration-[#ed6624]/40 hover:decoration-[#ed6624]"
@@ -353,22 +298,23 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
               </button>
             )}
 
-            {/* Author + Boost button */}
+            {/* Action circles (left) + author (right). Stats + Flag +
+                Share share the row as one unified pill set. Spread the
+                Word suppresses both Flag (not user-submitted) and Boost
+                (can't boost yourself). */}
             <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-100">
-              <div className="flex items-center gap-2.5 min-w-0">
-                {card.authorAvatar && (
-                  <ImageWithFallback src={card.authorAvatar} alt={card.authorName} className="w-8 h-8 rounded-full object-cover ring-1 ring-gray-200 shrink-0" />
-                )}
-                <div className="min-w-0">
+              <ActionRow />
+
+              <div className="flex items-center gap-2.5 min-w-0 justify-end">
+                <div className="min-w-0 text-right">
                   <p className="font-['Poppins',sans-serif] font-semibold text-[12px] text-gray-800 truncate leading-tight">{card.authorName}</p>
                   <p className="font-['Poppins',sans-serif] text-[11px] text-gray-400 truncate leading-tight">{card.authorRole}</p>
                 </div>
+                {card.authorAvatar && (
+                  <ImageWithFallback src={card.authorAvatar} alt={card.authorName} className="w-8 h-8 rounded-full object-cover ring-1 ring-gray-200 shrink-0" />
+                )}
               </div>
-
-              <CompletionPill />
             </div>
-
-            {!compact && <FloatingShareButton />}
           </div>
         </div>
         {shareOpen && (
@@ -385,6 +331,8 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
             isCompleted={isCompleted}
             onBoost={card.pinToTop ? undefined : onBoost}
             isBoosted={isBoosted}
+            onBookmark={onBookmark}
+            isBookmarked={isBookmarked}
           />
         )}
         {flagOpen && (
@@ -407,7 +355,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           end-to-end in the modal. */}
       <div
         onClick={() => setDetailsOpen(true)}
-        className={`resistact-banner-host cursor-pointer bg-white rounded-2xl shadow-md flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:shadow-lg motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10 ${isPending ? "ring-2 ring-red-400" : ""}`}
+        className={`resistact-banner-host transform-gpu cursor-pointer bg-white rounded-2xl border border-gray-200 flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:border-gray-300 hover:shadow-md motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10 ${isPending ? "ring-2 ring-red-400" : ""}`}
       >
         {/* ── Admin: pending approval banner ── */}
         {isPending && !compact && (
@@ -425,122 +373,168 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
             </button>
           </div>
         )}
-        {/* Top image — uses the card's own photo if available, else a
-            generic ResistAct logo banner. We render the same wrapper either
-            way so badges, controls, location pill and "I did this" sit in
-            identical positions whether or not we have real art. */}
-        <div className={`relative ${compact ? "h-[70px]" : "h-[108px]"} shrink-0 ${showTopImage && card.imageContain ? "bg-gray-50" : ""} ${!showTopImage ? "bg-[#fff8f3]" : ""}`}>
-          {showTopImage ? (
-            <ImageWithFallback
-              src={card.topImage}
-              alt={card.title}
-              className={`resistact-banner-desat w-full h-full ${card.imageContain ? "object-contain p-2" : "object-cover object-top"}`}
-              onError={() => setImageFailed(true)}
-            />
-          ) : (
-            <img
-              src={cardFallbackImg}
-              alt=""
-              aria-hidden="true"
-              className={`w-full h-full object-contain ${compact ? "p-2" : "p-4"}`}
-            />
-          )}
-          {/* Gradient overlay for readability — only on real photos. Skipped
-              for logo-fit cards and the brand fallback (both are light bg). */}
-          {showTopImage && !card.imageContain && (
-            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-          )}
+        {compact ? (
+          /* Compact (Quick Match preview) keeps the old banner-on-top
+             layout — the preview is small enough that the horizontal
+             split would feel cramped. */
+          <div className={`relative h-[70px] shrink-0 ${showTopImage && card.imageContain ? "bg-gray-50" : ""} ${!showTopImage ? "bg-[#fff8f3]" : ""}`}>
+            {showTopImage ? (
+              <ImageWithFallback
+                src={card.topImage}
+                alt={card.title}
+                className={`resistact-banner-desat w-full h-full ${card.imageContain ? "object-contain p-2" : "object-cover object-top"}`}
+                onError={() => setImageFailed(true)}
+              />
+            ) : (
+              <img src={cardFallbackImg} alt="" aria-hidden="true" className="w-full h-full object-contain p-2" />
+            )}
+            {showTopImage && !card.imageContain && (
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+            )}
+          </div>
+        ) : (
+          /* Non-compact: full-width banner on top (matches the Spread the
+             Word featured card's silhouette). Overlays back on the image:
+             time badge + bookmark/edit top-right, type tag top-left,
+             location badge bottom-right. Category + title sit in the
+             content area below. */
+          <div className={`relative h-[106px] shrink-0 ${showTopImage && card.imageContain ? "bg-gray-50" : ""} ${!showTopImage ? "bg-[#fff8f3]" : ""}`}>
+            {showTopImage ? (
+              <ImageWithFallback
+                src={card.topImage}
+                alt={card.title}
+                className={`resistact-banner-desat w-full h-full ${card.imageContain ? "object-contain p-2" : "object-cover object-top"}`}
+                onError={() => setImageFailed(true)}
+              />
+            ) : (
+              <img src={cardFallbackImg} alt="" aria-hidden="true" className="w-full h-full object-contain p-4" />
+            )}
+            {/* Gradient overlay for readability — only on real photos. */}
+            {showTopImage && !card.imageContain && (
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+            )}
 
-          {/* Stretched link removed — the whole card now opens the Read
-              More modal instead of going directly to the external URL.
-              The modal carries the link-out as its primary action button. */}
-
-          {/* Pencil + Bookmark — hidden in compact preview mode. Dark icons
-              on the brand fallback (light bg); white icons on photos. */}
-          {!compact && (
+            {/* Top-right cluster: time pill + admin edit pencil. */}
             <div className="absolute top-2.5 right-3 flex items-center gap-1.5">
               <TimeBadge light={showTopImage} />
               <TopControls light={showTopImage} />
             </div>
-          )}
 
-          {/* Type tag */}
-          {card.typeTag && (
-            <div className="absolute top-2.5 left-3 bg-white/90 backdrop-blur-sm border border-[#fb00ff] rounded-lg px-2.5 py-0.5">
-              <span className="font-['Poppins',sans-serif] font-bold text-[11px] text-[#fc20ff]">{card.typeTag}</span>
-            </div>
-          )}
+            {/* Type tag on top-left of the banner. */}
+            {card.typeTag && (
+              <div className="absolute top-2.5 left-3 bg-white/90 backdrop-blur-sm border border-[#fb00ff] rounded-lg px-2.5 py-0.5">
+                <span className="font-['Poppins',sans-serif] font-bold text-[11px] text-[#fc20ff]">{card.typeTag}</span>
+              </div>
+            )}
 
-          {/* Location badge on image — white pill with dark-gray text for
-              better readability against varied banner photos (the previous
-              black/50 backdrop disappeared on dark photos and felt heavy on
-              light ones). Capped at 55% of card width with truncation so long
-              location strings (e.g. sentence-style values from older imports)
-              don't grow the pill across the centered fallback logo. */}
-          {(card.isOnline || card.location) && (
-            <div className="absolute bottom-2 right-3 max-w-[55%] flex items-center gap-1 bg-white/95 backdrop-blur-sm rounded-md px-2 py-0.5 shadow-sm">
-              {card.isOnline
-                ? <><Globe size={11} className="text-gray-700 shrink-0" /><span className="font-['Poppins',sans-serif] text-[11px] text-gray-700 truncate">Online</span></>
-                : <><MapPin size={11} className="text-gray-700 shrink-0" /><span className="font-['Poppins',sans-serif] text-[11px] text-gray-700 truncate">{card.location}</span></>
-              }
-            </div>
-          )}
+            {/* Location badge bottom-right. Capped to 55% width with
+                truncation so long location strings don't overrun the
+                banner. */}
+            {(card.isOnline || card.location) && (
+              <div className="absolute bottom-2 right-3 max-w-[55%] flex items-center gap-1 bg-white/95 backdrop-blur-sm rounded-md px-2 py-0.5 shadow-sm">
+                {card.isOnline
+                  ? <><Globe size={11} className="text-gray-700 shrink-0" /><span className="font-['Poppins',sans-serif] text-[11px] text-gray-700 truncate">Online</span></>
+                  : <><MapPin size={11} className="text-gray-700 shrink-0" /><span className="font-['Poppins',sans-serif] text-[11px] text-gray-700 truncate">{card.location}</span></>
+                }
+              </div>
+            )}
 
-          {/* "I did this" — hidden in compact preview mode and on the
-              Spread the Word pin (boosting yourself doesn't make sense). */}
-          {!compact && !card.pinToTop && (
-            <div className="absolute bottom-2 left-3 z-10">
-              <BoostButton onImage />
+            {/* Category pill — top-left of the banner. Solid category
+                color background with white text so each card carries
+                strong identity at a glance. Replaces the plain-text
+                category label that used to sit in the content area. */}
+            <div
+              className="absolute top-2.5 left-3 inline-flex items-center rounded-md px-2 py-0.5 shadow-sm"
+              style={{ backgroundColor: categoryColor }}
+            >
+              <span className="font-['Poppins',sans-serif] font-bold tracking-wide text-[11px] text-white">
+                {card.category}
+              </span>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Content */}
-        <div className={`relative flex flex-col flex-1 ${compact ? "gap-1 px-3 pb-2 pt-1.5" : "gap-2 px-4 pb-4 pt-3"}`}>
-          {/* Floating share button — top-right of content area, below header. Hidden in compact. */}
-          {!compact && <FloatingShareButton />}
+        <div className={`relative flex flex-col flex-1 ${compact ? "gap-1 px-3 pb-2 pt-1.5" : "gap-3 px-5 pb-5 pt-4"}`}>
+          {/* Category — only renders in compact (Quick Match preview)
+              mode here. Non-compact moved the category onto a pill
+              overlay on the banner's bottom-left. */}
+          {compact && (
+            <span
+              className="font-['Poppins',sans-serif] font-bold tracking-wider uppercase text-[10px]"
+              style={{ color: categoryColor }}
+            >
+              {card.category}
+            </span>
+          )}
 
-          {/* Category */}
-          <span
-            className={`font-['Poppins',sans-serif] font-bold tracking-wide ${compact ? "text-[10px]" : "text-[11px]"}`}
-            style={{ color: card.categoryColor }}
-          >
-            {card.category}
-          </span>
-
-          {/* Title */}
-          <h3 className={`font-['Poppins',sans-serif] font-bold text-gray-900 leading-snug ${compact ? "text-[13px]" : "text-[15px] pr-8"}`}>
-            {card.title}
-          </h3>
-
-          {/* Description — line-clamp without flex-1 in compact so the clamp
-              actually applies (flex-1 fights line-clamp by forcing the element
-              to fill remaining height). */}
-          <p className={`font-['Poppins',sans-serif] text-gray-600 leading-relaxed ${compact ? "text-[12px] line-clamp-3 flex-1" : "text-[13px] line-clamp-3 flex-1"}`}>
-            {card.description}
-          </p>
-
-          {/* Universal Know-Your-Rights chip on PROTEST / FLASH MOB cards in
-              the main feed. Hidden in compact (sample matches) mode to keep
-              the modal short — users will see it when they open the card. */}
-          {!compact && (() => {
-            const cat = (card.category ?? "").toUpperCase();
-            if (cat !== "PROTEST" && cat !== "FLASH MOB") return null;
+          {/* Title — full content-area width since the controls (bookmark,
+              edit) are overlaid on the banner image now, not in the content
+              area. */}
+          {/* Title with optional subtitle.
+              Subtitle source (in priority order):
+                1. card.synopsis if hand-authored — gives editorial control
+                   over what shows below the title.
+                2. Title split: if the title contains " — " em-dash or
+                   ": " colon, the part after becomes the subtitle.
+                     "Headline — location / scope" → drops em-dash
+                     "Topic: Detail"               → keeps colon on head
+                   When both are present, splits on whichever appears
+                   first so the head stays the natural opening phrase.
+                3. Nothing — no subtitle row renders.
+              Description is intentionally NOT used as a fallback;
+              auto-derived summaries read worse than no subtitle. */}
+          {(() => {
+            const t = card.title;
+            const emDashIdx = t.indexOf(" — ");
+            const colonIdx = t.indexOf(": ");
+            let head = t;
+            let tail: string = (card.synopsis ?? "").trim();
+            if (!tail) {
+              const colonFirst =
+                colonIdx >= 0 && (emDashIdx < 0 || colonIdx < emDashIdx);
+              const emDashFirst =
+                emDashIdx >= 0 && (colonIdx < 0 || emDashIdx < colonIdx);
+              if (colonFirst) {
+                head = t.slice(0, colonIdx + 1); // include the colon
+                tail = t.slice(colonIdx + 2);
+              } else if (emDashFirst) {
+                head = t.slice(0, emDashIdx);
+                tail = t.slice(emDashIdx + 3);
+              }
+            }
             return (
-              <a
-                href="https://www.aclu.org/know-your-rights/protesters-rights"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="self-start inline-flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-2 py-0.5 font-['Poppins',sans-serif] text-[11px] font-semibold text-amber-800 hover:bg-amber-100 transition-colors"
-                title="ACLU protesters' rights guide"
-              >
-                ⚠ In-person — know your rights
-              </a>
+              <h3 className={`font-['Poppins',sans-serif] font-bold text-gray-900 leading-snug ${compact ? "text-[13px]" : "text-[15px]"}`}>
+                {head}
+                {tail && (
+                  <span className={`block font-normal text-gray-500 leading-snug ${compact ? "text-[12px] mt-0.5" : "text-[13px] mt-1"}`}>
+                    {tail}
+                  </span>
+                )}
+              </h3>
             );
           })()}
 
-          {isDescriptionLong && (
+          {/* Compact-only description preview — the user's only look at the
+              card before deciding in Quick Match. */}
+          {compact && (
+            <p className="font-['Poppins',sans-serif] text-gray-600 leading-relaxed text-[12px] line-clamp-3 flex-1">
+              {card.description}
+            </p>
+          )}
+          {/* Spacer keeps the footer (author + stats) anchored to the
+              bottom of the card so heights stay aligned across the grid. */}
+          {!compact && <div className="flex-1" />}
+
+          {/* Know-Your-Rights chip moved to CardDetailsModal — keeps the
+              grid clean and shows the safety reminder right where the
+              user is about to act on a PROTEST / FLASH MOB card. */}
+
+          {/* Read More link only shows in compact (Quick Match preview)
+              mode, where the description is still rendered above. On the
+              main grid the entire card is clickable and there's no
+              description to truncate, so the link would be redundant. */}
+          {compact && isDescriptionLong && (
             <button
               onClick={(e) => { e.stopPropagation(); setDetailsOpen(true); }}
               className="self-end font-['Poppins',sans-serif] italic text-[12px] font-normal text-[#ed6624] underline underline-offset-2 decoration-[#ed6624]/40 hover:decoration-[#ed6624]"
@@ -549,19 +543,17 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
             </button>
           )}
 
-          {/* Author + Boost button — hidden in compact mode (mini preview). */}
+          {/* Action circles (left) + author (right). Stats + Flag + Share
+              share the row as one unified pill set; author lands in the
+              right corner so the stats lead the eye. Hidden in compact
+              mode (Quick Match preview is too small for this density). */}
           {!compact && (
             <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-100">
+              <ActionRow />
+
               {/* Author */}
-              <div className="flex items-center gap-2.5 min-w-0">
-                {card.authorAvatar && (
-                  <ImageWithFallback
-                    src={card.authorAvatar}
-                    alt={card.authorName}
-                    className="rounded-full object-cover ring-1 ring-gray-200 shrink-0 w-8 h-8"
-                  />
-                )}
-                <div className="min-w-0">
+              <div className="flex items-center gap-2.5 min-w-0 justify-end">
+                <div className="min-w-0 text-right">
                   <p className="font-['Poppins',sans-serif] font-semibold text-[12px] text-gray-800 truncate leading-tight">
                     {card.authorName}
                   </p>
@@ -578,9 +570,14 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
                     </p>
                   )}
                 </div>
+                {card.authorAvatar && (
+                  <ImageWithFallback
+                    src={card.authorAvatar}
+                    alt={card.authorName}
+                    className="rounded-full object-cover ring-1 ring-gray-200 shrink-0 w-8 h-8"
+                  />
+                )}
               </div>
-
-              <CompletionPill />
             </div>
           )}
         </div>
@@ -596,6 +593,10 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           isCompleted={isCompleted}
           onBoost={onBoost}
           isBoosted={isBoosted}
+          onBookmark={onBookmark}
+          isBookmarked={isBookmarked}
+          onShare={() => setShareOpen(true)}
+          onFlag={() => setFlagOpen(true)}
         />
       )}
       {flagOpen && (

@@ -1973,12 +1973,12 @@ export default function App() {
             })()}
 
             {loading ? (
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-6">
                 {Array.from({ length: 10 }).map((_, i) => <CardSkeleton key={i} />)}
               </div>
             ) : (
             <>
-            <div className={`grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4 transition-opacity duration-150 ${searchQuery !== deferredSearchQuery ? "opacity-50" : "opacity-100"}`}>
+            <div className={`grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-6 transition-opacity duration-150 ${searchQuery !== deferredSearchQuery ? "opacity-50" : "opacity-100"}`}>
               {(hasActiveFilters || showPendingActsOnly ? visibleActsCards : visibleActsCards.slice(0, displayLimit)).map((card, idx) => (
                 <div
                   key={idx < 12 ? `${card.id}-${staggerKey}` : card.id}

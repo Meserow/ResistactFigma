@@ -183,21 +183,50 @@ export const GAMIFICATION_KEYFRAMES = `
      12 cards in a row don't fight each other. On hover, the focused card
      pops back to full color. Only applied to real photo content; the brand
      fallback logo is already light and stays as-is.
-       .resistact-banner-host  → outer card wrapper, the hover target
-       .resistact-banner-desat → the banner <img> itself
+       .resistact-banner-host       → outer card wrapper, the hover target
+       .resistact-banner-desat      → b/w banner (default for all cards)
+       .resistact-banner-half-desat → 50%-saturated banner, currently used
+                                       only by the pinToTop "Spread the
+                                       Word" card so it stays a little
+                                       brand-color anchor in a grayscale
+                                       grid
      Tweak the value to taste:
+       1.00 = full color
        0.70 = subtle, "still colored just less neon"
-       0.55 = noticeably muted, magazine feel
-       0.35 = strong, editorial (current default)
-       0.20 = nearly grayscale */
+       0.50 = half-saturated (Spread the Word default)
+       0.35 = strong, editorial
+       0.10 = whisper of color (current default for everything else)
+       0.00 = full grayscale */
   .resistact-banner-desat {
-    filter: saturate(0.35);
+    filter: saturate(0.1);
     transition: filter 250ms ease-out;
   }
-  .resistact-banner-host:hover .resistact-banner-desat {
+  .resistact-banner-half-desat {
+    filter: saturate(0.5);
+    transition: filter 250ms ease-out;
+  }
+  .resistact-banner-host:hover .resistact-banner-desat,
+  .resistact-banner-host:hover .resistact-banner-half-desat {
     filter: saturate(1);
   }
   @media (prefers-reduced-motion: reduce) {
-    .resistact-banner-desat { transition: none; }
+    .resistact-banner-desat,
+    .resistact-banner-half-desat { transition: none; }
+  }
+
+  /* Hot-card flicker — applied to the 🔥 emoji on cards with boost counts
+     above the HOT_BOOST_THRESHOLD in ActionCard. A slow 2s opacity + scale
+     pulse signals "this one is moving" without flashing or strobing.
+     Reduced-motion users get a steady icon — no animation. */
+  @keyframes resistact-anim-flicker-kf {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.7; transform: scale(1.15); }
+  }
+  .resistact-anim-flicker {
+    animation: resistact-anim-flicker-kf 2s ease-in-out infinite;
+    will-change: opacity, transform;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .resistact-anim-flicker { animation: none; }
   }
 `;

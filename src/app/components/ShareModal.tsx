@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { X, Link, Mail, MessageSquare, Check } from "lucide-react";
 
 interface ShareModalProps {
@@ -171,7 +172,11 @@ export function ShareModal({ cardId, title, description, onClose }: ShareModalPr
     setTimeout(() => setToast(null), 2500);
   };
 
-  return (
+  // Render through a portal so `position: fixed` resolves to the viewport,
+  // not to whatever transformed ancestor we live under (e.g. the hover-lifted
+  // ActionCard). Same rationale as CardDetailsModal — without this the share
+  // modal anchors inside the card it was opened from instead of centering.
+  return createPortal(
     <>
       {/* Backdrop */}
       <div
@@ -241,6 +246,7 @@ export function ShareModal({ cardId, title, description, onClose }: ShareModalPr
           </div>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 }
