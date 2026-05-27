@@ -33,7 +33,7 @@ interface AdminPanelProps {
 }
 
 type TabFilter = "active" | "pending" | "approved" | "rejected" | "all";
-type PanelMode = "cards" | "users" | "nourl" | "matcher" | "online" | "bigimages" | "brokenimages" | "sameurl";
+type PanelMode = "cards" | "users" | "nourl" | "noimage" | "matcher" | "online" | "bigimages" | "brokenimages" | "sameurl";
 
 interface SameUrlCard {
   id: number;
@@ -312,6 +312,11 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
   const [urlEdits, setUrlEdits] = useState<Record<number, string>>({});
   const [urlSaving, setUrlSaving] = useState<number | null>(null);
 
+  // ── No-image cards state ─────────────────────────────────────────────────────
+  const [noImageCards, setNoImageCards] = useState<PendingCard[]>([]);
+  const [noImageLoading, setNoImageLoading] = useState(false);
+  const [noImageError, setNoImageError] = useState<string | null>(null);
+
   // ── Online-now state ─────────────────────────────────────────────────────────
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const [onlineLoading, setOnlineLoading] = useState(false);
@@ -407,7 +412,7 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
     setNoUrlLoading(true);
     setNoUrlError(null);
     try {
-      const res = await fetch(`${API}/admin/actions/no-url`, { headers: authHeaders });
+      const res = await fetch(`${API}/admin/actions/no-url?filter=url`, { headers: authHeaders });
       const data = await res.json();
       if (!res.ok) { setNoUrlError(data.error ?? "Failed to load cards."); return; }
       setNoUrlCards(data.cards ?? []);
@@ -416,6 +421,21 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
       setNoUrlError("Network error loading cards.");
     } finally {
       setNoUrlLoading(false);
+    }
+  }
+
+  async function fetchNoImageCards() {
+    setNoImageLoading(true);
+    setNoImageError(null);
+    try {
+      const res = await fetch(`${API}/admin/actions/no-url?filter=image`, { headers: authHeaders });
+      const data = await res.json();
+      if (!res.ok) { setNoImageError(data.error ?? "Failed to load cards."); return; }
+      setNoImageCards(data.cards ?? []);
+    } catch {
+      setNoImageError("Network error loading cards.");
+    } finally {
+      setNoImageLoading(false);
     }
   }
 
@@ -569,6 +589,7 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
   useEffect(() => { fetchPendingCards(); }, []);
   useEffect(() => { if (mode === "users" && users.length === 0) fetchUsers(); }, [mode]);
   useEffect(() => { if (mode === "nourl" && noUrlCards.length === 0 && !noUrlLoading) fetchNoUrlCards(); }, [mode]);
+  useEffect(() => { if (mode === "noimage" && noImageCards.length === 0 && !noImageLoading) fetchNoImageCards(); }, [mode]);
   // Online tab: fetch once when the tab opens. No auto-refresh — the
   // user said it's wasteful to repoll every 30s when they're just glancing
   // at it. Hitting the Refresh button in the header re-fetches on demand.
@@ -704,17 +725,17 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
               <div>
                 <p className="font-['Poppins',sans-serif] font-bold text-gray-900 text-base leading-tight">Admin Panel</p>
                 <p className="font-['Poppins',sans-serif] text-gray-400 text-xs">
-                  {mode === "users" ? "Manage user approvals" : mode === "nourl" ? "Cards missing an action link or top image" : mode === "online" ? "Users active in the last 7 days" : mode === "bigimages" ? "Stored images over 500 KB — optimize to shrink" : mode === "brokenimages" ? "Cards whose topImageUrl 404s — needs re-upload" : mode === "sameurl" ? "Cards where action URL = author link — bulk-import default" : "Review submitted actions"}
+                  {mode === "users" ? "Manage user approvals" : mode === "nourl" ? "Approved cards with no action link" : mode === "noimage" ? "Approved cards with no image" : mode === "online" ? "Users active in the last 7 days" : mode === "bigimages" ? "Stored images over 500 KB — optimize to shrink" : mode === "brokenimages" ? "Cards whose topImageUrl 404s — needs re-upload" : mode === "sameurl" ? "Cards where action URL = author link — bulk-import default" : "Review submitted actions"}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={mode === "users" ? fetchUsers : mode === "nourl" ? fetchNoUrlCards : mode === "online" ? fetchOnlineUsers : mode === "bigimages" ? fetchBigImages : mode === "brokenimages" ? fetchBrokenImages : mode === "sameurl" ? fetchSameUrlCards : fetchPendingCards}
-                disabled={mode === "users" ? loading : mode === "nourl" ? noUrlLoading : mode === "online" ? onlineLoading : mode === "bigimages" ? bigImagesLoading : mode === "brokenimages" ? brokenLoading : mode === "sameurl" ? sameUrlLoading : cardsLoading}
+                onClick={mode === "users" ? fetchUsers : mode === "nourl" ? fetchNoUrlCards : mode === "noimage" ? fetchNoImageCards : mode === "online" ? fetchOnlineUsers : mode === "bigimages" ? fetchBigImages : mode === "brokenimages" ? fetchBrokenImages : mode === "sameurl" ? fetchSameUrlCards : fetchPendingCards}
+                disabled={mode === "users" ? loading : mode === "nourl" ? noUrlLoading : mode === "noimage" ? noImageLoading : mode === "online" ? onlineLoading : mode === "bigimages" ? bigImagesLoading : mode === "brokenimages" ? brokenLoading : mode === "sameurl" ? sameUrlLoading : cardsLoading}
                 className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40"
               >
-                <RefreshCw size={15} className={(mode === "users" ? loading : mode === "nourl" ? noUrlLoading : mode === "online" ? onlineLoading : mode === "bigimages" ? bigImagesLoading : mode === "brokenimages" ? brokenLoading : mode === "sameurl" ? sameUrlLoading : cardsLoading) ? "animate-spin" : ""} />
+                <RefreshCw size={15} className={(mode === "users" ? loading : mode === "nourl" ? noUrlLoading : mode === "noimage" ? noImageLoading : mode === "online" ? onlineLoading : mode === "bigimages" ? bigImagesLoading : mode === "brokenimages" ? brokenLoading : mode === "sameurl" ? sameUrlLoading : cardsLoading) ? "animate-spin" : ""} />
               </button>
               <button
                 onClick={onClose}
@@ -734,7 +755,8 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
             >
               <option value="users">Users</option>
               <option value="cards">{`Cards${!cardsLoading && pendingCardsCount > 0 ? ` (${pendingCardsCount})` : ""}`}</option>
-              <option value="nourl">{`Incomplete${noUrlCards.length > 0 ? ` (${noUrlCards.length})` : ""}`}</option>
+              <option value="nourl">{`Missing URL${noUrlCards.length > 0 ? ` (${noUrlCards.length})` : ""}`}</option>
+              <option value="noimage">{`Missing Image${noImageCards.length > 0 ? ` (${noImageCards.length})` : ""}`}</option>
               <option value="online">{`Online${onlineUsers.length > 0 ? ` (${onlineUsers.length})` : ""}`}</option>
               <option value="bigimages">{`Big images${bigImages.length > 0 ? ` (${bigImages.length})` : ""}`}</option>
               <option value="brokenimages">{`Broken images${brokenImages.length > 0 ? ` (${brokenImages.length})` : ""}`}</option>
@@ -925,8 +947,8 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
               <div className="px-5 py-3 border-b border-gray-100 shrink-0">
                 <p className="font-['Poppins',sans-serif] text-xs text-gray-500">
                   {noUrlCards.length === 0 && !noUrlLoading
-                    ? "All approved cards have an action URL and a top image."
-                    : `${noUrlCards.length} approved card${noUrlCards.length !== 1 ? "s" : ""} missing a link or image`}
+                    ? "All approved cards have an action link."
+                    : `${noUrlCards.length} approved card${noUrlCards.length !== 1 ? "s" : ""} missing an action link`}
                 </p>
               </div>
 
@@ -943,7 +965,7 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
                 ) : noUrlCards.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-40 gap-2">
                     <CheckCircle2 size={28} className="text-green-200" />
-                    <p className="font-['Poppins',sans-serif] text-sm text-gray-400">All cards have links!</p>
+                    <p className="font-['Poppins',sans-serif] text-sm text-gray-400">All cards have action links!</p>
                   </div>
                 ) : (
                   <ul className="divide-y divide-gray-50">
@@ -987,6 +1009,71 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
                         </li>
                       );
                     })}
+                  </ul>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* ── NO-IMAGE mode ───────────────────────────────────────────────────────── */}
+          {mode === "noimage" && (
+            <>
+              <div className="px-5 py-3 border-b border-gray-100 shrink-0">
+                <p className="font-['Poppins',sans-serif] text-xs text-gray-500">
+                  {noImageCards.length === 0 && !noImageLoading
+                    ? "All approved cards have an image."
+                    : `${noImageCards.length} approved card${noImageCards.length !== 1 ? "s" : ""} missing a top image`}
+                </p>
+              </div>
+
+              <div className="flex-1 overflow-y-auto">
+                {noImageLoading ? (
+                  <div className="flex items-center justify-center h-40">
+                    <Loader2 size={24} className="animate-spin text-[#23297e]" />
+                  </div>
+                ) : noImageError ? (
+                  <div className="p-5 text-center">
+                    <p className="font-['Poppins',sans-serif] text-sm text-red-500">{noImageError}</p>
+                    <button onClick={fetchNoImageCards} className="mt-3 text-xs text-[#23297e] underline font-['Poppins',sans-serif]">Retry</button>
+                  </div>
+                ) : noImageCards.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-40 gap-2">
+                    <CheckCircle2 size={28} className="text-green-200" />
+                    <p className="font-['Poppins',sans-serif] text-sm text-gray-400">All cards have images!</p>
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-gray-50">
+                    {noImageCards.map((card) => (
+                      <li key={card.id} className="px-5 py-4 hover:bg-gray-50/60 transition-colors">
+                        <div className="flex items-start gap-2 mb-1.5">
+                          <span
+                            className="text-[10px] font-bold font-['Poppins',sans-serif] uppercase tracking-wider px-1.5 py-0.5 rounded-md text-white shrink-0 mt-0.5"
+                            style={{ background: card.categoryColor }}
+                          >
+                            {card.category}
+                          </span>
+                          <p className="font-['Poppins',sans-serif] font-semibold text-gray-900 text-sm leading-snug">
+                            {card.title}
+                          </p>
+                        </div>
+                        <p className="font-['Poppins',sans-serif] text-[11px] text-gray-400 mb-1.5 line-clamp-2">
+                          {card.description}
+                        </p>
+                        {card.targetUrl && (
+                          <a
+                            href={card.targetUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-['Poppins',sans-serif] text-[11px] text-[#23297e] underline decoration-dotted truncate block max-w-full"
+                          >
+                            {card.targetUrl}
+                          </a>
+                        )}
+                        <p className="font-['Poppins',sans-serif] text-[10px] text-gray-300 mt-1">
+                          ID {card.id} · open in edit modal to upload an image
+                        </p>
+                      </li>
+                    ))}
                   </ul>
                 )}
               </div>

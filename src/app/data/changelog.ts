@@ -16,6 +16,87 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.93",
+    date: "2026-05-27",
+    title: "Welcome and waitlist emails: branded redesign",
+    sections: [
+      {
+        heading: "Onboarding",
+        items: [
+          "Both transactional emails (the welcome on approval and the application-received note on signup) now use a branded template with the ResistAct logo, navy headline, orange CTA button, and a short tip block. Plain-text fallback included for accessibility and clients that don't render HTML.",
+          "Single shared template helper in the edge function so future emails (admin broadcasts, event notifications, etc.) can reuse the same look without duplication.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.92",
+    date: "2026-05-27",
+    title: "Signup now always sends an email — welcome or waitlist",
+    sections: [
+      {
+        heading: "Onboarding",
+        items: [
+          "Admin-allowlisted accounts (auto-approved on signup) now get the same welcome email that manually-approved users get. Previously these accounts slipped past the approval step and never received any email at all.",
+          "Brand-new pending users now get a short \"we got your application\" email immediately on signup, so the signup flow doesn't feel like a black hole while they wait for an admin to approve them.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.91",
+    date: "2026-05-27",
+    title: "Admin: Incomplete tab split into Missing URL and Missing Image",
+    sections: [
+      {
+        heading: "Admin",
+        items: [
+          "The Incomplete tab is now two separate tabs — Missing URL (approved acts with no action link, with an inline URL field to fix them) and Missing Image (approved acts with no image, with a link to the act's destination so you can find a good image). Both currently show zero; the split makes it easier to triage each issue type independently going forward.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.90",
+    date: "2026-05-27",
+    title: "All outgoing emails now come from noreply@resistact.org",
+    sections: [
+      {
+        heading: "Internal",
+        items: [
+          "The friend-invite email and the feedback-to-admin email were still set to send from noreply@resistact.us, a leftover from an earlier sender setup. Both now match the production domain and the new approval welcome email at noreply@resistact.org, so there's a single verified Resend sender across every transactional email the site sends.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.89",
+    date: "2026-05-27",
+    title: "Admin: Incomplete tab now correctly recognizes cartoon banners as images",
+    sections: [
+      {
+        heading: "Admin",
+        items: [
+          "The Incomplete tab was showing 137 approved acts as missing an image even though they all had cartoon banners. The check now recognizes cartoon banners as a valid image, so the count drops to zero. No acts were actually broken — this was purely an admin-panel false alarm.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.88",
+    date: "2026-05-27",
+    title: "Safari: sign in with Google + sign out now work the first time",
+    sections: [
+      {
+        heading: "Bug fix",
+        items: [
+          "On macOS Safari, clicking \"Sign in with Google\" sometimes did nothing on the first click and only worked on the second. The auth flow was doing a tiny async cryptography step in between your click and the redirect to Google — and Safari was dropping the redirect because it thought the click had \"expired.\" Switched the flow to a more compatible mode so the redirect fires immediately on click.",
+          "Sign out was occasionally leaving the UI looking signed in until reload — Safari's tracking-prevention was blocking the network call we were waiting on. We now clear your session locally first (instantly) so the UI updates right away.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.87",
     date: "2026-05-27",
     title: "Facebook share on mobile now actually works",
