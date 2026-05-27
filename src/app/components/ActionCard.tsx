@@ -207,9 +207,14 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           </span>
         )}
         {showDone && (
-          <span className="inline-flex items-center gap-1 px-1 text-gray-400 font-['Poppins',sans-serif] font-medium text-[11px] whitespace-nowrap">
+          // Done badge: brand teal-green (#0d8c6e — same identity as the
+          // "I did this!" pill inside the modal) so the checkmark reads
+          // as a positive signal at a glance, not as a neutral metric.
+          // Count stays in the same color but a touch dimmer so the
+          // checkmark anchors the eye.
+          <span className="inline-flex items-center gap-1 px-1 text-[#0d8c6e] font-['Poppins',sans-serif] font-medium text-[11px] whitespace-nowrap">
             <span aria-hidden>✓</span>
-            <span>{animatedDones.toLocaleString()}</span>
+            <span className="text-[#0d8c6e]/80">{animatedDones.toLocaleString()}</span>
           </span>
         )}
       </div>

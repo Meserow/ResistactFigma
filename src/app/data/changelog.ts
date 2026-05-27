@@ -16,6 +16,72 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.87",
+    date: "2026-05-27",
+    title: "Facebook share on mobile now actually works",
+    sections: [
+      {
+        heading: "Sharing",
+        items: [
+          "Tapping Facebook from Spread the Word on a phone (iOS or Android) used to drop you on Facebook's feed with nothing composed — Facebook stripped pre-fill from their sharer years ago. Now mobile Facebook behaves like Instagram and TikTok: we copy the caption + link to your clipboard and show a toast telling you to paste it into Facebook. Desktop is unchanged — the popup composer still pulls in the ResistAct link preview automatically.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.86",
+    date: "2026-05-27",
+    title: "Welcome email when a new user is approved",
+    sections: [
+      {
+        heading: "Onboarding",
+        items: [
+          "When an admin approves a pending user, the user now gets a short welcome email from noreply@resistact.org confirming their account is live and inviting them back to pick an act. Send is best-effort — if Resend has a hiccup, the approval itself still goes through and the failure is logged for the admin to see.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.85",
+    date: "2026-05-27",
+    title: "Your location now follows your account across devices",
+    sections: [
+      {
+        heading: "Personalization",
+        items: [
+          "Once you set your Location — either by tapping the Location pill at the top of the feed or by picking a state in the Refine Your Matches wizard — we now save it to your account and pre-apply it next time you visit (any device, any browser you're signed in on).",
+          "The two surfaces now stay in sync: pick a state in the wizard and the Location pill reflects it; pick a state on the pill and it's there next time you open the wizard. No more re-entering it.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.84",
+    date: "2026-05-27",
+    title: "Done checkmark on cards is now green",
+    sections: [
+      {
+        heading: "Visual polish",
+        items: [
+          "The ✓ done count in the corner of each card now renders in the brand teal-green (#0d8c6e) — same color as the \"I did this!\" pill inside the card modal. Previously it was gray and read as a neutral metric; now it lands as a positive signal at a glance.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.83",
+    date: "2026-05-27",
+    title: "40 acts now link directly to the action page, not just the org homepage",
+    sections: [
+      {
+        heading: "Improvements",
+        items: [
+          "Forty acts that previously linked to an org's Instagram, TikTok, or homepage now go straight to the specific action page — the sign-up form, the event finder, the how-to guide, or the tool you actually need. Highlights: United We Dream court-watch and MigraWatch hotline, 50501 protest events and marshal toolkit, Indivisible postcard-writing and town hall playbook, March for Our Lives Take Action, Sunrise Movement hub-finder, Tesla Takedown event search, Green America bank-switch map, ICE Watch/Vecinos app, and the ALA banned-books list.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.82",
     date: "2026-05-27",
     title: "Mobile: Location and Category dropdowns now actually open",

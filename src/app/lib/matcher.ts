@@ -117,6 +117,20 @@ export interface Preferences {
    * positive selection that complements `excludedCategories` (negative
    * selection). Empty array = "any category" (default). */
   includedCategories: string[];
+  /** Navbar "Location" pill selection — array of state names the user has
+   * filtered the feed by. Lives alongside `state` (which is the Match Me
+   * wizard's single-state ranking signal) so cross-device sync works for
+   * both surfaces:
+   *   - Pick a state in the Match Me wizard → `state` set, and we mirror
+   *     it into `locationFilter` so the navbar pill also reflects it next
+   *     time the user lands.
+   *   - Pick states in the navbar Location pill → `locationFilter`
+   *     populated; `state` left alone (multi-pick doesn't fit `state`'s
+   *     single-value contract).
+   * Server-persisted via `/me/preferences`, so signed-in users keep their
+   * Location filter across devices. Optional / undefined = "no filter" for
+   * back-compat with prefs saved before this field existed. */
+  locationFilter: string[];
 }
 
 export const DEFAULT_PREFERENCES: Preferences = {
@@ -132,6 +146,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   tone: { anger: 1, comedy: 1, subversion: 1, hope: 1, energy: 1 },
   excludedCategories: [],
   includedCategories: [],
+  locationFilter: [],
 };
 
 // ─── Category → tone defaults ─────────────────────────────────────────────────
@@ -821,6 +836,12 @@ function normalizePreferences(parsed: any): Preferences {
       : [],
     includedCategories: Array.isArray(parsed.includedCategories)
       ? parsed.includedCategories.filter((c: unknown): c is string => typeof c === "string")
+      : [],
+    // Same legacy-tolerance pattern as the category fields: missing key →
+    // empty array → no filter restored. Cross-device sync starts working
+    // the next time the user actually picks a Location.
+    locationFilter: Array.isArray(parsed.locationFilter)
+      ? parsed.locationFilter.filter((s: unknown): s is string => typeof s === "string")
       : [],
   };
 }
