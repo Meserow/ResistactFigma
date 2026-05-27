@@ -100,32 +100,17 @@ function buildPlatforms(siteUrl: string) {
     : siteUrl;
   const shareText = `I've been using ResistAct to find small, doable actions to push back. Come join the resistance! ${shareUrl}`;
   const enc = (s: string) => encodeURIComponent(s);
+  // Facebook killed pre-fill support in sharer.php years ago, and on mobile
+  // the FB app intercepts the URL and drops users on the feed with nothing
+  // composed. So on mobile we behave exactly like Instagram/TikTok: copy
+  // caption+link to clipboard, show a paste-it toast, and let the user paste
+  // into the FB app themselves. Desktop keeps the popup composer (the URL
+  // still attaches a link preview even without text).
+  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
   return [
-    { id: "facebook", label: "Facebook", bg: "#1877F2", fg: "#fff", icon: <FacebookIcon />, action: () => {
-      // Copy the caption + link to the clipboard so the user can paste it
-      // into Facebook's composer if needed.
-      try { navigator.clipboard?.writeText(shareText); } catch {}
-      const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-      const fbUrl = `https://${isIOS ? "m.facebook.com" : "www.facebook.com"}/sharer/sharer.php?u=${enc(shareUrl)}`;
-      if (isIOS) {
-        // iOS Safari blocks BOTH window.open AND window.location.assign when
-        // they fire from inside a modal's button handler. The only reliable
-        // workaround: build a real <a> element and click it programmatically.
-        // Safari treats that exactly like a user-clicked link — no popup
-        // blocker, no gesture-context check. Desktop path is untouched.
-        const a = document.createElement("a");
-        a.href = fbUrl;
-        a.target = "_blank";
-        a.rel = "noopener,noreferrer";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      } else {
-        // Desktop: keep existing popup behaviour so the user doesn't lose
-        // their place on the ResistAct page when sharing.
-        openShare(fbUrl, "facebook");
-      }
-    }, copyNote: "Caption + link copied. Paste it into the Facebook post — the ResistAct preview will appear." },
+    isMobile
+      ? { id: "facebook", label: "Facebook", bg: "#1877F2", fg: "#fff", icon: <FacebookIcon />, copyText: shareText, copyNote: "Text copied — paste it into Facebook!" }
+      : { id: "facebook", label: "Facebook", bg: "#1877F2", fg: "#fff", icon: <FacebookIcon />, action: () => openShare(`https://www.facebook.com/sharer/sharer.php?u=${enc(shareUrl)}`, "facebook") },
     { id: "threads",  label: "Threads",     bg: "#000", fg: "#fff", icon: <ThreadsIcon />,  action: () => openShare(`https://www.threads.net/intent/post?text=${enc(shareText)}`, "threads") },
     { id: "bluesky",  label: "Bluesky",     bg: "#0085FF", fg: "#fff", icon: <BlueSkyIcon />, action: () => openShare(`https://bsky.app/intent/compose?text=${enc(shareText)}`, "bluesky") },
     { id: "whatsapp", label: "WhatsApp",    bg: "#25D366", fg: "#fff", icon: <WhatsAppIcon />, action: () => openShare(`https://wa.me/?text=${enc(shareText)}`, "whatsapp") },

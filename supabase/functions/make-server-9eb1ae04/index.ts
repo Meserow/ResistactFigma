@@ -1261,11 +1261,83 @@ app.post("/make-server-9eb1ae04/admin/approve/:userId", async (c) => {
     record.approvedAt = new Date().toISOString();
     await kv.set(`user:approval:${targetId}`, record);
     console.log(`Admin approved user ${record.email}`);
+
+    // Best-effort welcome email. Wrapped so a Resend hiccup never blocks
+    // the approval flow itself — the admin still sees success, the user
+    // record is still flipped, and the email is logged either way.
+    sendApprovalEmail(record).catch((err) => {
+      console.log(`Approval email failed for ${record.email}:`, err);
+    });
+
     return c.json({ user: record });
   } catch (err) {
     return c.json({ error: `Approval failed: ${err}` }, 500);
   }
 });
+
+// Send the "you're approved" transactional email via Resend.
+// Fire-and-forget from the caller's perspective — caller should not await
+// this in the request hot path, and should swallow its rejection.
+async function sendApprovalEmail(record: { email: string; name?: string }): Promise<void> {
+  const resendKey = Deno.env.get("RESEND_API_KEY");
+  if (!resendKey) {
+    console.log(`Skipping approval email for ${record.email}: RESEND_API_KEY not set`);
+    return;
+  }
+  if (!record.email) return;
+
+  const safeName = escapeHtml((record.name ?? "").trim() || "there");
+  const siteUrl = "https://resistact.org";
+
+  const text = `Hi ${record.name?.trim() || "there"},
+
+Your ResistAct account is approved — welcome.
+
+Pick one. Do it. Share it. Come back tomorrow:
+${siteUrl}
+
+— The ResistAct team`;
+
+  const html = `<p>Hi ${safeName},</p>
+<p>Your ResistAct account is approved — welcome.</p>
+<p>Pick one. Do it. Share it. Come back tomorrow:<br>
+<a href="${siteUrl}">${siteUrl}</a></p>
+<p>— The ResistAct team</p>`;
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${resendKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: "ResistAct <noreply@resistact.org>",
+      to: record.email,
+      subject: "You're approved — welcome to ResistAct",
+      text,
+      html,
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Resend ${res.status}: ${body}`);
+  }
+  console.log(`Approval email sent to ${record.email}`);
+}
+
+// Minimal HTML-escape for interpolating user-controlled strings (e.g. names)
+// into the welcome email body. Resend renders the html field as-is, so any
+// user can't be allowed to inject markup into a mail their own future self
+// receives.
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 // ─── ADMIN: Reject user ───────────────────────────────────────────────────────
 app.post("/make-server-9eb1ae04/admin/reject/:userId", async (c) => {

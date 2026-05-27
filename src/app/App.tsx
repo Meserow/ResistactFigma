@@ -31,7 +31,7 @@ import { TierModal } from "./components/TierModal";
 import { CelebrationModal } from "./components/CelebrationModal";
 import { FeedbackModal } from "./components/FeedbackModal";
 import { SmacksPage, STATIC_SMACKS, type ReceiptCard } from "./components/SmacksPage";
-import { rankCards, score as scoreCard, loadPreferences, clearPreferences, applyMatcherConfig, fetchUserPreferences, pushUserPreferences, savePreferences, timeBucketFor, cardIsLocalToState, settingMatches, type Preferences, type UserContext } from "./lib/matcher";
+import { rankCards, score as scoreCard, loadPreferences, clearPreferences, applyMatcherConfig, fetchUserPreferences, pushUserPreferences, savePreferences, timeBucketFor, cardIsLocalToState, settingMatches, DEFAULT_PREFERENCES, type Preferences, type UserContext } from "./lib/matcher";
 import svgPaths from "../imports/svg-77lgd1zdt6";
 import { projectId, publicAnonKey } from "/utils/supabase/info";
 import { supabase } from "./lib/supabase";
@@ -464,6 +464,11 @@ export default function App() {
   const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>(
     () => readPillFilters()?.activeFilters ?? {},
   );
+  // Live ref to the latest activeFilters so async callbacks (e.g. the auth
+  // sync handler) can read it without going stale across re-renders. The
+  // useEffect below keeps it in lock-step with the state.
+  const activeFiltersRef = useRef(activeFilters);
+  useEffect(() => { activeFiltersRef.current = activeFilters; }, [activeFilters]);
   const [activeTab, setActiveTab] = useState<"facts" | "acts" | "receipts">("acts");
   const [smacksPendingVersion, setSmacksPendingVersion] = useState(0);
   // ── Smacks filter / sort state lifted up so the navbar can render the same
@@ -1096,10 +1101,28 @@ export default function App() {
       const remote = await fetchUserPreferences(token);
       if (remote) {
         savePreferences(remote);
+        // Cross-device restore for the Navbar Location pill. Whichever
+        // surface the user picked their location on — pill, or Match Me
+        // wizard via the state→locationFilter mirror below — the saved
+        // values flow back into activeFilters.Location so the new device
+        // wakes up with the same location filter applied. Other pills
+        // (Category, etc.) still live in localStorage only.
+        if (Array.isArray(remote.locationFilter) && remote.locationFilter.length > 0) {
+          setActiveFilters((prev) => ({ ...prev, Location: remote.locationFilter }));
+        }
       } else {
         const local = loadPreferences();
         if (local) {
-          await pushUserPreferences(token, local);
+          // On first server-side miss (new account / new device with
+          // nothing pushed yet), seed locationFilter from the local pill
+          // state if the user happens to already have a Location picked.
+          // Otherwise the server record would land with `locationFilter:
+          // []` and future devices would have nothing to restore.
+          const localLoc = activeFiltersRef.current?.Location ?? [];
+          const seeded = localLoc.length > 0 && local.locationFilter.length === 0
+            ? { ...local, locationFilter: localLoc }
+            : local;
+          await pushUserPreferences(token, seeded);
         }
       }
     } catch (err) {
@@ -1202,6 +1225,26 @@ export default function App() {
   useEffect(() => {
     writePillFilters({ activeFilters, quickActionsOnly, showDone, sortBy });
   }, [activeFilters, quickActionsOnly, showDone, sortBy]);
+
+  // ── Cross-device sync for the Location pill (signed-in users only) ──
+  //    The Match Me preferences blob is the only thing we sync to the
+  //    user account today; piggybacking the Location pill onto it lets a
+  //    signed-in user keep their location filter across devices without
+  //    standing up a new endpoint. Debounced lightly so rapid pill
+  //    toggling doesn't fire a request per click — we wait for the user
+  //    to settle before pushing. The local pill state stays the source
+  //    of truth on the active session; this is just a follow-up sync. ──
+  useEffect(() => {
+    if (!accessToken) return;
+    const loc = activeFilters["Location"] ?? [];
+    const handle = window.setTimeout(() => {
+      const current = loadPreferences() ?? DEFAULT_PREFERENCES;
+      const next: Preferences = { ...current, locationFilter: loc };
+      savePreferences(next);
+      pushUserPreferences(accessToken, next);
+    }, 600);
+    return () => window.clearTimeout(handle);
+  }, [activeFilters, accessToken]);
 
   // ── Sync cards from Supabase ──
   const PAGE_SIZE = 20;
@@ -2371,11 +2414,21 @@ export default function App() {
           initialStep={matchInitialStep}
           onClose={() => { setMatchOpen(false); setMatchInitialStep(0); }}
           onApply={(prefs) => {
-            setMatchPrefs(prefs);
-            savePreferences(prefs);
+            // Mirror Match Me's state into the Location pill so the
+            // navbar reflects what the user picked in the wizard — and
+            // so the same value flows through localStorage / server
+            // sync as if they'd set it on the pill directly. Empty
+            // state clears the pill rather than carrying stale values.
+            const mirrored: Preferences = {
+              ...prefs,
+              locationFilter: prefs.state ? [prefs.state] : [],
+            };
+            setMatchPrefs(mirrored);
+            savePreferences(mirrored);
+            setActiveFilters((prev) => ({ ...prev, Location: mirrored.locationFilter }));
             setMatchOpen(false);
             setStaggerKey((k) => k + 1);
-            analytics.matchSet(prefs.time, prefs.tone);
+            analytics.matchSet(mirrored.time, mirrored.tone);
             // First-match-ever confetti. The flag is per-browser (localStorage)
             // so a user who's switched devices may see it again — that's fine,
             // the moment is "you finished the wizard for the first time HERE".
@@ -2395,16 +2448,23 @@ export default function App() {
             // Anonymous users skip the push — their prefs stay in localStorage
             // until they sign up, at which point syncMatchPreferencesOnLogin
             // hands them up on first auth.
-            if (accessToken) pushUserPreferences(accessToken, prefs);
+            if (accessToken) pushUserPreferences(accessToken, mirrored);
           }}
           onJoinResistance={(prefs) => {
             // Save the picks first so they survive the auth flow — when the
             // user comes back signed in, syncMatchPreferencesOnLogin pushes
-            // them to the server and they keep their lineup.
-            setMatchPrefs(prefs);
-            savePreferences(prefs);
+            // them to the server and they keep their lineup. Same
+            // state→locationFilter mirror as the onApply path so the pill
+            // and the wizard always agree on the user's location.
+            const mirrored: Preferences = {
+              ...prefs,
+              locationFilter: prefs.state ? [prefs.state] : [],
+            };
+            setMatchPrefs(mirrored);
+            savePreferences(mirrored);
+            setActiveFilters((prev) => ({ ...prev, Location: mirrored.locationFilter }));
             setMatchOpen(false);
-            analytics.matchSet(prefs.time, prefs.tone);
+            analytics.matchSet(mirrored.time, mirrored.tone);
             setAuthModalOpen(true);
           }}
         />
