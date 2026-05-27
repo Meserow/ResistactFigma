@@ -1066,8 +1066,15 @@ app.get("/make-server-9eb1ae04/admin/actions/no-url", async (c) => {
     // (default)     → both (legacy behaviour, kept for backwards compat)
     const filter = c.req.query("filter") ?? "all"; // "url" | "image" | "all"
 
-    const hasImage = (card: any) =>
-      !!(card.topImageUrl || card.topImageKey || card.cartoonImageUrl);
+    const hasImage = (card: any) => {
+      if (card.topImageUrl || card.topImageKey) return true;
+      // cartoonImageUrl only counts if it's an absolute CDN URL — KV rows
+      // written before the Storage CDN move still carry the old local path
+      // (/cartoon-banners/card-N.webp) which 404s in production. Relative
+      // paths are treated as missing so the admin panel surfaces them.
+      const cartoon = card.cartoonImageUrl ?? "";
+      return cartoon.startsWith("https://") || cartoon.startsWith("http://");
+    };
 
     const matches = (card: any) => {
       if (!card || typeof card !== "object") return false;
@@ -1302,9 +1309,11 @@ app.post("/make-server-9eb1ae04/admin/approve/:userId", async (c) => {
 // brand orange (#ed6624) on the CTA, brand navy (#23297e) on the headline.
 //
 // The logo URL points at public/email/resistact-logo.png on the prod
-// frontend, so it goes live the next time the frontend deploys. Until
-// then, the alt text "ResistAct" stands in.
-const LOGO_URL = "https://resistact.org/email/resistact-logo.png";
+// frontend. We hit the canonical www subdomain directly — the bare
+// apex 301-redirects to www, and Apple Mail's image-privacy proxy
+// (plus some other clients) doesn't follow that redirect when it
+// pre-fetches images, so the apex URL would surface as "no image."
+const LOGO_URL = "https://www.resistact.org/email/resistact-logo.png";
 const SITE_URL = "https://resistact.org";
 
 interface EmailTemplate {

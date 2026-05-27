@@ -16,6 +16,19 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.95",
+    date: "2026-05-27",
+    title: "Admin: Missing Image tab now correctly flags 111 cards with broken cartoon paths",
+    sections: [
+      {
+        heading: "Admin",
+        items: [
+          "The Missing Image tab was reporting zero broken cards even though 111 approved acts had a cartoon banner path pointing to the old local file location (not the CDN). The check now only counts a cartoon URL as valid if it's an absolute https:// URL — relative paths from before the CDN migration are treated as missing. The Missing Image tab will now show all 111 affected cards.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.94",
     date: "2026-05-27",
     title: "Fix: cartoon banners missing on some cards after CDN move",
