@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Bookmark, BookmarkCheck, CheckCircle2, ExternalLink, Flag, Flame, Globe, MapPin, Share2, X } from "lucide-react";
+import { Bookmark, BookmarkCheck, CheckCircle2, ExternalLink, Flag, Flame, Globe, Loader2, MapPin, Pencil, Share2, X } from "lucide-react";
 import type { ActionCardData } from "./ActionCard";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
-import { colorForCategory } from "../lib/categoryGroups";
+import { CATEGORY_COLORS, CATEGORY_GROUPS, colorForCategory } from "../lib/categoryGroups";
+import { projectId } from "/utils/supabase/info";
+
+const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
 
 interface CardDetailsModalProps {
   card: ActionCardData;
@@ -26,6 +29,17 @@ interface CardDetailsModalProps {
       renders a small flag icon button at top-right. Skipped for the
       pinned Spread the Word card. */
   onFlag?: () => void;
+  /** Admin-only: when true, the category pill becomes click-to-edit so
+   *  admins can re-categorize a card without opening the full edit modal.
+   *  Pairs with `accessToken` + `onCardUpdated`; if either is missing the
+   *  edit affordance silently no-ops. */
+  canEdit?: boolean;
+  /** Supabase access token, used for the PUT /actions/:id call that
+   *  commits a category change. Required for the in-modal edit to fire. */
+  accessToken?: string | null;
+  /** Bubbles the server's updated card back up to App so the feed's
+   *  source-of-truth state and any other open views stay in sync. */
+  onCardUpdated?: (updated: ActionCardData) => void;
 }
 
 /**
@@ -33,8 +47,47 @@ interface CardDetailsModalProps {
  * `line-clamp-5` cuts it off in the grid view. Click the "Read more" link on a
  * card to open this; click overlay / Escape / X to close.
  */
-export function CardDetailsModal({ card, onClose, onShare, onComplete, isCompleted, onBoost, isBoosted, onBookmark, isBookmarked, onFlag }: CardDetailsModalProps) {
+export function CardDetailsModal({ card, onClose, onShare, onComplete, isCompleted, onBoost, isBoosted, onBookmark, isBookmarked, onFlag, canEdit, accessToken, onCardUpdated }: CardDetailsModalProps) {
   const cardRef = useRef<HTMLDivElement>(null);
+
+  // ── Admin: inline category editor ──────────────────────────────────────
+  // Only renders when canEdit + accessToken are both present. `catEditOpen`
+  // toggles the dropdown; `catSaving` disables interaction while the PUT
+  // is in flight; `catError` surfaces backend failures inline below the
+  // dropdown so the admin doesn't have to look anywhere else for feedback.
+  // The locally-displayed category is read from card.category directly so
+  // once the parent updates state (via onCardUpdated), the pill rerenders
+  // with the new value automatically — no internal mirror state needed.
+  const [catEditOpen, setCatEditOpen] = useState(false);
+  const [catSaving, setCatSaving]     = useState(false);
+  const [catError, setCatError]       = useState<string | null>(null);
+  const canEditCategory = !!(canEdit && accessToken && onCardUpdated);
+
+  async function saveCategory(next: string) {
+    if (!canEditCategory) return;
+    if (next === card.category) { setCatEditOpen(false); return; }
+    setCatSaving(true);
+    setCatError(null);
+    try {
+      const res = await fetch(`${API}/actions/${card.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({
+          category:      next,
+          categoryColor: CATEGORY_COLORS[next] ?? "#23297e",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setCatError(data.error ?? "Save failed."); return; }
+      onCardUpdated?.(data.card as ActionCardData);
+      setCatEditOpen(false);
+    } catch (err) {
+      console.error("Category save error:", err);
+      setCatError("Network error.");
+    } finally {
+      setCatSaving(false);
+    }
+  }
 
   // Return-from-action prompt: when the user clicks the primary "I want
   // to ResistAct!" link, the target opens in a new tab and we set a
@@ -164,16 +217,71 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
               </div>
             )}
             {/* Category pill — top-left of the banner, matches the on-card
-                placement so the modal feels like a zoomed-in card. */}
+                placement so the modal feels like a zoomed-in card. Admins
+                get a pencil affordance + click-to-edit dropdown so wrongly
+                categorised cards can be fixed without the full edit modal. */}
             {showCategoryPill && (
-              <div
-                className="absolute top-3 left-3 inline-flex items-center rounded-md px-2.5 py-1 shadow-sm"
-                style={{ backgroundColor: categoryColor }}
-              >
-                <span className="font-['Poppins',sans-serif] font-bold tracking-wide text-[12px] text-white">
-                  {card.category}
-                </span>
+              <div className="absolute top-3 left-3 z-10">
+                {canEditCategory ? (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setCatEditOpen((v) => !v); setCatError(null); }}
+                    title="Change category (admin)"
+                    className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 shadow-sm transition-opacity hover:opacity-90"
+                    style={{ backgroundColor: categoryColor }}
+                  >
+                    <span className="font-['Poppins',sans-serif] font-bold tracking-wide text-[12px] text-white">
+                      {card.category}
+                    </span>
+                    {catSaving ? <Loader2 size={11} className="text-white animate-spin" /> : <Pencil size={10} className="text-white/85" />}
+                  </button>
+                ) : (
+                  <div
+                    className="inline-flex items-center rounded-md px-2.5 py-1 shadow-sm"
+                    style={{ backgroundColor: categoryColor }}
+                  >
+                    <span className="font-['Poppins',sans-serif] font-bold tracking-wide text-[12px] text-white">
+                      {card.category}
+                    </span>
+                  </div>
+                )}
+                {canEditCategory && catEditOpen && (
+                  <CategoryEditPopover
+                    current={card.category}
+                    onPick={saveCategory}
+                    onClose={() => setCatEditOpen(false)}
+                    error={catError}
+                    saving={catSaving}
+                  />
+                )}
               </div>
+            )}
+          </div>
+        )}
+        {/* Banner-less fallback: when there's no header image, the pill
+            above never renders. Surface an admin-only category editor in
+            the content area so re-categorisation still works on those
+            cards. Non-admins (or cards without a category) see nothing. */}
+        {!card.cartoonImageUrl && !card.topImage && showCategoryPill && canEditCategory && (
+          <div className="px-5 sm:px-7 pt-5 relative">
+            <button
+              onClick={(e) => { e.stopPropagation(); setCatEditOpen((v) => !v); setCatError(null); }}
+              title="Change category (admin)"
+              className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 shadow-sm transition-opacity hover:opacity-90"
+              style={{ backgroundColor: categoryColor }}
+            >
+              <span className="font-['Poppins',sans-serif] font-bold tracking-wide text-[12px] text-white">
+                {card.category}
+              </span>
+              {catSaving ? <Loader2 size={11} className="text-white animate-spin" /> : <Pencil size={10} className="text-white/85" />}
+            </button>
+            {catEditOpen && (
+              <CategoryEditPopover
+                current={card.category}
+                onPick={saveCategory}
+                onClose={() => setCatEditOpen(false)}
+                error={catError}
+                saving={catSaving}
+              />
             )}
           </div>
         )}
@@ -324,5 +432,79 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
       </div>
     </div>,
     document.body,
+  );
+}
+
+// ── Admin category-picker popover ─────────────────────────────────────────
+// Floats below the category pill. Grouped by the canonical CATEGORY_GROUPS
+// (Make/Do, Reach Out, Show Up, Care, Money/Stuff, Other) so the admin
+// scans by theme rather than 26 chips in a wall. The current category is
+// highlighted with its color background; others render as quiet pills. A
+// click stops propagation so the modal's outside-click-to-close doesn't
+// dismiss the picker prematurely.
+function CategoryEditPopover({
+  current,
+  onPick,
+  onClose,
+  error,
+  saving,
+}: {
+  current: string;
+  onPick: (next: string) => void;
+  onClose: () => void;
+  error: string | null;
+  saving: boolean;
+}) {
+  return (
+    <div
+      onClick={(e) => e.stopPropagation()}
+      className="absolute top-full left-0 mt-1.5 w-72 max-w-[calc(100vw-2rem)] bg-white border border-gray-200 rounded-xl shadow-2xl p-3 z-30"
+    >
+      <div className="flex items-center justify-between mb-2">
+        <p className="font-['Poppins',sans-serif] text-[11px] uppercase tracking-widest text-gray-400 font-semibold">
+          Move to category
+        </p>
+        <button
+          onClick={onClose}
+          aria-label="Cancel"
+          className="text-gray-400 hover:text-gray-700"
+        >
+          <X size={14} />
+        </button>
+      </div>
+      <div className="max-h-64 overflow-y-auto space-y-2.5 pr-1">
+        {CATEGORY_GROUPS.map((group) => (
+          <div key={group.heading}>
+            <p className="font-['Poppins',sans-serif] text-[10px] uppercase tracking-wider text-gray-300 font-semibold mb-1">
+              {group.heading}
+            </p>
+            <div className="flex flex-wrap gap-1">
+              {group.categories.map((cat) => {
+                const isCurrent = cat === current;
+                const color = CATEGORY_COLORS[cat] ?? "#23297e";
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => onPick(cat)}
+                    disabled={saving}
+                    className={`px-2 py-0.5 rounded-md font-['Poppins',sans-serif] text-[11px] font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                      isCurrent
+                        ? "text-white"
+                        : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                    }`}
+                    style={isCurrent ? { backgroundColor: color } : undefined}
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+      {error && (
+        <p className="mt-2 font-['Poppins',sans-serif] text-[11px] text-red-500">{error}</p>
+      )}
+    </div>
   );
 }

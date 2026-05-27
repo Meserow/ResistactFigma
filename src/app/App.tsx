@@ -1760,6 +1760,7 @@ export default function App() {
                       newActionsToday={newToday}
                       onMatchClick={() => setMatchOpen(true)}
                       onAskClick={() => setAskOpen(true)}
+                      onHowClick={() => setInfoOpen(true)}
                       hasMatchPrefs={matchPrefs !== null}
                     />
                   );
@@ -2170,6 +2171,7 @@ export default function App() {
                   isPending={isAdminUser && card.adminApproved === false}
                   onApprove={isAdminUser ? handleApproveCard : undefined}
                   accessToken={accessToken}
+                  onCardUpdated={handleCardSaved}
                 />
                 </div>
               ))}

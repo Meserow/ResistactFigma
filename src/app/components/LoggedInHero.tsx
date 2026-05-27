@@ -7,10 +7,11 @@ interface LoggedInHeroProps {
   newActionsToday: number;
   onMatchClick?: () => void;
   onAskClick?: () => void;
+  onHowClick?: () => void;
   hasMatchPrefs?: boolean;
 }
 
-export function LoggedInHero({ name, streak, newActionsToday, onMatchClick, onAskClick, hasMatchPrefs }: LoggedInHeroProps) {
+export function LoggedInHero({ name, streak, newActionsToday, onMatchClick, onAskClick, onHowClick, hasMatchPrefs }: LoggedInHeroProps) {
   const firstName = name.split(/\s+/)[0] || name;
   const greeting = streak <= 1 ? "Welcome to the resistance" : "Welcome back to the resistance";
   const subline =
@@ -37,7 +38,7 @@ export function LoggedInHero({ name, streak, newActionsToday, onMatchClick, onAs
         </p>
 
         <div className="mt-4">
-          <HeroPills onMatchClick={onMatchClick} onAskClick={onAskClick} hasMatchPrefs={hasMatchPrefs} />
+          <HeroPills onMatchClick={onMatchClick} onAskClick={onAskClick} onHowClick={onHowClick} hasMatchPrefs={hasMatchPrefs} />
         </div>
       </div>
     </div>
