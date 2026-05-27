@@ -1,0 +1,407 @@
+[
+  {
+    "id": 1169,
+    "title": "Subscribe + share Documented (NYC immigration)",
+    "original_url": "https://documentedny.com/",
+    "proposed_url": "https://documentedny.com/newsletter/",
+    "reasoning": "Direct newsletter signup page confirmed in search results: 'Join Documented's Newsletter' at /newsletter/. The homepage is journalism content, not the subscription CTA.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1171,
+    "title": "Subscribe + share The Lever",
+    "original_url": "https://www.levernews.com/",
+    "proposed_url": "https://www.levernews.com/subscribe/",
+    "reasoning": "Direct subscribe page confirmed: 'Subscribe to The Lever, Support Investigative Journalism' at /subscribe/. Also a /join/ page exists; /subscribe/ is the primary CTA.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1172,
+    "title": "Submit + share a press-freedom incident",
+    "original_url": "https://pressfreedomtracker.us/",
+    "proposed_url": "https://pressfreedomtracker.us/contact/",
+    "reasoning": "Search results show incident reporting goes via the Contact page and email to press@pressfreedomtracker.us. No dedicated public 'submit an incident' form URL surfaced beyond /contact/.",
+    "confidence": "medium",
+    "notes": "A /all-incidents/ page exists for browsing the database. The submit/report path routes through /contact/ based on search snippet text."
+  },
+  {
+    "id": 1174,
+    "title": "Download free protest art",
+    "original_url": "https://amplifier.org/",
+    "proposed_url": "https://amplifier.org/free-downloads/",
+    "reasoning": "Confirmed dedicated free-downloads page at /free-downloads/ with 1,000+ artworks available for non-commercial print use.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1175,
+    "title": "Download free anti-fascist posters",
+    "original_url": "https://justseeds.org/",
+    "proposed_url": "https://justseeds.org/graphics/",
+    "reasoning": "Search confirms 'Downloadable Graphics - Justseeds' lives at /graphics/ — the main repository of free downloadable activist designs.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1176,
+    "title": "Download educational graphics",
+    "original_url": "https://beehivecollective.org/",
+    "proposed_url": "https://beehivecollective.org/graphics-projects/use-our-graphics/",
+    "reasoning": "Search surfaces 'Use Our Graphics' at /graphics-projects/use-our-graphics/ and /graphics-projects/ as the download hub for their anti-copyright educational art.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1177,
+    "title": "Submit an embroidery piece",
+    "original_url": "https://www.tinypricksproject.com/",
+    "proposed_url": "https://www.tinypricksproject.com/participate/",
+    "reasoning": "Search confirms a 'Participate' page at /participate/ — the submission/how-to-contribute page for the embroidery project.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1178,
+    "title": "Apply to programs",
+    "original_url": "https://www.tonyc.nyc/",
+    "proposed_url": "https://www.tonyc.nyc/public_workshops",
+    "reasoning": "Search surfaces 'Public Trainings - Theatre of the Oppressed NYC' at /public_workshops — the direct listing of current trainings with application info. Also /workshops exists as a broader page.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1179,
+    "title": "Use the tactical-prank toolkit",
+    "original_url": "https://theyesmen.org/",
+    "proposed_url": "https://theyesmen.org/learn/bookoftricks",
+    "reasoning": "Search confirms 'The Book of Tricks' at /learn/bookoftricks — their step-by-step satirical action guide. Also /learn and /learn/tools exist as related pages.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1180,
+    "title": "Refer an artist at risk",
+    "original_url": "https://artistsatriskconnection.org/",
+    "proposed_url": "https://artistsatriskconnection.org/i-am-at-risk/",
+    "reasoning": "Search shows 'I am at risk – ARC' at /i-am-at-risk/ as the intake form for artists needing help. However the card says 'refer an artist' (third-party referral), which may route through /contact/ instead. Best available deep link is /i-am-at-risk/ which has the encrypted intake form.",
+    "confidence": "medium",
+    "notes": "Card says 'refer an artist at risk' implying third-party submission; site primarily serves artists seeking help themselves via /i-am-at-risk/. A referral may go through /contact/ at artistsatriskconnection.org/contact/."
+  },
+  {
+    "id": 1181,
+    "title": "Find your local mutual aid network",
+    "original_url": "https://www.mutualaidhub.org/",
+    "proposed_url": "https://www.mutualaidhub.org/",
+    "reasoning": "Only one result returned for the site: the homepage itself. The interactive map/directory IS the homepage. No sub-page surfaced.",
+    "confidence": "medium",
+    "notes": "homepage is the action — the mutual aid map/directory appears to be embedded on the homepage."
+  },
+  {
+    "id": 1186,
+    "title": "Volunteer as a translator for asylum seekers",
+    "original_url": "https://respondcrisistranslation.org/",
+    "proposed_url": "https://respondcrisistranslation.org/en/get-involved",
+    "reasoning": "Confirmed 'Get Involved' page at /en/get-involved which lists volunteer opportunities including translator and grant-writer roles.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1192,
+    "title": "Boost Sludge's dark-money & GOP-donor reporting",
+    "original_url": "https://readsludge.com/",
+    "proposed_url": "https://readsludge.com/membership/",
+    "reasoning": "Search confirms subscribe/membership page at /membership/ — 'Get the real story behind the headlines - Sludge' with free daily newsletter and paid membership options.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1193,
+    "title": "Boost Bolts Magazine's local-democracy reporting",
+    "original_url": "https://boltsmag.org/",
+    "proposed_url": "https://boltsmag.org/newsletter/",
+    "reasoning": "Confirmed newsletter signup page 'Join our newsletter - Bolts Mag' at /newsletter/.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1194,
+    "title": "Boost Drop Site News on Trump's wars & civil liberties",
+    "original_url": "https://www.dropsitenews.com/",
+    "proposed_url": "https://www.dropsitenews.com/subscribe",
+    "reasoning": "Confirmed subscribe page at /subscribe — Drop Site is Substack-hosted so /subscribe is the direct subscription CTA.",
+    "confidence": "high",
+    "notes": "Drop Site News is Substack-hosted; /subscribe is the Substack subscription endpoint."
+  },
+  {
+    "id": 1196,
+    "title": "Boost More Perfect Union's worker-power journalism",
+    "original_url": "https://perfectunion.us/",
+    "proposed_url": "https://substack.perfectunion.us/",
+    "reasoning": "More Perfect Union has a Substack at substack.perfectunion.us which is the subscription hub. The main perfectunion.us homepage is video/journalism content; subscription is via Substack.",
+    "confidence": "medium",
+    "notes": "homepage is the action for video content; Substack homepage at substack.perfectunion.us is where newsletter subscription happens."
+  },
+  {
+    "id": 1202,
+    "title": "Boost Inkstick's anti-war foreign-policy reporting",
+    "original_url": "https://inkstickmedia.com/",
+    "proposed_url": "https://inkstickmedia.com/newsletters/",
+    "reasoning": "Confirmed 'Keep In Touch - Inkstick' newsletter signup page at /newsletters/.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1203,
+    "title": "Read + share data",
+    "original_url": "https://inequality.org/",
+    "proposed_url": "https://inequality.org/facts/",
+    "reasoning": "The action is reading/sharing wealth-concentration data. The /facts/ page is the main data hub with charts and statistics. Also /resources/inequality-weekly/ for the newsletter.",
+    "confidence": "medium",
+    "notes": "Card says 'read + share wealth-concentration data' — /facts/ is the chart library; /subscribe at inequality.org/subscribe also exists for the weekly newsletter."
+  },
+  {
+    "id": 1204,
+    "title": "Sign up for op-ed training",
+    "original_url": "https://www.theopedproject.org/",
+    "proposed_url": "https://www.theopedproject.org/workshops",
+    "reasoning": "Confirmed 'Workshops — The OpEd Project' at /workshops — the schedule, signup, and scholarship info page for their 'Write to Change the World' trainings.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1205,
+    "title": "Use weekly LTE prompts (formerly Sister District)",
+    "original_url": "https://stateswin.org/",
+    "proposed_url": "https://stateswin.org/take-action/",
+    "reasoning": "Search found 'Take Action - States Win' at /take-action/ which is the closest action hub. No dedicated LTE-specific sub-page indexed.",
+    "confidence": "medium",
+    "notes": "stateswin.org rebranded from Sister District; no LTE-specific tool page surfaced in search. /take-action/ is the best available deep link. The LTE prompt feature may be behind a login or email list."
+  },
+  {
+    "id": 1206,
+    "title": "Use the Two-Minute Activist tool",
+    "original_url": "https://www.aauw.org/",
+    "proposed_url": "https://www.aauw.org/act/two-minute-activist/",
+    "reasoning": "Confirmed 'Become an AAUW Two-Minute Activist!' at /act/two-minute-activist/ — the direct landing page for the tool with LTE templates and submission links.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1207,
+    "title": "Use the LTE writer tool",
+    "original_url": "https://www.sierraclub.org/",
+    "proposed_url": "https://www.sierraclub.org/write-your-letter-editor",
+    "reasoning": "Confirmed 'Write Your Letter to the Editor | Sierra Club' at /write-your-letter-editor — the online LTE submission form with local paper targeting.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1208,
+    "title": "Use LTE templates with verified statistics",
+    "original_url": "https://inequality.org/",
+    "proposed_url": "https://inequality.org/action/",
+    "reasoning": "Search confirms 'Action - Inequality.org' at /action/ which includes letter-writing tools and LTE resources with verified stats.",
+    "confidence": "medium",
+    "notes": "No dedicated LTE-template-only page surfaced; /action/ is the action hub. For the data/charts themselves, /facts/ is better."
+  },
+  {
+    "id": 1215,
+    "title": "Call peer crisis line: 877-565-8860",
+    "original_url": "https://translifeline.org/",
+    "proposed_url": "https://translifeline.org/",
+    "reasoning": "The card action is to call or save a phone number — a deep-link page won't change the action. The homepage prominently features the hotline number. No better deep link needed.",
+    "confidence": "high",
+    "notes": "homepage is the action — hotline number is the CTA, not a web form."
+  },
+  {
+    "id": 1216,
+    "title": "Reach via 24/7 chat / text / phone",
+    "original_url": "https://www.thetrevorproject.org/",
+    "proposed_url": "https://www.thetrevorproject.org/get-help/",
+    "reasoning": "Confirmed 'Get Help' page at /get-help/ — the direct gateway for crisis chat, text (678-678), and phone (1-866-488-7386) access.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1217,
+    "title": "Call peer hotline / chat",
+    "original_url": "https://lgbthotline.org/",
+    "proposed_url": "https://lgbthotline.org/chat/",
+    "reasoning": "Search confirms '1-on-1 Online Peer Support Chat' at /chat/ and /national-hotline/ for phone. Since the card mentions both call and chat, /chat/ is the most direct web action; the hotline number is available from any page.",
+    "confidence": "high",
+    "notes": "For phone-only users: lgbthotline.org/national-hotline/ is also a valid deep link."
+  },
+  {
+    "id": 1218,
+    "title": "Text HOME to 741741",
+    "original_url": "https://www.crisistextline.org/",
+    "proposed_url": "https://www.crisistextline.org/",
+    "reasoning": "The action is texting a number — no web form needed. The homepage IS the CTA with the text number prominently displayed. The /how-it-works/ path confirmed but the action is off-site (text message).",
+    "confidence": "high",
+    "notes": "homepage is the action — text 741741 is the CTA."
+  },
+  {
+    "id": 1220,
+    "title": "Find a peer mental-health chapter",
+    "original_url": "https://activeminds.org/",
+    "proposed_url": "https://activeminds.org/programs/chapters/",
+    "reasoning": "Search confirms 'Chapter Network | Active Minds' at /programs/chapters/ as the hub for finding and joining campus chapters.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1221,
+    "title": "Find a free virtual support group",
+    "original_url": "https://www.nami.org/",
+    "proposed_url": "https://www.nami.org/support-groups/",
+    "reasoning": "Confirmed 'Support Groups | NAMI' at /support-groups/ — the main page to find in-person and virtual free peer support groups.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1223,
+    "title": "Sign up to run for office (under 40, progressive)",
+    "original_url": "https://runforsomething.net/",
+    "proposed_url": "https://runforsomething.net/run/",
+    "reasoning": "Confirmed 'Run For Office' page at /run/ — the primary signup/candidacy entry point. Also /signup/ exists as a lighter email-capture entry.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1224,
+    "title": "Apply to candidate training (women)",
+    "original_url": "https://voterunlead.org/",
+    "proposed_url": "https://voterunlead.org/",
+    "reasoning": "No specific /apply/ or /programs/ sub-page surfaced in search results. The homepage appears to be the primary entry point for training interest. Legacy site at legacy.voterunlead.org also indexed but no application page found.",
+    "confidence": "low",
+    "notes": "No dedicated application or training sub-page indexed. Homepage may have a top-level CTA. Consider checking voterunlead.org/programs/ or voterunlead.org/training/ manually."
+  },
+  {
+    "id": 1225,
+    "title": "Apply to candidate training (Dem women)",
+    "original_url": "https://emergeamerica.org/",
+    "proposed_url": "https://emergeamerica.org/candidate-training/",
+    "reasoning": "Search confirms 'Candidate Training - Emerge America' at /candidate-training/ as the hub, with /training-application-links/ for the signature program application and /candidate-training/boot-camps/ for boot camps.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1226,
+    "title": "Apply to candidate training (Black women)",
+    "original_url": "https://higherheightsforamerica.org/",
+    "proposed_url": "https://higherheightsforamerica.org/",
+    "reasoning": "Multiple searches for a training/apply sub-page on higherheightsforamerica.org returned only the homepage and a job application page. No candidate-training application page was indexed.",
+    "confidence": "low",
+    "notes": "No candidate training application page found in search results. Site may have limited indexing or the training pipeline may route through a partner org. Homepage is best available URL."
+  },
+  {
+    "id": 1233,
+    "title": "Find DOJ-accredited rep training",
+    "original_url": "https://www.cliniclegal.org/",
+    "proposed_url": "https://www.cliniclegal.org/training/accreditation",
+    "reasoning": "Confirmed 'Information About CLINIC Training for DOJ Recognition and Accreditation' at /training/accreditation — the direct page for the accreditation training pathway.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1251,
+    "title": "Sell your Tesla",
+    "original_url": "https://www.teslatakedown.com",
+    "proposed_url": "https://www.teslatakedown.com/story",
+    "reasoning": "The 'Sell your Tesla' action resolves to sharing your sell story on /story — 'Why did you sell your Tesla?' The homepage has the core sell/dump/protest messaging but /story is the specific submission page for sellers.",
+    "confidence": "medium",
+    "notes": "homepage is also effectively the action — the site's entire CTA is 'sell your Tesla, dump your stock.' /story is where sellers report back."
+  },
+  {
+    "id": 1252,
+    "title": "Dump your TSLA stock",
+    "original_url": "https://www.teslatakedown.com",
+    "proposed_url": "https://www.teslatakedown.com/divest",
+    "reasoning": "Search confirms a /divest page ('City Resolutions | Tesla Takedown') focused on divestment — city council resolutions and pension fund pressure. This is the closest page to the stock-dumping action.",
+    "confidence": "medium",
+    "notes": "The /divest page is oriented toward institutional divestment (city resolutions, pension funds). Individual stock selling may land on /story or the homepage. No dedicated individual TSLA-sell page found."
+  },
+  {
+    "id": 1253,
+    "title": "Find a Tesla Takedown protest near you",
+    "original_url": "https://www.teslatakedown.com",
+    "proposed_url": "https://actionnetwork.org/event_campaigns/teslatakedown",
+    "reasoning": "The protest map/RSVP function is hosted on Action Network at actionnetwork.org/event_campaigns/teslatakedown — confirmed as the primary event finder with zip-code search. The Tesla Takedown homepage links out to this map.",
+    "confidence": "high",
+    "notes": "Deep link is on a third-party platform (Action Network), not teslatakedown.com itself. This is the confirmed event map URL."
+  },
+  {
+    "id": 1254,
+    "title": "Plan a Tesla Takedown protest in your city",
+    "original_url": "https://www.teslatakedown.com",
+    "proposed_url": "https://www.teslatakedown.com/",
+    "reasoning": "No dedicated 'host an action' toolkit page was found as a sub-URL on teslatakedown.com. The homepage contains the host-an-action instructions and links to Action Network for hosting. No better deep link available.",
+    "confidence": "low",
+    "notes": "homepage is the action — host toolkit may be embedded on homepage or linked from there to Action Network. Check manually for a /host or /organize sub-page."
+  },
+  {
+    "id": 1270,
+    "title": "50501 Joplin / Citizens Against Tyranny — monthly meeting",
+    "original_url": "https://events.pol-rev.com/",
+    "proposed_url": "https://events.pol-rev.com/",
+    "reasoning": "The card is for a specific dated event (Sat May 16, Joplin, MO). The base URL is an event platform (Political Revolution / pol-rev.com). Without the specific event UUID the homepage is the best available — the event listing itself may have expired or be time-limited.",
+    "confidence": "low",
+    "notes": "This is a time-specific local meeting card (May 16). The event URL would be a UUID-based path like /events/{uuid} that is ephemeral. Homepage is the event calendar platform."
+  },
+  {
+    "id": 1271,
+    "title": "BloNo IL community meeting & cookout (Central IL Iron Front)",
+    "original_url": "https://events.pol-rev.com/",
+    "proposed_url": "https://events.pol-rev.com/",
+    "reasoning": "Same as 1270 — specific dated event (Sun May 17, Bloomington, IL) on the Political Revolution event platform. Event-specific UUID path would be ephemeral.",
+    "confidence": "low",
+    "notes": "Time-specific local event card (May 17). Homepage is the platform calendar; the specific event UUID link would be short-lived."
+  },
+  {
+    "id": 1272,
+    "title": "We The People of Ohio — Constitution day in Mentor",
+    "original_url": "https://events.pol-rev.com/",
+    "proposed_url": "https://events.pol-rev.com/",
+    "reasoning": "Same as 1270/1271 — specific dated event (Sun May 17, Mentor, OH). Event-specific path would be ephemeral.",
+    "confidence": "low",
+    "notes": "Time-specific local event card (May 17). Homepage is best durable URL for the event platform."
+  },
+  {
+    "id": 1278,
+    "title": "Subscribe to Blaire Erskine's Substack",
+    "original_url": "https://blaireerskine.substack.com/",
+    "proposed_url": "https://blaireerskine.substack.com/",
+    "reasoning": "This is a Substack URL — the homepage IS the subscription page. Substack homepages always display a Subscribe CTA prominently.",
+    "confidence": "high",
+    "notes": "homepage is the action — Substack homepage is the subscription page."
+  },
+  {
+    "id": 1360,
+    "title": "Color Your Way Through Trump 2.0 with Fresh Prints' Anti-Trump Resistance Coloring Book",
+    "original_url": "https://freshprintshandmade.etsy.com",
+    "proposed_url": "https://www.etsy.com/listing/1847181751/anti-trump-adult-coloring-book-pages",
+    "reasoning": "Search found the specific Etsy listing for Fresh Prints Handmade's anti-Trump adult coloring book ('Coloring Through Chaos') at etsy.com/listing/1847181751. The shop URL redirects to Etsy's standard shop format; the listing URL goes directly to the product.",
+    "confidence": "medium",
+    "notes": "Listing 1847181751 is Volume 1 ('Coloring Through Chaos'). Volume 2 is at etsy.com/listing/4337274101. The shop domain freshprintshandmade.etsy.com may redirect to etsy.com/shop/freshprintshandmade."
+  },
+  {
+    "id": 1383,
+    "title": "Build (and Whack) a Trumpiñata with Carlyn Yandle's Collaborative How-To",
+    "original_url": "https://carlynyandle.substack.com",
+    "proposed_url": "https://carlynyandle.substack.com",
+    "reasoning": "This is a Substack URL. No specific piñata how-to post was found via title/keyword search. The homepage is the Substack subscription page. The specific article, if it exists, would need to be found by browsing the archive.",
+    "confidence": "medium",
+    "notes": "homepage is the action for subscription purposes. The specific piñata post URL was not found in search results — the article may be paywalled, titled differently, or not yet published. Substack homepage is the best available link."
+  },
+  {
+    "id": 1401,
+    "title": "Color Your Way Through Resistance With Fresh Prints's Anti-Trump Coloring Book",
+    "original_url": "https://freshprintshandmade.etsy.com/",
+    "proposed_url": "https://www.etsy.com/listing/1847181751/anti-trump-adult-coloring-book-pages",
+    "reasoning": "Same shop as card 1360. Specific Etsy product listing URL found for the anti-Trump coloring book (listing 1847181751 — 'Coloring Through Chaos'). Direct product link is better than the shop homepage.",
+    "confidence": "medium",
+    "notes": "Duplicate of card 1360 (same shop/product, different title framing). Both should point to the same listing or the shop page at etsy.com/shop/freshprintshandmade."
+  }
+]

@@ -1,0 +1,407 @@
+[
+  {
+    "id": 1058,
+    "title": "Sign Black-led racial-justice petitions",
+    "original_url": "https://colorofchange.org/",
+    "proposed_url": "https://colorofchange.org/issues/",
+    "reasoning": "colorofchange.org/issues/ is the campaign/issues hub that lists all active petitions and campaigns. Individual petitions also live under /actionkit-petitions/ but the issues page is the durable landing point for the full queue.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1059,
+    "title": "Sign civil-liberties petitions",
+    "original_url": "https://demandprogress.org/",
+    "proposed_url": "https://demandprogress.org/get-involved/",
+    "reasoning": "demandprogress.org/get-involved/ is their action hub. Individual petitions live on act.demandprogress.org but the get-involved page is the stable entry point for new visitors. Synopsis says 'EFF digital-rights petition queue' but the URL is Demand Progress, not EFF — possible synopsis mis-tag.",
+    "confidence": "high",
+    "notes": "Synopsis says 'EFF digital-rights petition queue' but the URL is demandprogress.org (Demand Progress), not eff.org (Electronic Frontier Foundation). Synopsis is mis-tagged."
+  },
+  {
+    "id": 1061,
+    "title": "Sign Christian-rooted petitions vs. Christian nationalism",
+    "original_url": "https://www.faithfulamerica.org/",
+    "proposed_url": "https://www.faithfulamerica.org/campaigns/resist-christian-nationalism",
+    "reasoning": "Found a direct campaigns page at faithfulamerica.org/campaigns/resist-christian-nationalism. Individual petition actions live on act.faithfulamerica.org/sign/* but the campaigns page is the durable queue.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1062,
+    "title": "Sign anti-militarism petitions",
+    "original_url": "https://winwithoutwar.org/",
+    "proposed_url": "https://winwithoutwar.org/take-action/",
+    "reasoning": "winwithoutwar.org/take-action/ is explicitly their petitions and action hub. Individual petitions also hosted on act.winwithoutwar.org.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1063,
+    "title": "Sign petitions to close ICE facilities",
+    "original_url": "https://www.detentionwatchnetwork.org/",
+    "proposed_url": "https://www.detentionwatchnetwork.org/take-action/campaigns",
+    "reasoning": "detentionwatchnetwork.org/take-action/campaigns lists all active campaigns including the #CommunitiesNotCages facility-closure campaigns. More targeted than /take-action alone.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1064,
+    "title": "Sign the open letter against book bans",
+    "original_url": "https://www.authorsagainstbookbans.com/",
+    "proposed_url": null,
+    "reasoning": "The site (authorsagainstbookbans.com) does not appear to surface a direct deep-link sign-on form page from search results. The homepage appears to be the primary action surface. The org is oriented around authors/publishers joining by email rather than a public petition form.",
+    "confidence": "low",
+    "notes": "Membership/sign-on appears to be author/illustrator/publishing-professional only — not general public. Homepage may be the intended action. No standalone petition URL found in search results."
+  },
+  {
+    "id": 1067,
+    "title": "Sign children's-rights petitions",
+    "original_url": "https://www.childrensdefense.org/",
+    "proposed_url": "https://www.childrensdefense.org/get-involved/take-action/",
+    "reasoning": "childrensdefense.org/get-involved/take-action/ is the dedicated advocacy action hub. Found directly in search results.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1068,
+    "title": "Become a SURJ member",
+    "original_url": "https://surj.org/",
+    "proposed_url": "https://surj.org/join/",
+    "reasoning": "surj.org/join/ is the dedicated membership page. Also found act.surj.org/a/national-member for direct dues signup and act.surj.org/a/member-orientation for the orientation signup.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1069,
+    "title": "Become a DSA member",
+    "original_url": "https://www.dsausa.org/",
+    "proposed_url": "https://act.dsausa.org/donate/membership/",
+    "reasoning": "act.dsausa.org/donate/membership/ is the direct online membership application and dues payment page — exactly what 'Become a DSA member' promises.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1070,
+    "title": "Join Sunrise Movement",
+    "original_url": "https://www.sunrisemovement.org/",
+    "proposed_url": "https://www.sunrisemovement.org/join/",
+    "reasoning": "sunrisemovement.org/join/ is the direct join/get-involved page. Also found sunrisemovement.org/become-a-member/ as an alternative.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1071,
+    "title": "Join Mijente",
+    "original_url": "https://mijente.net/",
+    "proposed_url": "https://mijente.net/join/",
+    "reasoning": "mijente.net/join/ is the dedicated membership page listing options. Latinx/Chicanx membership eligibility applies; non-Latinx allies have a separate path.",
+    "confidence": "high",
+    "notes": "Membership is open to Latinx/Chicanx people; allies can sign the listserv separately."
+  },
+  {
+    "id": 1072,
+    "title": "Join United We Dream",
+    "original_url": "https://unitedwedream.org/",
+    "proposed_url": "https://unitedwedream.org/join-united-we-dream/",
+    "reasoning": "unitedwedream.org/join-united-we-dream/ is the direct join page. Also found unitedwedream.org/here-to-stay-network/ for allies who want the Here to Stay network.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1073,
+    "title": "Join Bend the Arc",
+    "original_url": "https://www.bendthearc.us/",
+    "proposed_url": "https://www.bendthearc.us/",
+    "reasoning": "Search results show regional /signup pages (e.g. /southjersey_signup, /seattle_signup) but no single national join page. The homepage is the best entry point — users are directed to local chapter signups from there.",
+    "confidence": "low",
+    "notes": "No single national join/membership page found. Local chapter signups are city-specific URLs. Homepage is the best entry."
+  },
+  {
+    "id": 1074,
+    "title": "Join Jewish Voice for Peace",
+    "original_url": "https://www.jewishvoiceforpeace.org/",
+    "proposed_url": "https://www.jewishvoiceforpeace.org/join-us/",
+    "reasoning": "jewishvoiceforpeace.org/join-us/ is the dedicated join page. Also found jewishvoiceforpeace.org/local/ for finding a chapter.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1075,
+    "title": "Join T'ruah (rabbinic human rights)",
+    "original_url": "https://truah.org/",
+    "proposed_url": "https://truah.org/actions/",
+    "reasoning": "truah.org/actions/ is their action hub for rabbis and cantors. The 'Chaverim' membership is specifically for ordained clergy (rabbis/cantors); the general public takes actions from the actions page.",
+    "confidence": "medium",
+    "notes": "Formal membership (Chaverim network) is restricted to rabbis and cantors. For the card title 'Join T'ruah,' truah.org/chaverim-hub/ may be more accurate if targeting clergy; truah.org/actions/ for general supporters."
+  },
+  {
+    "id": 1076,
+    "title": "Subscribe to FCNL action alerts (Quaker)",
+    "original_url": "https://www.fcnl.org/",
+    "proposed_url": "https://act.fcnl.org/signup/signup-action-alerts",
+    "reasoning": "act.fcnl.org/signup/signup-action-alerts is the direct action alerts signup page. Exactly what the card title promises.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1077,
+    "title": "Join Pax Christi USA (Catholic peace)",
+    "original_url": "https://paxchristiusa.org/",
+    "proposed_url": "https://paxchristiusa.org/join/",
+    "reasoning": "paxchristiusa.org/join/ is the dedicated membership page for Pax Christi USA.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1078,
+    "title": "Take a NETWORK action (Catholic social justice)",
+    "original_url": "https://networklobby.org/",
+    "proposed_url": "https://networklobby.org/take-action/",
+    "reasoning": "Search results confirm NETWORK Lobby has ongoing action campaigns (ICE/CBP funding, healthcare, budget). The path /take-action/ is a standard NETWORK Lobby nav item. No direct search result for the URL but strongly inferred from site structure and multiple 'take action' references.",
+    "confidence": "medium",
+    "notes": "URL inferred from site nav pattern — not confirmed by explicit search snippet, but NETWORK Lobby consistently uses /take-action/ across their campaign posts."
+  },
+  {
+    "id": 1080,
+    "title": "Take a Sikh Coalition action",
+    "original_url": "https://www.sikhcoalition.org/",
+    "proposed_url": "https://www.sikhcoalition.org/get-involved/take-action/",
+    "reasoning": "sikhcoalition.org/get-involved/take-action/ found directly in search results as their action hub. Multiple live campaigns confirmed (voting rights, asylum seekers, military service).",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1084,
+    "title": "Volunteer with Mothers Out Front",
+    "original_url": "https://mothersoutfront.org/",
+    "proposed_url": "https://mothersoutfront.org/get-involved/",
+    "reasoning": "mothersoutfront.org/get-involved/ is the volunteer/involvement hub. Found directly in search results.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1085,
+    "title": "Take an ADAPT action (disability rights)",
+    "original_url": "https://adapt.org/",
+    "proposed_url": "https://adapt.org/getting-involved/",
+    "reasoning": "adapt.org/getting-involved/ found directly in search results. Also found adapt.org/how-to-save-medicaid-through-direct-action/ as a specific action page.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1086,
+    "title": "Take a Black Voters Matter action",
+    "original_url": "https://blackvotersmatterfund.org/",
+    "proposed_url": "https://blackvotersmatterfund.org/action-hub/",
+    "reasoning": "blackvotersmatterfund.org/action-hub/ is explicitly described in search results as 'a single place to find every petition, call, letter, and campaign powered by Black Voters Matter.'",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1087,
+    "title": "Take a Mi Familia Vota action",
+    "original_url": "https://www.mifamiliavota.org/",
+    "proposed_url": "https://mifamiliavota.org/volunteer",
+    "reasoning": "mifamiliavota.org/volunteer found directly in search results. Also found an engagement pledge page. The volunteer page is the most direct action entry point.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1088,
+    "title": "Take a Climate Justice Alliance action",
+    "original_url": "https://climatejusticealliance.org/",
+    "proposed_url": "https://climatejusticealliance.org/workgroup/our-power/",
+    "reasoning": "CJA's primary member action vehicle is the Our Power communities program. No generic /take-action/ page found. The Our Power workgroup page is their most direct action entry point for frontline community organizing.",
+    "confidence": "medium",
+    "notes": "CJA is primarily a coalition of organizations, not a direct individual action platform. No single 'take action' page found. Our Power communities is the closest match."
+  },
+  {
+    "id": 1091,
+    "title": "Sponsor a refugee household",
+    "original_url": "https://welcome.us/",
+    "proposed_url": "https://welcome.us/become-a-sponsor/intro-to-sponsorship",
+    "reasoning": "welcome.us/become-a-sponsor/intro-to-sponsorship is the intro page for sponsorship. Also found welcome.us/become-a-sponsor/what-is-the-welcome-corps for the Welcome Corps program.",
+    "confidence": "high",
+    "notes": "IMPORTANT: The Welcome Corps (federal private sponsorship program) was terminated by the Trump administration. The program may no longer be accepting new sponsors. Card should be reviewed for accuracy/dormancy."
+  },
+  {
+    "id": 1092,
+    "title": "Make your city 'welcoming' for immigrants",
+    "original_url": "https://welcomingamerica.org/",
+    "proposed_url": "https://welcomingamerica.org/the-welcoming-standard/",
+    "reasoning": "welcomingamerica.org/the-welcoming-standard/ is the 'Certified Welcoming' program where local governments go through a process to become a certified welcoming city. This directly matches the card's action.",
+    "confidence": "high",
+    "notes": "Welcoming Network membership is for local governments and nonprofits, not individual residents. Individual users should be directed to advocacy around pressuring their city to apply."
+  },
+  {
+    "id": 1093,
+    "title": "Pressure your mayor on sanctuary policy",
+    "original_url": "https://www.citiesforaction.us/",
+    "proposed_url": "https://www.citiesforaction.us/actions",
+    "reasoning": "citiesforaction.us/actions is their advocacy actions page. Also found citiesforaction.us/mayors_challenge as a mayor-specific engagement page.",
+    "confidence": "medium",
+    "notes": "Cities for Action is a mayors' coalition — it's aimed at elected officials, not residents pressuring mayors. The /actions page is the closest match for an individual to see what the coalition supports and use that to pressure their mayor, but there's no direct 'contact your mayor' tool found."
+  },
+  {
+    "id": 1094,
+    "title": "Volunteer to furnish + resettle refugee homes",
+    "original_url": "https://www.homesnotborders.org/",
+    "proposed_url": "https://www.homesnotborders.org/volunteer/",
+    "reasoning": "homesnotborders.org/volunteer/ found directly in search results as the dedicated volunteer signup page.",
+    "confidence": "high",
+    "notes": "Homes Not Borders operates in the DC Metro Area — geographically limited."
+  },
+  {
+    "id": 1095,
+    "title": "Get an organizer for your workplace",
+    "original_url": "https://workerorganizing.org/",
+    "proposed_url": "https://workerorganizing.org/lets-organize-your-workplace-3276/",
+    "reasoning": "workerorganizing.org/lets-organize-your-workplace-3276/ is the page to request a workplace organizer. The homepage is EWOC's main site but this path lands directly on the organizer request form.",
+    "confidence": "medium",
+    "notes": "The numeric slug suggests this may be a campaign-specific post URL and could change. The homepage (workerorganizing.org) also surfaces the organizer request form prominently."
+  },
+  {
+    "id": 1096,
+    "title": "Join the federal-worker network",
+    "original_url": "https://www.federalunionists.net/",
+    "proposed_url": "https://www.federalunionists.net/join-us",
+    "reasoning": "federalunionists.net/join-us found directly in search results as the dedicated join page for the Federal Unionists Network.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1097,
+    "title": "Subscribe to independent labor media",
+    "original_url": "https://labornotes.org/",
+    "proposed_url": "https://labornotes.org/email-signup",
+    "reasoning": "labornotes.org/email-signup is the free email newsletter signup. Also found labornotes.org/store/labor-notes-subscription for paid magazine subscription.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1098,
+    "title": "Start a workplace petition",
+    "original_url": "https://home.coworker.org/",
+    "proposed_url": "https://home.coworker.org/campaign-support/",
+    "reasoning": "home.coworker.org/campaign-support/ is the page specifically for starting or getting support for a workplace petition campaign. Found directly in search results.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1099,
+    "title": "Take a UE solidarity action",
+    "original_url": "https://www.ueunion.org/",
+    "proposed_url": "https://www.ueunion.org/campaigns/international-solidarity",
+    "reasoning": "ueunion.org/campaigns/international-solidarity is UE's solidarity campaigns page. Found directly in search results.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1100,
+    "title": "Apply for IWW membership",
+    "original_url": "https://www.iww.org/",
+    "proposed_url": "https://redcard.iww.org/",
+    "reasoning": "redcard.iww.org is the IWW's direct online membership application and dues payment portal. Found in search results as the primary join URL.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1101,
+    "title": "Sign on to a National Domestic Workers Alliance campaign",
+    "original_url": "https://www.domesticworkers.org/",
+    "proposed_url": "https://www.domesticworkers.org/programs-and-campaigns/developing-policy-solutions/take-action/",
+    "reasoning": "domesticworkers.org/programs-and-campaigns/developing-policy-solutions/take-action/ is their dedicated take action page. Found directly in search results with description as their action hub.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1102,
+    "title": "Send solidarity to Starbucks Workers United",
+    "original_url": "https://sbworkersunited.org/",
+    "proposed_url": "https://sbworkersunited.org/take-action/",
+    "reasoning": "sbworkersunited.org/take-action/ found directly in search results. Also found the solidarity card FAQ at /faqs-solidarity-card/ and their ControlShift action platform at starbucksworkersunited.controlshift.app/categories.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1103,
+    "title": "Take an Amazon Labor Union action",
+    "original_url": "https://www.amazonlaborunion.org/",
+    "proposed_url": "https://www.amazonlaborunion.org/solidarity-membership",
+    "reasoning": "amazonlaborunion.org/solidarity-membership is the primary action for non-Amazon-workers (external supporters) — recurring financial solidarity. Also found /safety-petition and /immigrant-solidarity for specific campaigns. Solidarity membership best matches 'take an action' intent.",
+    "confidence": "medium",
+    "notes": "Multiple action entry points exist: /safety-petition, /immigrant-solidarity, /solidarity-membership, /worker-outreach. Solidarity membership chosen as the most durable general entry point for non-workers."
+  },
+  {
+    "id": 1104,
+    "title": "Use the free legal hotline (workplace family rights)",
+    "original_url": "https://www.abetterbalance.org/",
+    "proposed_url": "https://www.abetterbalance.org/get-help/",
+    "reasoning": "abetterbalance.org/get-help/ is the dedicated hotline/legal help page. Found directly in search results. The card description matches this page exactly.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1105,
+    "title": "Sign on to a Fight For A Union worker campaign",
+    "original_url": "https://fightforaunion.org/",
+    "proposed_url": "https://action.fightforaunion.org/a/unions-for-all",
+    "reasoning": "action.fightforaunion.org/a/unions-for-all is their flagship 'support unions for all' sign-on petition. Multiple campaign action URLs found on action.fightforaunion.org. This is the most general entry point but other campaigns (wage theft, corporate greed) are also on the action subdomain.",
+    "confidence": "medium",
+    "notes": "Multiple active campaigns on action.fightforaunion.org — unions-for-all chosen as the flagship sign-on, but the homepage also links to the full action queue."
+  },
+  {
+    "id": 1106,
+    "title": "Sign the moral covenant",
+    "original_url": "https://breachrepairers.org/",
+    "proposed_url": "https://breachrepairers.org/moral-agenda",
+    "reasoning": "breachrepairers.org/moral-agenda is their moral covenant/agenda page. Also found a 'Higher Ground Moral Declaration' PDF and Mobilizing Partners sign-on. The moral-agenda page is the durable covenant destination.",
+    "confidence": "medium",
+    "notes": "No single 'sign the covenant' form URL confirmed — the moral agenda page and Moral Monday declaration pages are the closest matches found."
+  },
+  {
+    "id": 1107,
+    "title": "Subscribe to action alerts",
+    "original_url": "https://sojo.net/",
+    "proposed_url": "https://act.sojo.net/page/74900/subscribe/1?locale=en-US",
+    "reasoning": "act.sojo.net/page/74900/subscribe/1 is Sojourners' 'Truth and Action Round-up' newsletter signup. Also found sojo.net/?action=sojomail.subscribe for the main SojoMail newsletter. Either works; the action round-up is more specifically action-alert focused.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1108,
+    "title": "Subscribe to actions",
+    "original_url": "https://www.faithfulamerica.org/",
+    "proposed_url": "https://www.faithfulamerica.org/campaigns/resist-christian-nationalism",
+    "reasoning": "This is a duplicate of card 1061 (same URL, similar action). The synopsis says 'Bread for the World hunger-advocacy alerts' but the URL is faithfulamerica.org, not breadfortheworld.org — clear synopsis mis-tag. Using the same campaigns page as 1061.",
+    "confidence": "high",
+    "notes": "Synopsis is mis-tagged: says 'Bread for the World hunger-advocacy alerts' but URL and description are for Faithful America. This is a duplicate entry alongside card 1061."
+  },
+  {
+    "id": 1109,
+    "title": "Sign on to a Faith in Public Life advocacy action",
+    "original_url": "https://www.faithinpubliclife.org/",
+    "proposed_url": "https://www.faithinpubliclife.org/programs/",
+    "reasoning": "faithinpubliclife.org/programs/ is their coalition programs and campaigns hub. No dedicated /take-action/ page found in search results. Programs page is the closest match for finding active sign-on opportunities.",
+    "confidence": "medium",
+    "notes": "No standalone /take-action/ or /campaigns/ page confirmed in search results. FPL works primarily through email list and direct clergy network outreach."
+  },
+  {
+    "id": 1110,
+    "title": "Take a rabbinic action",
+    "original_url": "https://truah.org/",
+    "proposed_url": "https://truah.org/actions/",
+    "reasoning": "truah.org/actions/ is T'ruah's dedicated action hub. Found directly in search results with active campaigns (ICE, Israeli democracy, immigration).",
+    "confidence": "high",
+    "notes": "This card duplicates card 1075 (same URL). Cards 1075 and 1110 both point to truah.org with slightly different titles — worth reviewing for deduplication."
+  },
+  {
+    "id": 1111,
+    "title": "Sign on to a Pax Christi USA peace action",
+    "original_url": "https://paxchristiusa.org/",
+    "proposed_url": "https://paxchristiusa.org/backfromthebrink/",
+    "reasoning": "paxchristiusa.org/backfromthebrink/ is their flagship ongoing peace campaign (nuclear weapons abolition). Also found specific action call-in days in search results. For 'sign on to a peace action' the Back from the Brink campaign is the most concrete sign-on found.",
+    "confidence": "medium",
+    "notes": "This card duplicates card 1077 (same URL, same org). Cards 1077 and 1111 both point to paxchristiusa.org — worth reviewing for deduplication."
+  }
+]

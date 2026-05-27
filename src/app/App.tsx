@@ -8,6 +8,8 @@ import fistIcon from "../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
 import { Navbar } from "./components/Navbar";
 import { SortDropdown } from "./components/SortDropdown";
 import { ActionCard, ActionCardData } from "./components/ActionCard";
+import { cartoonUrlFor } from "./data/cartoon-manifest";
+import { synopsisFor } from "./data/synopsis-manifest";
 import { FactCard } from "./components/FactCard";
 import { FACT_CARDS } from "./data/factCards";
 import { STATIC_CARDS, IMAGE_MAP } from "./data/actionCards";
@@ -59,6 +61,13 @@ interface ServerCard {
   targetUrl?: string | null;
   topImageKey?: string | null;
   topImageUrl?: string | null;
+  /** Cartoonized banner URL — preferred display source when present.
+   *  Populated by the cartoonize pipeline (scripts/generate-card-art.mjs
+   *  for the seed sweep; on-the-fly worker for user uploads). */
+  cartoonImageUrl?: string | null;
+  /** Cartoonize pipeline status: done | pending | failed | skipped.
+   *  Missing = not yet considered. */
+  cartoonStatus?: "done" | "pending" | "failed" | "skipped" | null;
   authorAvatarKey?: string | null;
   authorAvatarUrl?: string | null;
   createdBy?: string;
@@ -92,6 +101,15 @@ const CATEGORY_ALIASES: Record<string, string> = {
   "art piece": "Art/Performance Art",
   "art/performance art": "Art/Performance Art",
   "call/write": "Call",
+  // Three category mergers (May 2026): old name on the left, surviving
+  // category on the right. KV records with the old value render as the
+  // new one — no migration required for display. A KV migration in the
+  // Edge Function rewrites stored values to match.
+  "learn": "Training",
+  "letter to editor": "Letter Writing",
+  "bird-dog": "Show Up",
+  "spread positivity": "Act of Kindness",
+  "purchase": "Represent",
 };
 function normaliseCategory(s: string | undefined | null): string {
   const trimmed = (s ?? "").trim();
@@ -138,6 +156,19 @@ function resolveCard(raw: ServerCard): ActionCardData {
     completions:  raw.completions ?? 0,
     targetUrl:    raw.targetUrl ?? undefined,
     topImage:     raw.pinToTop ? SPREAD_THE_WORD_TOP_IMAGE : baseTopImage,
+    // Cartoonized banner: server-provided value wins, then fall back to
+    // the local manifest (public/cartoon-banners/ + cartoon-manifest.ts).
+    // Spread the Word always shows its hand-designed art, so cartoon is
+    // suppressed there even if a stray value snuck into the row.
+    cartoonImageUrl: raw.pinToTop
+      ? undefined
+      : (raw.cartoonImageUrl ?? cartoonUrlFor(raw.id) ?? undefined),
+    // Synopsis (card subtitle): server value wins, then local manifest
+    // fallback so we can ship subtitle copy without an Edge Function
+    // deploy. Applies to Spread the Word too now — its synopsis lives
+    // in the SEED_CARD + manifest.
+    synopsis: (raw as { synopsis?: string }).synopsis ?? synopsisFor(raw.id) ?? undefined,
+    cartoonStatus:   raw.cartoonStatus ?? undefined,
     authorAvatar: raw.authorAvatarKey ? IMAGE_MAP[raw.authorAvatarKey] : (raw.authorAvatarUrl ?? undefined),
     // Override description for the pinToTop card so it's always current.
     description:  raw.pinToTop ? SPREAD_THE_WORD_DESCRIPTION : raw.description,
@@ -173,6 +204,59 @@ interface CardsCachePayload {
   savedAt: number;
   total: number;
   rawCards: ServerCard[];
+}
+
+// ─── Pill-filter persistence ──────────────────────────────────────────────────
+// Stores the user's current pill picks (category / location / remote / quick-
+// actions / show-done / sort) in localStorage so they survive page reloads
+// and tab restarts. Pure same-device persistence — no server round-trip. The
+// Match Me / Refine Your Matches preferences are stored separately via
+// loadPreferences/savePreferences and ALSO sync to the user's account; this
+// pill state isn't synced cross-device yet (we can lift it into Preferences
+// later if users complain about losing picks across devices).
+const PILL_FILTERS_KEY = "resistact:pill-filters:v1";
+
+interface PillFiltersPayload {
+  activeFilters: Record<string, string[]>;
+  quickActionsOnly: boolean;
+  showDone: boolean;
+  sortBy: "popular" | "newest" | "az";
+}
+
+function readPillFilters(): PillFiltersPayload | null {
+  try {
+    if (typeof localStorage === "undefined") return null;
+    const raw = localStorage.getItem(PILL_FILTERS_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<PillFiltersPayload>;
+    // Light validation — anything broken just returns null and we fall back
+    // to the in-code defaults.
+    if (!parsed || typeof parsed !== "object") return null;
+    const activeFilters = (parsed.activeFilters && typeof parsed.activeFilters === "object")
+      ? Object.fromEntries(
+          Object.entries(parsed.activeFilters)
+            .filter(([, v]) => Array.isArray(v))
+            .map(([k, v]) => [k, (v as unknown[]).filter((x): x is string => typeof x === "string")]),
+        )
+      : {};
+    return {
+      activeFilters,
+      quickActionsOnly: parsed.quickActionsOnly === true,
+      showDone: parsed.showDone === true,
+      sortBy: parsed.sortBy === "newest" || parsed.sortBy === "az" ? parsed.sortBy : "popular",
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writePillFilters(p: PillFiltersPayload) {
+  try {
+    if (typeof localStorage === "undefined") return;
+    localStorage.setItem(PILL_FILTERS_KEY, JSON.stringify(p));
+  } catch {
+    // Quota exceeded, private browsing, etc. — silently no-op.
+  }
 }
 
 function readCardsCache(): { cards: ActionCardData[]; total: number } | null {
@@ -372,8 +456,14 @@ export default function App() {
   const [flagsAdminOpen, setFlagsAdminOpen] = useState<boolean>(false);
   const [siteUpdating, setSiteUpdating] = useState(false);
 
-  // ── Filters ──
-  const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>({});
+  // ── Filters ── persisted in localStorage so a user's pill picks
+  //   (Category / Location / Remote / 5 Min Max / Sort / Show Done) survive
+  //   page reloads and tab restarts. Same-device persistence only for now;
+  //   could be lifted into the server-side Preferences record for cross-
+  //   device sync later.
+  const [activeFilters, setActiveFilters] = useState<Record<string, string[]>>(
+    () => readPillFilters()?.activeFilters ?? {},
+  );
   const [activeTab, setActiveTab] = useState<"facts" | "acts" | "receipts">("acts");
   const [smacksPendingVersion, setSmacksPendingVersion] = useState(0);
   // ── Smacks filter / sort state lifted up so the navbar can render the same
@@ -405,9 +495,15 @@ export default function App() {
   // the heavy feed re-filter uses `deferredSearchQuery` and runs as a low-
   // priority update React can interrupt for more typing.
   const deferredSearchQuery = useDeferredValue(searchQuery);
-  const [quickActionsOnly, setQuickActionsOnly] = useState(false);
-  const [showDone, setShowDone] = useState(false);
-  const [sortBy, setSortBy] = useState<"popular" | "newest" | "az">("popular");
+  const [quickActionsOnly, setQuickActionsOnly] = useState(
+    () => readPillFilters()?.quickActionsOnly ?? false,
+  );
+  const [showDone, setShowDone] = useState(
+    () => readPillFilters()?.showDone ?? false,
+  );
+  const [sortBy, setSortBy] = useState<"popular" | "newest" | "az">(
+    () => readPillFilters()?.sortBy ?? "popular",
+  );
 
   function handleFilterChange(filterName: string, selected: string[]) {
     setActiveFilters((prev) => ({ ...prev, [filterName]: selected }));
@@ -455,13 +551,44 @@ export default function App() {
       // Location — match by canonical state (or "Remote"/"National"/etc).
       // Legacy "City, ST" values and old names ("Online"/"From Home"/"Multi-state")
       // get normalized via locationToState.
+      //
+      // Design intent: selecting a state (e.g. "Washington") sorts state-matching
+      // cards to the top but does NOT eliminate online/national/multi-state acts —
+      // those are always doable from anywhere and should still appear below the
+      // local results. Only cards that are location-specific AND belong to a
+      // different state are hard-filtered out.
+      // "Remote" works differently: it IS a hard filter — it shows only
+      // online/at-home acts and nothing else.
       const locs = activeFilters["Location"] ?? [];
       if (locs.length > 0) {
-        // "Remote" matches any card with isOnline=true regardless of location string.
-        const matchesRemote = locs.includes("Remote") && card.isOnline;
         const cardState = locationToState(card.location);
-        const matchesLoc = cardState !== null && locs.includes(cardState);
-        if (!matchesRemote && !matchesLoc) return false;
+        const matchesState = cardState !== null && locs.some(l => l !== "Remote" && l === cardState);
+        const stateFilters = locs.filter(l => l !== "Remote");
+        const hasStateFilter = stateFilters.length > 0;
+
+        // "Remote" pill: show only online/at-home acts (original hard-filter)
+        const matchesRemote = locs.includes("Remote") && (card.isOnline || (card as any).atHome === true);
+
+        // Location-agnostic cards pass through whenever a state filter is active —
+        // they sort below the local acts but are never eliminated.
+        const locStr = (card.location ?? "").trim();
+        const isLocationAgnostic =
+          card.isOnline ||
+          (card as any).atHome === true ||
+          locStr === "National" ||
+          locStr === "Multi-state" ||
+          locStr === "Multi-State" ||
+          locStr === "" ||
+          cardState === null;
+
+        if (hasStateFilter) {
+          // State filter is active: keep matching-state cards + location-agnostic cards.
+          // Hard-filter only cards pinned to a specific OTHER state.
+          if (!matchesState && !isLocationAgnostic) return false;
+        } else {
+          // "Remote"-only filter: strict — show only online/at-home acts.
+          if (!matchesRemote) return false;
+        }
       }
 
       // Quick actions only (5–10 min wins)
@@ -517,6 +644,20 @@ export default function App() {
     if (loc === "Multi-state" || loc === "Multi-State") return 2;
     if (loc) return 3;
     return 4;
+  }
+  // When a specific state is selected, matching-state cards sort first.
+  // Within that, location-agnostic acts (Online → National → Multi-state →
+  // unspecified) follow in the usual order. Other-state cards are already
+  // filtered out before we reach the sort, so bucket 5 is a safe sentinel.
+  function locationBucketWithState(c: ActionCardData, selectedStates: string[]): number {
+    if (selectedStates.length === 0) return locationBucket(c);
+    const cardState = locationToState(c.location);
+    if (cardState !== null && selectedStates.includes(cardState)) return 0; // matching state: top
+    if (c.isOnline) return 1;
+    const loc = (c.location ?? "").trim();
+    if (loc === "National") return 2;
+    if (loc === "Multi-state" || loc === "Multi-State") return 3;
+    return 4; // no location / at-home
   }
   function engagementScore(c: ActionCardData): number {
     return (c.boosts ?? 0) + (c.completions ?? 0);
@@ -757,7 +898,13 @@ export default function App() {
           ? (() => {
               const topScore = scoreCard(ranked[0], matchPrefs, userCtx);
               const threshold = topScore * 0.30;
-              return ranked.filter((c) => scoreCard(c, matchPrefs, userCtx) >= threshold);
+              const thresholded = ranked.filter((c) => scoreCard(c, matchPrefs, userCtx) >= threshold);
+              // The Quick Match carousel shows up to 12 cards with no score
+              // floor; the main feed must never return fewer results than the
+              // modal did. If the 30% threshold is too aggressive (steep score
+              // distribution with heavy tone-mismatch penalties), fall back to
+              // the top 20 by rank so the feed always feels populated.
+              return thresholded.length >= 20 ? thresholded : ranked.slice(0, Math.max(thresholded.length, 20));
             })()
           : [];
         const combined = [...matched, ...pendingForAdmin];
@@ -790,6 +937,10 @@ export default function App() {
     // known location, `effectiveScore` additionally penalises hyper-local
     // actions so Online/National rise. Round to integer so scores like 12.6
     // and 13 still tier together cleanly.
+    // When a state filter is active, use a context-aware bucket so that
+    // state-matching cards sort ABOVE online/national/multi-state acts
+    // within each score tier (rather than falling below them).
+    const activeStateFilters = (activeFilters["Location"] ?? []).filter(l => l !== "Remote");
     const byScore = new Map<number, ActionCardData[]>();
     for (const c of filtered) {
       const s = Math.round(effectiveScore(c));
@@ -802,7 +953,7 @@ export default function App() {
       const tier = byScore.get(s)!;
       const byLoc = new Map<number, ActionCardData[]>();
       for (const c of tier) {
-        const lb = locationBucket(c);
+        const lb = locationBucketWithState(c, activeStateFilters);
         if (!byLoc.has(lb)) byLoc.set(lb, []);
         byLoc.get(lb)!.push(c);
       }
@@ -862,12 +1013,15 @@ export default function App() {
   // is always included (it filters cards by `isOnline`, which is independent
   // of the literal location string).
   const dynamicLocations = useMemo(() => {
-    const set = new Set<string>(["Remote"]);
+    // "Remote" is intentionally NOT in this list anymore — it has its own
+    // top-level pill ("Remote") in the filter row, separate from the state
+    // dropdown. Users pick states here; they pick Remote separately.
+    const set = new Set<string>();
     for (const c of approvedCards) {
       const loc = locationToState(c.location);
       if (loc) set.add(loc);
     }
-    return LOCATION_OPTIONS.filter((opt) => set.has(opt));
+    return LOCATION_OPTIONS.filter((opt) => opt !== "Remote" && set.has(opt));
   }, [approvedCards]);
 
   // ── Scroll nudge — fires once after user scrolls past ~8 cards ──────────────
@@ -1041,6 +1195,13 @@ export default function App() {
   // ── Boot analytics on mount. No-op when VITE_GA_MEASUREMENT_ID is unset
   //    or the browser has Do-Not-Track on. Idempotent — safe to call again. ──
   useEffect(() => { initAnalytics(); }, []);
+
+  // ── Persist pill-filter selections to localStorage on every change.
+  //    Same-device persistence so a user's category / location / Remote /
+  //    quick-actions / show-done / sort pick survives page reloads. ──
+  useEffect(() => {
+    writePillFilters({ activeFilters, quickActionsOnly, showDone, sortBy });
+  }, [activeFilters, quickActionsOnly, showDone, sortBy]);
 
   // ── Sync cards from Supabase ──
   const PAGE_SIZE = 20;
@@ -1472,11 +1633,16 @@ export default function App() {
         method: "POST",
         headers: { Authorization: `Bearer ${accessToken}` },
       });
-      if (!res.ok) return;
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        showToast(`Approval failed: ${(err as any).error ?? res.status}`);
+        return;
+      }
       const data = await res.json();
       setCards((prev) => prev.map((c) => c.id === id ? { ...c, adminApproved: true, ...data.card } : c));
     } catch (err) {
       console.error("Approve card error:", err);
+      showToast("Approval failed — check console");
     }
   }
 
@@ -1764,7 +1930,7 @@ export default function App() {
               // (The server also accepts a `topImage` field, but that's a
               // client-only resolved value derived from the other two.)
               const cardsWithImages = visibleActsCards.filter(
-                (c) => Boolean(c.topImageUrl) || Boolean(c.topImageKey)
+                (c) => Boolean(c.topImageUrl) || Boolean(c.topImageKey) || Boolean(c.cartoonImageUrl)
               );
               const allHaveImages = cardsWithImages.length === visibleActsCards.length;
               return (
@@ -1773,13 +1939,16 @@ export default function App() {
                     ⚠️ <strong>Pending approval only</strong> — showing {visibleActsCards.length} unapproved act{visibleActsCards.length !== 1 ? "s" : ""}.
                   </p>
                   <div className="flex items-center gap-3 shrink-0">
-                    {/* "Approve all with images" — only surfaces when SOME but
-                        not ALL visible pending cards have a top image. Lets
-                        an admin one-click clear the easy approvals and deal
-                        with the imageless leftovers manually. Hidden when
-                        every card already has an image (the regular button
-                        below covers that case) or when none do. */}
-                    {cardsWithImages.length > 0 && !allHaveImages && (
+                    {/* "Approve N with images" — surfaces whenever at least one
+                        pending card has a recognised image (topImageUrl,
+                        topImageKey, or cartoonImageUrl). Lets an admin
+                        one-click approve only the image-bearing cards and
+                        leave truly imageless cards pending for a manual
+                        image upload. When every card has an image the count
+                        will match the "Approve all" button — that's fine,
+                        both do the same thing and the label makes it clear
+                        the batch is clean. */}
+                    {cardsWithImages.length > 0 && (
                       <button
                         onClick={() => handleApproveAll(cardsWithImages.map((c) => c.id))}
                         className="font-['Poppins',sans-serif] text-xs font-semibold bg-green-600 hover:bg-green-700 text-white rounded-lg px-3 py-1.5 transition-colors"

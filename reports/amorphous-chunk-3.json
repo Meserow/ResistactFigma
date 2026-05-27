@@ -1,0 +1,362 @@
+[
+  {
+    "id": 1112,
+    "title": "Subscribe to Quaker action alerts",
+    "url": "https://www.fcnl.org/",
+    "cat": "PRAYER",
+    "syn": "American Friends Service Committee alerts",
+    "desc": "Subscribe to Quaker constituent-action emails. Pacifist-rooted, focused on Pentagon and immigration policy."
+  },
+  {
+    "id": 1113,
+    "title": "Sign on to an Auburn Seminary faith-leader campaign",
+    "url": "https://auburnseminary.org/",
+    "cat": "PRAYER",
+    "syn": "Multifaith leaders for social justice",
+    "desc": "Sign on to faith-leader campaigns. Auburn trains multi-faith clergy in social justice and movement leadership."
+  },
+  {
+    "id": 1115,
+    "title": "Sign on to a Hindus for Human Rights action",
+    "url": "https://www.hindusforhumanrights.org/",
+    "cat": "PRAYER",
+    "syn": "Hindu progressive human-rights advocacy",
+    "desc": "Counter Hindu nationalism in US politics. Sign on as a Hindu or ally; Modi's allies have major Trump-admin ties."
+  },
+  {
+    "id": 1116,
+    "title": "Sign on to a Sikh Coalition civil-rights action",
+    "url": "https://www.sikhcoalition.org/",
+    "cat": "PRAYER",
+    "syn": "Sikh civil-rights advocacy campaigns",
+    "desc": "Sign Sikh Coalition civil-rights actions. Hate-crime response, religious-discrimination, and racial-profiling work."
+  },
+  {
+    "id": 1117,
+    "title": "Sign up as a volunteer attorney",
+    "url": "https://wetheaction.org/",
+    "cat": "PROFESSIONAL SKILLS",
+    "syn": "ImmDef pro bono attorney signup",
+    "desc": "Sign up as a volunteer attorney. Match takes 20 minutes; cases include immigrants, election workers, federal whistleblowers."
+  },
+  {
+    "id": 1118,
+    "title": "Volunteer as an attorney",
+    "url": "https://www.lawyersforgoodgovernment.org/",
+    "cat": "PROFESSIONAL SKILLS",
+    "syn": "Lawyers' Committee for Civil Rights cases",
+    "desc": "Hours go to immigrants and federal workers fighting Trump-era retaliation. Lawyers especially — 20-min match."
+  },
+  {
+    "id": 1119,
+    "title": "Find pro bono cases (formerly Pro Bono Net)",
+    "url": "https://scalejustice.org/",
+    "cat": "PROFESSIONAL SKILLS",
+    "syn": "Probono.net case listings for lawyers",
+    "desc": "Find pro bono cases. Volunteer-attorney matching for civil-legal cases — most need procedural help, not litigation."
+  },
+  {
+    "id": 1120,
+    "title": "Volunteer your tech skills",
+    "url": "https://codeforamerica.org/",
+    "cat": "PROFESSIONAL SKILLS",
+    "syn": "Code for America civic-tech volunteer",
+    "desc": "Volunteer your tech skills. Local brigades build tools for governments and nonprofits — replace shitty .gov UX."
+  },
+  {
+    "id": 1121,
+    "title": "Sign up as a tech volunteer",
+    "url": "https://www.democracylab.org/",
+    "cat": "PROFESSIONAL SKILLS",
+    "syn": "U.S. Digital Response rapid-deploy techies",
+    "desc": "Sign up as a tech volunteer. Project matching for devs, designers, and PMs supporting democracy-org tooling."
+  },
+  {
+    "id": 1122,
+    "title": "Volunteer your professional skills",
+    "url": "https://www.catchafire.org/",
+    "cat": "PROFESSIONAL SKILLS",
+    "syn": "Catchafire skills-based pro bono platform",
+    "desc": "Volunteer your professional skills (design, marketing, ops, finance) to nonprofits. 1–10 hour bites; remote-friendly."
+  },
+  {
+    "id": 1123,
+    "title": "Volunteer as a translator",
+    "url": "https://respondcrisistranslation.org/",
+    "cat": "PROFESSIONAL SKILLS",
+    "syn": "Translators Without Borders volunteer pool",
+    "desc": "Volunteer as a translator for asylum cases. Crisis-language work — hours can save someone from deportation."
+  },
+  {
+    "id": 1124,
+    "title": "Volunteer as a linguist",
+    "url": "https://clearglobal.org/",
+    "cat": "PROFESSIONAL SKILLS",
+    "syn": "Respond Crisis Translation rapid pool",
+    "desc": "Volunteer as a linguist for crisis-response work. Less-resourced languages especially needed for refugee work."
+  },
+  {
+    "id": 1125,
+    "title": "Sign on to a Doctors for America healthcare campaign",
+    "url": "https://www.doctorsforamerica.org/",
+    "cat": "PROFESSIONAL SKILLS",
+    "syn": "MDs pushing for healthcare policy",
+    "desc": "Sign on to Doctors for America campaigns. Medical voices that move members of Congress on Medicaid + ACA."
+  },
+  {
+    "id": 1126,
+    "title": "Train as asylum-evaluation clinician",
+    "url": "https://phr.org/",
+    "cat": "PROFESSIONAL SKILLS",
+    "syn": "PHR trains MDs for asylum medical exams",
+    "desc": "Train as an asylum-evaluation clinician. Forensic medical exams for asylum cases — without one, deportation odds spike."
+  },
+  {
+    "id": 1127,
+    "title": "Sign up to run for office (STEM)",
+    "url": "https://314action.org/",
+    "cat": "PROFESSIONAL SKILLS",
+    "syn": "314 Action helps scientists run for office",
+    "desc": "Sign up to run for office (STEM). Trump's anti-science agenda needs scientists in office — they'll train you."
+  },
+  {
+    "id": 1128,
+    "title": "Volunteer with Authors Against Book Bans",
+    "url": "https://www.authorsagainstbookbans.com/",
+    "cat": "PROFESSIONAL SKILLS",
+    "syn": "Author-led anti-book-ban organizing",
+    "desc": "Volunteer with Authors Against Book Bans. Authors, librarians, readers showing up at school-board meetings."
+  },
+  {
+    "id": 1129,
+    "title": "Join Concerned Archivists Alliance",
+    "url": "https://concernedarchivists.wordpress.com/",
+    "cat": "PROFESSIONAL SKILLS",
+    "syn": "Archivists preserving threatened records",
+    "desc": "Archivists organizing to preserve federal records as Trump scrubs them. Need archivists, devs, and metadata pros."
+  },
+  {
+    "id": 1130,
+    "title": "Volunteer on detained-immigrant cases",
+    "url": "https://immigrationjustice.us/",
+    "cat": "PROFESSIONAL SKILLS",
+    "syn": "ImmDef detained-immigrant defense cases",
+    "desc": "Volunteer on detained-immigrant cases. Free training + case match. Pro bono representation triples release odds."
+  },
+  {
+    "id": 1131,
+    "title": "Take the anti-coup civil-resistance pledge",
+    "url": "https://choosedemocracy.us/",
+    "cat": "PERSONAL COMMITMENT",
+    "syn": "Choose Democracy 10-point pledge",
+    "desc": "Take the anti-coup civil-resistance pledge. Public commitment to nonviolent action if Trump refuses to leave office."
+  },
+  {
+    "id": 1135,
+    "title": "Carry KYR cards for ICE encounters",
+    "url": "https://www.immigrantdefenseproject.org/",
+    "cat": "PERSONAL COMMITMENT",
+    "syn": "Know-Your-Rights wallet cards from ILRC",
+    "desc": "Print + carry Know-Your-Rights cards. Pull one out if ICE approaches — works for citizen and non-citizen alike."
+  },
+  {
+    "id": 1141,
+    "title": "Send email-your-rep",
+    "url": "https://www.citizen.org/",
+    "cat": "EMAIL CAMPAIGN",
+    "syn": "Common Cause prefilled email tool",
+    "desc": "Email-your-rep on consumer protection and corporate accountability fights. Their tracker is updated weekly."
+  },
+  {
+    "id": 1142,
+    "title": "Send anti-militarism email",
+    "url": "https://winwithoutwar.org/",
+    "cat": "EMAIL CAMPAIGN",
+    "syn": "Win Without War prefilled email-your-rep",
+    "desc": "Send an anti-militarism email to your reps. Win Without War targets Pentagon budget votes specifically."
+  },
+  {
+    "id": 1143,
+    "title": "Send Christian-rooted email-your-rep",
+    "url": "https://www.faithfulamerica.org/",
+    "cat": "EMAIL CAMPAIGN",
+    "syn": "Faithful America prefilled email tool",
+    "desc": "Send a Christian-rooted email-your-rep. Religious framing changes which Republicans actually engage."
+  },
+  {
+    "id": 1144,
+    "title": "Send Quaker constituent email",
+    "url": "https://www.fcnl.org/",
+    "cat": "EMAIL CAMPAIGN",
+    "syn": "FCNL prefilled email-your-rep",
+    "desc": "Send a Quaker constituent email. FCNL writes the script; email lands at your senator's office in seconds."
+  },
+  {
+    "id": 1145,
+    "title": "Email targeting specific ICE facilities",
+    "url": "https://www.detentionwatchnetwork.org/",
+    "cat": "EMAIL CAMPAIGN",
+    "syn": "Detention Watch facility-by-facility tool",
+    "desc": "Email actions against specific ICE facility operators. Detention Watch identifies who to pressure for closures."
+  },
+  {
+    "id": 1146,
+    "title": "Email your school board re: book bans",
+    "url": "https://www.authorsagainstbookbans.com/",
+    "cat": "EMAIL CAMPAIGN",
+    "syn": null,
+    "desc": "Email your school board against book bans. Pre-written templates work — boards capitulate when pressure hits."
+  },
+  {
+    "id": 1147,
+    "title": "Sign up for a workshop",
+    "url": "https://www.trainingforchange.org/",
+    "cat": "TRAINING",
+    "syn": "Beautiful Trouble action-design workshops",
+    "desc": "Workshops most arrest-action groups send people through. Get de-escalation and jail-support before you need them."
+  },
+  {
+    "id": 1148,
+    "title": "Sign up for a training",
+    "url": "https://ruckus.org/",
+    "cat": "TRAINING",
+    "syn": "Wellstone Action progressive-organizing training",
+    "desc": "Direct-action training. Ruckus prepared protesters at Standing Rock and Occupy. Sign up for a workshop."
+  },
+  {
+    "id": 1149,
+    "title": "Apply to a cohort",
+    "url": "https://wildfireproject.org/",
+    "cat": "TRAINING",
+    "syn": "Movement School organizer training program",
+    "desc": "Apply with your group for movement-strategy training. Best for orgs that need help going from reactive to strategic."
+  },
+  {
+    "id": 1150,
+    "title": "Take a course",
+    "url": "https://www.peopleshub.org/",
+    "cat": "TRAINING",
+    "syn": "AROC Arab-organizing political education",
+    "desc": "Take an organizer course. Sliding-scale tuition; classes on de-escalation, racial justice, and base-building."
+  },
+  {
+    "id": 1151,
+    "title": "Enroll in a free training",
+    "url": "https://righttobe.org/",
+    "cat": "TRAINING",
+    "syn": "Momentum mass-movement training",
+    "desc": "Learn what to actually do when ICE detains a neighbor or a Nazi accosts someone on transit. Free, 60–90 min."
+  },
+  {
+    "id": 1152,
+    "title": "Enroll in anti-coup training",
+    "url": "https://choosedemocracy.us/",
+    "cat": "TRAINING",
+    "syn": "Choose Democracy nonviolent-resistance training",
+    "desc": "Enroll in anti-coup training. Free workshop calendar — what to do if Trump refuses a peaceful transfer of power."
+  },
+  {
+    "id": 1153,
+    "title": "Enroll in programs",
+    "url": "https://beta.highlandercenter.org/",
+    "cat": "TRAINING",
+    "syn": "Highlander Center Southern organizing programs",
+    "desc": "Storied southern movement school — MLK and Rosa Parks trained here. Apply for residential or virtual programs."
+  },
+  {
+    "id": 1154,
+    "title": "Sign up for a curriculum",
+    "url": "https://movementgeneration.org/",
+    "cat": "TRAINING",
+    "syn": "Resource Generation wealthy-redistribution program",
+    "desc": "Sign up for just-transition + ecological-justice curriculum. Climate work that connects to labor and racial justice."
+  },
+  {
+    "id": 1155,
+    "title": "Take an abolitionist study course",
+    "url": "https://project-nia.org/",
+    "cat": "TRAINING",
+    "syn": "Critical Resistance prison-abolition study",
+    "desc": "Take an abolitionist study course. Free curricula; reading groups online and in cities. Replaces police 101 with care 101."
+  },
+  {
+    "id": 1156,
+    "title": "Sign up for a reading group",
+    "url": "https://criticalresistance.org/",
+    "cat": "TRAINING",
+    "syn": "Showing Up for Racial Justice reading group",
+    "desc": "Sign up for an abolitionist reading group. Critical Resistance is OG abolition — Angela Davis co-founded it."
+  },
+  {
+    "id": 1157,
+    "title": "Apply to be a paid poll worker",
+    "url": "https://www.powerthepolls.org/",
+    "cat": "TRAINING",
+    "syn": "Power the Polls election-worker signup",
+    "desc": "Apply to be a paid poll worker. Local elections are short on workers; you get paid + protect access for hours of your day."
+  },
+  {
+    "id": 1158,
+    "title": "Take a Know Your Rights training",
+    "url": "https://www.immigrantdefenseproject.org/",
+    "cat": "TRAINING",
+    "syn": "ACLU KYR online training session",
+    "desc": "Take a Know Your Rights training for ICE encounters. Live calendar; bring your block, household, or workplace."
+  },
+  {
+    "id": 1160,
+    "title": "Sign up for kindness-toned voter postcards",
+    "url": "https://postcardstovoters.org/",
+    "cat": "Act of Kindness",
+    "syn": "Vote Forward warm voter-turnout letters",
+    "desc": "Write hand-written postcards to swing-state voters. Personal mail still cuts through algorithm-fried discourse."
+  },
+  {
+    "id": 1161,
+    "title": "Become a pen pal to a detained migrant",
+    "url": "https://www.freedomforimmigrants.org/",
+    "cat": "Act of Kindness",
+    "syn": "Connect with those in need — your letters bring hope and human contact behind detention walls",
+    "desc": "Become a pen pal to a detained migrant. Mail breaks isolation in ICE detention; bilingual letters welcome."
+  },
+  {
+    "id": 1162,
+    "title": "Volunteer (LGBTQ youth digital crisis support)",
+    "url": "https://www.thetrevorproject.org/",
+    "cat": "Act of Kindness",
+    "syn": "Trevor Project 24/7 crisis volunteer role — paid training, chat / text / phone shifts",
+    "desc": "Volunteer for LGBTQ youth digital crisis support. 24/7 chat/text/phone — paid training, ongoing support."
+  },
+  {
+    "id": 1164,
+    "title": "Practice rest-as-resistance prompts",
+    "url": "https://thenapministry.wordpress.com/",
+    "cat": "Act of Kindness",
+    "syn": "Tricia Hersey's Nap Ministry prompts — burnout is fascism's goal, sleep is the counter",
+    "desc": "Practice rest-as-resistance prompts. Tricia Hersey's free library — burnout is the goal of fascism, sleep counters it."
+  },
+  {
+    "id": 1165,
+    "title": "Find + amplify your local mutual aid",
+    "url": "https://www.mutualaidhub.org/",
+    "cat": "BOOST",
+    "syn": "US-wide mutual-aid network map — money, supplies, on-the-ground neighbors near you",
+    "desc": "Find + amplify your local mutual aid network. Map of US-wide groups — money, supplies, people on the ground."
+  },
+  {
+    "id": 1167,
+    "title": "Subscribe + share Capital B (Black-led)",
+    "url": "https://capitalbnews.org/",
+    "cat": "BOOST",
+    "syn": "Stay informed on underreported Black stories Support investigative journalism that challenges the mainstream narrative",
+    "desc": "Subscribe + share Capital B coverage. Black-led investigative work that mainstream outlets don't cover."
+  },
+  {
+    "id": 1168,
+    "title": "Subscribe + share The 19th* (gender + politics)",
+    "url": "https://19thnews.org/",
+    "cat": "BOOST",
+    "syn": "Stay informed on gender issues and amplify voices fighting for rights",
+    "desc": "Subscribe + share The 19th. Gender + politics reporting on abortion, trans rights, and women's health under Trump."
+  }
+]

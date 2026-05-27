@@ -37,9 +37,16 @@ export function InfoModal({ onClose }: InfoModalProps) {
               </h2>
             </div>
 
-            <p className="font-['Poppins',sans-serif] text-gray-700 text-[13px] leading-relaxed mb-5">
+            <p className="font-['Poppins',sans-serif] text-gray-700 text-[13px] leading-relaxed mb-4">
               Feeling helpless? Tired of being told money is the only way to make change? We match you with fellow citizens' ideas for action — ones that fit your already-full life of kids, work, and exhaustion. We vet every submission, protect your privacy, and help you turn this ship before it hits the iceberg.
             </p>
+
+            {/* Margaret Mead — the founding quote. Lives here (and in the
+                Join the Resistance modal) instead of the top nav. */}
+            <blockquote className="font-['Poppins',sans-serif] text-[#767574] text-[12px] leading-snug italic border-l-2 border-[#ed6624] pl-3 mb-5">
+              "Never doubt that a small group of thoughtful, committed citizens can change the world. Indeed, it's the only thing that ever has."
+              <span className="not-italic font-semibold block text-right mt-1 text-[#23297e]">— Margaret Mead</span>
+            </blockquote>
 
             <div className="space-y-4">
               <div className="flex gap-3 items-start">

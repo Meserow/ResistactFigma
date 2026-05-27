@@ -27,7 +27,7 @@ const SELECT_CLS = (val: string | null | undefined) =>
 const CATEGORY_OPTIONS: { label: string; color: string }[] = [
   { label: "Act of Kindness",      color: "#127f05" },
   { label: "Art/Performance Art",  color: "#896312" },
-  { label: "Bird-Dog",             color: "#5a3e9e" },
+  // Bird-Dog merged into Show Up (May 2026).
   { label: "Boost",                color: "#8a00e6" },
   { label: "Boycott",              color: "#23297e" },
   { label: "Call",                 color: "#c2185b" },
@@ -40,8 +40,7 @@ const CATEGORY_OPTIONS: { label: string; color: string }[] = [
   { label: "Irreverence",          color: "#ff00d5" },
   { label: "Join a Group",         color: "#0891b2" },
   { label: "Labor",                color: "#127f05" },
-  { label: "Learn",                color: "#126d89" },
-  { label: "Letter to Editor",     color: "#c34e00" },
+  // Learn merged into Training; Letter to Editor merged into Letter Writing (May 2026).
   { label: "Letter Writing",       color: "#c34e00" },
   { label: "Meeting",              color: "#23297e" },
   { label: "Mental Health",        color: "#ff00d5" },
@@ -51,10 +50,10 @@ const CATEGORY_OPTIONS: { label: string; color: string }[] = [
   { label: "Prayer",               color: "#8a00e6" },
   { label: "Professional Skills",  color: "#126d89" },
   { label: "Protest",              color: "#23297e" },
-  { label: "Purchase",             color: "#b45309" },
+  { label: "Represent",            color: "#b45309" },
   { label: "Show Up",              color: "#23297e" },
   { label: "Social Media",         color: "#e44b4b" },
-  { label: "Spread Positivity",    color: "#8a00e6" },
+  // Spread Positivity merged into Act of Kindness (May 2026).
   { label: "Training",             color: "#126d89" },
   { label: "Transportation",       color: "#126d89" },
   { label: "Video",                color: "#e44b4b" },

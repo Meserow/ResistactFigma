@@ -41,6 +41,22 @@ export interface ActionCardData {
   authorRole: string;
   authorLink?: string;
   topImage?: string;
+  /** Cartoonized banner URL — a retro-comic-style version of the act's
+   *  art, generated via the cartoonize pipeline (initially gpt-image-1).
+   *  When present, the card grid and modal banner prefer this over
+   *  topImage so the feed reads as one visual system. When absent, the
+   *  original topImage renders as before. */
+  cartoonImageUrl?: string;
+  /** Cartoonize pipeline status for this card's banner:
+   *    "done"    — cartoonImageUrl is populated and ready
+   *    "pending" — queued for the cartoonize worker (e.g. new user upload
+   *                that needs on-the-fly stylization)
+   *    "failed"  — worker tried and gave up; admin review needed
+   *    "skipped" — intentionally left as the original (logos, photos we
+   *                want to preserve, etc.)
+   *  Absence of the field means "not yet considered" — the cartoonize
+   *  sweep should pick the card up on next run. */
+  cartoonStatus?: "done" | "pending" | "failed" | "skipped";
   authorAvatar?: string;
   isFeatured?: boolean;
   featuredIllustration?: React.ReactNode;
@@ -130,8 +146,13 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
   }
   const [flagOpen, setFlagOpen] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
-  useEffect(() => { setImageFailed(false); }, [card.topImage]);
-  const showTopImage = !!card.topImage && !imageFailed;
+  // Prefer the cartoonized banner when available — keeps the grid visually
+  // unified. Falls back to the original topImage if the cartoon hasn't been
+  // generated yet (or was skipped). imageFailed resets when either source
+  // changes so a swap from cartoon → original (or vice versa) reattempts.
+  const effectiveTopImage = card.cartoonImageUrl ?? card.topImage;
+  useEffect(() => { setImageFailed(false); }, [effectiveTopImage]);
+  const showTopImage = !!effectiveTopImage && !imageFailed;
 
   // Compact (Quick Matches preview): 3 lines is the sweet spot — enough to
   // tell what the action is, not so much that the tile drowns in text.
@@ -252,8 +273,8 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
               ones we want to draw the eye to — the shimmer says "look here"
               without flashing or strobing. */}
           <div className={`resistact-anim-shimmer relative ${compact ? "h-[70px]" : "h-[106px]"} shrink-0 bg-[#23297e] flex items-center justify-center overflow-hidden`}>
-            {card.topImage
-              ? <img src={card.topImage} alt={card.title} className={`${card.pinToTop ? "resistact-banner-half-desat" : "resistact-banner-desat"} absolute inset-0 w-full h-full object-cover object-top`} />
+            {effectiveTopImage
+              ? <img src={effectiveTopImage} alt={card.title} className={`${card.cartoonImageUrl || card.pinToTop ? "" : "resistact-banner-desat"} absolute inset-0 w-full h-full object-cover ${card.cartoonImageUrl ? "object-[center_20%]" : "object-top"}`} />
               : card.featuredIllustration
             }
             <div className="absolute top-2.5 right-3 flex items-center gap-1.5">
@@ -267,7 +288,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           </div>
 
           {/* Content */}
-          <div className={`relative flex flex-col flex-1 ${compact ? "gap-1 px-3 pb-2 pt-1.5" : "gap-3 px-5 pb-5 pt-4"}`}>
+          <div className={`relative flex flex-col flex-1 ${compact ? "gap-1 px-3 pb-2 pt-1.5" : "gap-2 px-5 pb-3 pt-3"}`}>
             {/* Category hidden on the pinToTop Spread the Word card —
                 it's the hero card, not a category-bucketed Act. */}
             {!card.pinToTop && (
@@ -278,6 +299,14 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
 
             <h3 className={`font-['Poppins',sans-serif] font-bold text-gray-900 leading-snug ${compact ? "text-[13px]" : "text-[15px]"}`}>
               {card.title}
+              {/* Featured card subtitle — only the hand-authored synopsis;
+                  no title-split for hero cards. Trailing ellipsis matches
+                  the rest of the grid. */}
+              {card.synopsis && (
+                <span className={`block font-normal italic text-gray-400 leading-snug ${compact ? "text-[11px] mt-1" : "text-[12px] mt-1.5"}`}>
+                  {/[.…!?]$/.test(card.synopsis) ? card.synopsis : card.synopsis + "…"}
+                </span>
+              )}
             </h3>
 
             {/* Description: compact-only, matches the regular card. The
@@ -380,9 +409,9 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           <div className={`relative h-[70px] shrink-0 ${showTopImage && card.imageContain ? "bg-gray-50" : ""} ${!showTopImage ? "bg-[#fff8f3]" : ""}`}>
             {showTopImage ? (
               <ImageWithFallback
-                src={card.topImage}
+                src={effectiveTopImage}
                 alt={card.title}
-                className={`resistact-banner-desat w-full h-full ${card.imageContain ? "object-contain p-2" : "object-cover object-top"}`}
+                className={`${card.cartoonImageUrl ? "" : "resistact-banner-desat"} w-full h-full ${card.imageContain ? "object-contain p-2" : `object-cover ${card.cartoonImageUrl ? "object-[center_20%]" : "object-top"}`}`}
                 onError={() => setImageFailed(true)}
               />
             ) : (
@@ -401,9 +430,15 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           <div className={`relative h-[106px] shrink-0 ${showTopImage && card.imageContain ? "bg-gray-50" : ""} ${!showTopImage ? "bg-[#fff8f3]" : ""}`}>
             {showTopImage ? (
               <ImageWithFallback
-                src={card.topImage}
+                src={effectiveTopImage}
                 alt={card.title}
-                className={`resistact-banner-desat w-full h-full ${card.imageContain ? "object-contain p-2" : "object-cover object-top"}`}
+                /* Cartoonized banners are 3:2 with the subject's head
+                   typically painted in the upper portion. Object-position
+                   50% 15% slides the visible window slightly up from
+                   center so heads stay in frame at the 4:1 card aspect.
+                   For original photos (no cartoon), use object-top to keep
+                   the legacy behavior. */
+                className={`${card.cartoonImageUrl ? "" : "resistact-banner-desat"} w-full h-full ${card.imageContain ? "object-contain p-2" : `object-cover ${card.cartoonImageUrl ? "[object-position:50%_15%]" : "object-top"}`}`}
                 onError={() => setImageFailed(true)}
               />
             ) : (
@@ -455,7 +490,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
         )}
 
         {/* Content */}
-        <div className={`relative flex flex-col flex-1 ${compact ? "gap-1 px-3 pb-2 pt-1.5" : "gap-3 px-5 pb-5 pt-4"}`}>
+        <div className={`relative flex flex-col flex-1 ${compact ? "gap-1 px-3 pb-2 pt-1.5" : "gap-2 px-5 pb-3 pt-3"}`}>
           {/* Category — only renders in compact (Quick Match preview)
               mode here. Non-compact moved the category onto a pill
               overlay on the banner's bottom-left. */}
@@ -489,26 +524,70 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
             const emDashIdx = t.indexOf(" — ");
             const colonIdx = t.indexOf(": ");
             let head = t;
-            let tail: string = (card.synopsis ?? "").trim();
+            const synopsis = (card.synopsis ?? "").trim();
+            let tail = synopsis;
+            // True when the subtitle came from a synopsis (hand-authored
+            // or generated) vs a title split — we add an ellipsis only
+            // to synopses, since title splits are already complete phrases.
+            const tailFromSynopsis = tail.length > 0;
             if (!tail) {
               const colonFirst =
                 colonIdx >= 0 && (emDashIdx < 0 || colonIdx < emDashIdx);
               const emDashFirst =
                 emDashIdx >= 0 && (colonIdx < 0 || emDashIdx < colonIdx);
               if (colonFirst) {
-                head = t.slice(0, colonIdx + 1); // include the colon
-                tail = t.slice(colonIdx + 2);
+                // Strip the trailing colon from the head — dangling ":"
+                // reads as broken punctuation when the subtitle below
+                // already separates the two phrases visually.
+                const proposedHead = t.slice(0, colonIdx);
+                const headMeaningful =
+                  proposedHead.length >= 8 && /\s/.test(proposedHead);
+                if (headMeaningful) {
+                  head = proposedHead;
+                  tail = t.slice(colonIdx + 2);
+                }
               } else if (emDashFirst) {
                 head = t.slice(0, emDashIdx);
                 tail = t.slice(emDashIdx + 3);
               }
+
+              // ── Swap head and tail when the head is a boilerplate
+              //    "verb + audience" phrase ("Tell Congress", "Call your
+              //    Senators", "Email Republican Reps", "Urge Your State
+              //    Legislators") and the tail carries the specific ask.
+              //    Without this, a wall of "Tell Congress" cards all look
+              //    identical at a glance — the meat sits in the subordinate
+              //    line. With the swap, the specific bill / topic becomes
+              //    the prominent title and the contact verb shrinks to the
+              //    subtitle, which reads like a news headline. ─────────
+              if (tail) {
+                const VERB_STARTS = /^(tell|call|email|urge|ask|write|sign)\b/i;
+                const headIsBoilerplate =
+                  VERB_STARTS.test(head) && tail.length > head.length;
+                if (headIsBoilerplate) {
+                  const swap = head;
+                  head = tail;
+                  tail = swap;
+                }
+              }
             }
+            // Append a soft ellipsis on synopsis subtitles — visual cue
+            // that there's more to read inside the modal. Title-split
+            // subtitles read as complete phrases and don't need it.
+            const displayedTail =
+              tail && tailFromSynopsis && !/[.…!?]$/.test(tail)
+                ? tail + "…"
+                : tail;
             return (
               <h3 className={`font-['Poppins',sans-serif] font-bold text-gray-900 leading-snug ${compact ? "text-[13px]" : "text-[15px]"}`}>
                 {head}
                 {tail && (
-                  <span className={`block font-normal text-gray-500 leading-snug ${compact ? "text-[12px] mt-0.5" : "text-[13px] mt-1"}`}>
-                    {tail}
+                  // Subtitle styling deliberately more distinct from the head
+                  // than before: smaller, lighter gray, italic, and a bigger
+                  // vertical gap. Previously the subtitle read as natural
+                  // line-wrap because the visual delta was too small.
+                  <span className={`block font-normal italic text-gray-400 leading-snug ${compact ? "text-[11px] mt-1" : "text-[12px] mt-1.5"}`}>
+                    {displayedTail}
                   </span>
                 )}
               </h3>

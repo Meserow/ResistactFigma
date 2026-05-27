@@ -1,0 +1,362 @@
+[
+  {
+    "id": 1058,
+    "title": "Sign Black-led racial-justice petitions",
+    "url": "https://colorofchange.org/",
+    "cat": "PETITION",
+    "syn": "Color Of Change campaign queue",
+    "desc": "Sign Black-led racial-justice petitions — police accountability, voting rights, corporate equity. CoC moves money."
+  },
+  {
+    "id": 1059,
+    "title": "Sign civil-liberties petitions",
+    "url": "https://demandprogress.org/",
+    "cat": "PETITION",
+    "syn": "EFF digital-rights petition queue",
+    "desc": "Sign civil-liberties petitions on surveillance, big-tech, and antitrust. Their email pressure flips swing senators."
+  },
+  {
+    "id": 1061,
+    "title": "Sign Christian-rooted petitions vs. Christian nationalism",
+    "url": "https://www.faithfulamerica.org/",
+    "cat": "PETITION",
+    "syn": "Faithful America anti-Christian-nationalism",
+    "desc": "Sign Christian petitions against Christian nationalism. The right's loudest base needs visible religious dissent — that's you."
+  },
+  {
+    "id": 1062,
+    "title": "Sign anti-militarism petitions",
+    "url": "https://winwithoutwar.org/",
+    "cat": "PETITION",
+    "syn": "Win Without War foreign-policy queue",
+    "desc": "Sign anti-war petitions targeting the Pentagon budget and weapons sales. Restrain Trump's foreign-policy improv."
+  },
+  {
+    "id": 1063,
+    "title": "Sign petitions to close ICE facilities",
+    "url": "https://www.detentionwatchnetwork.org/",
+    "cat": "PETITION",
+    "syn": "Detention Watch Network campaigns",
+    "desc": "Sign petitions targeting specific ICE detention facilities for closure. Local fights, federal pressure."
+  },
+  {
+    "id": 1064,
+    "title": "Sign the open letter against book bans",
+    "url": "https://www.authorsagainstbookbans.com/",
+    "cat": "PETITION",
+    "syn": "Authors Against Book Bans sign-on letter",
+    "desc": "Sign the open letter against book bans. Names from authors, librarians, and readers create local-news pressure."
+  },
+  {
+    "id": 1067,
+    "title": "Sign children's-rights petitions",
+    "url": "https://www.childrensdefense.org/",
+    "cat": "PETITION",
+    "syn": "Children's Defense Fund campaigns",
+    "desc": "Sign petitions on child healthcare, gun violence, and poverty programs. Trump's budget cuts hit kids first."
+  },
+  {
+    "id": 1068,
+    "title": "Become a SURJ member",
+    "url": "https://surj.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "White-solidarity dues-paying membership",
+    "desc": "Become a SURJ member to organize white people for racial justice. Apply for the virtual intro call."
+  },
+  {
+    "id": 1069,
+    "title": "Become a DSA member",
+    "url": "https://www.dsausa.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "Democratic Socialists of America dues + chapter",
+    "desc": "DSA chapters run mutual aid, electoral, and tenant work in nearly every metro. Joining locally finds the doers near you."
+  },
+  {
+    "id": 1070,
+    "title": "Join Sunrise Movement",
+    "url": "https://www.sunrisemovement.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "Youth climate org + Green New Deal",
+    "desc": "Climate-led, youth-driven org. Join Sunrise to organize for the Green New Deal and climate accountability."
+  },
+  {
+    "id": 1071,
+    "title": "Join Mijente",
+    "url": "https://mijente.net/",
+    "cat": "JOIN A GROUP",
+    "syn": "Latinx-led pro-immigrant organizing",
+    "desc": "Latinx organizing for immigration defense and abolition. Local circles plug you in to immediate work."
+  },
+  {
+    "id": 1072,
+    "title": "Join United We Dream",
+    "url": "https://unitedwedream.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "Largest immigrant-youth-led network",
+    "desc": "Largest immigrant-youth-led network in the country. Plug into ICE response, deportation defense, and policy work."
+  },
+  {
+    "id": 1073,
+    "title": "Join Bend the Arc",
+    "url": "https://www.bendthearc.us/",
+    "cat": "JOIN A GROUP",
+    "syn": "Progressive Jewish American advocacy",
+    "desc": "Jewish anti-authoritarian organizing. Join to find Jewish-led action against Christian nationalism near you."
+  },
+  {
+    "id": 1074,
+    "title": "Join Jewish Voice for Peace",
+    "url": "https://www.jewishvoiceforpeace.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "Jewish-led Palestine solidarity org",
+    "desc": "Jewish-led anti-occupation and civil-liberties organizing. Local chapters in 70+ cities."
+  },
+  {
+    "id": 1075,
+    "title": "Join T'ruah (rabbinic human rights)",
+    "url": "https://truah.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "Rabbis for North American human rights",
+    "desc": "Rabbinic human rights org. Rabbis + cantors lead immigration defense, anti-Christian-nationalism, and dignity work."
+  },
+  {
+    "id": 1076,
+    "title": "Subscribe to FCNL action alerts (Quaker)",
+    "url": "https://www.fcnl.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "Friends Committee on Nat'l Legislation alerts",
+    "desc": "Quaker action alerts for constituent calls and emails. Pacifist-rooted, focused on Pentagon budget and immigration."
+  },
+  {
+    "id": 1077,
+    "title": "Join Pax Christi USA (Catholic peace)",
+    "url": "https://paxchristiusa.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "Catholic peace movement membership",
+    "desc": "Catholic peace + justice movement. Join for nonviolence training and faith-rooted resistance to militarism."
+  },
+  {
+    "id": 1078,
+    "title": "Take a NETWORK action (Catholic social justice)",
+    "url": "https://networklobby.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "Catholic-led social-justice campaigns",
+    "desc": "Catholic social-justice lobby. Take action on healthcare, immigration, and the federal budget — nuns lead this."
+  },
+  {
+    "id": 1080,
+    "title": "Take a Sikh Coalition action",
+    "url": "https://www.sikhcoalition.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "Civil-rights org defending Sikh Americans",
+    "desc": "Sikh civil-rights advocacy. Take action on hate-crime response, religious-discrimination, and racial profiling."
+  },
+  {
+    "id": 1084,
+    "title": "Volunteer with Mothers Out Front",
+    "url": "https://mothersoutfront.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "Climate-focused parent organizing",
+    "desc": "Volunteer with Mothers Out Front. Mom-led climate org with flexible roles around school and family schedules."
+  },
+  {
+    "id": 1085,
+    "title": "Take an ADAPT action (disability rights)",
+    "url": "https://adapt.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "Disability direct-action campaign",
+    "desc": "Take an ADAPT action — disability-led direct action against Medicaid cuts and institutionalization."
+  },
+  {
+    "id": 1086,
+    "title": "Take a Black Voters Matter action",
+    "url": "https://blackvotersmatterfund.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "Voter mobilization in the South",
+    "desc": "Take a Black Voters Matter action. Voter-protection fights happen at county and state level — they target there."
+  },
+  {
+    "id": 1087,
+    "title": "Take a Mi Familia Vota action",
+    "url": "https://www.mifamiliavota.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "Latinx civic engagement campaign",
+    "desc": "Take a Mi Familia Vota action. Latino civic engagement — voter registration and protection in swing states."
+  },
+  {
+    "id": 1088,
+    "title": "Take a Climate Justice Alliance action",
+    "url": "https://climatejusticealliance.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "Grassroots climate-justice coalition",
+    "desc": "Take a Climate Justice Alliance action. Frontline community-led climate fights — pipelines, refineries, evictions."
+  },
+  {
+    "id": 1091,
+    "title": "Sponsor a refugee household",
+    "url": "https://welcome.us/",
+    "cat": "HOUSING",
+    "syn": "Welcome.US private-sponsorship program",
+    "desc": "Sponsor a refugee household through a verified federal pathway. Remote prep work counts."
+  },
+  {
+    "id": 1092,
+    "title": "Make your city 'welcoming' for immigrants",
+    "url": "https://welcomingamerica.org/",
+    "cat": "HOUSING",
+    "syn": "Welcoming America city-policy toolkit",
+    "desc": "Push your city to certify as a 'welcoming city' for immigrants. Public commitment makes ICE cooperation costly."
+  },
+  {
+    "id": 1093,
+    "title": "Pressure your mayor on sanctuary policy",
+    "url": "https://www.citiesforaction.us/",
+    "cat": "HOUSING",
+    "syn": "Sanctuary-policy advocacy toolkit",
+    "desc": "Pressure your mayor to join the immigrant-friendly cities coalition. Mayoral commitments slow ICE locally."
+  },
+  {
+    "id": 1094,
+    "title": "Volunteer to furnish + resettle refugee homes",
+    "url": "https://www.homesnotborders.org/",
+    "cat": "HOUSING",
+    "syn": "Help refugees set up a new apartment",
+    "desc": "Furnish + resettle refugee homes — physical setup or remote logistics. Trump's cuts mean more families with less support."
+  },
+  {
+    "id": 1095,
+    "title": "Get an organizer for your workplace",
+    "url": "https://workerorganizing.org/",
+    "cat": "LABOR",
+    "syn": "EWOC pairs you with a union organizer",
+    "desc": "Free organizer helps you unionize your workplace, confidentially. Trump's NLRB is gutted — build power directly."
+  },
+  {
+    "id": 1096,
+    "title": "Join the federal-worker network",
+    "url": "https://www.federalunionists.net/",
+    "cat": "LABOR",
+    "syn": "Federal Unionists Network solidarity hub",
+    "desc": "Join the federal-worker network. Trump's RIFs and Schedule F purges need cross-agency mutual aid + organizing."
+  },
+  {
+    "id": 1097,
+    "title": "Subscribe to independent labor media",
+    "url": "https://labornotes.org/",
+    "cat": "LABOR",
+    "syn": "Labor Notes: union news + organizing wins",
+    "desc": "Subscribe to indie labor media + training calendar. Best source for what's happening in shops outside the big unions."
+  },
+  {
+    "id": 1098,
+    "title": "Start a workplace petition",
+    "url": "https://home.coworker.org/",
+    "cat": "LABOR",
+    "syn": "Coworker.org workplace-petition platform",
+    "desc": "Host a workplace petition — raises, anti-ICE-cooperation pledges. Public petitions force the boss to acknowledge."
+  },
+  {
+    "id": 1099,
+    "title": "Take a UE solidarity action",
+    "url": "https://www.ueunion.org/",
+    "cat": "LABOR",
+    "syn": "Electrical Workers union solidarity",
+    "desc": "Solidarity action with UE — independent rank-and-file union. Often the most aggressive on contract fights."
+  },
+  {
+    "id": 1100,
+    "title": "Apply for IWW membership",
+    "url": "https://www.iww.org/",
+    "cat": "LABOR",
+    "syn": "Industrial Workers of the World joining info",
+    "desc": "Apply for IWW membership. All-trades radical union; remote onboarding. Best fit if your shop won't tolerate the bigs."
+  },
+  {
+    "id": 1101,
+    "title": "Sign on to a National Domestic Workers Alliance campaign",
+    "url": "https://www.domesticworkers.org/",
+    "cat": "LABOR",
+    "syn": "Domestic workers' national union campaigns",
+    "desc": "Sign on to NDWA campaigns. Domestic workers (housekeepers, nannies, caregivers) organizing for federal protections."
+  },
+  {
+    "id": 1102,
+    "title": "Send solidarity to Starbucks Workers United",
+    "url": "https://sbworkersunited.org/",
+    "cat": "LABOR",
+    "syn": "Solidarity messages to barista unionists",
+    "desc": "Send solidarity to Starbucks workers fighting union-busting. Their store-by-store wins set the precedent for service work."
+  },
+  {
+    "id": 1103,
+    "title": "Take an Amazon Labor Union action",
+    "url": "https://www.amazonlaborunion.org/",
+    "cat": "LABOR",
+    "syn": "Amazon warehouse-union campaign",
+    "desc": "Take an Amazon Labor Union action. The hardest org fight in the country — solidarity dollars and petitions matter."
+  },
+  {
+    "id": 1104,
+    "title": "Use the free legal hotline (workplace family rights)",
+    "url": "https://www.abetterbalance.org/",
+    "cat": "LABOR",
+    "syn": "A Better Balance free workplace hotline",
+    "desc": "Free legal hotline for workplace family + caregiving rights. Use if you're being denied FMLA, pumping breaks, or accommodations."
+  },
+  {
+    "id": 1105,
+    "title": "Sign on to a Fight For A Union worker campaign",
+    "url": "https://fightforaunion.org/",
+    "cat": "LABOR",
+    "syn": "Worker-led union-drive support",
+    "desc": "Successor to Fight for $15. Sign on to a sectoral campaign for living wages and a real union, not just minimums."
+  },
+  {
+    "id": 1106,
+    "title": "Sign the moral covenant",
+    "url": "https://breachrepairers.org/",
+    "cat": "PRAYER",
+    "syn": "Repairers of the Breach faith covenant",
+    "desc": "Sign Rev. Barber's moral covenant. Poor people's commitment to anti-poverty action grounded in faith and policy."
+  },
+  {
+    "id": 1107,
+    "title": "Subscribe to action alerts",
+    "url": "https://sojo.net/",
+    "cat": "PRAYER",
+    "syn": "Sojourners faith-rooted action alerts",
+    "desc": "Subscribe to Sojourners' Christian-justice action alerts. Progressive Christian voice in DC policy fights."
+  },
+  {
+    "id": 1108,
+    "title": "Subscribe to actions",
+    "url": "https://www.faithfulamerica.org/",
+    "cat": "PRAYER",
+    "syn": "Bread for the World hunger-advocacy alerts",
+    "desc": "Subscribe to Faithful America's Christian-rooted campaigns against Christian nationalism. Visible religious dissent."
+  },
+  {
+    "id": 1109,
+    "title": "Sign on to a Faith in Public Life advocacy action",
+    "url": "https://www.faithinpubliclife.org/",
+    "cat": "PRAYER",
+    "syn": "Faith leaders for racial + economic justice",
+    "desc": "Sign on to multi-faith advocacy actions. Coalition lobbying that fuses Christian, Jewish, Muslim, and Hindu progressives."
+  },
+  {
+    "id": 1110,
+    "title": "Take a rabbinic action",
+    "url": "https://truah.org/",
+    "cat": "PRAYER",
+    "syn": "T'ruah rabbi-led human-rights action",
+    "desc": "Take a rabbinic action. Rabbis and cantors organize on immigration, occupation, and Christian nationalism."
+  },
+  {
+    "id": 1111,
+    "title": "Sign on to a Pax Christi USA peace action",
+    "url": "https://paxchristiusa.org/",
+    "cat": "PRAYER",
+    "syn": "Catholic peace-movement campaigns",
+    "desc": "Sign Pax Christi USA peace actions. Catholic-rooted resistance to militarism and the Pentagon budget."
+  }
+]

@@ -1,0 +1,1622 @@
+[
+  {
+    "id": 1000,
+    "title": "Search any brand's political donations before you buy",
+    "original_url": "https://www.goodsuniteus.com/",
+    "proposed_url": "https://www.goodsuniteus.com/app/",
+    "reasoning": "The actual search is performed in the Goods Unite Us app (iOS/Android); the /app/ page is where users get the search tool. The homepage is marketing/about content.",
+    "confidence": "medium",
+    "notes": "Search is app-based, not a website form. /app/ page links to App Store + Google Play. Could keep homepage if direct app-store download isn't desired."
+  },
+  {
+    "id": 1001,
+    "title": "Get the browser extension that flags MAGA-aligned brands",
+    "original_url": "https://progressiveshopper.com/",
+    "proposed_url": "https://progressiveshopper.com/",
+    "reasoning": "Homepage hero IS the install CTA — the install buttons for Chrome/Firefox are above the fold. No dedicated /install or /download page; the homepage links straight to the Chrome Web Store and Mozilla addon listings.",
+    "confidence": "medium",
+    "notes": "Homepage is the action — no change needed. Could alternatively deep-link directly to the Chrome Web Store listing if you want one-click install."
+  },
+  {
+    "id": 1002,
+    "title": "Use the Trump-tied retailers boycott list",
+    "original_url": "https://grabyourwallet.org/",
+    "proposed_url": "https://docs.google.com/spreadsheets/d/1vu0Y0HvadMgG_LN7dF8W7M66oPCcx_nmSARQWirV7iY/edit",
+    "reasoning": "The actual boycott list is a public Google Sheet titled 'The Official #GrabYourWallet Boycott List' — that's the artifact users want. The grabyourwallet.org homepage primarily links out to this sheet.",
+    "confidence": "high",
+    "notes": "External Google Sheet — if linking off-domain is undesirable, keep homepage and note the sheet link is on it."
+  },
+  {
+    "id": 1003,
+    "title": "Join coordinated 24-hour economic blackouts",
+    "original_url": "https://thepeoplesunionusa.com/",
+    "proposed_url": "https://thepeoplesunionusa.com/boycotts",
+    "reasoning": "The /boycotts page lists the upcoming and scheduled economic blackouts with dates and details — that's where users 'join' a specific blackout. Homepage is general intro.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1004,
+    "title": "Sign the Tesla Takedown commitment",
+    "original_url": "https://www.teslatakedown.com/",
+    "proposed_url": "https://www.teslatakedown.com/",
+    "reasoning": "Homepage is the action — the sign-up form for action alerts and pledge is on the homepage. No separate /pledge or /sign URL surfaced. The 'commitment' framing maps to the same sign-up that the homepage hosts.",
+    "confidence": "medium",
+    "notes": "Homepage is the action — no change needed. The /divest page is about city resolutions, not personal pledges."
+  },
+  {
+    "id": 1005,
+    "title": "Join the Latino-led economic blackout",
+    "original_url": "https://www.latinofreeze.com/",
+    "proposed_url": "https://www.latinofreeze.com/",
+    "reasoning": "Homepage IS the action — the campaign sign-up and movement instructions are on the homepage. There is no /calendar or /join sub-page surfaced; the /about page is informational only.",
+    "confidence": "medium",
+    "notes": "Homepage is the action — no change needed."
+  },
+  {
+    "id": 1006,
+    "title": "Switch your spending to a Black-women-owned biz",
+    "original_url": "https://www.buyfromablackwoman.org/",
+    "proposed_url": "https://www.buyfromablackwoman.org/online-directory",
+    "reasoning": "The /online-directory page is the actual searchable directory of Black-women-owned businesses to shop at. Homepage is mission/intro content.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1008,
+    "title": "Buy from a Native-owned business instead",
+    "original_url": "https://www.beyondbuckskin.com/",
+    "proposed_url": "http://www.beyondbuckskin.com/p/buy-native.html",
+    "reasoning": "The /p/buy-native.html page is the dedicated 'Buy Native List' — directory of Native-owned businesses. The site's homepage is its own boutique store; the Buy Native list is the broader directory the card promises.",
+    "confidence": "high",
+    "notes": "URL uses old Blogger path (http, .html) but it is the canonical 'Buy Native List' page; alternately just sending users to the boutique homepage is fine if you want them to shop directly there."
+  },
+  {
+    "id": 1009,
+    "title": "RSVP to the next Saturday Tesla Takedown",
+    "original_url": "https://www.teslatakedown.com/",
+    "proposed_url": "https://actionnetwork.org/event_campaigns/teslatakedown",
+    "reasoning": "Action Network's TeslaTakedown event campaign page hosts the live map of dealership protests with RSVP. teslatakedown.com routes users to this Action Network listing for the actual RSVP step.",
+    "confidence": "high",
+    "notes": "External actionnetwork.org URL. Could keep teslatakedown.com if cross-domain links are undesirable; the homepage links through to this map."
+  },
+  {
+    "id": 1011,
+    "title": "Become a Veterans for Peace member",
+    "original_url": "https://www.veteransforpeace.org/",
+    "proposed_url": "https://www.veteransforpeace.org/take-action/join",
+    "reasoning": "Dedicated /take-action/join membership form with veteran + associate-member tiers. Homepage doesn't include the join form above the fold.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1012,
+    "title": "Join About Face: Veterans Against the War",
+    "original_url": "https://aboutfaceveterans.org/",
+    "proposed_url": "https://aboutfaceveterans.org/become-a-member/",
+    "reasoning": "Dedicated /become-a-member/ page is the membership application — the verb 'join' matches exactly. Homepage is org intro.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1013,
+    "title": "Find an ADAPT chapter (disability direct action)",
+    "original_url": "https://adapt.org/",
+    "proposed_url": "https://adapt.org/adapt-groups/",
+    "reasoning": "The /adapt-groups/ page lists all ADAPT chapters by state with contact info — exactly what 'find a chapter' promises.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1014,
+    "title": "Find a Drag Story Hour to attend / livestream",
+    "original_url": "https://www.dragstoryhour.org/",
+    "proposed_url": "https://www.dragstoryhour.org/chaptermap",
+    "reasoning": "/chaptermap is the dedicated map of local chapters where users find an event in their area.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1015,
+    "title": "Sign up for Refuse Fascism action alerts",
+    "original_url": "https://refusefascism.org/",
+    "proposed_url": "https://refusefascism.org/signup/",
+    "reasoning": "Dedicated /signup/ page for joining the action-alert email/SMS list — exact match for the verb 'sign up for alerts'.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1016,
+    "title": "Sign up with Code Pink",
+    "original_url": "https://www.codepink.org/",
+    "proposed_url": "https://www.codepink.org/get_involved",
+    "reasoning": "/get_involved is Code Pink's hub for joining, with onboarding, working groups, and local chapter sign-ups. Homepage is news.",
+    "confidence": "medium",
+    "notes": "Could also propose /onboarding (orientation sessions) but get_involved is the broader 'sign up' entry."
+  },
+  {
+    "id": 1018,
+    "title": "Sponsor + drive for refugees via Welcome.US",
+    "original_url": "https://welcome.us/",
+    "proposed_url": "https://welcome.us/get-involved",
+    "reasoning": "/get-involved is the hub page for volunteering and sponsoring — direct match for 'sponsor + drive'. Homepage is intro.",
+    "confidence": "high",
+    "notes": "Note that Welcome Corps was terminated in Feb 2025 — sponsorship intake may be paused; the get-involved page still surfaces volunteering options."
+  },
+  {
+    "id": 1020,
+    "title": "Submit a tip on criminal-justice / detention",
+    "original_url": "https://www.themarshallproject.org/",
+    "proposed_url": "https://www.themarshallproject.org/how-to-contact-us",
+    "reasoning": "/how-to-contact-us is the dedicated tip-submission guide with Signal, secure email, and mail instructions. Closer match to 'submit a tip' than the homepage news feed.",
+    "confidence": "high",
+    "notes": "Alternative: /investigate-this is for local journalism partners, not public tips."
+  },
+  {
+    "id": 1021,
+    "title": "Submit a leak to The Intercept",
+    "original_url": "https://theintercept.com/",
+    "proposed_url": "https://theintercept.com/source/",
+    "reasoning": "/source/ is The Intercept's dedicated 'Welcomes Whistleblowers' page with SecureDrop, Signal, and tip-email instructions. Exact match for 'submit a leak'.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1023,
+    "title": "Pitch a Black-community story",
+    "original_url": "https://capitalbnews.org/",
+    "proposed_url": "https://capitalbnews.org/contact-us/",
+    "reasoning": "/contact-us/ is the dedicated pitch/story-idea submission form. No separate /pitch URL exists.",
+    "confidence": "medium",
+    "notes": "Contact form does not specifically prompt for 'pitch' — but it's the only intake channel surfaced."
+  },
+  {
+    "id": 1024,
+    "title": "Pitch a gender + politics story",
+    "original_url": "https://19thnews.org/",
+    "proposed_url": "https://19thnews.org/contact-us/",
+    "reasoning": "/contact-us/ is the pitch/tip intake page with the relevant editor email and Signal info.",
+    "confidence": "medium",
+    "notes": "Note: The 19th explicitly states they do not currently accept freelance stories — flagging the card may need a copy edit to say 'tip' rather than 'pitch'."
+  },
+  {
+    "id": 1025,
+    "title": "Pitch on local DA / sheriff / election admin",
+    "original_url": "https://boltsmag.org/",
+    "proposed_url": "https://boltsmag.org/pitch-us/",
+    "reasoning": "Dedicated /pitch-us/ page with detailed pitch guidelines, including rate ($800 default) — exact match for the verb 'pitch'.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1026,
+    "title": "Send an investigative idea",
+    "original_url": "https://www.typeinvestigations.org/",
+    "proposed_url": "https://www.typeinvestigations.org/about/how-to-pitch/",
+    "reasoning": "Dedicated /about/how-to-pitch/ page with pitch criteria and submission email. Exact match.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1027,
+    "title": "Pitch a war / civil-liberties story",
+    "original_url": "https://www.dropsitenews.com/",
+    "proposed_url": "https://www.dropsitenews.com/about",
+    "reasoning": "/about page lists the tip-line emails (tips@dropsitenews.com) and Signal handles — the actual contact channels for pitches. No dedicated /pitch page exists.",
+    "confidence": "medium",
+    "notes": "Drop Site is a Substack-hosted newsroom with limited site structure; /about is closest to a pitch hub."
+  },
+  {
+    "id": 1028,
+    "title": "Pitch a labor story (video)",
+    "original_url": "https://perfectunion.us/",
+    "proposed_url": "https://perfectunion.us/about/",
+    "reasoning": "/about/ page hosts the 'send us a tip / story idea' contact prompt with the submission email. No separate /pitch page surfaced.",
+    "confidence": "medium",
+    "notes": "Site does not have a dedicated tip-submission form — /about is the closest match. Card framing fits."
+  },
+  {
+    "id": 1029,
+    "title": "Send a dark-money tip",
+    "original_url": "https://www.levernews.com/",
+    "proposed_url": "https://www.levernews.com/got-a-news-tip/",
+    "reasoning": "Dedicated /got-a-news-tip/ page with Signal, ProtonMail, and postal-mail instructions for sensitive sources. Exact match for 'send a tip'.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1030,
+    "title": "Submit a campaign-finance tip",
+    "original_url": "https://readsludge.com/",
+    "proposed_url": "https://readsludge.com/contact/",
+    "reasoning": "/contact/ page lists the tips@readsludge.com email + Signal handle for tip submissions. No dedicated /tips page.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1032,
+    "title": "Find your nearest chapter + meeting time",
+    "original_url": "https://www.dsausa.org/",
+    "proposed_url": "https://www.dsausa.org/chapters/",
+    "reasoning": "Dedicated chapter finder page sorted by state with search. Exact match for 'find your nearest chapter'.",
+    "confidence": "high",
+    "notes": "Alternative: /chapter-map/ for an interactive map view — either is reasonable."
+  },
+  {
+    "id": 1033,
+    "title": "Apply to a virtual intro call",
+    "original_url": "https://surj.org/",
+    "proposed_url": "https://act.surj.org/a/member-orientation",
+    "reasoning": "Dedicated 'Join a SURJ Member Orientation' sign-up form on the act.surj.org subdomain — exact match for 'apply to a virtual intro call'.",
+    "confidence": "high",
+    "notes": "Subdomain (act.surj.org) — uses Action Network behind the scenes; works as deep link."
+  },
+  {
+    "id": 1034,
+    "title": "Sign up for a hub welcome call",
+    "original_url": "https://www.sunrisemovement.org/",
+    "proposed_url": "https://www.sunrisemovement.org/welcome-call/",
+    "reasoning": "Dedicated /welcome-call/ page is the sign-up for new-member welcome calls — exact verb match.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1035,
+    "title": "RSVP for next event (local + virtual)",
+    "original_url": "https://workingfamilies.org/",
+    "proposed_url": "https://www.mobilize.us/workingfamilies/",
+    "reasoning": "Mobilize-hosted events page is the actual event RSVP listing with location filtering. workingfamilies.org/get-active also links here.",
+    "confidence": "medium",
+    "notes": "External mobilize.us URL. Alternative on-domain option: https://workingfamilies.org/get-active/ which is the get-involved hub."
+  },
+  {
+    "id": 1036,
+    "title": "Join virtual monthly mass assembly",
+    "original_url": "https://www.poorpeoplescampaign.org/",
+    "proposed_url": "https://www.poorpeoplescampaign.org/",
+    "reasoning": "Homepage hero links directly to the upcoming mass assembly with register link. No stable canonical /mass-assembly URL — specific events are dated (e.g., the 2024 Moral March event page). Keeping homepage avoids stale links.",
+    "confidence": "low",
+    "notes": "Homepage is closest to the action — specific assembly event pages rotate. Consider revisiting periodically as Poor People's Campaign rolls out new event URLs."
+  },
+  {
+    "id": 1037,
+    "title": "Find your local circle",
+    "original_url": "https://mijente.net/",
+    "proposed_url": "https://mijente.net/join/",
+    "reasoning": "Mijente's local-circle directory is listed as 'coming soon' per their FAQ. The /join/ membership page is the closest existing entry point. The card synopsis incorrectly says 'Indivisible local-chapter finder' — synopsis appears mis-tagged.",
+    "confidence": "low",
+    "notes": "Synopsis field is wrong (says 'Indivisible' — Mijente is a Latinx-led org). Mijente local-circle directory does not yet exist; /join/ is the membership path. Manual review needed on synopsis."
+  },
+  {
+    "id": 1038,
+    "title": "Find a local team",
+    "original_url": "https://mothersoutfront.org/",
+    "proposed_url": "https://mothersoutfront.org/local-teams/",
+    "reasoning": "Dedicated /local-teams/ page lists state and town chapters. Exact match for 'find a local team'.",
+    "confidence": "high",
+    "notes": "Synopsis incorrectly says 'Field Team 6 voter-mobilization squads' — Mothers Out Front is a climate org. Synopsis field appears mis-tagged."
+  },
+  {
+    "id": 1039,
+    "title": "Find a local group",
+    "original_url": "https://www.bendthearc.us/",
+    "proposed_url": "https://www.bendthearc.us/act_locally",
+    "reasoning": "/act_locally is the dedicated 'Find a local group' page with chapter map. Exact match.",
+    "confidence": "high",
+    "notes": "Synopsis says 'MoveOn local action-team finder' — Bend the Arc is a Jewish progressive org, not MoveOn. Synopsis field appears mis-tagged."
+  },
+  {
+    "id": 1041,
+    "title": "Join a federal-worker organizing call",
+    "original_url": "https://www.federalunionists.net/",
+    "proposed_url": "https://www.federalunionists.net/join-us",
+    "reasoning": "Dedicated /join-us page is the sign-up to participate in the network's calls/town halls. Exact verb match.",
+    "confidence": "high",
+    "notes": "Alternative: /federal-workers if targeting fed workers specifically; /join-us is the broader entry."
+  },
+  {
+    "id": 1047,
+    "title": "Embroider + ship a Trump quote to the archive",
+    "original_url": "https://www.tinypricksproject.com/",
+    "proposed_url": "https://www.tinypricksproject.com/",
+    "reasoning": "Homepage hosts the participation instructions directly above the fold (pick a quote, stitch, mail). No separate /submit page exists.",
+    "confidence": "medium",
+    "notes": "Homepage is the action — no change needed."
+  },
+  {
+    "id": 1048,
+    "title": "Knit a Welcome Blanket for a new immigrant",
+    "original_url": "https://www.welcomeblanket.org/",
+    "proposed_url": "https://www.welcomeblanket.org/getinvolved",
+    "reasoning": "/getinvolved page has step-by-step instructions for knitting and shipping the blanket — exact match for 'knit and ship'.",
+    "confidence": "high",
+    "notes": "Alternative: /patterns/ for the patterns themselves; /getinvolved is the full instructions hub."
+  },
+  {
+    "id": 1049,
+    "title": "Knit a Pussyhat from updated patterns",
+    "original_url": "https://www.pussyhatproject.com/",
+    "proposed_url": "https://www.pussyhatproject.com/knit",
+    "reasoning": "Dedicated /knit page with current and updated patterns. Exact verb match.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1050,
+    "title": "Sign up for the postcard drop",
+    "original_url": "https://thepostcardposse.org/",
+    "proposed_url": null,
+    "reasoning": "Domain 'thepostcardposse.org' does not appear in search results — multiple variant 'Postcard Posse' projects exist (Taos United, Mississippi PEPAC), but no canonical .org by that name surfaced.",
+    "confidence": "low",
+    "notes": "Domain may be dead or unindexed — manual check needed. If goal is generic postcard volunteering, consider switching to https://postcardstovoters.org/volunteer/ as a known-good alternative."
+  },
+  {
+    "id": 1051,
+    "title": "Mail a handmade card to a detained migrant",
+    "original_url": "https://www.freedomforimmigrants.org/",
+    "proposed_url": "https://www.freedomforimmigrants.org/volunteer",
+    "reasoning": "/volunteer page has the letter-writing-to-detainees opportunity. Closer to the verb than the homepage.",
+    "confidence": "medium",
+    "notes": "Alternative: https://flowersontheinside.org/ is a dedicated 'send a card to immigrants in detention' partner project — could be a better deep link if cross-domain is OK."
+  },
+  {
+    "id": 1052,
+    "title": "Sign petitions to overturn Citizens United",
+    "original_url": "https://www.movetoamend.org/",
+    "proposed_url": "https://www.movetoamend.org/motion",
+    "reasoning": "/motion is the 'Motion to Amend — Sign the Petition' page; /petition is the alternate signature page. Exact match for 'sign the petition'.",
+    "confidence": "high",
+    "notes": "Alternative: /petition (slightly different framing). Both reach a signature form."
+  },
+  {
+    "id": 1053,
+    "title": "Sign current petitions",
+    "original_url": "https://www.citizen.org/",
+    "proposed_url": "https://www.citizen.org/act/",
+    "reasoning": "/act/ is Public Citizen's actions archive — the canonical 'current petitions' queue. Exact match for verb.",
+    "confidence": "high",
+    "notes": "Synopsis says 'MoveOn petition action queue' — Public Citizen is not MoveOn. Synopsis field is mis-tagged."
+  },
+  {
+    "id": 1055,
+    "title": "Sign court-reform petitions",
+    "original_url": "https://demandjustice.org/",
+    "proposed_url": "https://demandjustice.org/action-center/",
+    "reasoning": "/action-center/ is the dedicated petition/action page for court reform. Exact match.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1056,
+    "title": "Sign media-reform petitions",
+    "original_url": "https://www.freepress.net/",
+    "proposed_url": "https://www.freepress.net/get-involved/sign-petition",
+    "reasoning": "Dedicated /get-involved/sign-petition page lists current Free Press petitions to sign. Exact match.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1057,
+    "title": "Sign civil-rights petitions",
+    "original_url": "https://ccrjustice.org/",
+    "proposed_url": "https://ccrjustice.org/home/get-involved/take-action",
+    "reasoning": "/home/get-involved/take-action is CCR's dedicated Take Action page where current petition / sign-on campaigns live.",
+    "confidence": "medium",
+    "notes": "Synopsis says 'ACLU national petition queue' — CCR is not ACLU. Synopsis field is mis-tagged."
+  },
+  {
+    "id": 1058,
+    "title": "Sign Black-led racial-justice petitions",
+    "original_url": "https://colorofchange.org/",
+    "proposed_url": "https://colorofchange.org/issues/",
+    "reasoning": "colorofchange.org/issues/ is the campaign/issues hub that lists all active petitions and campaigns. Individual petitions also live under /actionkit-petitions/ but the issues page is the durable landing point for the full queue.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1059,
+    "title": "Sign civil-liberties petitions",
+    "original_url": "https://demandprogress.org/",
+    "proposed_url": "https://demandprogress.org/get-involved/",
+    "reasoning": "demandprogress.org/get-involved/ is their action hub. Individual petitions live on act.demandprogress.org but the get-involved page is the stable entry point for new visitors. Synopsis says 'EFF digital-rights petition queue' but the URL is Demand Progress, not EFF — possible synopsis mis-tag.",
+    "confidence": "high",
+    "notes": "Synopsis says 'EFF digital-rights petition queue' but the URL is demandprogress.org (Demand Progress), not eff.org (Electronic Frontier Foundation). Synopsis is mis-tagged."
+  },
+  {
+    "id": 1061,
+    "title": "Sign Christian-rooted petitions vs. Christian nationalism",
+    "original_url": "https://www.faithfulamerica.org/",
+    "proposed_url": "https://www.faithfulamerica.org/campaigns/resist-christian-nationalism",
+    "reasoning": "Found a direct campaigns page at faithfulamerica.org/campaigns/resist-christian-nationalism. Individual petition actions live on act.faithfulamerica.org/sign/* but the campaigns page is the durable queue.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1062,
+    "title": "Sign anti-militarism petitions",
+    "original_url": "https://winwithoutwar.org/",
+    "proposed_url": "https://winwithoutwar.org/take-action/",
+    "reasoning": "winwithoutwar.org/take-action/ is explicitly their petitions and action hub. Individual petitions also hosted on act.winwithoutwar.org.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1063,
+    "title": "Sign petitions to close ICE facilities",
+    "original_url": "https://www.detentionwatchnetwork.org/",
+    "proposed_url": "https://www.detentionwatchnetwork.org/take-action/campaigns",
+    "reasoning": "detentionwatchnetwork.org/take-action/campaigns lists all active campaigns including the #CommunitiesNotCages facility-closure campaigns. More targeted than /take-action alone.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1064,
+    "title": "Sign the open letter against book bans",
+    "original_url": "https://www.authorsagainstbookbans.com/",
+    "proposed_url": null,
+    "reasoning": "The site (authorsagainstbookbans.com) does not appear to surface a direct deep-link sign-on form page from search results. The homepage appears to be the primary action surface. The org is oriented around authors/publishers joining by email rather than a public petition form.",
+    "confidence": "low",
+    "notes": "Membership/sign-on appears to be author/illustrator/publishing-professional only — not general public. Homepage may be the intended action. No standalone petition URL found in search results."
+  },
+  {
+    "id": 1067,
+    "title": "Sign children's-rights petitions",
+    "original_url": "https://www.childrensdefense.org/",
+    "proposed_url": "https://www.childrensdefense.org/get-involved/take-action/",
+    "reasoning": "childrensdefense.org/get-involved/take-action/ is the dedicated advocacy action hub. Found directly in search results.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1068,
+    "title": "Become a SURJ member",
+    "original_url": "https://surj.org/",
+    "proposed_url": "https://surj.org/join/",
+    "reasoning": "surj.org/join/ is the dedicated membership page. Also found act.surj.org/a/national-member for direct dues signup and act.surj.org/a/member-orientation for the orientation signup.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1069,
+    "title": "Become a DSA member",
+    "original_url": "https://www.dsausa.org/",
+    "proposed_url": "https://act.dsausa.org/donate/membership/",
+    "reasoning": "act.dsausa.org/donate/membership/ is the direct online membership application and dues payment page — exactly what 'Become a DSA member' promises.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1070,
+    "title": "Join Sunrise Movement",
+    "original_url": "https://www.sunrisemovement.org/",
+    "proposed_url": "https://www.sunrisemovement.org/join/",
+    "reasoning": "sunrisemovement.org/join/ is the direct join/get-involved page. Also found sunrisemovement.org/become-a-member/ as an alternative.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1071,
+    "title": "Join Mijente",
+    "original_url": "https://mijente.net/",
+    "proposed_url": "https://mijente.net/join/",
+    "reasoning": "mijente.net/join/ is the dedicated membership page listing options. Latinx/Chicanx membership eligibility applies; non-Latinx allies have a separate path.",
+    "confidence": "high",
+    "notes": "Membership is open to Latinx/Chicanx people; allies can sign the listserv separately."
+  },
+  {
+    "id": 1072,
+    "title": "Join United We Dream",
+    "original_url": "https://unitedwedream.org/",
+    "proposed_url": "https://unitedwedream.org/join-united-we-dream/",
+    "reasoning": "unitedwedream.org/join-united-we-dream/ is the direct join page. Also found unitedwedream.org/here-to-stay-network/ for allies who want the Here to Stay network.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1073,
+    "title": "Join Bend the Arc",
+    "original_url": "https://www.bendthearc.us/",
+    "proposed_url": "https://www.bendthearc.us/",
+    "reasoning": "Search results show regional /signup pages (e.g. /southjersey_signup, /seattle_signup) but no single national join page. The homepage is the best entry point — users are directed to local chapter signups from there.",
+    "confidence": "low",
+    "notes": "No single national join/membership page found. Local chapter signups are city-specific URLs. Homepage is the best entry."
+  },
+  {
+    "id": 1074,
+    "title": "Join Jewish Voice for Peace",
+    "original_url": "https://www.jewishvoiceforpeace.org/",
+    "proposed_url": "https://www.jewishvoiceforpeace.org/join-us/",
+    "reasoning": "jewishvoiceforpeace.org/join-us/ is the dedicated join page. Also found jewishvoiceforpeace.org/local/ for finding a chapter.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1075,
+    "title": "Join T'ruah (rabbinic human rights)",
+    "original_url": "https://truah.org/",
+    "proposed_url": "https://truah.org/actions/",
+    "reasoning": "truah.org/actions/ is their action hub for rabbis and cantors. The 'Chaverim' membership is specifically for ordained clergy (rabbis/cantors); the general public takes actions from the actions page.",
+    "confidence": "medium",
+    "notes": "Formal membership (Chaverim network) is restricted to rabbis and cantors. For the card title 'Join T'ruah,' truah.org/chaverim-hub/ may be more accurate if targeting clergy; truah.org/actions/ for general supporters."
+  },
+  {
+    "id": 1076,
+    "title": "Subscribe to FCNL action alerts (Quaker)",
+    "original_url": "https://www.fcnl.org/",
+    "proposed_url": "https://act.fcnl.org/signup/signup-action-alerts",
+    "reasoning": "act.fcnl.org/signup/signup-action-alerts is the direct action alerts signup page. Exactly what the card title promises.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1077,
+    "title": "Join Pax Christi USA (Catholic peace)",
+    "original_url": "https://paxchristiusa.org/",
+    "proposed_url": "https://paxchristiusa.org/join/",
+    "reasoning": "paxchristiusa.org/join/ is the dedicated membership page for Pax Christi USA.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1078,
+    "title": "Take a NETWORK action (Catholic social justice)",
+    "original_url": "https://networklobby.org/",
+    "proposed_url": "https://networklobby.org/take-action/",
+    "reasoning": "Search results confirm NETWORK Lobby has ongoing action campaigns (ICE/CBP funding, healthcare, budget). The path /take-action/ is a standard NETWORK Lobby nav item. No direct search result for the URL but strongly inferred from site structure and multiple 'take action' references.",
+    "confidence": "medium",
+    "notes": "URL inferred from site nav pattern — not confirmed by explicit search snippet, but NETWORK Lobby consistently uses /take-action/ across their campaign posts."
+  },
+  {
+    "id": 1080,
+    "title": "Take a Sikh Coalition action",
+    "original_url": "https://www.sikhcoalition.org/",
+    "proposed_url": "https://www.sikhcoalition.org/get-involved/take-action/",
+    "reasoning": "sikhcoalition.org/get-involved/take-action/ found directly in search results as their action hub. Multiple live campaigns confirmed (voting rights, asylum seekers, military service).",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1084,
+    "title": "Volunteer with Mothers Out Front",
+    "original_url": "https://mothersoutfront.org/",
+    "proposed_url": "https://mothersoutfront.org/get-involved/",
+    "reasoning": "mothersoutfront.org/get-involved/ is the volunteer/involvement hub. Found directly in search results.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1085,
+    "title": "Take an ADAPT action (disability rights)",
+    "original_url": "https://adapt.org/",
+    "proposed_url": "https://adapt.org/getting-involved/",
+    "reasoning": "adapt.org/getting-involved/ found directly in search results. Also found adapt.org/how-to-save-medicaid-through-direct-action/ as a specific action page.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1086,
+    "title": "Take a Black Voters Matter action",
+    "original_url": "https://blackvotersmatterfund.org/",
+    "proposed_url": "https://blackvotersmatterfund.org/action-hub/",
+    "reasoning": "blackvotersmatterfund.org/action-hub/ is explicitly described in search results as 'a single place to find every petition, call, letter, and campaign powered by Black Voters Matter.'",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1087,
+    "title": "Take a Mi Familia Vota action",
+    "original_url": "https://www.mifamiliavota.org/",
+    "proposed_url": "https://mifamiliavota.org/volunteer",
+    "reasoning": "mifamiliavota.org/volunteer found directly in search results. Also found an engagement pledge page. The volunteer page is the most direct action entry point.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1088,
+    "title": "Take a Climate Justice Alliance action",
+    "original_url": "https://climatejusticealliance.org/",
+    "proposed_url": "https://climatejusticealliance.org/workgroup/our-power/",
+    "reasoning": "CJA's primary member action vehicle is the Our Power communities program. No generic /take-action/ page found. The Our Power workgroup page is their most direct action entry point for frontline community organizing.",
+    "confidence": "medium",
+    "notes": "CJA is primarily a coalition of organizations, not a direct individual action platform. No single 'take action' page found. Our Power communities is the closest match."
+  },
+  {
+    "id": 1091,
+    "title": "Sponsor a refugee household",
+    "original_url": "https://welcome.us/",
+    "proposed_url": "https://welcome.us/become-a-sponsor/intro-to-sponsorship",
+    "reasoning": "welcome.us/become-a-sponsor/intro-to-sponsorship is the intro page for sponsorship. Also found welcome.us/become-a-sponsor/what-is-the-welcome-corps for the Welcome Corps program.",
+    "confidence": "high",
+    "notes": "IMPORTANT: The Welcome Corps (federal private sponsorship program) was terminated by the Trump administration. The program may no longer be accepting new sponsors. Card should be reviewed for accuracy/dormancy."
+  },
+  {
+    "id": 1092,
+    "title": "Make your city 'welcoming' for immigrants",
+    "original_url": "https://welcomingamerica.org/",
+    "proposed_url": "https://welcomingamerica.org/the-welcoming-standard/",
+    "reasoning": "welcomingamerica.org/the-welcoming-standard/ is the 'Certified Welcoming' program where local governments go through a process to become a certified welcoming city. This directly matches the card's action.",
+    "confidence": "high",
+    "notes": "Welcoming Network membership is for local governments and nonprofits, not individual residents. Individual users should be directed to advocacy around pressuring their city to apply."
+  },
+  {
+    "id": 1093,
+    "title": "Pressure your mayor on sanctuary policy",
+    "original_url": "https://www.citiesforaction.us/",
+    "proposed_url": "https://www.citiesforaction.us/actions",
+    "reasoning": "citiesforaction.us/actions is their advocacy actions page. Also found citiesforaction.us/mayors_challenge as a mayor-specific engagement page.",
+    "confidence": "medium",
+    "notes": "Cities for Action is a mayors' coalition — it's aimed at elected officials, not residents pressuring mayors. The /actions page is the closest match for an individual to see what the coalition supports and use that to pressure their mayor, but there's no direct 'contact your mayor' tool found."
+  },
+  {
+    "id": 1094,
+    "title": "Volunteer to furnish + resettle refugee homes",
+    "original_url": "https://www.homesnotborders.org/",
+    "proposed_url": "https://www.homesnotborders.org/volunteer/",
+    "reasoning": "homesnotborders.org/volunteer/ found directly in search results as the dedicated volunteer signup page.",
+    "confidence": "high",
+    "notes": "Homes Not Borders operates in the DC Metro Area — geographically limited."
+  },
+  {
+    "id": 1095,
+    "title": "Get an organizer for your workplace",
+    "original_url": "https://workerorganizing.org/",
+    "proposed_url": "https://workerorganizing.org/lets-organize-your-workplace-3276/",
+    "reasoning": "workerorganizing.org/lets-organize-your-workplace-3276/ is the page to request a workplace organizer. The homepage is EWOC's main site but this path lands directly on the organizer request form.",
+    "confidence": "medium",
+    "notes": "The numeric slug suggests this may be a campaign-specific post URL and could change. The homepage (workerorganizing.org) also surfaces the organizer request form prominently."
+  },
+  {
+    "id": 1096,
+    "title": "Join the federal-worker network",
+    "original_url": "https://www.federalunionists.net/",
+    "proposed_url": "https://www.federalunionists.net/join-us",
+    "reasoning": "federalunionists.net/join-us found directly in search results as the dedicated join page for the Federal Unionists Network.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1097,
+    "title": "Subscribe to independent labor media",
+    "original_url": "https://labornotes.org/",
+    "proposed_url": "https://labornotes.org/email-signup",
+    "reasoning": "labornotes.org/email-signup is the free email newsletter signup. Also found labornotes.org/store/labor-notes-subscription for paid magazine subscription.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1098,
+    "title": "Start a workplace petition",
+    "original_url": "https://home.coworker.org/",
+    "proposed_url": "https://home.coworker.org/campaign-support/",
+    "reasoning": "home.coworker.org/campaign-support/ is the page specifically for starting or getting support for a workplace petition campaign. Found directly in search results.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1099,
+    "title": "Take a UE solidarity action",
+    "original_url": "https://www.ueunion.org/",
+    "proposed_url": "https://www.ueunion.org/campaigns/international-solidarity",
+    "reasoning": "ueunion.org/campaigns/international-solidarity is UE's solidarity campaigns page. Found directly in search results.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1100,
+    "title": "Apply for IWW membership",
+    "original_url": "https://www.iww.org/",
+    "proposed_url": "https://redcard.iww.org/",
+    "reasoning": "redcard.iww.org is the IWW's direct online membership application and dues payment portal. Found in search results as the primary join URL.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1101,
+    "title": "Sign on to a National Domestic Workers Alliance campaign",
+    "original_url": "https://www.domesticworkers.org/",
+    "proposed_url": "https://www.domesticworkers.org/programs-and-campaigns/developing-policy-solutions/take-action/",
+    "reasoning": "domesticworkers.org/programs-and-campaigns/developing-policy-solutions/take-action/ is their dedicated take action page. Found directly in search results with description as their action hub.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1102,
+    "title": "Send solidarity to Starbucks Workers United",
+    "original_url": "https://sbworkersunited.org/",
+    "proposed_url": "https://sbworkersunited.org/take-action/",
+    "reasoning": "sbworkersunited.org/take-action/ found directly in search results. Also found the solidarity card FAQ at /faqs-solidarity-card/ and their ControlShift action platform at starbucksworkersunited.controlshift.app/categories.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1103,
+    "title": "Take an Amazon Labor Union action",
+    "original_url": "https://www.amazonlaborunion.org/",
+    "proposed_url": "https://www.amazonlaborunion.org/solidarity-membership",
+    "reasoning": "amazonlaborunion.org/solidarity-membership is the primary action for non-Amazon-workers (external supporters) — recurring financial solidarity. Also found /safety-petition and /immigrant-solidarity for specific campaigns. Solidarity membership best matches 'take an action' intent.",
+    "confidence": "medium",
+    "notes": "Multiple action entry points exist: /safety-petition, /immigrant-solidarity, /solidarity-membership, /worker-outreach. Solidarity membership chosen as the most durable general entry point for non-workers."
+  },
+  {
+    "id": 1104,
+    "title": "Use the free legal hotline (workplace family rights)",
+    "original_url": "https://www.abetterbalance.org/",
+    "proposed_url": "https://www.abetterbalance.org/get-help/",
+    "reasoning": "abetterbalance.org/get-help/ is the dedicated hotline/legal help page. Found directly in search results. The card description matches this page exactly.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1105,
+    "title": "Sign on to a Fight For A Union worker campaign",
+    "original_url": "https://fightforaunion.org/",
+    "proposed_url": "https://action.fightforaunion.org/a/unions-for-all",
+    "reasoning": "action.fightforaunion.org/a/unions-for-all is their flagship 'support unions for all' sign-on petition. Multiple campaign action URLs found on action.fightforaunion.org. This is the most general entry point but other campaigns (wage theft, corporate greed) are also on the action subdomain.",
+    "confidence": "medium",
+    "notes": "Multiple active campaigns on action.fightforaunion.org — unions-for-all chosen as the flagship sign-on, but the homepage also links to the full action queue."
+  },
+  {
+    "id": 1106,
+    "title": "Sign the moral covenant",
+    "original_url": "https://breachrepairers.org/",
+    "proposed_url": "https://breachrepairers.org/moral-agenda",
+    "reasoning": "breachrepairers.org/moral-agenda is their moral covenant/agenda page. Also found a 'Higher Ground Moral Declaration' PDF and Mobilizing Partners sign-on. The moral-agenda page is the durable covenant destination.",
+    "confidence": "medium",
+    "notes": "No single 'sign the covenant' form URL confirmed — the moral agenda page and Moral Monday declaration pages are the closest matches found."
+  },
+  {
+    "id": 1107,
+    "title": "Subscribe to action alerts",
+    "original_url": "https://sojo.net/",
+    "proposed_url": "https://act.sojo.net/page/74900/subscribe/1?locale=en-US",
+    "reasoning": "act.sojo.net/page/74900/subscribe/1 is Sojourners' 'Truth and Action Round-up' newsletter signup. Also found sojo.net/?action=sojomail.subscribe for the main SojoMail newsletter. Either works; the action round-up is more specifically action-alert focused.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1108,
+    "title": "Subscribe to actions",
+    "original_url": "https://www.faithfulamerica.org/",
+    "proposed_url": "https://www.faithfulamerica.org/campaigns/resist-christian-nationalism",
+    "reasoning": "This is a duplicate of card 1061 (same URL, similar action). The synopsis says 'Bread for the World hunger-advocacy alerts' but the URL is faithfulamerica.org, not breadfortheworld.org — clear synopsis mis-tag. Using the same campaigns page as 1061.",
+    "confidence": "high",
+    "notes": "Synopsis is mis-tagged: says 'Bread for the World hunger-advocacy alerts' but URL and description are for Faithful America. This is a duplicate entry alongside card 1061."
+  },
+  {
+    "id": 1109,
+    "title": "Sign on to a Faith in Public Life advocacy action",
+    "original_url": "https://www.faithinpubliclife.org/",
+    "proposed_url": "https://www.faithinpubliclife.org/programs/",
+    "reasoning": "faithinpubliclife.org/programs/ is their coalition programs and campaigns hub. No dedicated /take-action/ page found in search results. Programs page is the closest match for finding active sign-on opportunities.",
+    "confidence": "medium",
+    "notes": "No standalone /take-action/ or /campaigns/ page confirmed in search results. FPL works primarily through email list and direct clergy network outreach."
+  },
+  {
+    "id": 1110,
+    "title": "Take a rabbinic action",
+    "original_url": "https://truah.org/",
+    "proposed_url": "https://truah.org/actions/",
+    "reasoning": "truah.org/actions/ is T'ruah's dedicated action hub. Found directly in search results with active campaigns (ICE, Israeli democracy, immigration).",
+    "confidence": "high",
+    "notes": "This card duplicates card 1075 (same URL). Cards 1075 and 1110 both point to truah.org with slightly different titles — worth reviewing for deduplication."
+  },
+  {
+    "id": 1111,
+    "title": "Sign on to a Pax Christi USA peace action",
+    "original_url": "https://paxchristiusa.org/",
+    "proposed_url": "https://paxchristiusa.org/backfromthebrink/",
+    "reasoning": "paxchristiusa.org/backfromthebrink/ is their flagship ongoing peace campaign (nuclear weapons abolition). Also found specific action call-in days in search results. For 'sign on to a peace action' the Back from the Brink campaign is the most concrete sign-on found.",
+    "confidence": "medium",
+    "notes": "This card duplicates card 1077 (same URL, same org). Cards 1077 and 1111 both point to paxchristiusa.org — worth reviewing for deduplication."
+  },
+  {
+    "id": 1112,
+    "title": "Subscribe to Quaker action alerts",
+    "original_url": "https://www.fcnl.org/",
+    "proposed_url": "https://act.fcnl.org/signup/signup-action-alerts",
+    "reasoning": "Direct search found 'Sign up for Action Alerts | FCNL' at act.fcnl.org/signup/signup-action-alerts — exactly the subscribe-to-alerts action the card promises.",
+    "confidence": "high",
+    "notes": "Synopsis says 'American Friends Service Committee alerts' but FCNL (Friends Committee on National Legislation) and AFSC are different Quaker orgs — synopsis is mis-tagged. The card/desc correctly describe FCNL."
+  },
+  {
+    "id": 1113,
+    "title": "Sign on to an Auburn Seminary faith-leader campaign",
+    "original_url": "https://auburnseminary.org/",
+    "proposed_url": "https://action.groundswell-mvmt.org/",
+    "reasoning": "Auburn Seminary's campaign/sign-on platform is Groundswell (action.groundswell-mvmt.org), a separate subdomain used for multifaith digital petition and advocacy campaigns. No dedicated 'campaigns' page found under auburnseminary.org itself.",
+    "confidence": "medium",
+    "notes": "Groundswell is a project of Auburn Seminary, so this is the correct action destination. The auburnseminary.org homepage has no direct sign-on action page."
+  },
+  {
+    "id": 1115,
+    "title": "Sign on to a Hindus for Human Rights action",
+    "original_url": "https://www.hindusforhumanrights.org/",
+    "proposed_url": "https://www.hindusforhumanrights.org/newsletter-register",
+    "reasoning": "No dedicated 'take action' or 'campaigns' page found. The newsletter-register page is the closest persistent call-to-action for ongoing engagement. Their advocacy (op-eds, petitions, events) is not consolidated on a single action page.",
+    "confidence": "low",
+    "notes": "Site has an events-list page (/events-list) and periodic petition campaigns but no stable action-hub URL. Newsletter registration is the most durable deep link available."
+  },
+  {
+    "id": 1116,
+    "title": "Sign on to a Sikh Coalition civil-rights action",
+    "original_url": "https://www.sikhcoalition.org/",
+    "proposed_url": "https://www.sikhcoalition.org/get-involved/take-action/",
+    "reasoning": "Direct search found 'Take Action - Sikh Coalition' at sikhcoalition.org/get-involved/take-action/ — this is their advocacy hub with current campaign sign-ons.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1117,
+    "title": "Sign up as a volunteer attorney",
+    "original_url": "https://wetheaction.org/",
+    "proposed_url": "https://wetheaction.org/join_us",
+    "reasoning": "Search found 'Join We The Action' at wetheaction.org/join_us — the volunteer attorney signup page.",
+    "confidence": "high",
+    "notes": "Synopsis says 'ImmDef pro bono attorney signup' but We The Action is a separate platform (not Immigration Defenders/ImmDef). Synopsis is mis-tagged; the card/desc correctly describe We The Action."
+  },
+  {
+    "id": 1118,
+    "title": "Volunteer as an attorney",
+    "original_url": "https://www.lawyersforgoodgovernment.org/",
+    "proposed_url": "https://www.lawyersforgoodgovernment.org/volunteer",
+    "reasoning": "Direct search found 'Volunteer — Lawyers for Good Government' at lawyersforgoodgovernment.org/volunteer — the main attorney volunteer signup page.",
+    "confidence": "high",
+    "notes": "Synopsis says 'Lawyers' Committee for Civil Rights cases' but this org is Lawyers for Good Government (L4GG), a different organization. Synopsis is mis-tagged."
+  },
+  {
+    "id": 1119,
+    "title": "Find pro bono cases (formerly Pro Bono Net)",
+    "original_url": "https://scalejustice.org/",
+    "proposed_url": "https://scalejustice.org/get-involved",
+    "reasoning": "Search found 'Get Involved' page at scalejustice.org/get-involved. The site (formerly Pro Bono Net) directs attorneys to this page for volunteer and pro bono case opportunities.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1120,
+    "title": "Volunteer your tech skills",
+    "original_url": "https://codeforamerica.org/",
+    "proposed_url": null,
+    "reasoning": "Code for America formally sunset its volunteer Brigade program in January 2023, ending fiscal sponsorship and direct engagement with local chapters by June 2023. There is no longer a structured volunteer tech signup at codeforamerica.org.",
+    "confidence": "high",
+    "notes": "Site may be effectively dormant for volunteer purposes. The Brigade Network page (brigade.codeforamerica.org) still exists as a directory of now-independent former chapters, but CfA no longer coordinates them. Consider replacing this card with a current volunteer tech platform."
+  },
+  {
+    "id": 1121,
+    "title": "Sign up as a tech volunteer",
+    "original_url": "https://www.democracylab.org/",
+    "proposed_url": "https://www.democracylab.org/projects",
+    "reasoning": "Search found 'Find Projects | DemocracyLab' at democracylab.org/projects — the browse-and-volunteer page for tech-for-good projects. Signing up flows through individual project pages.",
+    "confidence": "high",
+    "notes": "Synopsis says 'U.S. Digital Response rapid-deploy techies' but DemocracyLab is a different platform. Synopsis is mis-tagged; the card/desc correctly describe DemocracyLab."
+  },
+  {
+    "id": 1122,
+    "title": "Volunteer your professional skills",
+    "original_url": "https://www.catchafire.org/",
+    "proposed_url": "https://www.catchafire.org/volunteers",
+    "reasoning": "Search found 'Catchafire for volunteers: lend your expertise' at catchafire.org/volunteers — the main skills-based volunteer signup landing page.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1123,
+    "title": "Volunteer as a translator",
+    "original_url": "https://respondcrisistranslation.org/",
+    "proposed_url": "https://respondcrisistranslation.org/en/get-involved",
+    "reasoning": "Direct search found 'Get Involved — Respond Crisis Translation' at respondcrisistranslation.org/en/get-involved — the volunteer translator signup/interest page.",
+    "confidence": "high",
+    "notes": "Synopsis says 'Translators Without Borders volunteer pool' but Respond Crisis Translation is a separate organization. Synopsis is mis-tagged; the card/desc correctly describe Respond Crisis Translation."
+  },
+  {
+    "id": 1124,
+    "title": "Volunteer as a linguist",
+    "original_url": "https://clearglobal.org/",
+    "proposed_url": "https://clearglobal.org/translators-without-borders/",
+    "reasoning": "CLEAR Global's volunteer linguist program routes through Translators Without Borders (a CLEAR Global initiative). The translators-without-borders page on clearglobal.org explains the community and links to volunteer signup.",
+    "confidence": "medium",
+    "notes": "Synopsis says 'Respond Crisis Translation rapid pool' but this org is CLEAR Global / Translators Without Borders — a different organization. Synopsis is mis-tagged."
+  },
+  {
+    "id": 1125,
+    "title": "Sign on to a Doctors for America healthcare campaign",
+    "original_url": "https://www.doctorsforamerica.org/",
+    "proposed_url": "https://www.doctorsforamerica.org/become-member",
+    "reasoning": "Search found 'Become a Member and Advocate | Doctors for America' at doctorsforamerica.org/become-member — the campaign sign-on entry point for clinician advocates. A 'get-involved' page also exists but member/advocate signup is the primary action.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1126,
+    "title": "Train as asylum-evaluation clinician",
+    "original_url": "https://phr.org/",
+    "proposed_url": "https://phr.org/get-involved/participate/health-professionals/",
+    "reasoning": "Direct search found 'Health Professionals: Join the Asylum Network - PHR' at phr.org/get-involved/participate/health-professionals/ — exactly the clinician training/network join page. Also found phr.org/issues/asylum-and-persecution/asylum-network-trainings/ for the training calendar.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1127,
+    "title": "Sign up to run for office (STEM)",
+    "original_url": "https://314action.org/",
+    "proposed_url": "https://314action.org/run-for-office/",
+    "reasoning": "Direct search found 'Run For Office - 3.14 Action' at 314action.org/run-for-office/ — the dedicated STEM candidate recruitment and sign-up page.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1128,
+    "title": "Volunteer with Authors Against Book Bans",
+    "original_url": "https://www.authorsagainstbookbans.com/",
+    "proposed_url": null,
+    "reasoning": "No dedicated volunteer signup page found. The site directs members to email chapter leaders for volunteer opportunities and to attend school board meetings. Volunteer engagement is email-driven with no public sign-up form.",
+    "confidence": "medium",
+    "notes": "Homepage is the effective entry point; membership/volunteer onboarding is done via email contact or chapter structure. The FAQ (/faq/) describes how to get involved but there's no form-based signup URL."
+  },
+  {
+    "id": 1129,
+    "title": "Join Concerned Archivists Alliance",
+    "original_url": "https://concernedarchivists.wordpress.com/",
+    "proposed_url": "https://concernedarchivists.wordpress.com/contact/",
+    "reasoning": "Search found a contact page and a 'Take Action' category. Joining is done by contacting organizers; no membership form found. The contact page is the best deep link for joining.",
+    "confidence": "medium",
+    "notes": "WordPress-based site; the organization relaunched in March 2025 ('The Return of CAA'). Active as of 2025. The /category/take-action/ page may also be useful but /contact/ is the join pathway."
+  },
+  {
+    "id": 1130,
+    "title": "Volunteer on detained-immigrant cases",
+    "original_url": "https://immigrationjustice.us/",
+    "proposed_url": "https://immigrationjustice.us/volunteer-application-form/",
+    "reasoning": "Direct search found 'Volunteer Application Form - Immigration Justice Campaign' at immigrationjustice.us/volunteer-application-form/ — the direct sign-up form for detained-case volunteers.",
+    "confidence": "high",
+    "notes": "Synopsis says 'ImmDef detained-immigrant defense cases' but this org is the Immigration Justice Campaign (a joint project of AILA and CLINIC), not Immigration Defenders. Synopsis is mis-tagged; the card/desc correctly describe this org."
+  },
+  {
+    "id": 1131,
+    "title": "Take the anti-coup civil-resistance pledge",
+    "original_url": "https://choosedemocracy.us/",
+    "proposed_url": "https://choosedemocracy.us/pledge/",
+    "reasoning": "Direct search found 'Pledge – Choose Democracy' at choosedemocracy.us/pledge/ — the dedicated anti-coup pledge sign-up page.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1135,
+    "title": "Carry KYR cards for ICE encounters",
+    "original_url": "https://www.immigrantdefenseproject.org/",
+    "proposed_url": "https://www.immigrantdefenseproject.org/know-your-rights-with-ice/",
+    "reasoning": "Direct search found 'Know Your Rights with ICE - Immigrant Defense Project' at immigrantdefenseproject.org/know-your-rights-with-ice/ — the page with downloadable KYR materials and wallet cards.",
+    "confidence": "high",
+    "notes": "Synopsis says 'Know-Your-Rights wallet cards from ILRC' but this org is the Immigrant Defense Project, not ILRC (Immigrant Legal Resource Center) — two separate organizations. Synopsis is mis-tagged; the card/desc correctly describe IDP."
+  },
+  {
+    "id": 1141,
+    "title": "Send email-your-rep",
+    "original_url": "https://www.citizen.org/",
+    "proposed_url": "https://www.citizen.org/act/",
+    "reasoning": "Search found 'Actions Archive - Public Citizen' at citizen.org/act/ — the consolidated take-action/email-your-rep hub with current campaigns. Also found citizen.org/news/action-center/ as an alternate entry.",
+    "confidence": "high",
+    "notes": "Synopsis says 'Common Cause prefilled email tool' but this org is Public Citizen — a different organization. Synopsis is mis-tagged; the card/desc correctly describe Public Citizen."
+  },
+  {
+    "id": 1142,
+    "title": "Send anti-militarism email",
+    "original_url": "https://winwithoutwar.org/",
+    "proposed_url": "https://winwithoutwar.org/take-action/",
+    "reasoning": "Direct search found 'Take Action | Win Without War' at winwithoutwar.org/take-action/ — the email-your-rep and campaign hub for Pentagon budget and foreign policy actions.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1143,
+    "title": "Send Christian-rooted email-your-rep",
+    "original_url": "https://www.faithfulamerica.org/",
+    "proposed_url": "https://act.faithfulamerica.org/",
+    "reasoning": "Faithful America's action/petition platform is at act.faithfulamerica.org (Action Network hosted). The main faithfulamerica.org homepage links out to this subdomain for all petitions and email actions.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1144,
+    "title": "Send Quaker constituent email",
+    "original_url": "https://www.fcnl.org/",
+    "proposed_url": "https://www.fcnl.org/act",
+    "reasoning": "Search found 'Quaker Advocacy for the World We Seek | FCNL' at fcnl.org/act — the action hub listing current email-your-rep campaigns and prefilled constituent messages.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1145,
+    "title": "Email targeting specific ICE facilities",
+    "original_url": "https://www.detentionwatchnetwork.org/",
+    "proposed_url": "https://www.detentionwatchnetwork.org/take-action",
+    "reasoning": "Direct search found 'Take Action | Detention Watch Network' at detentionwatchnetwork.org/take-action — the hub for facility-specific advocacy actions. Sub-page /take-action/campaigns also found for specific facility campaigns.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1146,
+    "title": "Email your school board re: book bans",
+    "original_url": "https://www.authorsagainstbookbans.com/",
+    "proposed_url": "https://www.authorsagainstbookbans.com/",
+    "reasoning": "No dedicated email-your-school-board page found on authorsagainstbookbans.com. The homepage is the entry point; members receive email action calls from chapter leaders. No stable deep link for this specific action.",
+    "confidence": "low",
+    "notes": "Homepage is the action entry point. The card's synopsis field is null — that's fine, no mis-tag. For a more reliable email tool, the Unite Against Book Bans toolkit (uniteagainstbookbans.org/toolkit/) may be a better source URL."
+  },
+  {
+    "id": 1147,
+    "title": "Sign up for a workshop",
+    "original_url": "https://www.trainingforchange.org/",
+    "proposed_url": "https://www.trainingforchange.org/public-workshops/",
+    "reasoning": "Direct search found 'Workshops | Training For Change' at trainingforchange.org/public-workshops/ — the public workshop listing page where users can browse and sign up.",
+    "confidence": "high",
+    "notes": "Synopsis says 'Beautiful Trouble action-design workshops' but this org is Training for Change — a different organization. Synopsis is mis-tagged; the card/desc correctly describe Training for Change."
+  },
+  {
+    "id": 1148,
+    "title": "Sign up for a training",
+    "original_url": "https://ruckus.org/",
+    "proposed_url": "https://ruckus.org/trainings/",
+    "reasoning": "Direct search found 'Trainings – The Ruckus Society' at ruckus.org/trainings/ — the training overview page. Action camp and request-a-training pages also found.",
+    "confidence": "high",
+    "notes": "Synopsis says 'Wellstone Action progressive-organizing training' but this org is The Ruckus Society — a different organization. Synopsis is mis-tagged; the card/desc correctly describe Ruckus."
+  },
+  {
+    "id": 1149,
+    "title": "Apply to a cohort",
+    "original_url": "https://wildfireproject.org/",
+    "proposed_url": "https://wildfireproject.org/wildfire-fellowship/",
+    "reasoning": "Search found 'Fellowship 2023–24 | The Wildfire Project' at wildfireproject.org/wildfire-fellowship/ — the cohort application page. This is the primary apply-to-a-cohort pathway.",
+    "confidence": "medium",
+    "notes": "Synopsis says 'Movement School organizer training program' which is a different org (Movement School). Synopsis is mis-tagged; the card/desc correctly describe The Wildfire Project. The fellowship page may be stale (2023-24 cycle listed) — the org may be between cohort cycles."
+  },
+  {
+    "id": 1150,
+    "title": "Take a course",
+    "original_url": "https://www.peopleshub.org/",
+    "proposed_url": "https://www.peopleshub.org/individuals",
+    "reasoning": "Search found 'For Individuals — PeoplesHub' at peopleshub.org/individuals — the individual course enrollment page listing all public workshop offerings.",
+    "confidence": "high",
+    "notes": "Synopsis says 'AROC Arab-organizing political education' but PeoplesHub is a different organization. Synopsis is mis-tagged; the card/desc correctly describe PeoplesHub."
+  },
+  {
+    "id": 1151,
+    "title": "Enroll in a free training",
+    "original_url": "https://righttobe.org/",
+    "proposed_url": "https://righttobe.org/upcoming-free-trainings/",
+    "reasoning": "Direct search found 'Upcoming Free Trainings - Right To Be' at righttobe.org/upcoming-free-trainings/ — the calendar/enrollment page for free bystander intervention trainings.",
+    "confidence": "high",
+    "notes": "Synopsis says 'Momentum mass-movement training' but this org is Right To Be (formerly Hollaback!) — a different organization. Synopsis is mis-tagged; the card/desc correctly describe Right To Be."
+  },
+  {
+    "id": 1152,
+    "title": "Enroll in anti-coup training",
+    "original_url": "https://choosedemocracy.us/",
+    "proposed_url": "https://choosedemocracy.us/trainings/",
+    "reasoning": "Direct search found 'Register for a Choose Democracy Training' at choosedemocracy.us/trainings/ — the workshop calendar and registration page.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1153,
+    "title": "Enroll in programs",
+    "original_url": "https://beta.highlandercenter.org/",
+    "proposed_url": "https://beta.highlandercenter.org/the-school/",
+    "reasoning": "Search found 'The School - Highlander Center' at beta.highlandercenter.org/the-school/ — the programs/enrollment section of the site. The in-person programs archive at /program-category/in-person-2/ is another option.",
+    "confidence": "medium",
+    "notes": "Site still uses 'beta.' subdomain; the canonical domain may be highlandercenter.org. Consider checking whether highlandercenter.org (without 'beta') redirects or has a more stable URL."
+  },
+  {
+    "id": 1154,
+    "title": "Sign up for a curriculum",
+    "original_url": "https://movementgeneration.org/",
+    "proposed_url": "https://movementgeneration.org/category/resources/curriculum/",
+    "reasoning": "Search found 'Curriculum | Movement Generation' at movementgeneration.org/category/resources/curriculum/ — the curriculum resources page. MG doesn't offer a public course enrollment form; free curricula are downloadable from this page.",
+    "confidence": "medium",
+    "notes": "Synopsis says 'Resource Generation wealthy-redistribution program' but Movement Generation is a different organization. Synopsis is mis-tagged. The card/desc correctly describe Movement Generation. Movement Generation does not offer open-enrollment courses — their training is delivered via retreats for orgs. The curriculum download page is the closest public action."
+  },
+  {
+    "id": 1155,
+    "title": "Take an abolitionist study course",
+    "original_url": "https://project-nia.org/",
+    "proposed_url": null,
+    "reasoning": "Project NIA officially sunset at the end of December 2023 after 15 years. The organization is defunct. Educational resources remain on the site but no active courses or enrollment.",
+    "confidence": "high",
+    "notes": "Site may be dormant/archived. Project NIA sunsetted December 2023. This card should be replaced or removed. The educational resources page (project-nia.org/educational-resources) still exists but is not maintained."
+  },
+  {
+    "id": 1156,
+    "title": "Sign up for a reading group",
+    "original_url": "https://criticalresistance.org/",
+    "proposed_url": "https://criticalresistance.org/abolitionist-educators-workgroup/",
+    "reasoning": "Search found 'Abolitionist Educators Workgroups – Critical Resistance' — the closest to a structured sign-up for study/reading group participation. CR's prisoner-mail program and Oakland chapter also have reading-group type engagement, but no public 'reading group sign-up' form was found.",
+    "confidence": "low",
+    "notes": "Synopsis says 'Showing Up for Racial Justice reading group' but this org is Critical Resistance — a different organization. Synopsis is mis-tagged; the card/desc correctly describe Critical Resistance. No public reading-group enrollment URL found; engagement is chapter-based."
+  },
+  {
+    "id": 1157,
+    "title": "Apply to be a paid poll worker",
+    "original_url": "https://www.powerthepolls.org/",
+    "proposed_url": "https://www.powerthepolls.org/",
+    "reasoning": "Homepage is the action. Powerthepolls.org homepage IS the poll worker sign-up — it immediately prompts with a zip-code-based locator to apply to your local election office. No separate apply page is needed.",
+    "confidence": "high",
+    "notes": "Homepage is the action. The /dosomething and /protectdemocracy pages also exist but route through the same homepage flow."
+  },
+  {
+    "id": 1158,
+    "title": "Take a Know Your Rights training",
+    "original_url": "https://www.immigrantdefenseproject.org/",
+    "proposed_url": "https://www.immigrantdefenseproject.org/community-education-workshops-and-trainings/",
+    "reasoning": "Direct search found 'Community Education: Workshops and Trainings - Immigrant Defense Project' at immigrantdefenseproject.org/community-education-workshops-and-trainings/ — the KYR training calendar and signup page.",
+    "confidence": "high",
+    "notes": "Synopsis says 'ACLU KYR online training session' but this org is the Immigrant Defense Project, not the ACLU. Synopsis is mis-tagged; the card/desc correctly describe IDP."
+  },
+  {
+    "id": 1160,
+    "title": "Sign up for kindness-toned voter postcards",
+    "original_url": "https://postcardstovoters.org/",
+    "proposed_url": "https://postcardstovoters.org/volunteer/",
+    "reasoning": "Direct search found 'Volunteer' at postcardstovoters.org/volunteer/ — the dedicated sign-up page with the three-step writer approval process.",
+    "confidence": "high",
+    "notes": "Synopsis says 'Vote Forward warm voter-turnout letters' but this org is Postcards to Voters — a different organization. Synopsis is mis-tagged; the card/desc correctly describe Postcards to Voters."
+  },
+  {
+    "id": 1161,
+    "title": "Become a pen pal to a detained migrant",
+    "original_url": "https://www.freedomforimmigrants.org/",
+    "proposed_url": "https://www.freedomforimmigrants.org/volunteer",
+    "reasoning": "Search found 'Volunteer — Freedom for Immigrants' at freedomforimmigrants.org/volunteer — the volunteer engagement page which includes letter-writing and visitation programs for detained migrants.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1162,
+    "title": "Volunteer (LGBTQ youth digital crisis support)",
+    "original_url": "https://www.thetrevorproject.org/",
+    "proposed_url": "https://www.thetrevorproject.org/volunteer/",
+    "reasoning": "Search found 'Volunteer' at thetrevorproject.org/volunteer/ — the volunteer page. However, note that the general Crisis Counselor volunteer application is currently closed with no reopening timeline.",
+    "confidence": "high",
+    "notes": "The volunteer application for Crisis Counselors is currently unavailable (closed, no reopen timeline as of search results). The /volunteer/ page still exists and provides alternatives. Card may need updated note to reflect this access limitation."
+  },
+  {
+    "id": 1164,
+    "title": "Practice rest-as-resistance prompts",
+    "original_url": "https://thenapministry.wordpress.com/",
+    "proposed_url": "https://thenapministry.wordpress.com/2020/01/17/resources-for-the-rest-resistance-this-is-about-more-than-naps/",
+    "reasoning": "Search found 'Resources for the Rest Resistance' post — a curated list of rest prompts, reading, and resources. This is more specific than the homepage but the blog-post URL may be the most stable deep link for the actual prompts/resources content.",
+    "confidence": "medium",
+    "notes": "The Nap Ministry's main online presence has moved to Instagram and other platforms; the WordPress blog is still active but content is not structured as a sign-up or enrollment. Homepage-level engagement is likely the intended action."
+  },
+  {
+    "id": 1165,
+    "title": "Find + amplify your local mutual aid",
+    "original_url": "https://www.mutualaidhub.org/",
+    "proposed_url": "https://www.mutualaidhub.org/",
+    "reasoning": "Homepage is the action. MutualAidHub.org is itself a map/finder — the homepage IS the find-local-mutual-aid tool. No deeper page needed.",
+    "confidence": "high",
+    "notes": "Homepage is the action."
+  },
+  {
+    "id": 1167,
+    "title": "Subscribe + share Capital B (Black-led)",
+    "original_url": "https://capitalbnews.org/",
+    "proposed_url": "https://capitalbnews.org/newsletters/",
+    "reasoning": "Direct search found 'Newsletters - Capital B News' at capitalbnews.org/newsletters/ — the dedicated newsletter subscription page.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1168,
+    "title": "Subscribe + share The 19th* (gender + politics)",
+    "original_url": "https://19thnews.org/",
+    "proposed_url": "https://19thnews.org/newsletters/daily/",
+    "reasoning": "Direct search found 'Subscribe to The 19th's daily email newsletter' at 19thnews.org/newsletters/daily/ — the newsletter signup page.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1169,
+    "title": "Subscribe + share Documented (NYC immigration)",
+    "original_url": "https://documentedny.com/",
+    "proposed_url": "https://documentedny.com/newsletter/",
+    "reasoning": "Direct newsletter signup page confirmed in search results: 'Join Documented's Newsletter' at /newsletter/. The homepage is journalism content, not the subscription CTA.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1171,
+    "title": "Subscribe + share The Lever",
+    "original_url": "https://www.levernews.com/",
+    "proposed_url": "https://www.levernews.com/subscribe/",
+    "reasoning": "Direct subscribe page confirmed: 'Subscribe to The Lever, Support Investigative Journalism' at /subscribe/. Also a /join/ page exists; /subscribe/ is the primary CTA.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1172,
+    "title": "Submit + share a press-freedom incident",
+    "original_url": "https://pressfreedomtracker.us/",
+    "proposed_url": "https://pressfreedomtracker.us/contact/",
+    "reasoning": "Search results show incident reporting goes via the Contact page and email to press@pressfreedomtracker.us. No dedicated public 'submit an incident' form URL surfaced beyond /contact/.",
+    "confidence": "medium",
+    "notes": "A /all-incidents/ page exists for browsing the database. The submit/report path routes through /contact/ based on search snippet text."
+  },
+  {
+    "id": 1174,
+    "title": "Download free protest art",
+    "original_url": "https://amplifier.org/",
+    "proposed_url": "https://amplifier.org/free-downloads/",
+    "reasoning": "Confirmed dedicated free-downloads page at /free-downloads/ with 1,000+ artworks available for non-commercial print use.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1175,
+    "title": "Download free anti-fascist posters",
+    "original_url": "https://justseeds.org/",
+    "proposed_url": "https://justseeds.org/graphics/",
+    "reasoning": "Search confirms 'Downloadable Graphics - Justseeds' lives at /graphics/ — the main repository of free downloadable activist designs.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1176,
+    "title": "Download educational graphics",
+    "original_url": "https://beehivecollective.org/",
+    "proposed_url": "https://beehivecollective.org/graphics-projects/use-our-graphics/",
+    "reasoning": "Search surfaces 'Use Our Graphics' at /graphics-projects/use-our-graphics/ and /graphics-projects/ as the download hub for their anti-copyright educational art.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1177,
+    "title": "Submit an embroidery piece",
+    "original_url": "https://www.tinypricksproject.com/",
+    "proposed_url": "https://www.tinypricksproject.com/participate/",
+    "reasoning": "Search confirms a 'Participate' page at /participate/ — the submission/how-to-contribute page for the embroidery project.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1178,
+    "title": "Apply to programs",
+    "original_url": "https://www.tonyc.nyc/",
+    "proposed_url": "https://www.tonyc.nyc/public_workshops",
+    "reasoning": "Search surfaces 'Public Trainings - Theatre of the Oppressed NYC' at /public_workshops — the direct listing of current trainings with application info. Also /workshops exists as a broader page.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1179,
+    "title": "Use the tactical-prank toolkit",
+    "original_url": "https://theyesmen.org/",
+    "proposed_url": "https://theyesmen.org/learn/bookoftricks",
+    "reasoning": "Search confirms 'The Book of Tricks' at /learn/bookoftricks — their step-by-step satirical action guide. Also /learn and /learn/tools exist as related pages.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1180,
+    "title": "Refer an artist at risk",
+    "original_url": "https://artistsatriskconnection.org/",
+    "proposed_url": "https://artistsatriskconnection.org/i-am-at-risk/",
+    "reasoning": "Search shows 'I am at risk – ARC' at /i-am-at-risk/ as the intake form for artists needing help. However the card says 'refer an artist' (third-party referral), which may route through /contact/ instead. Best available deep link is /i-am-at-risk/ which has the encrypted intake form.",
+    "confidence": "medium",
+    "notes": "Card says 'refer an artist at risk' implying third-party submission; site primarily serves artists seeking help themselves via /i-am-at-risk/. A referral may go through /contact/ at artistsatriskconnection.org/contact/."
+  },
+  {
+    "id": 1181,
+    "title": "Find your local mutual aid network",
+    "original_url": "https://www.mutualaidhub.org/",
+    "proposed_url": "https://www.mutualaidhub.org/",
+    "reasoning": "Only one result returned for the site: the homepage itself. The interactive map/directory IS the homepage. No sub-page surfaced.",
+    "confidence": "medium",
+    "notes": "homepage is the action — the mutual aid map/directory appears to be embedded on the homepage."
+  },
+  {
+    "id": 1186,
+    "title": "Volunteer as a translator for asylum seekers",
+    "original_url": "https://respondcrisistranslation.org/",
+    "proposed_url": "https://respondcrisistranslation.org/en/get-involved",
+    "reasoning": "Confirmed 'Get Involved' page at /en/get-involved which lists volunteer opportunities including translator and grant-writer roles.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1192,
+    "title": "Boost Sludge's dark-money & GOP-donor reporting",
+    "original_url": "https://readsludge.com/",
+    "proposed_url": "https://readsludge.com/membership/",
+    "reasoning": "Search confirms subscribe/membership page at /membership/ — 'Get the real story behind the headlines - Sludge' with free daily newsletter and paid membership options.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1193,
+    "title": "Boost Bolts Magazine's local-democracy reporting",
+    "original_url": "https://boltsmag.org/",
+    "proposed_url": "https://boltsmag.org/newsletter/",
+    "reasoning": "Confirmed newsletter signup page 'Join our newsletter - Bolts Mag' at /newsletter/.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1194,
+    "title": "Boost Drop Site News on Trump's wars & civil liberties",
+    "original_url": "https://www.dropsitenews.com/",
+    "proposed_url": "https://www.dropsitenews.com/subscribe",
+    "reasoning": "Confirmed subscribe page at /subscribe — Drop Site is Substack-hosted so /subscribe is the direct subscription CTA.",
+    "confidence": "high",
+    "notes": "Drop Site News is Substack-hosted; /subscribe is the Substack subscription endpoint."
+  },
+  {
+    "id": 1196,
+    "title": "Boost More Perfect Union's worker-power journalism",
+    "original_url": "https://perfectunion.us/",
+    "proposed_url": "https://substack.perfectunion.us/",
+    "reasoning": "More Perfect Union has a Substack at substack.perfectunion.us which is the subscription hub. The main perfectunion.us homepage is video/journalism content; subscription is via Substack.",
+    "confidence": "medium",
+    "notes": "homepage is the action for video content; Substack homepage at substack.perfectunion.us is where newsletter subscription happens."
+  },
+  {
+    "id": 1202,
+    "title": "Boost Inkstick's anti-war foreign-policy reporting",
+    "original_url": "https://inkstickmedia.com/",
+    "proposed_url": "https://inkstickmedia.com/newsletters/",
+    "reasoning": "Confirmed 'Keep In Touch - Inkstick' newsletter signup page at /newsletters/.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1203,
+    "title": "Read + share data",
+    "original_url": "https://inequality.org/",
+    "proposed_url": "https://inequality.org/facts/",
+    "reasoning": "The action is reading/sharing wealth-concentration data. The /facts/ page is the main data hub with charts and statistics. Also /resources/inequality-weekly/ for the newsletter.",
+    "confidence": "medium",
+    "notes": "Card says 'read + share wealth-concentration data' — /facts/ is the chart library; /subscribe at inequality.org/subscribe also exists for the weekly newsletter."
+  },
+  {
+    "id": 1204,
+    "title": "Sign up for op-ed training",
+    "original_url": "https://www.theopedproject.org/",
+    "proposed_url": "https://www.theopedproject.org/workshops",
+    "reasoning": "Confirmed 'Workshops — The OpEd Project' at /workshops — the schedule, signup, and scholarship info page for their 'Write to Change the World' trainings.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1205,
+    "title": "Use weekly LTE prompts (formerly Sister District)",
+    "original_url": "https://stateswin.org/",
+    "proposed_url": "https://stateswin.org/take-action/",
+    "reasoning": "Search found 'Take Action - States Win' at /take-action/ which is the closest action hub. No dedicated LTE-specific sub-page indexed.",
+    "confidence": "medium",
+    "notes": "stateswin.org rebranded from Sister District; no LTE-specific tool page surfaced in search. /take-action/ is the best available deep link. The LTE prompt feature may be behind a login or email list."
+  },
+  {
+    "id": 1206,
+    "title": "Use the Two-Minute Activist tool",
+    "original_url": "https://www.aauw.org/",
+    "proposed_url": "https://www.aauw.org/act/two-minute-activist/",
+    "reasoning": "Confirmed 'Become an AAUW Two-Minute Activist!' at /act/two-minute-activist/ — the direct landing page for the tool with LTE templates and submission links.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1207,
+    "title": "Use the LTE writer tool",
+    "original_url": "https://www.sierraclub.org/",
+    "proposed_url": "https://www.sierraclub.org/write-your-letter-editor",
+    "reasoning": "Confirmed 'Write Your Letter to the Editor | Sierra Club' at /write-your-letter-editor — the online LTE submission form with local paper targeting.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1208,
+    "title": "Use LTE templates with verified statistics",
+    "original_url": "https://inequality.org/",
+    "proposed_url": "https://inequality.org/action/",
+    "reasoning": "Search confirms 'Action - Inequality.org' at /action/ which includes letter-writing tools and LTE resources with verified stats.",
+    "confidence": "medium",
+    "notes": "No dedicated LTE-template-only page surfaced; /action/ is the action hub. For the data/charts themselves, /facts/ is better."
+  },
+  {
+    "id": 1215,
+    "title": "Call peer crisis line: 877-565-8860",
+    "original_url": "https://translifeline.org/",
+    "proposed_url": "https://translifeline.org/",
+    "reasoning": "The card action is to call or save a phone number — a deep-link page won't change the action. The homepage prominently features the hotline number. No better deep link needed.",
+    "confidence": "high",
+    "notes": "homepage is the action — hotline number is the CTA, not a web form."
+  },
+  {
+    "id": 1216,
+    "title": "Reach via 24/7 chat / text / phone",
+    "original_url": "https://www.thetrevorproject.org/",
+    "proposed_url": "https://www.thetrevorproject.org/get-help/",
+    "reasoning": "Confirmed 'Get Help' page at /get-help/ — the direct gateway for crisis chat, text (678-678), and phone (1-866-488-7386) access.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1217,
+    "title": "Call peer hotline / chat",
+    "original_url": "https://lgbthotline.org/",
+    "proposed_url": "https://lgbthotline.org/chat/",
+    "reasoning": "Search confirms '1-on-1 Online Peer Support Chat' at /chat/ and /national-hotline/ for phone. Since the card mentions both call and chat, /chat/ is the most direct web action; the hotline number is available from any page.",
+    "confidence": "high",
+    "notes": "For phone-only users: lgbthotline.org/national-hotline/ is also a valid deep link."
+  },
+  {
+    "id": 1218,
+    "title": "Text HOME to 741741",
+    "original_url": "https://www.crisistextline.org/",
+    "proposed_url": "https://www.crisistextline.org/",
+    "reasoning": "The action is texting a number — no web form needed. The homepage IS the CTA with the text number prominently displayed. The /how-it-works/ path confirmed but the action is off-site (text message).",
+    "confidence": "high",
+    "notes": "homepage is the action — text 741741 is the CTA."
+  },
+  {
+    "id": 1220,
+    "title": "Find a peer mental-health chapter",
+    "original_url": "https://activeminds.org/",
+    "proposed_url": "https://activeminds.org/programs/chapters/",
+    "reasoning": "Search confirms 'Chapter Network | Active Minds' at /programs/chapters/ as the hub for finding and joining campus chapters.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1221,
+    "title": "Find a free virtual support group",
+    "original_url": "https://www.nami.org/",
+    "proposed_url": "https://www.nami.org/support-groups/",
+    "reasoning": "Confirmed 'Support Groups | NAMI' at /support-groups/ — the main page to find in-person and virtual free peer support groups.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1223,
+    "title": "Sign up to run for office (under 40, progressive)",
+    "original_url": "https://runforsomething.net/",
+    "proposed_url": "https://runforsomething.net/run/",
+    "reasoning": "Confirmed 'Run For Office' page at /run/ — the primary signup/candidacy entry point. Also /signup/ exists as a lighter email-capture entry.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1224,
+    "title": "Apply to candidate training (women)",
+    "original_url": "https://voterunlead.org/",
+    "proposed_url": "https://voterunlead.org/",
+    "reasoning": "No specific /apply/ or /programs/ sub-page surfaced in search results. The homepage appears to be the primary entry point for training interest. Legacy site at legacy.voterunlead.org also indexed but no application page found.",
+    "confidence": "low",
+    "notes": "No dedicated application or training sub-page indexed. Homepage may have a top-level CTA. Consider checking voterunlead.org/programs/ or voterunlead.org/training/ manually."
+  },
+  {
+    "id": 1225,
+    "title": "Apply to candidate training (Dem women)",
+    "original_url": "https://emergeamerica.org/",
+    "proposed_url": "https://emergeamerica.org/candidate-training/",
+    "reasoning": "Search confirms 'Candidate Training - Emerge America' at /candidate-training/ as the hub, with /training-application-links/ for the signature program application and /candidate-training/boot-camps/ for boot camps.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1226,
+    "title": "Apply to candidate training (Black women)",
+    "original_url": "https://higherheightsforamerica.org/",
+    "proposed_url": "https://higherheightsforamerica.org/",
+    "reasoning": "Multiple searches for a training/apply sub-page on higherheightsforamerica.org returned only the homepage and a job application page. No candidate-training application page was indexed.",
+    "confidence": "low",
+    "notes": "No candidate training application page found in search results. Site may have limited indexing or the training pipeline may route through a partner org. Homepage is best available URL."
+  },
+  {
+    "id": 1233,
+    "title": "Find DOJ-accredited rep training",
+    "original_url": "https://www.cliniclegal.org/",
+    "proposed_url": "https://www.cliniclegal.org/training/accreditation",
+    "reasoning": "Confirmed 'Information About CLINIC Training for DOJ Recognition and Accreditation' at /training/accreditation — the direct page for the accreditation training pathway.",
+    "confidence": "high",
+    "notes": null
+  },
+  {
+    "id": 1251,
+    "title": "Sell your Tesla",
+    "original_url": "https://www.teslatakedown.com",
+    "proposed_url": "https://www.teslatakedown.com/story",
+    "reasoning": "The 'Sell your Tesla' action resolves to sharing your sell story on /story — 'Why did you sell your Tesla?' The homepage has the core sell/dump/protest messaging but /story is the specific submission page for sellers.",
+    "confidence": "medium",
+    "notes": "homepage is also effectively the action — the site's entire CTA is 'sell your Tesla, dump your stock.' /story is where sellers report back."
+  },
+  {
+    "id": 1252,
+    "title": "Dump your TSLA stock",
+    "original_url": "https://www.teslatakedown.com",
+    "proposed_url": "https://www.teslatakedown.com/divest",
+    "reasoning": "Search confirms a /divest page ('City Resolutions | Tesla Takedown') focused on divestment — city council resolutions and pension fund pressure. This is the closest page to the stock-dumping action.",
+    "confidence": "medium",
+    "notes": "The /divest page is oriented toward institutional divestment (city resolutions, pension funds). Individual stock selling may land on /story or the homepage. No dedicated individual TSLA-sell page found."
+  },
+  {
+    "id": 1253,
+    "title": "Find a Tesla Takedown protest near you",
+    "original_url": "https://www.teslatakedown.com",
+    "proposed_url": "https://actionnetwork.org/event_campaigns/teslatakedown",
+    "reasoning": "The protest map/RSVP function is hosted on Action Network at actionnetwork.org/event_campaigns/teslatakedown — confirmed as the primary event finder with zip-code search. The Tesla Takedown homepage links out to this map.",
+    "confidence": "high",
+    "notes": "Deep link is on a third-party platform (Action Network), not teslatakedown.com itself. This is the confirmed event map URL."
+  },
+  {
+    "id": 1254,
+    "title": "Plan a Tesla Takedown protest in your city",
+    "original_url": "https://www.teslatakedown.com",
+    "proposed_url": "https://www.teslatakedown.com/",
+    "reasoning": "No dedicated 'host an action' toolkit page was found as a sub-URL on teslatakedown.com. The homepage contains the host-an-action instructions and links to Action Network for hosting. No better deep link available.",
+    "confidence": "low",
+    "notes": "homepage is the action — host toolkit may be embedded on homepage or linked from there to Action Network. Check manually for a /host or /organize sub-page."
+  },
+  {
+    "id": 1270,
+    "title": "50501 Joplin / Citizens Against Tyranny — monthly meeting",
+    "original_url": "https://events.pol-rev.com/",
+    "proposed_url": "https://events.pol-rev.com/",
+    "reasoning": "The card is for a specific dated event (Sat May 16, Joplin, MO). The base URL is an event platform (Political Revolution / pol-rev.com). Without the specific event UUID the homepage is the best available — the event listing itself may have expired or be time-limited.",
+    "confidence": "low",
+    "notes": "This is a time-specific local meeting card (May 16). The event URL would be a UUID-based path like /events/{uuid} that is ephemeral. Homepage is the event calendar platform."
+  },
+  {
+    "id": 1271,
+    "title": "BloNo IL community meeting & cookout (Central IL Iron Front)",
+    "original_url": "https://events.pol-rev.com/",
+    "proposed_url": "https://events.pol-rev.com/",
+    "reasoning": "Same as 1270 — specific dated event (Sun May 17, Bloomington, IL) on the Political Revolution event platform. Event-specific UUID path would be ephemeral.",
+    "confidence": "low",
+    "notes": "Time-specific local event card (May 17). Homepage is the platform calendar; the specific event UUID link would be short-lived."
+  },
+  {
+    "id": 1272,
+    "title": "We The People of Ohio — Constitution day in Mentor",
+    "original_url": "https://events.pol-rev.com/",
+    "proposed_url": "https://events.pol-rev.com/",
+    "reasoning": "Same as 1270/1271 — specific dated event (Sun May 17, Mentor, OH). Event-specific path would be ephemeral.",
+    "confidence": "low",
+    "notes": "Time-specific local event card (May 17). Homepage is best durable URL for the event platform."
+  },
+  {
+    "id": 1278,
+    "title": "Subscribe to Blaire Erskine's Substack",
+    "original_url": "https://blaireerskine.substack.com/",
+    "proposed_url": "https://blaireerskine.substack.com/",
+    "reasoning": "This is a Substack URL — the homepage IS the subscription page. Substack homepages always display a Subscribe CTA prominently.",
+    "confidence": "high",
+    "notes": "homepage is the action — Substack homepage is the subscription page."
+  },
+  {
+    "id": 1360,
+    "title": "Color Your Way Through Trump 2.0 with Fresh Prints' Anti-Trump Resistance Coloring Book",
+    "original_url": "https://freshprintshandmade.etsy.com",
+    "proposed_url": "https://www.etsy.com/listing/1847181751/anti-trump-adult-coloring-book-pages",
+    "reasoning": "Search found the specific Etsy listing for Fresh Prints Handmade's anti-Trump adult coloring book ('Coloring Through Chaos') at etsy.com/listing/1847181751. The shop URL redirects to Etsy's standard shop format; the listing URL goes directly to the product.",
+    "confidence": "medium",
+    "notes": "Listing 1847181751 is Volume 1 ('Coloring Through Chaos'). Volume 2 is at etsy.com/listing/4337274101. The shop domain freshprintshandmade.etsy.com may redirect to etsy.com/shop/freshprintshandmade."
+  },
+  {
+    "id": 1383,
+    "title": "Build (and Whack) a Trumpiñata with Carlyn Yandle's Collaborative How-To",
+    "original_url": "https://carlynyandle.substack.com",
+    "proposed_url": "https://carlynyandle.substack.com",
+    "reasoning": "This is a Substack URL. No specific piñata how-to post was found via title/keyword search. The homepage is the Substack subscription page. The specific article, if it exists, would need to be found by browsing the archive.",
+    "confidence": "medium",
+    "notes": "homepage is the action for subscription purposes. The specific piñata post URL was not found in search results — the article may be paywalled, titled differently, or not yet published. Substack homepage is the best available link."
+  },
+  {
+    "id": 1401,
+    "title": "Color Your Way Through Resistance With Fresh Prints's Anti-Trump Coloring Book",
+    "original_url": "https://freshprintshandmade.etsy.com/",
+    "proposed_url": "https://www.etsy.com/listing/1847181751/anti-trump-adult-coloring-book-pages",
+    "reasoning": "Same shop as card 1360. Specific Etsy product listing URL found for the anti-Trump coloring book (listing 1847181751 — 'Coloring Through Chaos'). Direct product link is better than the shop homepage.",
+    "confidence": "medium",
+    "notes": "Duplicate of card 1360 (same shop/product, different title framing). Both should point to the same listing or the shop page at etsy.com/shop/freshprintshandmade."
+  }
+]

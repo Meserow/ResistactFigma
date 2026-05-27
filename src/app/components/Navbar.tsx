@@ -211,22 +211,13 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
 
   function toggleFilterOption(filterName: string, option: string) {
     const current = activeFilters[filterName] ?? [];
-    const isAdding = !current.includes(option);
-    let next = isAdding
-      ? [...current, option]
-      : current.filter((s) => s !== option);
-
-    // ── Location: one-way exclusion of "Remote" ───────────────────────────
-    // The Remote Only pill and the Location dropdown share the underlying
-    // filter array. Adding a state implicitly means "I want in-person stuff
-    // in this state," which contradicts the Remote pill being on — so
-    // adding any non-Remote location drops Remote. Clicking Remote Only
-    // when states are checked still just adds Remote without disturbing the
-    // state picks (so the user can opt back into both if they want).
-    if (filterName === "Location" && isAdding && option !== "Remote") {
-      next = next.filter((s) => s !== "Remote");
-    }
-
+    const next = current.includes(option)
+      ? current.filter((s) => s !== option)
+      : [...current, option];
+    // Location: Remote is no longer a dropdown option — it has its own pill.
+    // Picking a state and clicking the Remote pill compose naturally: the
+    // matcher returns cards matching either ANY selected state OR (when
+    // Remote is in the array) any isOnline / atHome card.
     onFilterChange(filterName, next);
   }
 
@@ -271,16 +262,9 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
           <button onClick={onInfoClick} title="How does ResistAct work?" className="focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ed6624] rounded-md">
             <ResistActLogo />
           </button>
-          <p
-            onClick={onInfoClick}
-            title="How does ResistAct work?"
-            className="font-['Poppins',sans-serif] text-[#767574] text-[11px] leading-snug hidden lg:block max-w-[200px] italic cursor-pointer hover:text-[#23297e] transition-colors"
-          >
-            "Never doubt that a small group
-            <br />
-            of thoughtful, committed citizens can change the world. Indeed, it's the only thing that ever has."
-            <span className="not-italic font-semibold block text-right">— Margaret Mead</span>
-          </p>
+          {/* Margaret Mead quote moved into the "How does ResistAct work?"
+              InfoModal and the "Join the Resistance" AuthModal so the
+              top nav stays cleaner. */}
         </div>
 
         {/* ── Tab switcher: The Acts / The Facts / The Smacks ── */}
@@ -805,10 +789,13 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                   </div>
                 )}
               </div>
-              {/* Remote Only pill — shortcut for adding "Remote" to the
-                  Location filter. Composes with any selected states (same as
-                  picking Remote inside the Location dropdown). Sits right
-                  before 5 Minutes Max so quick toggles cluster together. */}
+              {/* "Prefer Online" pill — separate from the Location (state)
+                  dropdown. Toggles whether online + at-home actions are
+                  added to the result set. Composes with state picks: WA
+                  alone = in-person, Prefer Online alone = online + at-home
+                  everywhere, both = union. Underlying filter token is
+                  still "Remote" in the Location array for backwards
+                  compat with the matcher. */}
               <button
                 onClick={() => toggleFilterOption("Location", "Remote")}
                 className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
@@ -816,10 +803,10 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                     ? "bg-[#23297e] text-white border-[#23297e]"
                     : "bg-white text-gray-600 border-gray-200 hover:border-[#23297e] hover:text-[#23297e]"
                 }`}
-                title="Show only remote / online actions"
+                title="Include online and at-home actions"
               >
                 <Globe size={11} className={locSelected.includes("Remote") ? "text-white" : "text-gray-400"} />
-                Remote Only
+                Prefer Online
               </button>
               {/* 5 Minutes Max pill — same chip style as categories. Toggles
                   the quickAction-only filter. Sits at the very end after the
@@ -836,6 +823,22 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                 >
                   <Zap size={11} className={quickActionsOnly ? "text-white" : "text-gray-400"} fill={quickActionsOnly ? "#ffffff" : "none"} />
                   5 Minutes Max
+                </button>
+              )}
+              {/* Clear all — appended to the chip row so it doesn't claim
+                  dedicated horizontal real estate on the right. Only shows
+                  when at least one filter is active. */}
+              {totalActiveAll > 0 && (
+                <button
+                  onClick={() => {
+                    Object.keys(activeTab === "facts" ? FACTS_FILTER_OPTIONS : ACTS_FILTER_OPTIONS).forEach((f) => onFilterChange(f, []));
+                    if (hasActiveSearch) onSearchChange("");
+                    if (quickActionsOnly && onQuickActionsChange) onQuickActionsChange(false);
+                  }}
+                  className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-semibold whitespace-nowrap text-red-400 hover:text-red-600 hover:bg-red-50 transition-all"
+                >
+                  <X size={11} />
+                  Clear all ({totalActiveAll})
                 </button>
               )}
             </div>
@@ -893,24 +896,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
 
         </div>{/* END LEFT GROUP */}
 
-        {/* RIGHT GROUP — only shown when there are filters to clear. Sort
-            moved to the result banner; stats moved to the persistent footer. */}
-        {totalActiveAll > 0 && (
-        <div className="shrink-0 flex items-center gap-2 pl-3 border-l border-gray-200">
-          {/* Clear all — clears filter chips, search box, and quick-actions */}
-          <button
-            onClick={() => {
-              Object.keys(activeTab === "facts" ? FACTS_FILTER_OPTIONS : ACTS_FILTER_OPTIONS).forEach((f) => onFilterChange(f, []));
-              if (hasActiveSearch) onSearchChange("");
-              if (quickActionsOnly && onQuickActionsChange) onQuickActionsChange(false);
-            }}
-            className="flex items-center justify-center gap-1 px-2.5 py-1 rounded-lg text-xs font-['Poppins',sans-serif] font-semibold text-red-400 hover:text-red-600 hover:bg-red-50 transition-all"
-          >
-            <X size={11} />
-            Clear all ({totalActiveAll})
-          </button>
-        </div>
-        )}{/* END RIGHT GROUP */}
+        {/* Right group removed — "Clear all" lives inside the chip row now. */}
       </div>
 
       {/* ── Mobile persistent tab + filter bar — sticks below top bar ── */}
@@ -1106,7 +1092,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               );
             })()}
 
-            {/* Remote Only toggle */}
+            {/* Prefer Online toggle (mobile) */}
             <button
               onClick={() => toggleFilterOption("Location", "Remote")}
               className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
@@ -1116,7 +1102,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               }`}
             >
               <Globe size={11} />
-              Remote Only
+              Prefer Online
             </button>
 
             {/* 5 Minutes Max toggle */}
