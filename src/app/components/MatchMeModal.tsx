@@ -111,24 +111,6 @@ interface MatchMeModalProps {
   initialStep?: 0 | 1;
 }
 
-// 4-stop slider for the "where" preference.
-// "Mostly Remote" opens both online + in-person cards (you're *open* to in-person
-// occasionally); "Remote only" hard-filters to online cards only.
-const SETTING_STOPS: { label: string; setting: Setting[]; showState: boolean }[] = [
-  { label: "Remote only",   setting: ["online"],              showState: false },
-  { label: "Mostly Remote", setting: ["online", "inPerson"],  showState: true  },
-  { label: "In-person",     setting: ["inPerson"],            showState: true  },
-  { label: "Remote + In-person", setting: [],                  showState: true  },
-];
-
-function settingIndex(setting: Setting[]): number {
-  if (setting.length === 0) return 3;
-  if (setting.includes("online") && setting.includes("inPerson")) return 1;
-  if (setting.includes("online")) return 0;
-  if (setting.includes("inPerson")) return 2;
-  return 3;
-}
-
 // State picker options — actual US states only. "Online", "National", and
 // "Multi-state" aren't picked here because they're not where a *user* lives;
 // the state filter passes those locations through automatically.
@@ -727,12 +709,11 @@ function StepToneAndPreview({
   return (
     <div>
       {/* Compact header — logo + title on one row, subtitle inline next to the
-          title rather than a second line, to claw back vertical space in the
-          Quick Match Tool modal. */}
+          title rather than a second line, to claw back vertical space. */}
       <div className="mb-2 flex items-center gap-2.5 flex-wrap">
         <img src={logoImg} alt="" aria-hidden="true" className="w-7 h-7 object-contain shrink-0" />
         <h2 id="match-me-title" className="font-['Poppins',sans-serif] text-[17px] font-bold text-[#23297e] leading-tight">
-          Quick Match Tool
+          Refine Your Matches
         </h2>
         <p className="font-['Poppins',sans-serif] text-[12px] text-gray-500 leading-tight">
           What kind of actions are you up for?
@@ -774,77 +755,43 @@ function StepToneAndPreview({
             </div>
           );
         })()}
-        {/* Setting — first slider cell, same style as tone sliders */}
-        {(() => {
-          const sIdx = settingIndex(prefs.setting);
-          const sStop = SETTING_STOPS[sIdx];
-          return (
-            <div className="flex flex-col gap-0">
-              <div className="flex items-center gap-1.5 pl-1">
-                <MapPin size={12} strokeWidth={1.75} className="text-gray-500 shrink-0" />
-                <span className="font-['Poppins',sans-serif] font-medium text-[12px] text-gray-800">
-                  Location
-                </span>
-                <span className="font-['Poppins',sans-serif] text-[10.5px] text-gray-500 truncate">
-                  · <span className="font-medium text-[#ed6624]">{sStop.label}</span> — online/at home or in person
-                </span>
-              </div>
-              <div className="pl-5">
-                <ToneRangeSlider
-                  value={sIdx}
-                  onChange={(v) =>
-                    onPrefsChange((p) => ({ ...p, setting: SETTING_STOPS[v].setting }))
-                  }
-                  max={3}
-                />
-              </div>
-            </div>
-          );
-        })()}
-        {/* State picker — moved here from page 2 so the location-shaped
-            settings (online/in-person + which state) live together. */}
-        <div className="flex flex-col gap-0">
-          <div className="flex items-center gap-1.5 pl-1">
-            <MapPin size={12} strokeWidth={1.75} className="text-gray-500 shrink-0" />
-            <span className="font-['Poppins',sans-serif] font-medium text-[12px] text-gray-800">
-              Your state
-            </span>
-            <span className="font-['Poppins',sans-serif] text-[10.5px] text-gray-500 truncate">
-              · optional — for in-person nearby
-            </span>
-          </div>
-          <div className="pl-5 flex flex-wrap items-center gap-2 mt-1">
-            <select
-              value={prefs.state ?? ""}
-              onChange={(e) => onPrefsChange((p) => ({ ...p, state: e.target.value || null }))}
-              className={`rounded-lg border border-gray-300 pl-3 pr-8 py-1 font-['Poppins',sans-serif] text-xs focus:outline-none focus:ring-2 focus:ring-[#23297e]/30 focus:border-[#23297e] ${
-                prefs.state ? "text-gray-800" : "text-gray-400 italic"
-              }`}
-            >
-              <option value="">— pick your state —</option>
-              {STATE_OPTIONS.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-            {prefs.state && (
-              <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={prefs.includeAnywhere}
-                  onChange={(e) => onPrefsChange((p) => ({ ...p, includeAnywhere: e.target.checked }))}
-                  className="w-3.5 h-3.5 rounded accent-[#ed6624]"
-                />
-                <span className="font-['Poppins',sans-serif] text-[11px] text-gray-600">
-                  Show all states, prioritize mine
-                </span>
-              </label>
-            )}
-          </div>
+      </div>
+
+      {/* ── Location & quick filters ──────────────────────────────────────
+          State dropdown + two quick-toggle pills sit on one row just above
+          the category chips. Replaced the 4-stop Location slider. */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mt-2 mb-1">
+        <div className="flex items-center gap-1.5">
+          <MapPin size={12} strokeWidth={1.75} className="text-gray-500 shrink-0" />
+          <span className="font-['Poppins',sans-serif] font-medium text-[12px] text-gray-800">
+            Location
+          </span>
         </div>
-        {/* Tone sliders (anger / comedy / subversion / hope / energy) moved
-            down into the "Sharpen your matches" section below — after the
-            category pickers — so the top of the wizard stays focused on the
-            two fundamental filters (Time, Location). */}
+        <select
+          value={prefs.state ?? ""}
+          onChange={(e) => onPrefsChange((p) => ({ ...p, state: e.target.value || null }))}
+          className={`rounded-lg border border-gray-300 pl-3 pr-8 py-1 font-['Poppins',sans-serif] text-xs focus:outline-none focus:ring-2 focus:ring-[#23297e]/30 focus:border-[#23297e] ${
+            prefs.state ? "text-gray-800" : "text-gray-400 italic"
+          }`}
+        >
+          <option value="">— any state —</option>
+          {STATE_OPTIONS.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+        {prefs.state && (
+          <label className="flex items-center gap-1.5 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={prefs.includeAnywhere}
+              onChange={(e) => onPrefsChange((p) => ({ ...p, includeAnywhere: e.target.checked }))}
+              className="w-3.5 h-3.5 rounded accent-[#ed6624]"
+            />
+            <span className="font-['Poppins',sans-serif] text-[11px] text-gray-600">
+              Show all states
+            </span>
+          </label>
+        )}
       </div>
 
       {/* ── Include these — category INCLUDE chip grid (positive picker) ──
@@ -966,7 +913,17 @@ function StepToneAndPreview({
           const pageCards = visibleMatches.slice(carouselPage * PAGE_SIZE, (carouselPage + 1) * PAGE_SIZE);
           return (
             <div className="mb-4">
-              <ul className="grid grid-cols-2 sm:grid-cols-4 gap-3 min-h-[270px]">
+              <div className="flex items-center gap-2">
+                {/* Left circle nav — invisible (not hidden) when single page so grid width stays stable */}
+                <button
+                  onClick={() => setCarouselPage((p) => Math.max(0, p - 1))}
+                  disabled={carouselPage === 0}
+                  aria-label="Previous matches"
+                  className={`shrink-0 flex h-12 w-12 items-center justify-center rounded-full bg-[#ed6624] text-white shadow-md hover:bg-[#c2521b] disabled:opacity-20 disabled:cursor-not-allowed transition-all ${totalPages <= 1 ? "invisible pointer-events-none" : ""}`}
+                >
+                  <ChevronLeft size={22} strokeWidth={2.5} />
+                </button>
+                <ul className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-3 min-h-[270px]">
                 {pageCards.map((m) => {
                   const isFlagged = flagged.has(m.id);
                   return (
@@ -1012,41 +969,33 @@ function StepToneAndPreview({
                     </li>
                   );
                 })}
-              </ul>
+                </ul>
+                {/* Right circle nav */}
+                <button
+                  onClick={() => setCarouselPage((p) => Math.min(totalPages - 1, p + 1))}
+                  disabled={carouselPage === totalPages - 1}
+                  aria-label="Next matches"
+                  className={`shrink-0 flex h-12 w-12 items-center justify-center rounded-full bg-[#ed6624] text-white shadow-md hover:bg-[#c2521b] disabled:opacity-20 disabled:cursor-not-allowed transition-all ${totalPages <= 1 ? "invisible pointer-events-none" : ""}`}
+                >
+                  <ChevronRight size={22} strokeWidth={2.5} />
+                </button>
+              </div>
 
-              {/* Carousel nav — only shown when there's more than one page */}
+              {/* Page dots — centred below the grid */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-3">
-                  <button
-                    onClick={() => setCarouselPage((p) => Math.max(0, p - 1))}
-                    disabled={carouselPage === 0}
-                    className="inline-flex items-center gap-1 rounded-full border border-gray-300 px-3 py-1 font-['Poppins',sans-serif] text-xs text-gray-600 hover:border-[#23297e] hover:text-[#23297e] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <ChevronLeft size={13} strokeWidth={2} /> Prev
-                  </button>
-
-                  <div className="flex items-center gap-1.5">
-                    {Array.from({ length: totalPages }).map((_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setCarouselPage(i)}
-                        className={`rounded-full transition-all ${
-                          i === carouselPage
-                            ? "w-4 h-1.5 bg-[#23297e]"
-                            : "w-1.5 h-1.5 bg-gray-300 hover:bg-gray-400"
-                        }`}
-                        aria-label={`Page ${i + 1}`}
-                      />
-                    ))}
-                  </div>
-
-                  <button
-                    onClick={() => setCarouselPage((p) => Math.min(totalPages - 1, p + 1))}
-                    disabled={carouselPage === totalPages - 1}
-                    className="inline-flex items-center gap-1 rounded-full border border-gray-300 px-3 py-1 font-['Poppins',sans-serif] text-xs text-gray-600 hover:border-[#23297e] hover:text-[#23297e] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Next <ChevronRight size={13} strokeWidth={2} />
-                  </button>
+                <div className="flex items-center justify-center gap-1.5 mt-2">
+                  {Array.from({ length: totalPages }).map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCarouselPage(i)}
+                      className={`rounded-full transition-all ${
+                        i === carouselPage
+                          ? "w-4 h-1.5 bg-[#23297e]"
+                          : "w-1.5 h-1.5 bg-gray-300 hover:bg-gray-400"
+                      }`}
+                      aria-label={`Page ${i + 1}`}
+                    />
+                  ))}
                 </div>
               )}
             </div>

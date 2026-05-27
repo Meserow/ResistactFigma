@@ -16,6 +16,48 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.102",
+    date: "2026-05-27",
+    title: "Refine Your Matches: renamed modal + more obvious Next/Back buttons",
+    sections: [
+      {
+        heading: "Quick Match Tool",
+        items: [
+          "Renamed the wizard from 'Quick Match Tool' to 'Refine Your Matches'.",
+          "The Next and Back step-navigation buttons are now bold orange pill badges — thick orange border, wider padding, orange text — so it's impossible to miss where to go between the two wizard pages.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.101",
+    date: "2026-05-27",
+    title: "Quick Match Tool: location & quick-filter row above category pills",
+    sections: [
+      {
+        heading: "Quick Match Tool",
+        items: [
+          "Moved the Location control out of the slider grid and down to a compact row just above the category chip picker, matching the layout of the main page.",
+          "Location now shows as a state dropdown on that same row. Two new quick-toggle pills — 'Prefer online' and '5 min max' — sit alongside it so you can instantly narrow your matches without adjusting the time slider.",
+          "'Prefer online' toggles the remote-only setting on and off. '5 min max' caps results to quick under-5-minute actions. Both toggle back to defaults with a second click.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.100",
+    date: "2026-05-27",
+    title: "Welcome email banner now ships with the function itself",
+    sections: [
+      {
+        heading: "Onboarding",
+        items: [
+          "Real welcome emails were going out without the banner because the edge function was trying to fetch the JPEG from the live site, and the file only existed on develop (not yet on main / resistact.org). Embedded the banner bytes directly in the edge function code so the image always renders regardless of where the JPEG file has or hasn't been deployed.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.99",
     date: "2026-05-27",
     title: "Admin: Missing Image tab back to zero — cartoon banners count as images",
