@@ -16,6 +16,33 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.99",
+    date: "2026-05-27",
+    title: "Admin: Missing Image tab back to zero — cartoon banners count as images",
+    sections: [
+      {
+        heading: "Admin",
+        items: [
+          "Reverted an over-strict image check that was flagging 137 cards as missing images even though they all have cartoon banners. Any non-null cartoonImageUrl is correctly treated as a valid image again — the client resolves stale KV paths to the CDN via the cartoon manifest, so those cards are visually complete.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.98",
+    date: "2026-05-27",
+    title: "Welcome email: banner now ships inline · new \"first time\" tip",
+    sections: [
+      {
+        heading: "Onboarding",
+        items: [
+          "Welcome and waitlist emails now embed the ResistAct banner as an inline attachment instead of relying on the recipient's mail client to fetch it from resistact.org. Apple Mail's privacy proxy was refusing the external fetch, so banners weren't appearing for most Apple Mail users. With the inline attachment the image renders unconditionally.",
+          "Rewrote the \"First time here?\" tip in the welcome email to point at the actual UI: \"Browse with the Category pills and set your Location at the top of the feed to see what fits. Then tap Refine Your Matches to dial it in by time, energy, and tone.\" Names match exactly what's on screen.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.97",
     date: "2026-05-27",
     title: "Two card banners regenerated to fix nonsense text and off-topic art",

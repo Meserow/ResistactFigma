@@ -1066,15 +1066,12 @@ app.get("/make-server-9eb1ae04/admin/actions/no-url", async (c) => {
     // (default)     → both (legacy behaviour, kept for backwards compat)
     const filter = c.req.query("filter") ?? "all"; // "url" | "image" | "all"
 
-    const hasImage = (card: any) => {
-      if (card.topImageUrl || card.topImageKey) return true;
-      // cartoonImageUrl only counts if it's an absolute CDN URL — KV rows
-      // written before the Storage CDN move still carry the old local path
-      // (/cartoon-banners/card-N.webp) which 404s in production. Relative
-      // paths are treated as missing so the admin panel surfaces them.
-      const cartoon = card.cartoonImageUrl ?? "";
-      return cartoon.startsWith("https://") || cartoon.startsWith("http://");
-    };
+    // A card has an image if any image field is set. cartoonImageUrl may still
+    // carry the pre-CDN local path (/cartoon-banners/card-N.webp) in KV, but
+    // the client resolves it through the cartoon manifest to the CDN URL, so
+    // any non-null value means the card has a cartoon and is visually complete.
+    const hasImage = (card: any) =>
+      !!(card.topImageUrl || card.topImageKey || card.cartoonImageUrl);
 
     const matches = (card: any) => {
       if (!card || typeof card !== "object") return false;
@@ -1519,7 +1516,7 @@ async function sendApprovalEmail(record: { email: string; name?: string }): Prom
       bodyParagraphs: [
         "Your ResistAct account is approved — welcome.",
         "ResistAct matches you with small, doable acts based on what you've got today: time, energy, tone, location. Five minutes of phone calls. A protest down the street. A weekend of postcard writing. You pick.",
-        "<strong>Pick one. Do it. Share it. Come back tomorrow.</strong>",
+        "<strong>Pick one. Do it. Share it. <em>Come back tomorrow.</em></strong>",
       ],
       cta: { label: "Find your first Act →", url: SITE_URL },
       tip: {
