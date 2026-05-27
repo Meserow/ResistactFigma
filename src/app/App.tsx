@@ -160,9 +160,12 @@ function resolveCard(raw: ServerCard): ActionCardData {
     // the local manifest (public/cartoon-banners/ + cartoon-manifest.ts).
     // Spread the Word always shows its hand-designed art, so cartoon is
     // suppressed there even if a stray value snuck into the row.
+    // cartoonUrlFor() (CDN) takes priority over the KV value — some KV rows
+    // still have the old local path (/cartoon-banners/card-N.webp) from before
+    // images moved to Supabase Storage, and those would 404.
     cartoonImageUrl: raw.pinToTop
       ? undefined
-      : (raw.cartoonImageUrl ?? cartoonUrlFor(raw.id) ?? undefined),
+      : (cartoonUrlFor(raw.id) ?? raw.cartoonImageUrl ?? undefined),
     // Synopsis (card subtitle): server value wins, then local manifest
     // fallback so we can ship subtitle copy without an Edge Function
     // deploy. Applies to Spread the Word too now — its synopsis lives

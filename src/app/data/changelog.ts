@@ -16,6 +16,19 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.94",
+    date: "2026-05-27",
+    title: "Fix: cartoon banners missing on some cards after CDN move",
+    sections: [
+      {
+        heading: "Bug fix",
+        items: [
+          "Some cards (like the Refuse Fascism march card) were showing a broken image placeholder despite having a cartoon banner. The cartoon URL stored in the database still pointed to the old local file path from before images moved to Supabase's CDN. The app now always prefers the CDN URL from the manifest over the stale database value, so all cartoon banners load correctly.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.93",
     date: "2026-05-27",
     title: "Welcome and waitlist emails: branded redesign",
