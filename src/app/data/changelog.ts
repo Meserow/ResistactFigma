@@ -16,6 +16,19 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.83",
+    date: "2026-05-27",
+    title: "40 acts now link directly to the action page, not just the org homepage",
+    sections: [
+      {
+        heading: "Improvements",
+        items: [
+          "Forty acts that previously linked to an org's Instagram, TikTok, or homepage now go straight to the specific action page — the sign-up form, the event finder, the how-to guide, or the tool you actually need. Highlights: United We Dream court-watch and MigraWatch hotline, 50501 protest events and marshal toolkit, Indivisible postcard-writing and town hall playbook, March for Our Lives Take Action, Sunrise Movement hub-finder, Tesla Takedown event search, Green America bank-switch map, ICE Watch/Vecinos app, and the ALA banned-books list.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.82",
     date: "2026-05-27",
     title: "Mobile: Location and Category dropdowns now actually open",

@@ -302,6 +302,7 @@ const KNOWN_MIGRATION_FLAG_KEYS: readonly string[] = [
   "cleanup:backfill-cartoon-url:v1",
   "cleanup:backfill-images-1245:v1",
   "cleanup:deep-links-high-confidence:v1",
+  "cleanup:social-profile-deeplinks:v1",
   "cleanup:blaire-substack-desc:v1",
   "cleanup:clear-imagecontain-cartoon:v1",
   "cleanup:clear-stray-offtopic:v1",
@@ -1661,6 +1662,74 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       }
       await setMigrationFlag("cleanup:deep-links-high-confidence:v1");
       console.log(`Applied ${deepLinkCount} deep-link URL upgrades.`);
+    }
+
+    // One-time: upgrade targetUrl on user-submitted cards (IDs 2000+) whose
+    // current targetUrl is a bare social-media profile (Instagram, TikTok,
+    // Bluesky, etc.) or org homepage. Replaces with the specific action page
+    // found via web research — join pages, event finders, how-tos, toolkits.
+    // All 40 IDs live under the user-action: prefix.
+    const socialDeepLinksDone = await getMigrationFlag("cleanup:social-profile-deeplinks:v1");
+    if (!socialDeepLinksDone) {
+      const socialDeepLinks: Record<number, string> = {
+        // United We Dream
+        2237: "https://icewatch.app/",
+        2268: "http://overpasslightbrigade.org/how-to/",
+        2269: "https://www.climatedefiance.org/volunteer",
+        2270: "https://actionnetwork.org/event_campaigns/virtual-summer-trainings-for-climate-defiance",
+        2271: "https://www.climatedefiance.org/volunteer",
+        2275: "https://actionnetwork.org/event_campaigns/teslatakedown",
+        2279: "https://indivisible.org/events/postcard-writing/",
+        2280: "https://indivisible.org/get-involved/take-action/",
+        2281: "https://unitedwedream.org/our-work/deportation-defense/know-your-rights/",
+        2282: "https://unitedwedream.org/here-to-stay-network/",
+        2283: "https://unitedwedream.org/our-work/deportation-defense/migrawatch-hotline/",
+        2284: "https://www.mobilize.us/unitedwedream/",
+        2288: "https://www.gaysagainstguns.org/",
+        2289: "https://www.fiftyfifty.one/events",
+        2290: "https://www.fiftyfifty.one/organizer-resources",
+        2291: "https://www.sunrisemovement.org/hubs/",
+        2292: "https://marchforourlives.org/take-action/",
+        2293: "https://blackvotersmatterfund.org/votingtoolbox/",
+        2294: "https://action.womensmarch.com/home",
+        2295: "http://overpasslightbrigade.org/how-to/",
+        2297: "https://act.indivisible.org/lte/local-endorsements-lte/",
+        2298: "https://indivisible.org/resource-library/hosting-virtual-events",
+        2299: "https://unitedwedream.org/our-work/the-national-undocufund/",
+        2300: "https://www.communityjusticeexchange.org/en/nbfn-directory",
+        2301: "https://www.regulations.gov/",
+        2302: "https://www.powerthepolls.org/",
+        2303: "https://indivisible.org/resources/",
+        2304: "https://www.womensmarch.com/initiatives",
+        2309: "https://www.fiftyfifty.one/organizer-resources",
+        2310: "https://www.fiftyfifty.one/guide",
+        2312: "https://indivisible.org/get-involved/take-action/",
+        2313: "https://indivisible.org/town-hall-resources",
+        2314: "https://www.fiftyfifty.one/events",
+        2316: "https://www.mobilize.us/unitedwedream/",
+        2318: "https://www.communityjusticeexchange.org/en/nbfn-directory",
+        2319: "https://www.ala.org/bbooks",
+        2321: "https://unitedwedream.org/our-work/deportation-defense/migrawatch-hotline/",
+        2324: "https://greenamerica.org/find-better-bank-or-credit-union",
+        2325: "https://act.indivisible.org/signup/newsletter-signup-2025/",
+        2327: "https://www.mobilize.us/unitedwedream/",
+      };
+      let socialLinkCount = 0;
+      for (const [idStr, url] of Object.entries(socialDeepLinks)) {
+        const id = Number(idStr);
+        // These cards all live under user-action: — try that first, then
+        // fall back to action: in case any were moved during admin edits.
+        for (const prefix of ["user-action:", "action:"]) {
+          const existing = (await kv.get(`${prefix}${id}`)) as any;
+          if (existing && typeof existing === "object") {
+            await kv.set(`${prefix}${id}`, { ...existing, targetUrl: url });
+            socialLinkCount++;
+            break; // only update the first matching prefix
+          }
+        }
+      }
+      await setMigrationFlag("cleanup:social-profile-deeplinks:v1");
+      console.log(`Applied ${socialLinkCount} social-profile → specific-action URL upgrades.`);
     }
 
     // One-time: backfill `topImageUrl` on the 37 CSV-imported cards (IDs
