@@ -16,6 +16,33 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.97",
+    date: "2026-05-27",
+    title: "Two card banners regenerated to fix nonsense text and off-topic art",
+    sections: [
+      {
+        heading: "Visual polish",
+        items: [
+          "The \"Subscribe to actions\" card (Faithful America) was showing a banner with a misspelled protest sign that read \"SUBSCRITE TO ACTIONS.\" Replaced with a new banner — a young woman with a small cross necklace and a few fellow congregants in front of a stained-glass church. No more invented words.",
+          "The \"Buy a Fifth Amendment Sticker or Magnet\" card (Dissent Pins) was showing a generic protester holding a blank orange sign, which didn't tell you the act was actually a sticker purchase. Replaced with a banner showing hands applying a sticker to a laptop, plus a bumper sticker and round magnet on a wood tabletop. Now reads clearly as merch.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.96",
+    date: "2026-05-27",
+    title: "Welcome email logo now actually loads in Apple Mail",
+    sections: [
+      {
+        heading: "Bug fix",
+        items: [
+          "Apple Mail's privacy proxy pre-fetches images via Apple servers, but doesn't follow 301 redirects. Our bare-apex resistact.org URL was 301-redirecting to www.resistact.org, so the proxy got a redirect and returned nothing — the inbox showed a missing-image placeholder where the banner should be. Switched the email template to hit www.resistact.org directly, bypassing the redirect.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.95",
     date: "2026-05-27",
     title: "Admin: Missing Image tab now correctly flags 111 cards with broken cartoon paths",

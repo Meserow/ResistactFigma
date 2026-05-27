@@ -1308,13 +1308,44 @@ app.post("/make-server-9eb1ae04/admin/approve/:userId", async (c) => {
 // modern CSS, mobile clients vary). Width-capped at 600px, system fonts,
 // brand orange (#ed6624) on the CTA, brand navy (#23297e) on the headline.
 //
-// The logo URL points at public/email/resistact-logo.png on the prod
-// frontend. We hit the canonical www subdomain directly — the bare
-// apex 301-redirects to www, and Apple Mail's image-privacy proxy
-// (plus some other clients) doesn't follow that redirect when it
-// pre-fetches images, so the apex URL would surface as "no image."
-const LOGO_URL = "https://www.resistact.org/email/resistact-logo.png";
+// The banner ships INLINE as a Resend attachment with content_id "banner",
+// referenced from the HTML as <img src="cid:banner">. We tried hosting it
+// at https://www.resistact.org/email/... and pointing at it from <img src>,
+// but Apple Mail's image-privacy proxy refused to load it (likely a
+// combination of file size and proxy-side caching of an earlier 301).
+// Inline attachment sidesteps the proxy entirely: the image ships with the
+// email and renders unconditionally.
+const BANNER_URL = "https://www.resistact.org/email/resistact-banner.jpg";
 const SITE_URL = "https://resistact.org";
+
+// Cache the banner attachment in module scope so a warm container only
+// fetches once. Falls back to a no-attachment send if the fetch fails —
+// the email then renders without the image (broken cid: reference) but
+// still goes out, which is the right tradeoff for a best-effort send.
+let cachedBannerAttachment: { content: string; filename: string; content_id: string; content_type: string } | null = null;
+
+async function getBannerAttachment() {
+  if (cachedBannerAttachment) return cachedBannerAttachment;
+  const res = await fetch(BANNER_URL);
+  if (!res.ok) {
+    throw new Error(`Banner fetch ${res.status} from ${BANNER_URL}`);
+  }
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  // Encode in chunks — String.fromCharCode(...bytes) blows the call stack
+  // for arrays larger than ~125k elements on some JS engines.
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)));
+  }
+  cachedBannerAttachment = {
+    content: btoa(binary),
+    filename: "resistact-banner.jpg",
+    content_id: "banner",
+    content_type: res.headers.get("content-type") ?? "image/jpeg",
+  };
+  return cachedBannerAttachment;
+}
 
 interface EmailTemplate {
   preheader: string;       // hidden, used as inbox preview text
@@ -1356,9 +1387,9 @@ function renderEmailHtml(t: EmailTemplate): string {
     <td align="center" style="padding:24px 12px;">
       <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background-color:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
         <tr>
-          <td align="center" style="padding:32px 24px 8px 24px;">
+          <td align="center" style="padding:24px 24px 8px 24px;">
             <a href="${SITE_URL}" style="text-decoration:none;border:0;">
-              <img src="${LOGO_URL}" alt="ResistAct" width="280" style="display:block;width:280px;max-width:80%;height:auto;border:0;outline:none;">
+              <img src="cid:banner" alt="ResistAct — Citizen Action — Every Action Counts" width="320" style="display:block;width:320px;max-width:80%;height:auto;border:0;outline:none;border-radius:10px;">
             </a>
           </td>
         </tr>
@@ -1441,6 +1472,17 @@ async function sendResendEmail(args: {
   }
   if (!args.to) return;
 
+  // Inline the banner so the image renders without the recipient's mail
+  // client having to fetch it externally. If the fetch fails (deploy lag,
+  // network blip), we still send — just without the image.
+  let attachments: object[] | undefined;
+  try {
+    const banner = await getBannerAttachment();
+    attachments = [banner];
+  } catch (err) {
+    console.log(`Banner attach skipped for ${args.to}:`, err);
+  }
+
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -1453,6 +1495,7 @@ async function sendResendEmail(args: {
       subject: args.subject,
       html: renderEmailHtml(args.template),
       text: renderEmailText(args.template),
+      ...(attachments ? { attachments } : {}),
     }),
   });
 
@@ -1481,7 +1524,7 @@ async function sendApprovalEmail(record: { email: string; name?: string }): Prom
       cta: { label: "Find your first Act →", url: SITE_URL },
       tip: {
         eyebrow: "First time here?",
-        body: 'Use <strong>Match Me</strong> at the top of the feed to filter by your time, energy, tone, and location. We\'ll surface acts that fit your specific situation.',
+        body: 'Browse with the <strong>Category</strong> pills and set your <strong>Location</strong> at the top of the feed to see what fits. Then tap <strong>Refine Your Matches</strong> to dial it in by time, energy, and tone.',
       },
     },
   });
