@@ -16,6 +16,33 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.89",
+    date: "2026-05-27",
+    title: "Admin: Incomplete tab now correctly recognizes cartoon banners as images",
+    sections: [
+      {
+        heading: "Admin",
+        items: [
+          "The Incomplete tab was showing 137 approved acts as missing an image even though they all had cartoon banners. The check now recognizes cartoon banners as a valid image, so the count drops to zero. No acts were actually broken — this was purely an admin-panel false alarm.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.88",
+    date: "2026-05-27",
+    title: "Safari: sign in with Google + sign out now work the first time",
+    sections: [
+      {
+        heading: "Bug fix",
+        items: [
+          "On macOS Safari, clicking \"Sign in with Google\" sometimes did nothing on the first click and only worked on the second. The auth flow was doing a tiny async cryptography step in between your click and the redirect to Google — and Safari was dropping the redirect because it thought the click had \"expired.\" Switched the flow to a more compatible mode so the redirect fires immediately on click.",
+          "Sign out was occasionally leaving the UI looking signed in until reload — Safari's tracking-prevention was blocking the network call we were waiting on. We now clear your session locally first (instantly) so the UI updates right away.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.87",
     date: "2026-05-27",
     title: "Facebook share on mobile now actually works",

@@ -1057,7 +1057,9 @@ app.get("/make-server-9eb1ae04/admin/actions/no-url", async (c) => {
       if (!card || typeof card !== "object") return false;
       if (card.adminApproved !== true) return false;
       const noUrl = !card.targetUrl;
-      const noImage = !card.topImageUrl && !card.topImageKey;
+      // cartoonImageUrl counts as a valid image — cards with a cartoon banner
+      // are visually complete even if topImageUrl/topImageKey are absent.
+      const noImage = !card.topImageUrl && !card.topImageKey && !card.cartoonImageUrl;
       return noUrl || noImage;
     };
 
@@ -4438,7 +4440,7 @@ app.post("/make-server-9eb1ae04/share-invite", async (c) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "ResistAct <noreply@resistact.us>",
+        from: "ResistAct <noreply@resistact.org>",
         to: emails,
         subject: "Actions you can take today — ResistAct",
         text: body,
@@ -5796,7 +5798,7 @@ app.post("/make-server-9eb1ae04/feedback", async (c) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "ResistAct <noreply@resistact.us>",
+          from: "ResistAct <noreply@resistact.org>",
           to: ["ellen@meserow.com"],
           subject: `ResistAct Feedback from ${from}`,
           text: emailBody,
