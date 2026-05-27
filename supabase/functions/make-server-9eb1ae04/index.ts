@@ -99,6 +99,21 @@ async function ensureApprovalRecord(user: any) {
   };
 
   await kv.set(`user:approval:${user.id}`, record);
+
+  // Fire the right intro email best-effort. Admin-allowlisted users skip the
+  // manual /admin/approve step entirely, so without this they'd never get the
+  // welcome email that pending-then-approved users get. Pending users get a
+  // "we got your application" note so signup doesn't feel like a black hole.
+  if (record.status === "approved") {
+    sendApprovalEmail(record).catch((err) => {
+      console.log(`Welcome email (auto-approved) failed for ${record.email}:`, err);
+    });
+  } else {
+    sendWaitlistEmail(record).catch((err) => {
+      console.log(`Waitlist email failed for ${record.email}:`, err);
+    });
+  }
+
   return record;
 }
 
@@ -1046,27 +1061,28 @@ app.get("/make-server-9eb1ae04/admin/actions/no-url", async (c) => {
     const admin = await requireAdmin(token);
     if (!admin) return c.json({ error: "Forbidden" }, 403);
 
-    // Despite the endpoint name, this returns cards missing EITHER:
-    //   • an action link (`targetUrl`), OR
-    //   • a top image (no `topImageUrl` AND no `topImageKey`).
-    // Both kinds need admin attention before they're really publishable —
-    // a card with no URL has no action to take, and a card with no image
-    // looks broken in the feed grid. Grouping them in the same admin tab
-    // keeps the "things to fix" surface small.
-    const isMissing = (card: any) => {
+    // ?filter=url   → only cards missing targetUrl
+    // ?filter=image → only cards missing all image fields
+    // (default)     → both (legacy behaviour, kept for backwards compat)
+    const filter = c.req.query("filter") ?? "all"; // "url" | "image" | "all"
+
+    const hasImage = (card: any) =>
+      !!(card.topImageUrl || card.topImageKey || card.cartoonImageUrl);
+
+    const matches = (card: any) => {
       if (!card || typeof card !== "object") return false;
       if (card.adminApproved !== true) return false;
-      const noUrl = !card.targetUrl;
-      // cartoonImageUrl counts as a valid image — cards with a cartoon banner
-      // are visually complete even if topImageUrl/topImageKey are absent.
-      const noImage = !card.topImageUrl && !card.topImageKey && !card.cartoonImageUrl;
-      return noUrl || noImage;
+      const noUrl   = !card.targetUrl;
+      const noImage = !hasImage(card);
+      if (filter === "url")   return noUrl;
+      if (filter === "image") return noImage;
+      return noUrl || noImage; // "all"
     };
 
     const missing: any[] = [];
 
     for (const card of (await kv.getByPrefix("action:")) as any[]) {
-      if (isMissing(card) && !card.pinToTop) {
+      if (matches(card) && !card.pinToTop) {
         missing.push({ ...card, _store: "action" });
       }
     }
@@ -1074,7 +1090,7 @@ app.get("/make-server-9eb1ae04/admin/actions/no-url", async (c) => {
     const userCardIds = (await kv.get("user-action:ids") ?? []) as number[];
     for (const id of userCardIds) {
       const card = await kv.get(`user-action:${id}`) as any;
-      if (isMissing(card)) {
+      if (matches(card)) {
         missing.push({ ...card, _store: "user-action" });
       }
     }
@@ -1326,6 +1342,57 @@ ${siteUrl}
     throw new Error(`Resend ${res.status}: ${body}`);
   }
   console.log(`Approval email sent to ${record.email}`);
+}
+
+// "Application received" email sent to brand-new users whose record was just
+// created with status: "pending". Sets expectations so signup doesn't feel
+// like a black hole. Same fire-and-forget contract as sendApprovalEmail.
+async function sendWaitlistEmail(record: { email: string; name?: string }): Promise<void> {
+  const resendKey = Deno.env.get("RESEND_API_KEY");
+  if (!resendKey) {
+    console.log(`Skipping waitlist email for ${record.email}: RESEND_API_KEY not set`);
+    return;
+  }
+  if (!record.email) return;
+
+  const safeName = escapeHtml((record.name ?? "").trim() || "there");
+  const siteUrl = "https://resistact.org";
+
+  const text = `Hi ${record.name?.trim() || "there"},
+
+Your ResistAct application is in — thanks for signing up. We review every founding member personally and will approve you shortly.
+
+While you wait, you can already browse the full action catalog. Anyone can take an act, signed in or not:
+${siteUrl}
+
+— The ResistAct team`;
+
+  const html = `<p>Hi ${safeName},</p>
+<p>Your ResistAct application is in — thanks for signing up. We review every founding member personally and will approve you shortly.</p>
+<p>While you wait, you can already browse the full action catalog. Anyone can take an act, signed in or not:<br>
+<a href="${siteUrl}">${siteUrl}</a></p>
+<p>— The ResistAct team</p>`;
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${resendKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: "ResistAct <noreply@resistact.org>",
+      to: record.email,
+      subject: "We got your ResistAct application",
+      text,
+      html,
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Resend ${res.status}: ${body}`);
+  }
+  console.log(`Waitlist email sent to ${record.email}`);
 }
 
 // Minimal HTML-escape for interpolating user-controlled strings (e.g. names)

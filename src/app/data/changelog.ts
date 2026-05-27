@@ -16,6 +16,46 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.92",
+    date: "2026-05-27",
+    title: "Signup now always sends an email — welcome or waitlist",
+    sections: [
+      {
+        heading: "Onboarding",
+        items: [
+          "Admin-allowlisted accounts (auto-approved on signup) now get the same welcome email that manually-approved users get. Previously these accounts slipped past the approval step and never received any email at all.",
+          "Brand-new pending users now get a short \"we got your application\" email immediately on signup, so the signup flow doesn't feel like a black hole while they wait for an admin to approve them.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.91",
+    date: "2026-05-27",
+    title: "Admin: Incomplete tab split into Missing URL and Missing Image",
+    sections: [
+      {
+        heading: "Admin",
+        items: [
+          "The Incomplete tab is now two separate tabs — Missing URL (approved acts with no action link, with an inline URL field to fix them) and Missing Image (approved acts with no image, with a link to the act's destination so you can find a good image). Both currently show zero; the split makes it easier to triage each issue type independently going forward.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.90",
+    date: "2026-05-27",
+    title: "All outgoing emails now come from noreply@resistact.org",
+    sections: [
+      {
+        heading: "Internal",
+        items: [
+          "The friend-invite email and the feedback-to-admin email were still set to send from noreply@resistact.us, a leftover from an earlier sender setup. Both now match the production domain and the new approval welcome email at noreply@resistact.org, so there's a single verified Resend sender across every transactional email the site sends.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.89",
     date: "2026-05-27",
     title: "Admin: Incomplete tab now correctly recognizes cartoon banners as images",
