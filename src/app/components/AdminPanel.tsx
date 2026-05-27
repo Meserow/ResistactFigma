@@ -72,6 +72,32 @@ interface OnlineUser {
   isAdmin: boolean;
   status: string;
   lastSeenAt: string;
+  /** Total "I did this!" completions by this user, joined in client-side
+   * from /admin/users so we can show act counts inline in the Online tab. */
+  totalActions?: number;
+}
+
+interface AnonStats {
+  /** Sum of every card's `completions` counter across the public catalog. */
+  totalCardCompletions: number;
+  /** Sum of `totalActions` over every registered user — i.e. the portion of
+   * card completions we can attribute to a logged-in person. */
+  totalLoggedInCompletions: number;
+  /** Best estimate of completions performed without a sign-in. Equal to the
+   * difference of the two above, floored at 0 to absorb double-counting from
+   * legacy data (a few user records were re-counted in the early days). */
+  totalAnonCompletions: number;
+}
+
+interface AnonEvent {
+  /** ISO timestamp the anon completion was recorded. */
+  completedAt: string;
+  /** Action id that was bumped. */
+  actionId: number;
+  /** Action title at the time of the event (server side enriches). */
+  title?: string;
+  /** Action category at the time of the event. */
+  category?: string;
 }
 
 const TONE_DIMS: { key: keyof Tone; label: string; Icon: LucideIcon; stops: { label: string; desc: string }[] }[] = [
@@ -255,7 +281,9 @@ function ImageModal({
 }
 
 export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) {
-  const [mode, setMode] = useState<PanelMode>("users");
+  // Default to "online" — quickest read on engagement when an admin opens
+  // the panel. Other modes (cards, users, …) are one dropdown click away.
+  const [mode, setMode] = useState<PanelMode>("online");
 
   // ── Users state ──────────────────────────────────────────────────────────────
   const [users, setUsers] = useState<UserApproval[]>([]);
@@ -288,6 +316,18 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const [onlineLoading, setOnlineLoading] = useState(false);
   const [onlineError, setOnlineError] = useState<string | null>(null);
+  /** Aggregate breakdown of card completions by attribution (logged-in vs
+   *  anon). Computed once per Online-tab fetch from the public actions
+   *  endpoint and the /admin/users response. */
+  const [anonStats, setAnonStats] = useState<AnonStats | null>(null);
+  /** Per-event anon completions from the backend tracker (populated only
+   *  once the edge function is redeployed with `anon:complete:*` writes —
+   *  empty / 404 is the harmless "feature not deployed yet" state). */
+  const [anonEvents, setAnonEvents] = useState<AnonEvent[]>([]);
+  /** True after we've successfully hit /admin/anon-online once. Lets the
+   *  UI differentiate "no anon activity in this window" from "the per-event
+   *  tracker isn't deployed yet" without a noisy error. */
+  const [anonEventsAvailable, setAnonEventsAvailable] = useState(false);
 
   // ── Big-images state ─────────────────────────────────────────────────────────
   const [bigImages, setBigImages] = useState<BigImageCard[]>([]);
@@ -403,13 +443,78 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
     setOnlineLoading(true);
     setOnlineError(null);
     try {
-      // 1440 minutes = 24 hours. The Online tab now answers "who has used
-      // the site today?", not "who is on right now?" — much more useful for
-      // an admin checking engagement after pushing the site out.
-      const res = await fetch(`${API}/admin/online-users?windowMinutes=1440`, { headers: authHeaders });
-      const data = await res.json();
-      if (!res.ok) { setOnlineError(data.error ?? "Failed to load online users."); return; }
-      setOnlineUsers(data.users ?? []);
+      // 10080 minutes = 7 days. The Online tab now answers "who has used
+      // the site this week?" — broader window catches weekly returners,
+      // not just folks who happened to log in today. The status dot below
+      // still tiers green / amber / gray-today / gray-week so the live
+      // signal is preserved within the wider list.
+      //
+      // Four requests fire in parallel so one slow endpoint doesn't gate
+      // the others:
+      //   1. /admin/online-users   — primary list of who's been around
+      //   2. /admin/users          — joined in for per-user totalActions
+      //   3. /actions?limit=5000   — sum of card.completions for the anon
+      //                              aggregate ("anonymous vs logged in")
+      //   4. /admin/anon-online    — per-event anon list (404s harmlessly
+      //                              until the tracker is deployed)
+      const [onlineRes, usersRes, actionsRes, anonRes] = await Promise.all([
+        fetch(`${API}/admin/online-users?windowMinutes=10080`, { headers: authHeaders }),
+        fetch(`${API}/admin/users`, { headers: authHeaders }),
+        fetch(`${API}/actions?limit=5000`, { headers: authHeaders }),
+        fetch(`${API}/admin/anon-online?windowMinutes=10080`, { headers: authHeaders }),
+      ]);
+
+      const onlineData = await onlineRes.json();
+      if (!onlineRes.ok) { setOnlineError(onlineData.error ?? "Failed to load online users."); return; }
+
+      // Build a userId → totalActions lookup from /admin/users (best-effort —
+      // if that endpoint fails, the chips simply don't render).
+      const actionsByUser: Record<string, number> = {};
+      if (usersRes.ok) {
+        const usersData = await usersRes.json();
+        for (const u of usersData.users ?? []) {
+          if (u?.userId) actionsByUser[u.userId] = u.totalActions ?? 0;
+        }
+      }
+
+      const enriched: OnlineUser[] = (onlineData.users ?? []).map((u: OnlineUser) => ({
+        ...u,
+        totalActions: actionsByUser[u.userId] ?? 0,
+      }));
+      setOnlineUsers(enriched);
+
+      // ── Aggregate anon completions ────────────────────────────────────
+      // totalAnon ≈ Σ card.completions − Σ user.totalActions. This isn't
+      // perfectly exact (early users had a few double-attributed bumps that
+      // never got reconciled), so the difference is clamped to ≥ 0 — better
+      // to under-count anon than to show a negative.
+      if (actionsRes.ok) {
+        const actionsData = await actionsRes.json();
+        const totalCardCompletions = (actionsData.cards ?? []).reduce(
+          (sum: number, card: any) => sum + (typeof card.completions === "number" ? card.completions : 0),
+          0,
+        );
+        const totalLoggedIn = Object.values(actionsByUser).reduce((s, n) => s + n, 0);
+        setAnonStats({
+          totalCardCompletions,
+          totalLoggedInCompletions: totalLoggedIn,
+          totalAnonCompletions: Math.max(0, totalCardCompletions - totalLoggedIn),
+        });
+      }
+
+      // ── Per-event anon list (going-forward data) ───────────────────────
+      if (anonRes.ok) {
+        const anonData = await anonRes.json();
+        setAnonEvents(anonData.events ?? []);
+        setAnonEventsAvailable(true);
+      } else {
+        // 404 just means the backend tracker hasn't been deployed yet —
+        // not an error worth surfacing. Other statuses (500, network) we
+        // also tolerate silently here since the aggregate above is the
+        // primary insight; the per-event list is bonus.
+        setAnonEvents([]);
+        setAnonEventsAvailable(false);
+      }
     } catch {
       setOnlineError("Network error loading online users.");
     } finally {
@@ -464,12 +569,12 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
   useEffect(() => { fetchPendingCards(); }, []);
   useEffect(() => { if (mode === "users" && users.length === 0) fetchUsers(); }, [mode]);
   useEffect(() => { if (mode === "nourl" && noUrlCards.length === 0 && !noUrlLoading) fetchNoUrlCards(); }, [mode]);
-  // Online tab: fetch on enter, then re-fetch every 30s while the tab is open.
+  // Online tab: fetch once when the tab opens. No auto-refresh — the
+  // user said it's wasteful to repoll every 30s when they're just glancing
+  // at it. Hitting the Refresh button in the header re-fetches on demand.
   useEffect(() => {
     if (mode !== "online") return;
     fetchOnlineUsers();
-    const id = window.setInterval(fetchOnlineUsers, 30_000);
-    return () => window.clearInterval(id);
   }, [mode]);
   // Big-images tab: fetch on entry, no auto-refresh (the HEAD requests are
   // expensive — let the operator hit Refresh manually).
@@ -599,7 +704,7 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
               <div>
                 <p className="font-['Poppins',sans-serif] font-bold text-gray-900 text-base leading-tight">Admin Panel</p>
                 <p className="font-['Poppins',sans-serif] text-gray-400 text-xs">
-                  {mode === "users" ? "Manage user approvals" : mode === "nourl" ? "Cards missing an action link or top image" : mode === "online" ? "Users active in the last 24 hours" : mode === "bigimages" ? "Stored images over 500 KB — optimize to shrink" : mode === "brokenimages" ? "Cards whose topImageUrl 404s — needs re-upload" : mode === "sameurl" ? "Cards where action URL = author link — bulk-import default" : "Review submitted actions"}
+                  {mode === "users" ? "Manage user approvals" : mode === "nourl" ? "Cards missing an action link or top image" : mode === "online" ? "Users active in the last 7 days" : mode === "bigimages" ? "Stored images over 500 KB — optimize to shrink" : mode === "brokenimages" ? "Cards whose topImageUrl 404s — needs re-upload" : mode === "sameurl" ? "Cards where action URL = author link — bulk-import default" : "Review submitted actions"}
                 </p>
               </div>
             </div>
@@ -1078,8 +1183,8 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
                   {onlineLoading && onlineUsers.length === 0
                     ? "Loading…"
                     : onlineUsers.length === 0
-                      ? "No one has been active in the last 24 hours."
-                      : `${onlineUsers.length} user${onlineUsers.length !== 1 ? "s" : ""} active in the last 24 hours · refreshes every 30s`}
+                      ? "No one has been active in the last 7 days."
+                      : `${onlineUsers.length} user${onlineUsers.length !== 1 ? "s" : ""} active in the last 7 days · tap Refresh for an update`}
                 </p>
               </div>
 
@@ -1092,20 +1197,25 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
                 ) : onlineUsers.length === 0 && !onlineLoading ? (
                   <div className="flex flex-col items-center justify-center h-40 gap-2">
                     <Users size={28} className="text-gray-200" />
-                    <p className="font-['Poppins',sans-serif] text-sm text-gray-400">No activity in the last 24 hours.</p>
+                    <p className="font-['Poppins',sans-serif] text-sm text-gray-400">No activity in the last 7 days.</p>
                   </div>
                 ) : (
                   <ul className="divide-y divide-gray-50">
                     {onlineUsers.map((u) => {
-                      // Tier the status dot by how recent: green = truly live,
-                      // amber = recent, gray = active today but cold. Avoids
-                      // implying "online right now" for 23-hours-ago activity.
+                      // Tier the status dot by how recent: green = truly
+                      // live, amber = within the hour, gray-400 = active
+                      // today, gray-200 = active this week. Four tiers
+                      // keep the "online right now" signal meaningful even
+                      // though the underlying window stretches to 7 days.
                       const ageMs = Date.now() - new Date(u.lastSeenAt).getTime();
                       const dot = ageMs < 5 * 60_000
                         ? { color: "bg-green-500", label: "online now" }
                         : ageMs < 60 * 60_000
                           ? { color: "bg-amber-400", label: "active recently" }
-                          : { color: "bg-gray-300", label: "active today" };
+                          : ageMs < 24 * 60 * 60_000
+                            ? { color: "bg-gray-400", label: "active today" }
+                            : { color: "bg-gray-200", label: "active this week" };
+                      const actsLabel = (u.totalActions ?? 0) === 1 ? "act" : "acts";
                       return (
                       <li key={u.userId} className="px-5 py-3 flex items-center gap-3">
                         <span className={`w-2 h-2 rounded-full ${dot.color} shrink-0`} aria-label={dot.label} title={dot.label} />
@@ -1121,13 +1231,110 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
                           </div>
                           <p className="font-['Poppins',sans-serif] text-xs text-gray-400 truncate">{u.email}</p>
                         </div>
-                        <p className="font-['Poppins',sans-serif] text-xs text-gray-400 shrink-0" title={u.lastSeenAt}>
+                        {/* Acts-performed chip — pulled from /admin/users
+                            and joined client-side. Empty (0 acts) renders
+                            as a faded "0 acts" to make it scannable that
+                            the user has been around but hasn't completed
+                            anything yet. */}
+                        <span
+                          className={`shrink-0 inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-['Poppins',sans-serif] text-[11px] font-semibold ${
+                            (u.totalActions ?? 0) > 0
+                              ? "bg-[#ed6624]/10 text-[#ed6624]"
+                              : "bg-gray-50 text-gray-400"
+                          }`}
+                          title={`${u.totalActions ?? 0} ${actsLabel} completed`}
+                        >
+                          <CheckCircle2 size={11} />
+                          {u.totalActions ?? 0} {actsLabel}
+                        </span>
+                        <p className="font-['Poppins',sans-serif] text-xs text-gray-400 shrink-0 w-20 text-right" title={u.lastSeenAt}>
                           {formatRelative(u.lastSeenAt)}
                         </p>
                       </li>
                       );
                     })}
                   </ul>
+                )}
+
+                {/* ── Anonymous activity section ─────────────────────────
+                    Two layers, by design:
+                      1. Aggregate banner — total card.completions vs total
+                         logged-in completions. Always computable from data
+                         we already have, so this loads on first paint and
+                         needs no backend deploy.
+                      2. Per-event list — recent anon "I did this" hits with
+                         action title + timestamp. Only renders once the
+                         backend tracker (anon:complete:* keys) is deployed
+                         and starts collecting going-forward data.
+                    ────────────────────────────────────────────────────── */}
+                {anonStats && (
+                  <div className="mt-6 mx-5 mb-5 border border-gray-200 rounded-lg bg-gray-50/50 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-200 bg-white">
+                      <p className="font-['Poppins',sans-serif] font-bold text-sm text-gray-800 flex items-center gap-2">
+                        <span aria-hidden>👤</span> Not-logged-in activity
+                      </p>
+                      <p className="font-['Poppins',sans-serif] text-[11px] text-gray-500 mt-0.5">
+                        Anonymous visitors complete acts too — they just don't have a profile to attach the credit to.
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-3 gap-px bg-gray-200">
+                      <div className="px-3 py-2.5 bg-white text-center">
+                        <p className="font-['Poppins',sans-serif] text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Anon completions</p>
+                        <p className="font-['Poppins',sans-serif] font-bold text-[18px] text-[#ed6624] leading-tight mt-0.5">
+                          {anonStats.totalAnonCompletions.toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="px-3 py-2.5 bg-white text-center">
+                        <p className="font-['Poppins',sans-serif] text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Logged-in</p>
+                        <p className="font-['Poppins',sans-serif] font-bold text-[18px] text-[#23297e] leading-tight mt-0.5">
+                          {anonStats.totalLoggedInCompletions.toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="px-3 py-2.5 bg-white text-center">
+                        <p className="font-['Poppins',sans-serif] text-[10px] uppercase tracking-wider text-gray-400 font-semibold">All-time total</p>
+                        <p className="font-['Poppins',sans-serif] font-bold text-[18px] text-gray-700 leading-tight mt-0.5">
+                          {anonStats.totalCardCompletions.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                    {anonEventsAvailable ? (
+                      anonEvents.length > 0 ? (
+                        <div className="border-t border-gray-200">
+                          <p className="px-4 py-2 font-['Poppins',sans-serif] text-[11px] uppercase tracking-wider text-gray-400 font-semibold bg-white">
+                            Recent anonymous completions (last 7 days)
+                          </p>
+                          <ul className="divide-y divide-gray-100 bg-white">
+                            {anonEvents.slice(0, 50).map((evt, i) => (
+                              <li key={`${evt.completedAt}-${evt.actionId}-${i}`} className="px-4 py-2 flex items-center gap-3">
+                                <span className="w-2 h-2 rounded-full bg-gray-300 shrink-0" aria-hidden />
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-['Poppins',sans-serif] text-[13px] text-gray-800 truncate">
+                                    {evt.title ?? `Action #${evt.actionId}`}
+                                  </p>
+                                  {evt.category && (
+                                    <p className="font-['Poppins',sans-serif] text-[10px] uppercase tracking-wider text-gray-400">
+                                      {evt.category}
+                                    </p>
+                                  )}
+                                </div>
+                                <p className="font-['Poppins',sans-serif] text-[11px] text-gray-400 shrink-0" title={evt.completedAt}>
+                                  {formatRelative(evt.completedAt)}
+                                </p>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : (
+                        <p className="px-4 py-3 bg-white border-t border-gray-200 font-['Poppins',sans-serif] text-[12px] text-gray-400 italic">
+                          No anonymous completions logged in the last 7 days.
+                        </p>
+                      )
+                    ) : (
+                      <p className="px-4 py-3 bg-white border-t border-gray-200 font-['Poppins',sans-serif] text-[12px] text-gray-400 italic">
+                        Per-event tracking ships in the next backend deploy — the totals above use the existing card counters and stay accurate either way.
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             </>

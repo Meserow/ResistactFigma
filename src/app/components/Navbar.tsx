@@ -99,6 +99,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
   const [openFilter, setOpenFilter] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const filterBarRef = useRef<HTMLDivElement>(null);
+  const mobileFilterBarRef = useRef<HTMLDivElement>(null);
   const factsPillsRef = useRef<HTMLDivElement>(null);
   const actsPillsRef = useRef<HTMLDivElement>(null);
 
@@ -150,10 +151,16 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  // Close filter dropdowns when clicking outside
+  // Close filter dropdowns when clicking outside. The desktop and mobile filter
+  // bars are separate DOM trees (one is hidden by media query), so we have to
+  // check both — otherwise tapping inside the mobile bar registers as "outside"
+  // the desktop ref and closes the panel before it can open.
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (filterBarRef.current && !filterBarRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      const inDesktop = filterBarRef.current?.contains(target);
+      const inMobile = mobileFilterBarRef.current?.contains(target);
+      if (!inDesktop && !inMobile) {
         setOpenFilter(null);
       }
     }
@@ -713,35 +720,18 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
             )}
           </div>
         ) : (
-          /* ── Acts: Category pills + Location pill at the end ── */
+          /* ── Acts: Location pill (first) + Category pills ── */
           <>
-            {/* Desktop: every category as a pill that wraps to as many rows
-                as needed, with the Location pill appended at the very end.
-                Location pill matches the category pill styling exactly so it
-                reads as one continuous filter row — but it opens a dropdown
-                instead of being a simple toggle. */}
+            {/* Desktop: Location dropdown leads, then every category as a
+                pill that wraps to as many rows as needed. Location matches
+                the category-pill styling exactly so it reads as one
+                continuous filter row — but it opens a dropdown instead of
+                being a simple toggle. "Where can I act?" is the most
+                useful first cut at the feed, so it sits at the front. */}
             <div className="hidden sm:flex flex-1 min-w-0 flex-wrap items-center gap-y-1.5 gap-x-1">
-              {actsCats.map((option) => {
-                const selected = actsCatsSelected.includes(option);
-                const catColor = colorForCategory(option);
-                return (
-                  <button
-                    key={option}
-                    onClick={() => toggleFilterOption("Category", option)}
-                    className={`shrink-0 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
-                      selected
-                        ? "text-white"
-                        : "bg-white text-gray-600 border-gray-200 hover:border-[#23297e] hover:text-[#23297e]"
-                    }`}
-                    style={selected ? { background: catColor, borderColor: catColor } : undefined}
-                  >
-                    {option}
-                  </button>
-                );
-              })}
               {/* Location pill — same chip style as the categories, but opens
                   a dropdown panel for state/region selection rather than being
-                  a single-toggle. Sits at the very end of the wrapping row. */}
+                  a single-toggle. */}
               <div className="relative shrink-0">
                 <button
                   onClick={() => setOpenFilter(locOpen ? null : "Location")}
@@ -789,6 +779,27 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                   </div>
                 )}
               </div>
+              {/* Category pills — every category as a wrapping pill row.
+                  Sits after Location so the row reads: Location → categories
+                  → Prefer Online → 5 Minutes Max (matches mobile order). */}
+              {actsCats.map((option) => {
+                const selected = actsCatsSelected.includes(option);
+                const catColor = colorForCategory(option);
+                return (
+                  <button
+                    key={option}
+                    onClick={() => toggleFilterOption("Category", option)}
+                    className={`shrink-0 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
+                      selected
+                        ? "text-white"
+                        : "bg-white text-gray-600 border-gray-200 hover:border-[#23297e] hover:text-[#23297e]"
+                    }`}
+                    style={selected ? { background: catColor, borderColor: catColor } : undefined}
+                  >
+                    {option}
+                  </button>
+                );
+              })}
               {/* "Prefer Online" pill — separate from the Location (state)
                   dropdown. Toggles whether online + at-home actions are
                   added to the result set. Composes with state picks: WA
@@ -900,7 +911,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
       </div>
 
       {/* ── Mobile persistent tab + filter bar — sticks below top bar ── */}
-      <div className="sticky z-30 md:hidden border-t border-gray-100 bg-[#f7f7f7]" style={{ top: topBarHeight }}>
+      <div ref={mobileFilterBarRef} className="sticky z-30 md:hidden border-t border-gray-100 bg-[#f7f7f7]" style={{ top: topBarHeight }}>
         {/* Tab switcher — always visible */}
         <div className="px-4 pt-2 pb-1.5">
           <div className="flex items-center bg-gray-200 rounded-xl p-1 gap-0.5">
@@ -986,71 +997,26 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
             })()}
           </div>
         ) : (
-          /* ── Mobile Acts filter row — Category dropdown + Location dropdown
-              + Remote Only + 5 Min Max toggles. The previous version here
-              rendered placeholder buttons with NO onClick handlers — the
-              user could see filters but tapping them did nothing. ───── */
-          <div className="flex gap-1.5 overflow-x-auto px-4 pb-2" style={{ scrollbarWidth: "none" }}>
-            {/* Category dropdown */}
-            {(() => {
-              const isOpen = openFilter === "acts-cat-mobile";
-              const selectedCount = actsCatsSelected.length;
-              return (
-                <div className="relative shrink-0">
-                  <button
-                    onClick={() => setOpenFilter(isOpen ? null : "acts-cat-mobile")}
-                    className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
-                      selectedCount > 0
-                        ? "bg-[#23297e] text-white border-[#23297e]"
-                        : "bg-white text-gray-600 border-gray-200"
-                    }`}
-                  >
-                    Category
-                    {selectedCount > 0 && (
-                      <span className="w-4 h-4 rounded-full bg-[#ed6624] text-white text-[9px] flex items-center justify-center font-bold shrink-0">
-                        {selectedCount}
-                      </span>
-                    )}
-                    <ChevronDown size={11} className={isOpen ? "rotate-180" : ""} />
-                  </button>
-                  {isOpen && (
-                    <div className="absolute top-full left-0 mt-1.5 w-64 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50 max-h-80 overflow-y-auto">
-                      <p className="px-4 pt-1 pb-2 font-['Poppins',sans-serif] text-[10px] uppercase tracking-widest text-gray-400 font-semibold border-b border-gray-50">
-                        Category
-                      </p>
-                      {actsCats.map((option) => (
-                        <label key={option} className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
-                          <input
-                            type="checkbox"
-                            checked={actsCatsSelected.includes(option)}
-                            onChange={() => toggleFilterOption("Category", option)}
-                            className="accent-[#23297e] w-3.5 h-3.5 rounded shrink-0"
-                          />
-                          <span className="font-['Poppins',sans-serif] text-sm text-gray-700">{option}</span>
-                        </label>
-                      ))}
-                      {selectedCount > 0 && (
-                        <button
-                          onClick={() => onFilterChange("Category", [])}
-                          className="w-full text-center text-xs text-red-400 hover:text-red-600 py-2 border-t border-gray-50 mt-1 font-['Poppins',sans-serif] font-medium transition-colors"
-                        >
-                          Clear
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
+          /* ── Mobile Acts filter row — Location dropdown + Category
+              dropdown + Remote Only + 5 Min Max toggles. Location leads
+              because "where can I act?" is most users' first cut at the
+              feed; Category is the second-pass narrow-down.
 
-            {/* Location dropdown */}
-            {(() => {
-              const isOpen = openFilter === "acts-loc-mobile";
-              return (
-                <div className="relative shrink-0">
+              The chip strip is horizontally scrollable (overflow-x-auto),
+              which the browser converts into clipping on BOTH axes — so
+              the open dropdown can't render as an absolute child of the
+              strip or it gets clipped. The open panel renders as a
+              full-width drawer below the strip instead. ───── */
+          (() => {
+            const locMobileOpen = openFilter === "acts-loc-mobile";
+            const catMobileOpen = openFilter === "acts-cat-mobile";
+            return (
+              <div className="px-4 pb-2">
+                <div className="flex gap-1.5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+                  {/* Location button */}
                   <button
-                    onClick={() => setOpenFilter(isOpen ? null : "acts-loc-mobile")}
-                    className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
+                    onClick={() => setOpenFilter(locMobileOpen ? null : "acts-loc-mobile")}
+                    className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
                       locSelected.length > 0
                         ? "bg-[#23297e] text-white border-[#23297e]"
                         : "bg-white text-gray-600 border-gray-200"
@@ -1063,63 +1029,111 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                         {locSelected.length}
                       </span>
                     )}
-                    <ChevronDown size={11} className={isOpen ? "rotate-180" : ""} />
+                    <ChevronDown size={11} className={locMobileOpen ? "rotate-180" : ""} />
                   </button>
-                  {isOpen && (
-                    <div className="absolute top-full left-0 mt-1.5 w-56 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50 max-h-80 overflow-y-auto">
-                      {locOptions.map((option) => (
-                        <label key={option} className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
-                          <input
-                            type="checkbox"
-                            checked={locSelected.includes(option)}
-                            onChange={() => toggleFilterOption("Location", option)}
-                            className="accent-[#23297e] w-3.5 h-3.5 rounded shrink-0"
-                          />
-                          <span className="font-['Poppins',sans-serif] text-sm text-gray-700">{option}</span>
-                        </label>
-                      ))}
-                      {locSelected.length > 0 && (
-                        <button
-                          onClick={() => onFilterChange("Location", [])}
-                          className="w-full text-center text-xs text-red-400 hover:text-red-600 py-2 border-t border-gray-50 mt-1 font-['Poppins',sans-serif] font-medium transition-colors"
-                        >
-                          Clear
-                        </button>
-                      )}
-                    </div>
+
+                  {/* Category button */}
+                  <button
+                    onClick={() => setOpenFilter(catMobileOpen ? null : "acts-cat-mobile")}
+                    className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
+                      actsCatsSelected.length > 0
+                        ? "bg-[#23297e] text-white border-[#23297e]"
+                        : "bg-white text-gray-600 border-gray-200"
+                    }`}
+                  >
+                    Category
+                    {actsCatsSelected.length > 0 && (
+                      <span className="w-4 h-4 rounded-full bg-[#ed6624] text-white text-[9px] flex items-center justify-center font-bold shrink-0">
+                        {actsCatsSelected.length}
+                      </span>
+                    )}
+                    <ChevronDown size={11} className={catMobileOpen ? "rotate-180" : ""} />
+                  </button>
+
+                  {/* Prefer Online toggle */}
+                  <button
+                    onClick={() => toggleFilterOption("Location", "Remote")}
+                    className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
+                      locSelected.includes("Remote")
+                        ? "bg-[#23297e] text-white border-[#23297e]"
+                        : "bg-white text-gray-600 border-gray-200"
+                    }`}
+                  >
+                    <Globe size={11} />
+                    Prefer Online
+                  </button>
+
+                  {/* 5 Minutes Max toggle */}
+                  {onQuickActionsChange && (
+                    <button
+                      onClick={() => onQuickActionsChange(!quickActionsOnly)}
+                      className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
+                        quickActionsOnly
+                          ? "bg-[#ed6624] text-white border-[#ed6624]"
+                          : "bg-white text-gray-600 border-gray-200"
+                      }`}
+                    >
+                      <Zap size={11} fill={quickActionsOnly ? "#ffffff" : "none"} />
+                      5 Min Max
+                    </button>
                   )}
                 </div>
-              );
-            })()}
 
-            {/* Prefer Online toggle (mobile) */}
-            <button
-              onClick={() => toggleFilterOption("Location", "Remote")}
-              className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
-                locSelected.includes("Remote")
-                  ? "bg-[#23297e] text-white border-[#23297e]"
-                  : "bg-white text-gray-600 border-gray-200"
-              }`}
-            >
-              <Globe size={11} />
-              Prefer Online
-            </button>
+                {/* Location drawer */}
+                {locMobileOpen && (
+                  <div className="mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 max-h-80 overflow-y-auto">
+                    {locOptions.map((option) => (
+                      <label key={option} className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={locSelected.includes(option)}
+                          onChange={() => toggleFilterOption("Location", option)}
+                          className="accent-[#23297e] w-3.5 h-3.5 rounded shrink-0"
+                        />
+                        <span className="font-['Poppins',sans-serif] text-sm text-gray-700">{option}</span>
+                      </label>
+                    ))}
+                    {locSelected.length > 0 && (
+                      <button
+                        onClick={() => onFilterChange("Location", [])}
+                        className="w-full text-center text-xs text-red-400 hover:text-red-600 py-2 border-t border-gray-50 mt-1 font-['Poppins',sans-serif] font-medium transition-colors"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                )}
 
-            {/* 5 Minutes Max toggle */}
-            {onQuickActionsChange && (
-              <button
-                onClick={() => onQuickActionsChange(!quickActionsOnly)}
-                className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
-                  quickActionsOnly
-                    ? "bg-[#ed6624] text-white border-[#ed6624]"
-                    : "bg-white text-gray-600 border-gray-200"
-                }`}
-              >
-                <Zap size={11} fill={quickActionsOnly ? "#ffffff" : "none"} />
-                5 Min Max
-              </button>
-            )}
-          </div>
+                {/* Category drawer */}
+                {catMobileOpen && (
+                  <div className="mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 max-h-80 overflow-y-auto">
+                    <p className="px-4 pt-1 pb-2 font-['Poppins',sans-serif] text-[10px] uppercase tracking-widest text-gray-400 font-semibold border-b border-gray-50">
+                      Category
+                    </p>
+                    {actsCats.map((option) => (
+                      <label key={option} className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={actsCatsSelected.includes(option)}
+                          onChange={() => toggleFilterOption("Category", option)}
+                          className="accent-[#23297e] w-3.5 h-3.5 rounded shrink-0"
+                        />
+                        <span className="font-['Poppins',sans-serif] text-sm text-gray-700">{option}</span>
+                      </label>
+                    ))}
+                    {actsCatsSelected.length > 0 && (
+                      <button
+                        onClick={() => onFilterChange("Category", [])}
+                        className="w-full text-center text-xs text-red-400 hover:text-red-600 py-2 border-t border-gray-50 mt-1 font-['Poppins',sans-serif] font-medium transition-colors"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })()
         )}
       </div>
 

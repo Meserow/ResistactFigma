@@ -129,9 +129,14 @@ interface ActionCardProps {
   /** Supabase access token for authenticated flag submissions. Anonymous
    * users can still flag (anon key is used). */
   accessToken?: string | null;
+  /** Called when the CardDetailsModal commits a partial edit (currently
+   * just the admin "change category" affordance). The parent uses this
+   * to update its source-of-truth `cards` state so the grid pill and
+   * filters reflect the change immediately. */
+  onCardUpdated?: (updated: ActionCardData) => void;
 }
 
-function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdit, onApprove, onInfoClick, isBoosted, isCompleted, isBookmarked, canEdit, isPending, compact = false, accessToken }: ActionCardProps) {
+function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdit, onApprove, onInfoClick, isBoosted, isCompleted, isBookmarked, canEdit, isPending, compact = false, accessToken, onCardUpdated }: ActionCardProps) {
   const [shareOpen, setShareOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
@@ -362,6 +367,9 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
             isBoosted={isBoosted}
             onBookmark={onBookmark}
             isBookmarked={isBookmarked}
+            canEdit={canEdit}
+            accessToken={accessToken}
+            onCardUpdated={onCardUpdated}
           />
         )}
         {flagOpen && (
@@ -676,6 +684,9 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           isBookmarked={isBookmarked}
           onShare={() => setShareOpen(true)}
           onFlag={() => setFlagOpen(true)}
+          canEdit={canEdit}
+          accessToken={accessToken}
+          onCardUpdated={onCardUpdated}
         />
       )}
       {flagOpen && (

@@ -301,6 +301,7 @@ const migrationFlagCache = new Set<string>();
 const KNOWN_MIGRATION_FLAG_KEYS: readonly string[] = [
   "cleanup:backfill-cartoon-url:v1",
   "cleanup:backfill-images-1245:v1",
+  "cleanup:deep-links-high-confidence:v1",
   "cleanup:blaire-substack-desc:v1",
   "cleanup:clear-imagecontain-cartoon:v1",
   "cleanup:clear-stray-offtopic:v1",
@@ -1200,6 +1201,49 @@ app.get("/make-server-9eb1ae04/admin/online-users", async (c) => {
   }
 });
 
+// ─── ADMIN: Anonymous activity feed ──────────────────────────────────────────
+// Returns a reverse-chronological list of anonymous "I did this" completions
+// from the `anon:complete:{ts}:{actionId}` audit log within `windowMinutes`
+// (default 1440 = 24h, cap 1 week = 10 080). Powers the Online tab's
+// "Not-logged-in activity" section so admins can see what unsigned visitors
+// are actually doing — totals from card.completions don't tell that story.
+app.get("/make-server-9eb1ae04/admin/anon-online", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const windowMinutes = Math.max(1, Math.min(10_080, parseInt(c.req.query("windowMinutes") ?? "1440", 10) || 1440));
+    const cutoffMs = Date.now() - windowMinutes * 60_000;
+
+    const sb = adminClient();
+    const { data: rows } = await sb
+      .from("kv_store_9eb1ae04")
+      .select("key, value")
+      .like("key", "anon:complete:%");
+
+    const events: Array<{ completedAt: string; actionId: number; title: string | null; category: string }> = [];
+    for (const row of rows ?? []) {
+      const v = row.value as any;
+      const iso = v?.completedAt;
+      if (!iso) continue;
+      const ms = Date.parse(iso);
+      if (isNaN(ms) || ms < cutoffMs) continue;
+      events.push({
+        completedAt: iso,
+        actionId: Number(v.actionId),
+        title: v.title ?? null,
+        category: v.category ?? "OTHER",
+      });
+    }
+    events.sort((a, b) => b.completedAt.localeCompare(a.completedAt));
+    return c.json({ events, windowMinutes, count: events.length });
+  } catch (err) {
+    console.log("Admin anon-online error:", err);
+    return c.json({ error: `Failed to list anon activity: ${err}` }, 500);
+  }
+});
+
 // ─── ADMIN: Approve user ──────────────────────────────────────────────────────
 app.post("/make-server-9eb1ae04/admin/approve/:userId", async (c) => {
   try {
@@ -1472,6 +1516,151 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       }
       await setMigrationFlag("cleanup:backfill-cartoon-url:v1");
       console.log(`Backfilled cartoonImageUrl on ${cartoonBackfillCount} pending cards.`);
+    }
+
+    // One-time: deep-link upgrade for 121 seed cards whose targetUrl was a bare
+    // homepage (e.g. codepink.org/) rather than the specific action page (e.g.
+    // codepink.org/get_involved). URLs sourced from the amorphous deep-link
+    // audit (reports/amorphous-deeplinks-all.json, high-confidence only).
+    const deepLinksDone = await getMigrationFlag("cleanup:deep-links-high-confidence:v1");
+    if (!deepLinksDone) {
+      const deepLinks: Record<number, string> = {
+        1002: "https://docs.google.com/spreadsheets/d/1vu0Y0HvadMgG_LN7dF8W7M66oPCcx_nmSARQWirV7iY/edit",
+        1003: "https://thepeoplesunionusa.com/boycotts",
+        1006: "https://www.buyfromablackwoman.org/online-directory",
+        1008: "http://www.beyondbuckskin.com/p/buy-native.html",
+        1009: "https://actionnetwork.org/event_campaigns/teslatakedown",
+        1011: "https://www.veteransforpeace.org/take-action/join",
+        1012: "https://aboutfaceveterans.org/become-a-member/",
+        1013: "https://adapt.org/adapt-groups/",
+        1014: "https://www.dragstoryhour.org/chaptermap",
+        1015: "https://refusefascism.org/signup/",
+        1018: "https://welcome.us/get-involved",
+        1020: "https://www.themarshallproject.org/how-to-contact-us",
+        1021: "https://theintercept.com/source/",
+        1025: "https://boltsmag.org/pitch-us/",
+        1026: "https://www.typeinvestigations.org/about/how-to-pitch/",
+        1029: "https://www.levernews.com/got-a-news-tip/",
+        1030: "https://readsludge.com/contact/",
+        1032: "https://www.dsausa.org/chapters/",
+        1033: "https://act.surj.org/a/member-orientation",
+        1034: "https://www.sunrisemovement.org/welcome-call/",
+        1038: "https://mothersoutfront.org/local-teams/",
+        1039: "https://www.bendthearc.us/act_locally",
+        1041: "https://www.federalunionists.net/join-us",
+        1048: "https://www.welcomeblanket.org/getinvolved",
+        1049: "https://www.pussyhatproject.com/knit",
+        1052: "https://www.movetoamend.org/motion",
+        1053: "https://www.citizen.org/act/",
+        1055: "https://demandjustice.org/action-center/",
+        1056: "https://www.freepress.net/get-involved/sign-petition",
+        1058: "https://colorofchange.org/issues/",
+        1059: "https://demandprogress.org/get-involved/",
+        1061: "https://www.faithfulamerica.org/campaigns/resist-christian-nationalism",
+        1062: "https://winwithoutwar.org/take-action/",
+        1063: "https://www.detentionwatchnetwork.org/take-action/campaigns",
+        1067: "https://www.childrensdefense.org/get-involved/take-action/",
+        1068: "https://surj.org/join/",
+        1069: "https://act.dsausa.org/donate/membership/",
+        1070: "https://www.sunrisemovement.org/join/",
+        1071: "https://mijente.net/join/",
+        1072: "https://unitedwedream.org/join-united-we-dream/",
+        1074: "https://www.jewishvoiceforpeace.org/join-us/",
+        1076: "https://act.fcnl.org/signup/signup-action-alerts",
+        1077: "https://paxchristiusa.org/join/",
+        1080: "https://www.sikhcoalition.org/get-involved/take-action/",
+        1084: "https://mothersoutfront.org/get-involved/",
+        1085: "https://adapt.org/getting-involved/",
+        1086: "https://blackvotersmatterfund.org/action-hub/",
+        1087: "https://mifamiliavota.org/volunteer",
+        1091: "https://welcome.us/become-a-sponsor/intro-to-sponsorship",
+        1092: "https://welcomingamerica.org/the-welcoming-standard/",
+        1094: "https://www.homesnotborders.org/volunteer/",
+        1096: "https://www.federalunionists.net/join-us",
+        1097: "https://labornotes.org/email-signup",
+        1098: "https://home.coworker.org/campaign-support/",
+        1099: "https://www.ueunion.org/campaigns/international-solidarity",
+        1100: "https://redcard.iww.org/",
+        1101: "https://www.domesticworkers.org/programs-and-campaigns/developing-policy-solutions/take-action/",
+        1102: "https://sbworkersunited.org/take-action/",
+        1104: "https://www.abetterbalance.org/get-help/",
+        1107: "https://act.sojo.net/page/74900/subscribe/1?locale=en-US",
+        1108: "https://www.faithfulamerica.org/campaigns/resist-christian-nationalism",
+        1110: "https://truah.org/actions/",
+        1112: "https://act.fcnl.org/signup/signup-action-alerts",
+        1116: "https://www.sikhcoalition.org/get-involved/take-action/",
+        1117: "https://wetheaction.org/join_us",
+        1118: "https://www.lawyersforgoodgovernment.org/volunteer",
+        1119: "https://scalejustice.org/get-involved",
+        1121: "https://www.democracylab.org/projects",
+        1122: "https://www.catchafire.org/volunteers",
+        1123: "https://respondcrisistranslation.org/en/get-involved",
+        1125: "https://www.doctorsforamerica.org/become-member",
+        1126: "https://phr.org/get-involved/participate/health-professionals/",
+        1127: "https://314action.org/run-for-office/",
+        1130: "https://immigrationjustice.us/volunteer-application-form/",
+        1131: "https://choosedemocracy.us/pledge/",
+        1135: "https://www.immigrantdefenseproject.org/know-your-rights-with-ice/",
+        1141: "https://www.citizen.org/act/",
+        1142: "https://winwithoutwar.org/take-action/",
+        1143: "https://act.faithfulamerica.org/",
+        1144: "https://www.fcnl.org/act",
+        1145: "https://www.detentionwatchnetwork.org/take-action",
+        1147: "https://www.trainingforchange.org/public-workshops/",
+        1148: "https://ruckus.org/trainings/",
+        1150: "https://www.peopleshub.org/individuals",
+        1151: "https://righttobe.org/upcoming-free-trainings/",
+        1152: "https://choosedemocracy.us/trainings/",
+        1157: "https://www.powerthepolls.org/",
+        1158: "https://www.immigrantdefenseproject.org/community-education-workshops-and-trainings/",
+        1160: "https://postcardstovoters.org/volunteer/",
+        1161: "https://www.freedomforimmigrants.org/volunteer",
+        1162: "https://www.thetrevorproject.org/volunteer/",
+        1165: "https://www.mutualaidhub.org/",
+        1167: "https://capitalbnews.org/newsletters/",
+        1168: "https://19thnews.org/newsletters/daily/",
+        1169: "https://documentedny.com/newsletter/",
+        1171: "https://www.levernews.com/subscribe/",
+        1174: "https://amplifier.org/free-downloads/",
+        1175: "https://justseeds.org/graphics/",
+        1176: "https://beehivecollective.org/graphics-projects/use-our-graphics/",
+        1177: "https://www.tinypricksproject.com/participate/",
+        1178: "https://www.tonyc.nyc/public_workshops",
+        1179: "https://theyesmen.org/learn/bookoftricks",
+        1186: "https://respondcrisistranslation.org/en/get-involved",
+        1192: "https://readsludge.com/membership/",
+        1193: "https://boltsmag.org/newsletter/",
+        1194: "https://www.dropsitenews.com/subscribe",
+        1202: "https://inkstickmedia.com/newsletters/",
+        1204: "https://www.theopedproject.org/workshops",
+        1206: "https://www.aauw.org/act/two-minute-activist/",
+        1207: "https://www.sierraclub.org/write-your-letter-editor",
+        1215: "https://translifeline.org/",
+        1216: "https://www.thetrevorproject.org/get-help/",
+        1217: "https://lgbthotline.org/chat/",
+        1218: "https://www.crisistextline.org/",
+        1220: "https://activeminds.org/programs/chapters/",
+        1221: "https://www.nami.org/support-groups/",
+        1223: "https://runforsomething.net/run/",
+        1225: "https://emergeamerica.org/candidate-training/",
+        1233: "https://www.cliniclegal.org/training/accreditation",
+        1253: "https://actionnetwork.org/event_campaigns/teslatakedown",
+        1278: "https://blaireerskine.substack.com/",
+      };
+      let deepLinkCount = 0;
+      for (const [idStr, newUrl] of Object.entries(deepLinks)) {
+        const id = Number(idStr);
+        for (const prefix of ["action:", "user-action:"]) {
+          const existing = (await kv.get(`${prefix}${id}`)) as any;
+          if (existing && typeof existing === "object") {
+            await kv.set(`${prefix}${id}`, { ...existing, targetUrl: newUrl });
+            deepLinkCount++;
+            break;
+          }
+        }
+      }
+      await setMigrationFlag("cleanup:deep-links-high-confidence:v1");
+      console.log(`Applied ${deepLinkCount} deep-link URL upgrades.`);
     }
 
     // One-time: backfill `topImageUrl` on the 37 CSV-imported cards (IDs
@@ -4350,10 +4539,17 @@ app.post("/make-server-9eb1ae04/actions/:id/complete", async (c) => {
 
     // If a real user is signed in (anon-key tokens won't resolve to a user),
     // persist a per-user record so the scoreboard can aggregate by category.
+    // Anonymous (no token / anon-key token) completions get their own
+    // bare-bones record under `anon:complete:{ts}:{actionId}` so the admin
+    // panel can show a recent-activity feed for not-signed-in visitors —
+    // the card-level `completions` counter alone tells us totals but not
+    // when or which acts the unsigned-in folks are actually doing.
     const token = c.req.header("Authorization")?.split(" ")[1];
+    let attributedToUser = false;
     if (token) {
       const user = await getUser(token);
       if (user) {
+        attributedToUser = true;
         const userKey = `complete:${user.id}:${id}`;
         if ((delta ?? 1) > 0) {
           await kv.set(userKey, {
@@ -4365,6 +4561,21 @@ app.post("/make-server-9eb1ae04/actions/:id/complete", async (c) => {
           await kv.del(userKey);
         }
       }
+    }
+    if (!attributedToUser && (delta ?? 1) > 0) {
+      // Timestamp-prefixed key so we can `like('anon:complete:%')` and
+      // sort lexicographically (ISO-8601 sorts the same as chronological).
+      // No userId — anon by definition. Decrement (delta < 0) is a no-op
+      // on the anon log: we can't tell which of the N anon completions
+      // the unticker was reversing, so we leave the audit log immutable.
+      const completedAt = new Date().toISOString();
+      const anonKey = `anon:complete:${completedAt}:${id}`;
+      await kv.set(anonKey, {
+        actionId: id,
+        title: card.title ?? null,
+        category: card.category ?? "OTHER",
+        completedAt,
+      });
     }
 
     return c.json({ card });

@@ -16,6 +16,107 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.82",
+    date: "2026-05-27",
+    title: "Mobile: Location and Category dropdowns now actually open",
+    sections: [
+      {
+        heading: "Bug fix",
+        items: [
+          "Tapping Location or Category on a phone now opens a full-width drawer of options directly beneath the chip strip. Before, the dropdown panel was getting silently clipped by the horizontally-scrollable filter row, so nothing appeared to happen on tap. The chips themselves still scroll side-to-side; only the open panel moved out from under the strip.",
+          "Tapping a checkbox inside the drawer no longer closes it instantly — you can pick multiple states or categories in one go before tapping outside to dismiss.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.81",
+    date: "2026-05-27",
+    title: "Admin one-click re-categorize from the card modal",
+    sections: [
+      {
+        heading: "Admin",
+        items: [
+          "Open any act and the category pill on the banner now has a small pencil icon (admins only). Click it to see every category grouped by theme — Make/Do, Reach Out, Show Up, Care, Money/Stuff, Other — and tap the right one to move the act over. The pill updates in place and the change syncs back to the feed without reload. Cards without a header image get the same picker in the content area instead.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.80",
+    date: "2026-05-27",
+    title: "Location is now the first filter pill",
+    sections: [
+      {
+        heading: "Visual polish",
+        items: [
+          "The Acts filter row now leads with Location instead of Category. \"Where can I act?\" is most people's first cut at the feed, so the pill order on both mobile and desktop now reads: Location → Category → Prefer Online → 5 Minutes Max.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.79",
+    date: "2026-05-27",
+    title: "Online tab: per-user act counts + anonymous activity",
+    sections: [
+      {
+        heading: "Admin",
+        items: [
+          "Each user in the Online tab now shows how many acts they've completed all-time, as a small orange chip next to their last-seen timestamp. Zero-act users render with a faded \"0 acts\" so you can scan who's lurking vs. who's actually doing things.",
+          "New \"Not-logged-in activity\" panel below the user list shows three totals: anonymous completions, logged-in completions, and the all-time total across both. Anon completions are an estimate (total card counters minus the sum of logged-in completions) so you can see how much of the action is coming from unsigned visitors.",
+          "Once the edge function is redeployed, the same panel will start showing a reverse-chronological list of recent anonymous completions (action title + timestamp) over the last 7 days. The aggregate totals work without the deploy; the per-event list fills in going forward only.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.78",
+    date: "2026-05-27",
+    title: "Admin panel opens on \"Online\" by default · no more 30s polling",
+    sections: [
+      {
+        heading: "Admin",
+        items: [
+          "Admin panel now opens straight to the Online tab — quickest read on who's been active. Switch to Cards / Users / etc. via the dropdown when you need them.",
+          "Online tab no longer re-fetches every 30 seconds in the background. It loads once when you open the tab; tap Refresh for a fresh read.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.77",
+    date: "2026-05-27",
+    title: "Admin \"Online\" tab now covers the last 7 days",
+    sections: [
+      {
+        heading: "Admin",
+        items: [
+          "The Online tab in the admin panel now shows every user active in the last 7 days (was: last 24 hours). Catches weekly returners, not just same-day folks. The status dot still tiers green (live in the last 5 min) → amber (last hour) → gray-400 (active today) → gray-200 (active this week), so the live signal is preserved inside the wider list.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.76",
+    date: "2026-05-27",
+    title: "Tighter cards + signed-in users get the rich \"How This Works\"",
+    sections: [
+      {
+        heading: "Visual polish",
+        items: [
+          "Card content area tightened: less vertical padding above and below the title/footer, smaller gap between the title and the author row. The banner image stays the same size — only the white space underneath was trimmed, so the feed packs more cards into the same scroll without the art feeling cramped.",
+        ],
+      },
+      {
+        heading: "Bug fixes",
+        items: [
+          "\"How This Works\" now opens the rich two-column overlay (with the Baby Trump grocery-store image and the Spark → Inferno resistance-tier ladder) for signed-in users too. Previously logged-in folks fell through to a plain text-only fallback — same content as the signed-out version is now consistent everywhere.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.75",
     date: "2026-05-27",
     title: "Cartoon banner coverage: 100% of approved cards",
