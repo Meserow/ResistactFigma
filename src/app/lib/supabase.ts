@@ -1,7 +1,17 @@
 import { createClient } from "@supabase/supabase-js";
 import { projectId, publicAnonKey } from "/utils/supabase/info";
 
-// Singleton Supabase client for frontend auth
+// Singleton Supabase client for frontend auth.
+//
+// flowType: 'implicit' — we deliberately avoid PKCE here. PKCE inserts an
+// async crypto.subtle.digest() call between the user's click on the Google
+// sign-in button and the cross-origin redirect to Supabase's authorize
+// endpoint. Safari (macOS + iOS) drops the user-gesture token across that
+// async hop intermittently, which surfaces as "the first click does nothing,
+// only the second works." Implicit flow constructs the redirect URL
+// synchronously, so the navigation fires within the original gesture.
+// Tradeoff: the OAuth access token briefly appears in the URL fragment on
+// callback. Acceptable for this site's risk profile.
 export const supabase = createClient(
   `https://${projectId}.supabase.co`,
   publicAnonKey,
@@ -9,6 +19,7 @@ export const supabase = createClient(
     auth: {
       persistSession: true,
       autoRefreshToken: true,
+      flowType: "implicit",
     },
   }
 );

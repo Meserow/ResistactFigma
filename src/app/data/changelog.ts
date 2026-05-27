@@ -16,6 +16,20 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.93",
+    date: "2026-05-27",
+    title: "Welcome and waitlist emails: branded redesign",
+    sections: [
+      {
+        heading: "Onboarding",
+        items: [
+          "Both transactional emails (the welcome on approval and the application-received note on signup) now use a branded template with the ResistAct logo, navy headline, orange CTA button, and a short tip block. Plain-text fallback included for accessibility and clients that don't render HTML.",
+          "Single shared template helper in the edge function so future emails (admin broadcasts, event notifications, etc.) can reuse the same look without duplication.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.92",
     date: "2026-05-27",
     title: "Signup now always sends an email — welcome or waitlist",

@@ -1293,34 +1293,144 @@ app.post("/make-server-9eb1ae04/admin/approve/:userId", async (c) => {
   }
 });
 
-// Send the "you're approved" transactional email via Resend.
-// Fire-and-forget from the caller's perspective — caller should not await
-// this in the request hot path, and should swallow its rejection.
-async function sendApprovalEmail(record: { email: string; name?: string }): Promise<void> {
+// ─── Transactional email rendering ───────────────────────────────────────────
+// Shared branded template used by both the "you're approved" and the
+// "we got your application" emails. Email rendering is intentionally
+// table-based with inline styles — that's what works across the messy
+// reality of email clients (Gmail strips <style>, Outlook ignores most
+// modern CSS, mobile clients vary). Width-capped at 600px, system fonts,
+// brand orange (#ed6624) on the CTA, brand navy (#23297e) on the headline.
+//
+// The logo URL points at public/email/resistact-logo.png on the prod
+// frontend, so it goes live the next time the frontend deploys. Until
+// then, the alt text "ResistAct" stands in.
+const LOGO_URL = "https://resistact.org/email/resistact-logo.png";
+const SITE_URL = "https://resistact.org";
+
+interface EmailTemplate {
+  preheader: string;       // hidden, used as inbox preview text
+  headline: string;        // big navy headline under the logo
+  greeting: string;        // "Hi name,"
+  bodyParagraphs: string[];
+  cta: { label: string; url: string };
+  tip?: { eyebrow: string; body: string };
+}
+
+function renderEmailHtml(t: EmailTemplate): string {
+  const paragraphsHtml = t.bodyParagraphs
+    .map((p) => `<p style="margin:0 0 14px 0;font-size:15px;line-height:1.55;color:#3a3a3a;">${p}</p>`)
+    .join("\n");
+  const tipHtml = t.tip
+    ? `<tr><td style="padding:0 32px 28px 32px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f7f7f7;border-radius:10px;">
+        <tr><td style="padding:16px 18px;">
+          <p style="margin:0 0 6px 0;font-size:11px;line-height:1.4;color:#8a8a8a;text-transform:uppercase;letter-spacing:1.2px;font-weight:700;">${t.tip.eyebrow}</p>
+          <p style="margin:0;font-size:14px;line-height:1.5;color:#3a3a3a;">${t.tip.body}</p>
+        </td></tr>
+      </table>
+    </td></tr>`
+    : "";
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light only">
+  <title>${escapeHtml(t.headline)}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f7f7f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,'Helvetica Neue',sans-serif;color:#3a3a3a;">
+<!-- preheader: hidden, shows as inbox preview text -->
+<div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">${escapeHtml(t.preheader)}</div>
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f7f7f7;">
+  <tr>
+    <td align="center" style="padding:24px 12px;">
+      <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;background-color:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+        <tr>
+          <td align="center" style="padding:32px 24px 8px 24px;">
+            <a href="${SITE_URL}" style="text-decoration:none;border:0;">
+              <img src="${LOGO_URL}" alt="ResistAct" width="280" style="display:block;width:280px;max-width:80%;height:auto;border:0;outline:none;">
+            </a>
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding:12px 32px 8px 32px;">
+            <h1 style="margin:0;font-size:24px;line-height:1.25;font-weight:800;color:#23297e;letter-spacing:-0.01em;">${escapeHtml(t.headline)}</h1>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 32px 8px 32px;">
+            <p style="margin:0 0 14px 0;font-size:15px;line-height:1.55;color:#3a3a3a;">${escapeHtml(t.greeting)}</p>
+            ${paragraphsHtml}
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding:12px 32px 32px 32px;">
+            <a href="${t.cta.url}" style="display:inline-block;padding:14px 32px;background-color:#ed6624;color:#ffffff;text-decoration:none;font-size:16px;font-weight:700;border-radius:10px;mso-padding-alt:0;">
+              <!--[if mso]>&nbsp;&nbsp;&nbsp;<![endif]-->${escapeHtml(t.cta.label)}<!--[if mso]>&nbsp;&nbsp;&nbsp;<![endif]-->
+            </a>
+          </td>
+        </tr>
+        ${tipHtml}
+      </table>
+      <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width:600px;">
+        <tr>
+          <td align="center" style="padding:16px 24px 6px 24px;">
+            <p style="margin:0;font-size:12px;line-height:1.4;color:#8a8a8a;">ResistAct · <a href="${SITE_URL}" style="color:#8a8a8a;text-decoration:underline;">resistact.org</a></p>
+          </td>
+        </tr>
+        <tr>
+          <td align="center" style="padding:0 24px 28px 24px;">
+            <p style="margin:0;font-size:11px;line-height:1.5;color:#a0a0a0;">You're receiving this because you signed up at resistact.org. No tracking, no donation asks, no list you can't escape.</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>`;
+}
+
+function renderEmailText(t: EmailTemplate): string {
+  const paragraphs = t.bodyParagraphs.map((p) => stripHtml(p)).join("\n\n");
+  const tipBlock = t.tip
+    ? `\n\n${t.tip.eyebrow.toUpperCase()}\n${stripHtml(t.tip.body)}`
+    : "";
+  return `${t.greeting}
+
+${paragraphs}
+
+${t.cta.label}
+${t.cta.url}${tipBlock}
+
+— The ResistAct team
+${SITE_URL}`;
+}
+
+function stripHtml(s: string): string {
+  return s
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/?[a-z][^>]*>/gi, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+}
+
+async function sendResendEmail(args: {
+  to: string;
+  subject: string;
+  template: EmailTemplate;
+}): Promise<void> {
   const resendKey = Deno.env.get("RESEND_API_KEY");
   if (!resendKey) {
-    console.log(`Skipping approval email for ${record.email}: RESEND_API_KEY not set`);
+    console.log(`Skipping email to ${args.to}: RESEND_API_KEY not set`);
     return;
   }
-  if (!record.email) return;
-
-  const safeName = escapeHtml((record.name ?? "").trim() || "there");
-  const siteUrl = "https://resistact.org";
-
-  const text = `Hi ${record.name?.trim() || "there"},
-
-Your ResistAct account is approved — welcome.
-
-Pick one. Do it. Share it. Come back tomorrow:
-${siteUrl}
-
-— The ResistAct team`;
-
-  const html = `<p>Hi ${safeName},</p>
-<p>Your ResistAct account is approved — welcome.</p>
-<p>Pick one. Do it. Share it. Come back tomorrow:<br>
-<a href="${siteUrl}">${siteUrl}</a></p>
-<p>— The ResistAct team</p>`;
+  if (!args.to) return;
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -1330,10 +1440,10 @@ ${siteUrl}
     },
     body: JSON.stringify({
       from: "ResistAct <noreply@resistact.org>",
-      to: record.email,
-      subject: "You're approved — welcome to ResistAct",
-      text,
-      html,
+      to: args.to,
+      subject: args.subject,
+      html: renderEmailHtml(args.template),
+      text: renderEmailText(args.template),
     }),
   });
 
@@ -1341,57 +1451,55 @@ ${siteUrl}
     const body = await res.text();
     throw new Error(`Resend ${res.status}: ${body}`);
   }
+}
+
+// "You're approved — welcome" — fired on auto-approval (admin allowlist)
+// AND on manual /admin/approve.
+async function sendApprovalEmail(record: { email: string; name?: string }): Promise<void> {
+  const safeName = escapeHtml((record.name ?? "").trim() || "there");
+  await sendResendEmail({
+    to: record.email,
+    subject: "You're approved — welcome to ResistAct",
+    template: {
+      preheader: "Your account is approved. Pick your first act.",
+      headline: "You're in. Welcome to the resistance.",
+      greeting: `Hi ${safeName},`,
+      bodyParagraphs: [
+        "Your ResistAct account is approved — welcome.",
+        "ResistAct matches you with small, doable acts based on what you've got today: time, energy, tone, location. Five minutes of phone calls. A protest down the street. A weekend of postcard writing. You pick.",
+        "<strong>Pick one. Do it. Share it. Come back tomorrow.</strong>",
+      ],
+      cta: { label: "Find your first Act →", url: SITE_URL },
+      tip: {
+        eyebrow: "First time here?",
+        body: 'Use <strong>Match Me</strong> at the top of the feed to filter by your time, energy, tone, and location. We\'ll surface acts that fit your specific situation.',
+      },
+    },
+  });
   console.log(`Approval email sent to ${record.email}`);
 }
 
-// "Application received" email sent to brand-new users whose record was just
-// created with status: "pending". Sets expectations so signup doesn't feel
-// like a black hole. Same fire-and-forget contract as sendApprovalEmail.
+// "We got your application" — fired on new signup with status: "pending".
 async function sendWaitlistEmail(record: { email: string; name?: string }): Promise<void> {
-  const resendKey = Deno.env.get("RESEND_API_KEY");
-  if (!resendKey) {
-    console.log(`Skipping waitlist email for ${record.email}: RESEND_API_KEY not set`);
-    return;
-  }
-  if (!record.email) return;
-
   const safeName = escapeHtml((record.name ?? "").trim() || "there");
-  const siteUrl = "https://resistact.org";
-
-  const text = `Hi ${record.name?.trim() || "there"},
-
-Your ResistAct application is in — thanks for signing up. We review every founding member personally and will approve you shortly.
-
-While you wait, you can already browse the full action catalog. Anyone can take an act, signed in or not:
-${siteUrl}
-
-— The ResistAct team`;
-
-  const html = `<p>Hi ${safeName},</p>
-<p>Your ResistAct application is in — thanks for signing up. We review every founding member personally and will approve you shortly.</p>
-<p>While you wait, you can already browse the full action catalog. Anyone can take an act, signed in or not:<br>
-<a href="${siteUrl}">${siteUrl}</a></p>
-<p>— The ResistAct team</p>`;
-
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${resendKey}`,
-      "Content-Type": "application/json",
+  await sendResendEmail({
+    to: record.email,
+    subject: "We got your ResistAct application",
+    template: {
+      preheader: "Your application is in. Browse acts while we approve you.",
+      headline: "We got your application.",
+      greeting: `Hi ${safeName},`,
+      bodyParagraphs: [
+        "Thanks for signing up. We review every founding member personally and will approve you shortly — usually within a day.",
+        "While you wait, you can already browse the full action catalog. Anyone can take an act on ResistAct, signed in or not.",
+      ],
+      cta: { label: "Browse acts →", url: SITE_URL },
+      tip: {
+        eyebrow: "Why we review",
+        body: "We're building this slowly with a founding cohort. No tracking, no donation asks, no list you can't escape. The review is one human reading your sign-up — that's it.",
+      },
     },
-    body: JSON.stringify({
-      from: "ResistAct <noreply@resistact.org>",
-      to: record.email,
-      subject: "We got your ResistAct application",
-      text,
-      html,
-    }),
   });
-
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Resend ${res.status}: ${body}`);
-  }
   console.log(`Waitlist email sent to ${record.email}`);
 }
 

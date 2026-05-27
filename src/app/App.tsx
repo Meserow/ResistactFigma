@@ -1209,10 +1209,18 @@ export default function App() {
     }
   }
 
-  async function handleLogout() {
-    await supabase.auth.signOut();
+  function handleLogout() {
+    // Clear local React state synchronously so the UI reflects sign-out
+    // immediately — don't wait on a network round-trip that Safari ITP can
+    // stall or drop. scope: 'local' tells Supabase to wipe the session from
+    // localStorage and fire SIGNED_OUT locally without calling the auth
+    // server to revoke; that revoke is what was failing intermittently on
+    // Safari and leaving the UI stuck in a "signed in" state.
     setApproval(null);
     setAccessToken(null);
+    supabase.auth.signOut({ scope: "local" }).catch((err) => {
+      console.warn("signOut(local) failed:", err);
+    });
   }
 
   // ── Boot analytics on mount. No-op when VITE_GA_MEASUREMENT_ID is unset
