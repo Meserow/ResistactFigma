@@ -143,10 +143,12 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
             moderate (180px) so the title + buttons stay above the fold on
             small screens. Modal capped at max-h-[90vh] either way — content
             scrolls inside if it overflows. */}
-        {card.topImage && (
+        {/* Prefer the cartoonized banner if generated; fall back to the
+            card's original topImage. Keeps the modal in sync with the grid. */}
+        {(card.cartoonImageUrl || card.topImage) && (
           <div className={`relative h-[180px] sm:h-[360px] shrink-0 ${card.imageContain ? "bg-gray-50" : ""}`}>
             <ImageWithFallback
-              src={card.topImage}
+              src={card.cartoonImageUrl ?? card.topImage}
               alt={card.title}
               className={`w-full h-full ${card.imageContain ? "object-contain p-3" : "object-cover object-top"}`}
             />
@@ -304,7 +306,7 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
                 onClick={() => { onComplete(card.id); setShowDonePrompt(false); }}
                 className="inline-flex items-center gap-1.5 rounded-full bg-[#0d8c6e] px-5 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#0a7159]"
               >
-                <CheckCircle2 size={14} /> Mark this action: I did this?
+                <CheckCircle2 size={14} /> Mark this action: I did this!
               </button>
             ) : link ? (
               <a

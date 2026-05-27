@@ -16,6 +16,139 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.75",
+    date: "2026-05-27",
+    title: "Cartoon banner coverage: 100% of approved cards",
+    sections: [
+      {
+        heading: "Images",
+        items: [
+          "The last three cards that gpt-image-1's content filter had rejected — \"Download free protest art\" (1174), the soy-candle card with the F-word title (1336), and the Tesla Takedown LA Bluesky card (2171) — now have cartoonized banners via softened prompts (script: retry-failed-cards.mjs). Every approved act on the site now displays with the unified comic-style banner.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.74",
+    date: "2026-05-27",
+    title: "Cartoon banners shift down ~20px on the grid",
+    sections: [
+      {
+        heading: "Visual polish",
+        items: [
+          "Cartoonized card banners on the grid now anchor at `object-[center_20%]` instead of `object-top`. Effect: the visible band shifts down ~20px so wearable items (buttons, shirts, badges) painted at chest level by gpt-image-1 stay visible on the grid card — not just inside the modal. Original (non-cartoon) photos still use `object-top` so unrelated cards aren't affected.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.73",
+    date: "2026-05-27",
+    title: "Approve-with-image buttons now work on all pending cards",
+    sections: [
+      {
+        heading: "Admin",
+        items: [
+          "The \"Approve N with images\" button in the admin panel was failing silently for 137 bulk-imported cards. Those cards had cartoon banner artwork on disk, but the artwork path was never written back to their database records — so the server correctly refused to approve them (no image). A one-time backfill now writes the cartoon image path into every affected record. The button works.",
+          "Approval failures now surface a visible error toast instead of disappearing quietly.",
+          "The \"Approve N with images\" button now appears whenever any pending card has an image, not only when every card has one.",
+        ],
+      },
+      {
+        heading: "Fixes",
+        items: [
+          "Quick Match results are capped to a minimum of 20 cards so the carousel doesn't show a different (smaller) set than the main feed after clicking \"These look good.\"",
+          "Bulk-imported cards now carry a short synopsis sentence — the small subtitle below the title that was missing from recently harvested acts.",
+          "Cards that switched from logo-fit images to full-bleed cartoon banners no longer get the logo padding treatment.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.72",
+    date: "2026-05-25",
+    title: "Specific ask reads first on \"Tell Congress\" cards",
+    sections: [
+      {
+        heading: "Card titles",
+        items: [
+          "A wall of \"Tell Congress\" cards all looked identical at a glance because the boilerplate verb-phrase was the title and the specific ask was the small subtitle. Now when a title's head starts with Tell / Call / Email / Urge / Ask / Write / Sign AND the tail is longer, they swap — the specific ask (e.g. \"Pass H.R. 40 — Commission to Study Reparations\") becomes the prominent title and \"Tell Congress\" shrinks to the italic subtitle below. Reads like a news headline.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.71",
+    date: "2026-05-25",
+    title: "Card title subtitle reads as a real subtitle now",
+    sections: [
+      {
+        heading: "Visual polish",
+        items: [
+          "Subtitle below the card title (auto-split on ': ' or ' — ', or pulled from the hand-authored synopsis) was visually indistinct from the title — it looked like natural line wrap, not a smaller secondary line. Fixed: subtitle now renders smaller (11/12px), lighter (gray-400), italic, with more vertical separation. The trailing colon is also stripped from the head — \"Call your Senators: End the Illegal War on Iran\" now reads as \"Call your Senators\" + a clearly subordinate \"End the Illegal War on Iran.\"",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.70",
+    date: "2026-05-25",
+    title: "Pill-filter selections persist across reloads",
+    sections: [
+      {
+        heading: "UX",
+        items: [
+          "Category pills, Location dropdown picks, Prefer Online toggle, 5 Minutes Max, Show completed acts, and Sort order are now saved to localStorage on every change. Reload the page or close + reopen the tab and your filters come back exactly as you left them.",
+          "Same-device only for now — not synced cross-device yet. Match Me / Refine Your Matches preferences remain on the server-side record, just like before.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.69",
+    date: "2026-05-25",
+    title: "Remote pill renamed to \"Prefer Online\"",
+    sections: [
+      {
+        heading: "Filter behavior",
+        items: [
+          "Renamed the Remote pill to \"Prefer Online\". Same behavior — composes with state picks, adds online + at-home cards on top of any selected state — just clearer copy that signals it's a preference rather than a hard mode.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.68",
+    date: "2026-05-25",
+    title: "Remote is its own pill, separate from the Location dropdown",
+    sections: [
+      {
+        heading: "Filter behavior",
+        items: [
+          "Removed \"Remote\" from the Location dropdown — that dropdown is now states only.",
+          "Renamed the pill from \"+ Remote\" → \"Remote\".",
+          "Picking states and clicking Remote now compose naturally: pick Washington alone for WA in-person; click Remote alone for online + at-home everywhere; both checked = the union. The matcher still treats \"Remote\" as online OR at-home, so knitting and prayer cards aren't lost.",
+          "Removed the auto-add-Remote behavior — Remote no longer toggles on by itself when you pick a state. Users opt in explicitly via the pill.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.67",
+    date: "2026-05-25",
+    title: "Location filter encourages local + remote, not either-or",
+    sections: [
+      {
+        heading: "Filter behavior",
+        items: [
+          "Renamed the \"Remote Only\" pill to \"+ Remote\" — additive framing makes it clear this filter ADDS remote actions on top of your state pick, instead of narrowing to online-only.",
+          "Picking a state now AUTO-INCLUDES remote actions by default. The default state for someone in Washington is \"Washington + Remote\" — they see local in-person actions AND online/at-home actions in one feed. Uncheck \"+ Remote\" to narrow to strictly in-person.",
+          "Broadened what \"Remote\" means in the matcher: now covers both online actions (`isOnline: true`) AND at-home actions (`atHome: true`) like knitting, prayer, postcard writing, cross-stitch. Previously those at-home-not-online cards got dropped from a Remote filter even though they're location-independent.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.66",
     date: "2026-05-25",
     title: "Card category color now always matches the filter chip",

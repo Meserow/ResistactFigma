@@ -111,6 +111,10 @@ export function HeroPills({ onMatchClick, onAskClick, onHowClick, hasMatchPrefs 
             alt="Group of people in Baby Trump inflatable costumes and orange Baby Trump t-shirts walking out of a Kroger grocery store"
             className="rounded-xl w-full max-h-[260px] object-cover mt-2"
           />
+          <blockquote className="border-l-2 border-[#ed6624] pl-3 italic text-[#767574] text-[13px] leading-snug mt-4">
+            "Never doubt that a small group of thoughtful, committed citizens can change the world. Indeed, it's the only thing that ever has."
+            <span className="not-italic font-semibold block text-right mt-1 text-[#23297e]">— Margaret Mead</span>
+          </blockquote>
         </HeroModal>
       )}
 

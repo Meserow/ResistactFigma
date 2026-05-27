@@ -12,6 +12,10 @@ supabase/.temp/
 .env
 .env.local
 .env.*.local
+# Cartoon banner webps — served from Supabase Storage CDN, not git.
+# Generate locally with: node scripts/generate-card-art.mjs
+# Upload to CDN with:    node scripts/upload-cartoon-banners.mjs
+public/cartoon-banners/
 # Claude Code: local worktrees and patch backups — these never belong in develop.
 .claude/worktrees/
 .claude/worktree-changes.patch

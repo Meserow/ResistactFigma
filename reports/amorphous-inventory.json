@@ -1,0 +1,1442 @@
+[
+  {
+    "id": 1000,
+    "title": "Search any brand's political donations before you buy",
+    "url": "https://www.goodsuniteus.com/",
+    "cat": "BOYCOTT",
+    "syn": "Database lookup for 7,000+ brands",
+    "desc": "Search 7,000+ companies' political donations before you buy. Stop accidentally funding the people deporting your neighbors."
+  },
+  {
+    "id": 1001,
+    "title": "Get the browser extension that flags MAGA-aligned brands",
+    "url": "https://progressiveshopper.com/",
+    "cat": "BOYCOTT",
+    "syn": "Auto-tags MAGA companies as you shop",
+    "desc": "Browser extension auto-flags MAGA-aligned brands as you shop. Make every checkout a small political choice."
+  },
+  {
+    "id": 1002,
+    "title": "Use the Trump-tied retailers boycott list",
+    "url": "https://grabyourwallet.org/",
+    "cat": "BOYCOTT",
+    "syn": "Curated list of MAGA-aligned retailers",
+    "desc": "Spreadsheet of every retailer carrying Trump-family products. Pull up before you shop — names update weekly."
+  },
+  {
+    "id": 1003,
+    "title": "Join coordinated 24-hour economic blackouts",
+    "url": "https://thepeoplesunionusa.com/",
+    "cat": "BOYCOTT",
+    "syn": "Calendar of organized buy-nothing days",
+    "desc": "Coordinated 24-hour buy-nothing blackouts that hit corporate dailies. Sign up for the next date."
+  },
+  {
+    "id": 1004,
+    "title": "Sign the Tesla Takedown commitment",
+    "url": "https://www.teslatakedown.com/",
+    "cat": "BOYCOTT",
+    "syn": "Pledge to sell stock + protest dealerships",
+    "desc": "Sell Tesla stock, dump the lease, and join Saturday dealership protests. Hits Musk where it actually hurts."
+  },
+  {
+    "id": 1005,
+    "title": "Join the Latino-led economic blackout",
+    "url": "https://www.latinofreeze.com/",
+    "cat": "BOYCOTT",
+    "syn": "Spending freeze against mass deportation",
+    "desc": "Latino-led campaign to freeze spending in protest of mass-deportation policies. Sign up for the calendar."
+  },
+  {
+    "id": 1006,
+    "title": "Switch your spending to a Black-women-owned biz",
+    "url": "https://www.buyfromablackwoman.org/",
+    "cat": "Represent",
+    "syn": "Directory of Black-women-owned businesses",
+    "desc": "Directory of Black-women-owned businesses to swap your usual orders into. Buy here instead of Amazon."
+  },
+  {
+    "id": 1008,
+    "title": "Buy from a Native-owned business instead",
+    "url": "https://www.beyondbuckskin.com/",
+    "cat": "Represent",
+    "syn": "Native-owned business marketplace + directory",
+    "desc": "Native-owned business directory + marketplace. Trump's land-grab and pipeline pushes hit these communities first."
+  },
+  {
+    "id": 1009,
+    "title": "RSVP to the next Saturday Tesla Takedown",
+    "url": "https://www.teslatakedown.com/",
+    "cat": "PROTEST",
+    "syn": "Weekly dealership protest finder + RSVP",
+    "desc": "Live map of Tesla dealership protests near you. Saturday actions only — no commitment required."
+  },
+  {
+    "id": 1011,
+    "title": "Become a Veterans for Peace member",
+    "url": "https://www.veteransforpeace.org/",
+    "cat": "PROTEST",
+    "syn": "Uniformed vets show up to deter cops at marches",
+    "desc": "Vets in service insignia deter cops and counter-protesters at rallies. Be the visible spine of your local march."
+  },
+  {
+    "id": 1012,
+    "title": "Join About Face: Veterans Against the War",
+    "url": "https://aboutfaceveterans.org/",
+    "cat": "PROTEST",
+    "syn": null,
+    "desc": "Post-9/11 vets organizing direct action against US wars. More aggressive than VFP — for vets ready to risk arrest."
+  },
+  {
+    "id": 1013,
+    "title": "Find an ADAPT chapter (disability direct action)",
+    "url": "https://adapt.org/",
+    "cat": "PROTEST",
+    "syn": "Disability-rights direct-action chapters",
+    "desc": "Disability-led direct action — sit-ins, building takeovers, hill visits. Find or start a chapter; remote roles available."
+  },
+  {
+    "id": 1014,
+    "title": "Find a Drag Story Hour to attend / livestream",
+    "url": "https://www.dragstoryhour.org/",
+    "cat": "PROTEST",
+    "syn": "Adult presence keeps Proud Boys at bay",
+    "desc": "Show up to a Drag Story Hour to protect performers from Proud Boys harassment. Adults present = events go forward."
+  },
+  {
+    "id": 1015,
+    "title": "Sign up for Refuse Fascism action alerts",
+    "url": "https://refusefascism.org/",
+    "cat": "PROTEST",
+    "syn": "Anti-fascist mobilization email list",
+    "desc": "Anti-fascist protest network with simple action alerts. Stand against Trump's authoritarian playbook publicly."
+  },
+  {
+    "id": 1016,
+    "title": "Sign up with Code Pink",
+    "url": "https://www.codepink.org/",
+    "cat": "PROTEST",
+    "syn": "Senate-hearing disruption + bird-dog alerts",
+    "desc": "Code Pink runs the disruptive bird-dog actions you see in Senate hearings. Get alerts for the next DC pop-up."
+  },
+  {
+    "id": 1018,
+    "title": "Sponsor + drive for refugees via Welcome.US",
+    "url": "https://welcome.us/",
+    "cat": "TRANSPORTATION",
+    "syn": "Drive refugee families to appointments + errands",
+    "desc": "Drive refugees to appointments, IKEA runs, school. Trump cut admissions but families already here need community."
+  },
+  {
+    "id": 1020,
+    "title": "Submit a tip on criminal-justice / detention",
+    "url": "https://www.themarshallproject.org/",
+    "cat": "NEWS STORY",
+    "syn": "Detention + prosecutor abuse tip line",
+    "desc": "Tip line for prison conditions, ICE detention abuses, and prosecutor misconduct. Their reporting changes laws."
+  },
+  {
+    "id": 1021,
+    "title": "Submit a leak to The Intercept",
+    "url": "https://theintercept.com/",
+    "cat": "NEWS STORY",
+    "syn": "Investigative leak portal with SecureDrop",
+    "desc": "Submit national-security leaks via SecureDrop. Intercept broke Snowden — they protect sources better than most."
+  },
+  {
+    "id": 1023,
+    "title": "Pitch a Black-community story",
+    "url": "https://capitalbnews.org/",
+    "cat": "NEWS STORY",
+    "syn": "Black-led investigative newsroom takes pitches",
+    "desc": "Pitch a Black-community story to a Black-led investigative newsroom. Coverage that mainstream outlets miss."
+  },
+  {
+    "id": 1024,
+    "title": "Pitch a gender + politics story",
+    "url": "https://19thnews.org/",
+    "cat": "NEWS STORY",
+    "syn": "Abortion, trans care, gender-politics newsroom",
+    "desc": "Pitch a story on abortion access, trans healthcare bans, or gender + politics. They cover what AP won't."
+  },
+  {
+    "id": 1025,
+    "title": "Pitch on local DA / sheriff / election admin",
+    "url": "https://boltsmag.org/",
+    "cat": "NEWS STORY",
+    "syn": "Bolts: local-power accountability newsroom",
+    "desc": "Pitch on your local DA, sheriff, or election admin. MAGA's takeover happens at county level — Bolts covers it nationally."
+  },
+  {
+    "id": 1026,
+    "title": "Send an investigative idea",
+    "url": "https://www.typeinvestigations.org/",
+    "cat": "NEWS STORY",
+    "syn": "They fund the reporter to chase your lead",
+    "desc": "Pitch an investigative idea; they fund the reporter to chase it. Best route for a freelancer with a real lead."
+  },
+  {
+    "id": 1027,
+    "title": "Pitch a war / civil-liberties story",
+    "url": "https://www.dropsitenews.com/",
+    "cat": "NEWS STORY",
+    "syn": "Ex-Intercept war + civil-liberties reporters",
+    "desc": "Pitch ex-Intercept reporters on US wars and civil liberties. Fewer institutional constraints, more aggressive coverage."
+  },
+  {
+    "id": 1028,
+    "title": "Pitch a labor story (video)",
+    "url": "https://perfectunion.us/",
+    "cat": "NEWS STORY",
+    "syn": "More Perfect Union takes labor video pitches",
+    "desc": "Pitch a labor story for video — strikes, union drives, wage theft. Their content goes viral on TikTok and IG."
+  },
+  {
+    "id": 1029,
+    "title": "Send a dark-money tip",
+    "url": "https://www.levernews.com/",
+    "cat": "NEWS STORY",
+    "syn": "Dark-money + corporate corruption tip line",
+    "desc": "Tip Sirota's team on dark money or corporate corruption. They've forced multiple federal investigations."
+  },
+  {
+    "id": 1030,
+    "title": "Submit a campaign-finance tip",
+    "url": "https://readsludge.com/",
+    "cat": "NEWS STORY",
+    "syn": "Campaign-finance violation tip line",
+    "desc": "Tip on a campaign-finance violation or shadow donor. Sludge specializes in unmasking who's actually paying for what."
+  },
+  {
+    "id": 1032,
+    "title": "Find your nearest chapter + meeting time",
+    "url": "https://www.dsausa.org/",
+    "cat": "MEETING",
+    "syn": "Local DSA chapter finder",
+    "desc": "Find your nearest DSA chapter and meeting time. Local chapters run mutual aid, tenant work, and electoral campaigns."
+  },
+  {
+    "id": 1033,
+    "title": "Apply to a virtual intro call",
+    "url": "https://surj.org/",
+    "cat": "MEETING",
+    "syn": "SURJ white-solidarity orientation",
+    "desc": "White-led solidarity for Black, brown, and Indigenous-led campaigns. Apply for the virtual intro to start showing up."
+  },
+  {
+    "id": 1034,
+    "title": "Sign up for a hub welcome call",
+    "url": "https://www.sunrisemovement.org/",
+    "cat": "MEETING",
+    "syn": "Sunrise Movement youth-climate intro",
+    "desc": "Youth-led climate org with remote-friendly local hubs. Sign up for a welcome call to find your role this season."
+  },
+  {
+    "id": 1035,
+    "title": "RSVP for next event (local + virtual)",
+    "url": "https://workingfamilies.org/",
+    "cat": "MEETING",
+    "syn": "Working Families Party state campaigns",
+    "desc": "RSVP to the next local + virtual event. WFP runs electoral campaigns and issue ballot fights state by state."
+  },
+  {
+    "id": 1036,
+    "title": "Join virtual monthly mass assembly",
+    "url": "https://www.poorpeoplescampaign.org/",
+    "cat": "MEETING",
+    "syn": "Rev. Barber's Poor People's Campaign call",
+    "desc": "Rev. Barber's monthly mass assembly fuses faith and policy. Join virtually to plug into Poor People's organizing nationally."
+  },
+  {
+    "id": 1037,
+    "title": "Find your local circle",
+    "url": "https://mijente.net/",
+    "cat": "MEETING",
+    "syn": "Indivisible local-chapter finder",
+    "desc": "Latinx-led organizing focused on immigration defense and abolition. Find your local circle."
+  },
+  {
+    "id": 1038,
+    "title": "Find a local team",
+    "url": "https://mothersoutfront.org/",
+    "cat": "MEETING",
+    "syn": "Field Team 6 voter-mobilization squads",
+    "desc": "Mom-led climate org with neighborhood teams. Find a local team — work fits around school pickups and naptime."
+  },
+  {
+    "id": 1039,
+    "title": "Find a local group",
+    "url": "https://www.bendthearc.us/",
+    "cat": "MEETING",
+    "syn": "MoveOn local action-team finder",
+    "desc": "Progressive Jewish organizing against Christian nationalism and authoritarianism. Find a local group."
+  },
+  {
+    "id": 1041,
+    "title": "Join a federal-worker organizing call",
+    "url": "https://www.federalunionists.net/",
+    "cat": "MEETING",
+    "syn": "Federal Unionists Network solidarity calls",
+    "desc": "Federal-worker organizing call. Trump's purges and RIFs are coordinated — cross-agency response has to be too."
+  },
+  {
+    "id": 1047,
+    "title": "Embroider + ship a Trump quote to the archive",
+    "url": "https://www.tinypricksproject.com/",
+    "cat": "CRAFTING",
+    "syn": "Stitch a quote for archive project",
+    "desc": "Embroider a Trump quote and ship it to the archive. Group exhibitions, gallery shows, permanent record."
+  },
+  {
+    "id": 1048,
+    "title": "Knit a Welcome Blanket for a new immigrant",
+    "url": "https://www.welcomeblanket.org/",
+    "cat": "CRAFTING",
+    "syn": "Send a knitted blanket to a refugee family",
+    "desc": "Knit a 40\\"
+  },
+  {
+    "id": 1049,
+    "title": "Knit a Pussyhat from updated patterns",
+    "url": "https://www.pussyhatproject.com/",
+    "cat": "CRAFTING",
+    "syn": "2017 hat reborn with new resistance patterns",
+    "desc": "Knit a Pussyhat from updated patterns or mail one in for the next march. Visible cohort = visible resistance."
+  },
+  {
+    "id": 1050,
+    "title": "Sign up for the postcard drop",
+    "url": "https://thepostcardposse.org/",
+    "cat": "CRAFTING",
+    "syn": "Postcards to Voters batches",
+    "desc": "Hand-illustrate postcards to swing-district voters. Personal mail still cuts through algorithm-poisoned discourse."
+  },
+  {
+    "id": 1051,
+    "title": "Mail a handmade card to a detained migrant",
+    "url": "https://www.freedomforimmigrants.org/",
+    "cat": "CRAFTING",
+    "syn": "Handmade card to an ICE detainee",
+    "desc": "Mail handmade cards to a specific person in ICE detention. Mail breaks isolation; signals 'someone's watching'."
+  },
+  {
+    "id": 1052,
+    "title": "Sign petitions to overturn Citizens United",
+    "url": "https://www.movetoamend.org/",
+    "cat": "PETITION",
+    "syn": "End Citizens United campaign petitions",
+    "desc": "Sign petitions for the constitutional amendment overturning Citizens United. Long fight; needs persistent pressure."
+  },
+  {
+    "id": 1053,
+    "title": "Sign current petitions",
+    "url": "https://www.citizen.org/",
+    "cat": "PETITION",
+    "syn": "MoveOn petition action queue",
+    "desc": "Sign petitions on corporate accountability and judicial reform. Their pressure has produced FTC and SEC actions."
+  },
+  {
+    "id": 1055,
+    "title": "Sign court-reform petitions",
+    "url": "https://demandjustice.org/",
+    "cat": "PETITION",
+    "syn": "Demand Justice Supreme-Court reform",
+    "desc": "Sign court-reform petitions. Demand Justice drove the SCOTUS-expansion conversation — momentum keeps it alive."
+  },
+  {
+    "id": 1056,
+    "title": "Sign media-reform petitions",
+    "url": "https://www.freepress.net/",
+    "cat": "PETITION",
+    "syn": "Free Press media-justice campaigns",
+    "desc": "Sign petitions on platform disinfo, net neutrality, and FCC oversight. Trump's FCC is gutting consumer protections."
+  },
+  {
+    "id": 1057,
+    "title": "Sign civil-rights petitions",
+    "url": "https://ccrjustice.org/",
+    "cat": "PETITION",
+    "syn": "ACLU national petition queue",
+    "desc": "Sign petitions on ICE detention and warrantless surveillance. CCR wins these in court — your name builds standing."
+  },
+  {
+    "id": 1058,
+    "title": "Sign Black-led racial-justice petitions",
+    "url": "https://colorofchange.org/",
+    "cat": "PETITION",
+    "syn": "Color Of Change campaign queue",
+    "desc": "Sign Black-led racial-justice petitions — police accountability, voting rights, corporate equity. CoC moves money."
+  },
+  {
+    "id": 1059,
+    "title": "Sign civil-liberties petitions",
+    "url": "https://demandprogress.org/",
+    "cat": "PETITION",
+    "syn": "EFF digital-rights petition queue",
+    "desc": "Sign civil-liberties petitions on surveillance, big-tech, and antitrust. Their email pressure flips swing senators."
+  },
+  {
+    "id": 1061,
+    "title": "Sign Christian-rooted petitions vs. Christian nationalism",
+    "url": "https://www.faithfulamerica.org/",
+    "cat": "PETITION",
+    "syn": "Faithful America anti-Christian-nationalism",
+    "desc": "Sign Christian petitions against Christian nationalism. The right's loudest base needs visible religious dissent — that's you."
+  },
+  {
+    "id": 1062,
+    "title": "Sign anti-militarism petitions",
+    "url": "https://winwithoutwar.org/",
+    "cat": "PETITION",
+    "syn": "Win Without War foreign-policy queue",
+    "desc": "Sign anti-war petitions targeting the Pentagon budget and weapons sales. Restrain Trump's foreign-policy improv."
+  },
+  {
+    "id": 1063,
+    "title": "Sign petitions to close ICE facilities",
+    "url": "https://www.detentionwatchnetwork.org/",
+    "cat": "PETITION",
+    "syn": "Detention Watch Network campaigns",
+    "desc": "Sign petitions targeting specific ICE detention facilities for closure. Local fights, federal pressure."
+  },
+  {
+    "id": 1064,
+    "title": "Sign the open letter against book bans",
+    "url": "https://www.authorsagainstbookbans.com/",
+    "cat": "PETITION",
+    "syn": "Authors Against Book Bans sign-on letter",
+    "desc": "Sign the open letter against book bans. Names from authors, librarians, and readers create local-news pressure."
+  },
+  {
+    "id": 1067,
+    "title": "Sign children's-rights petitions",
+    "url": "https://www.childrensdefense.org/",
+    "cat": "PETITION",
+    "syn": "Children's Defense Fund campaigns",
+    "desc": "Sign petitions on child healthcare, gun violence, and poverty programs. Trump's budget cuts hit kids first."
+  },
+  {
+    "id": 1068,
+    "title": "Become a SURJ member",
+    "url": "https://surj.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "White-solidarity dues-paying membership",
+    "desc": "Become a SURJ member to organize white people for racial justice. Apply for the virtual intro call."
+  },
+  {
+    "id": 1069,
+    "title": "Become a DSA member",
+    "url": "https://www.dsausa.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "Democratic Socialists of America dues + chapter",
+    "desc": "DSA chapters run mutual aid, electoral, and tenant work in nearly every metro. Joining locally finds the doers near you."
+  },
+  {
+    "id": 1070,
+    "title": "Join Sunrise Movement",
+    "url": "https://www.sunrisemovement.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "Youth climate org + Green New Deal",
+    "desc": "Climate-led, youth-driven org. Join Sunrise to organize for the Green New Deal and climate accountability."
+  },
+  {
+    "id": 1071,
+    "title": "Join Mijente",
+    "url": "https://mijente.net/",
+    "cat": "JOIN A GROUP",
+    "syn": "Latinx-led pro-immigrant organizing",
+    "desc": "Latinx organizing for immigration defense and abolition. Local circles plug you in to immediate work."
+  },
+  {
+    "id": 1072,
+    "title": "Join United We Dream",
+    "url": "https://unitedwedream.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "Largest immigrant-youth-led network",
+    "desc": "Largest immigrant-youth-led network in the country. Plug into ICE response, deportation defense, and policy work."
+  },
+  {
+    "id": 1073,
+    "title": "Join Bend the Arc",
+    "url": "https://www.bendthearc.us/",
+    "cat": "JOIN A GROUP",
+    "syn": "Progressive Jewish American advocacy",
+    "desc": "Jewish anti-authoritarian organizing. Join to find Jewish-led action against Christian nationalism near you."
+  },
+  {
+    "id": 1074,
+    "title": "Join Jewish Voice for Peace",
+    "url": "https://www.jewishvoiceforpeace.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "Jewish-led Palestine solidarity org",
+    "desc": "Jewish-led anti-occupation and civil-liberties organizing. Local chapters in 70+ cities."
+  },
+  {
+    "id": 1075,
+    "title": "Join T'ruah (rabbinic human rights)",
+    "url": "https://truah.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "Rabbis for North American human rights",
+    "desc": "Rabbinic human rights org. Rabbis + cantors lead immigration defense, anti-Christian-nationalism, and dignity work."
+  },
+  {
+    "id": 1076,
+    "title": "Subscribe to FCNL action alerts (Quaker)",
+    "url": "https://www.fcnl.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "Friends Committee on Nat'l Legislation alerts",
+    "desc": "Quaker action alerts for constituent calls and emails. Pacifist-rooted, focused on Pentagon budget and immigration."
+  },
+  {
+    "id": 1077,
+    "title": "Join Pax Christi USA (Catholic peace)",
+    "url": "https://paxchristiusa.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "Catholic peace movement membership",
+    "desc": "Catholic peace + justice movement. Join for nonviolence training and faith-rooted resistance to militarism."
+  },
+  {
+    "id": 1078,
+    "title": "Take a NETWORK action (Catholic social justice)",
+    "url": "https://networklobby.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "Catholic-led social-justice campaigns",
+    "desc": "Catholic social-justice lobby. Take action on healthcare, immigration, and the federal budget — nuns lead this."
+  },
+  {
+    "id": 1080,
+    "title": "Take a Sikh Coalition action",
+    "url": "https://www.sikhcoalition.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "Civil-rights org defending Sikh Americans",
+    "desc": "Sikh civil-rights advocacy. Take action on hate-crime response, religious-discrimination, and racial profiling."
+  },
+  {
+    "id": 1084,
+    "title": "Volunteer with Mothers Out Front",
+    "url": "https://mothersoutfront.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "Climate-focused parent organizing",
+    "desc": "Volunteer with Mothers Out Front. Mom-led climate org with flexible roles around school and family schedules."
+  },
+  {
+    "id": 1085,
+    "title": "Take an ADAPT action (disability rights)",
+    "url": "https://adapt.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "Disability direct-action campaign",
+    "desc": "Take an ADAPT action — disability-led direct action against Medicaid cuts and institutionalization."
+  },
+  {
+    "id": 1086,
+    "title": "Take a Black Voters Matter action",
+    "url": "https://blackvotersmatterfund.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "Voter mobilization in the South",
+    "desc": "Take a Black Voters Matter action. Voter-protection fights happen at county and state level — they target there."
+  },
+  {
+    "id": 1087,
+    "title": "Take a Mi Familia Vota action",
+    "url": "https://www.mifamiliavota.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "Latinx civic engagement campaign",
+    "desc": "Take a Mi Familia Vota action. Latino civic engagement — voter registration and protection in swing states."
+  },
+  {
+    "id": 1088,
+    "title": "Take a Climate Justice Alliance action",
+    "url": "https://climatejusticealliance.org/",
+    "cat": "JOIN A GROUP",
+    "syn": "Grassroots climate-justice coalition",
+    "desc": "Take a Climate Justice Alliance action. Frontline community-led climate fights — pipelines, refineries, evictions."
+  },
+  {
+    "id": 1091,
+    "title": "Sponsor a refugee household",
+    "url": "https://welcome.us/",
+    "cat": "HOUSING",
+    "syn": "Welcome.US private-sponsorship program",
+    "desc": "Sponsor a refugee household through a verified federal pathway. Remote prep work counts."
+  },
+  {
+    "id": 1092,
+    "title": "Make your city 'welcoming' for immigrants",
+    "url": "https://welcomingamerica.org/",
+    "cat": "HOUSING",
+    "syn": "Welcoming America city-policy toolkit",
+    "desc": "Push your city to certify as a 'welcoming city' for immigrants. Public commitment makes ICE cooperation costly."
+  },
+  {
+    "id": 1093,
+    "title": "Pressure your mayor on sanctuary policy",
+    "url": "https://www.citiesforaction.us/",
+    "cat": "HOUSING",
+    "syn": "Sanctuary-policy advocacy toolkit",
+    "desc": "Pressure your mayor to join the immigrant-friendly cities coalition. Mayoral commitments slow ICE locally."
+  },
+  {
+    "id": 1094,
+    "title": "Volunteer to furnish + resettle refugee homes",
+    "url": "https://www.homesnotborders.org/",
+    "cat": "HOUSING",
+    "syn": "Help refugees set up a new apartment",
+    "desc": "Furnish + resettle refugee homes — physical setup or remote logistics. Trump's cuts mean more families with less support."
+  },
+  {
+    "id": 1095,
+    "title": "Get an organizer for your workplace",
+    "url": "https://workerorganizing.org/",
+    "cat": "LABOR",
+    "syn": "EWOC pairs you with a union organizer",
+    "desc": "Free organizer helps you unionize your workplace, confidentially. Trump's NLRB is gutted — build power directly."
+  },
+  {
+    "id": 1096,
+    "title": "Join the federal-worker network",
+    "url": "https://www.federalunionists.net/",
+    "cat": "LABOR",
+    "syn": "Federal Unionists Network solidarity hub",
+    "desc": "Join the federal-worker network. Trump's RIFs and Schedule F purges need cross-agency mutual aid + organizing."
+  },
+  {
+    "id": 1097,
+    "title": "Subscribe to independent labor media",
+    "url": "https://labornotes.org/",
+    "cat": "LABOR",
+    "syn": "Labor Notes: union news + organizing wins",
+    "desc": "Subscribe to indie labor media + training calendar. Best source for what's happening in shops outside the big unions."
+  },
+  {
+    "id": 1098,
+    "title": "Start a workplace petition",
+    "url": "https://home.coworker.org/",
+    "cat": "LABOR",
+    "syn": "Coworker.org workplace-petition platform",
+    "desc": "Host a workplace petition — raises, anti-ICE-cooperation pledges. Public petitions force the boss to acknowledge."
+  },
+  {
+    "id": 1099,
+    "title": "Take a UE solidarity action",
+    "url": "https://www.ueunion.org/",
+    "cat": "LABOR",
+    "syn": "Electrical Workers union solidarity",
+    "desc": "Solidarity action with UE — independent rank-and-file union. Often the most aggressive on contract fights."
+  },
+  {
+    "id": 1100,
+    "title": "Apply for IWW membership",
+    "url": "https://www.iww.org/",
+    "cat": "LABOR",
+    "syn": "Industrial Workers of the World joining info",
+    "desc": "Apply for IWW membership. All-trades radical union; remote onboarding. Best fit if your shop won't tolerate the bigs."
+  },
+  {
+    "id": 1101,
+    "title": "Sign on to a National Domestic Workers Alliance campaign",
+    "url": "https://www.domesticworkers.org/",
+    "cat": "LABOR",
+    "syn": "Domestic workers' national union campaigns",
+    "desc": "Sign on to NDWA campaigns. Domestic workers (housekeepers, nannies, caregivers) organizing for federal protections."
+  },
+  {
+    "id": 1102,
+    "title": "Send solidarity to Starbucks Workers United",
+    "url": "https://sbworkersunited.org/",
+    "cat": "LABOR",
+    "syn": "Solidarity messages to barista unionists",
+    "desc": "Send solidarity to Starbucks workers fighting union-busting. Their store-by-store wins set the precedent for service work."
+  },
+  {
+    "id": 1103,
+    "title": "Take an Amazon Labor Union action",
+    "url": "https://www.amazonlaborunion.org/",
+    "cat": "LABOR",
+    "syn": "Amazon warehouse-union campaign",
+    "desc": "Take an Amazon Labor Union action. The hardest org fight in the country — solidarity dollars and petitions matter."
+  },
+  {
+    "id": 1104,
+    "title": "Use the free legal hotline (workplace family rights)",
+    "url": "https://www.abetterbalance.org/",
+    "cat": "LABOR",
+    "syn": "A Better Balance free workplace hotline",
+    "desc": "Free legal hotline for workplace family + caregiving rights. Use if you're being denied FMLA, pumping breaks, or accommodations."
+  },
+  {
+    "id": 1105,
+    "title": "Sign on to a Fight For A Union worker campaign",
+    "url": "https://fightforaunion.org/",
+    "cat": "LABOR",
+    "syn": "Worker-led union-drive support",
+    "desc": "Successor to Fight for $15. Sign on to a sectoral campaign for living wages and a real union, not just minimums."
+  },
+  {
+    "id": 1106,
+    "title": "Sign the moral covenant",
+    "url": "https://breachrepairers.org/",
+    "cat": "PRAYER",
+    "syn": "Repairers of the Breach faith covenant",
+    "desc": "Sign Rev. Barber's moral covenant. Poor people's commitment to anti-poverty action grounded in faith and policy."
+  },
+  {
+    "id": 1107,
+    "title": "Subscribe to action alerts",
+    "url": "https://sojo.net/",
+    "cat": "PRAYER",
+    "syn": "Sojourners faith-rooted action alerts",
+    "desc": "Subscribe to Sojourners' Christian-justice action alerts. Progressive Christian voice in DC policy fights."
+  },
+  {
+    "id": 1108,
+    "title": "Subscribe to actions",
+    "url": "https://www.faithfulamerica.org/",
+    "cat": "PRAYER",
+    "syn": "Bread for the World hunger-advocacy alerts",
+    "desc": "Subscribe to Faithful America's Christian-rooted campaigns against Christian nationalism. Visible religious dissent."
+  },
+  {
+    "id": 1109,
+    "title": "Sign on to a Faith in Public Life advocacy action",
+    "url": "https://www.faithinpubliclife.org/",
+    "cat": "PRAYER",
+    "syn": "Faith leaders for racial + economic justice",
+    "desc": "Sign on to multi-faith advocacy actions. Coalition lobbying that fuses Christian, Jewish, Muslim, and Hindu progressives."
+  },
+  {
+    "id": 1110,
+    "title": "Take a rabbinic action",
+    "url": "https://truah.org/",
+    "cat": "PRAYER",
+    "syn": "T'ruah rabbi-led human-rights action",
+    "desc": "Take a rabbinic action. Rabbis and cantors organize on immigration, occupation, and Christian nationalism."
+  },
+  {
+    "id": 1111,
+    "title": "Sign on to a Pax Christi USA peace action",
+    "url": "https://paxchristiusa.org/",
+    "cat": "PRAYER",
+    "syn": "Catholic peace-movement campaigns",
+    "desc": "Sign Pax Christi USA peace actions. Catholic-rooted resistance to militarism and the Pentagon budget."
+  },
+  {
+    "id": 1112,
+    "title": "Subscribe to Quaker action alerts",
+    "url": "https://www.fcnl.org/",
+    "cat": "PRAYER",
+    "syn": "American Friends Service Committee alerts",
+    "desc": "Subscribe to Quaker constituent-action emails. Pacifist-rooted, focused on Pentagon and immigration policy."
+  },
+  {
+    "id": 1113,
+    "title": "Sign on to an Auburn Seminary faith-leader campaign",
+    "url": "https://auburnseminary.org/",
+    "cat": "PRAYER",
+    "syn": "Multifaith leaders for social justice",
+    "desc": "Sign on to faith-leader campaigns. Auburn trains multi-faith clergy in social justice and movement leadership."
+  },
+  {
+    "id": 1115,
+    "title": "Sign on to a Hindus for Human Rights action",
+    "url": "https://www.hindusforhumanrights.org/",
+    "cat": "PRAYER",
+    "syn": "Hindu progressive human-rights advocacy",
+    "desc": "Counter Hindu nationalism in US politics. Sign on as a Hindu or ally; Modi's allies have major Trump-admin ties."
+  },
+  {
+    "id": 1116,
+    "title": "Sign on to a Sikh Coalition civil-rights action",
+    "url": "https://www.sikhcoalition.org/",
+    "cat": "PRAYER",
+    "syn": "Sikh civil-rights advocacy campaigns",
+    "desc": "Sign Sikh Coalition civil-rights actions. Hate-crime response, religious-discrimination, and racial-profiling work."
+  },
+  {
+    "id": 1117,
+    "title": "Sign up as a volunteer attorney",
+    "url": "https://wetheaction.org/",
+    "cat": "PROFESSIONAL SKILLS",
+    "syn": "ImmDef pro bono attorney signup",
+    "desc": "Sign up as a volunteer attorney. Match takes 20 minutes; cases include immigrants, election workers, federal whistleblowers."
+  },
+  {
+    "id": 1118,
+    "title": "Volunteer as an attorney",
+    "url": "https://www.lawyersforgoodgovernment.org/",
+    "cat": "PROFESSIONAL SKILLS",
+    "syn": "Lawyers' Committee for Civil Rights cases",
+    "desc": "Hours go to immigrants and federal workers fighting Trump-era retaliation. Lawyers especially — 20-min match."
+  },
+  {
+    "id": 1119,
+    "title": "Find pro bono cases (formerly Pro Bono Net)",
+    "url": "https://scalejustice.org/",
+    "cat": "PROFESSIONAL SKILLS",
+    "syn": "Probono.net case listings for lawyers",
+    "desc": "Find pro bono cases. Volunteer-attorney matching for civil-legal cases — most need procedural help, not litigation."
+  },
+  {
+    "id": 1120,
+    "title": "Volunteer your tech skills",
+    "url": "https://codeforamerica.org/",
+    "cat": "PROFESSIONAL SKILLS",
+    "syn": "Code for America civic-tech volunteer",
+    "desc": "Volunteer your tech skills. Local brigades build tools for governments and nonprofits — replace shitty .gov UX."
+  },
+  {
+    "id": 1121,
+    "title": "Sign up as a tech volunteer",
+    "url": "https://www.democracylab.org/",
+    "cat": "PROFESSIONAL SKILLS",
+    "syn": "U.S. Digital Response rapid-deploy techies",
+    "desc": "Sign up as a tech volunteer. Project matching for devs, designers, and PMs supporting democracy-org tooling."
+  },
+  {
+    "id": 1122,
+    "title": "Volunteer your professional skills",
+    "url": "https://www.catchafire.org/",
+    "cat": "PROFESSIONAL SKILLS",
+    "syn": "Catchafire skills-based pro bono platform",
+    "desc": "Volunteer your professional skills (design, marketing, ops, finance) to nonprofits. 1–10 hour bites; remote-friendly."
+  },
+  {
+    "id": 1123,
+    "title": "Volunteer as a translator",
+    "url": "https://respondcrisistranslation.org/",
+    "cat": "PROFESSIONAL SKILLS",
+    "syn": "Translators Without Borders volunteer pool",
+    "desc": "Volunteer as a translator for asylum cases. Crisis-language work — hours can save someone from deportation."
+  },
+  {
+    "id": 1124,
+    "title": "Volunteer as a linguist",
+    "url": "https://clearglobal.org/",
+    "cat": "PROFESSIONAL SKILLS",
+    "syn": "Respond Crisis Translation rapid pool",
+    "desc": "Volunteer as a linguist for crisis-response work. Less-resourced languages especially needed for refugee work."
+  },
+  {
+    "id": 1125,
+    "title": "Sign on to a Doctors for America healthcare campaign",
+    "url": "https://www.doctorsforamerica.org/",
+    "cat": "PROFESSIONAL SKILLS",
+    "syn": "MDs pushing for healthcare policy",
+    "desc": "Sign on to Doctors for America campaigns. Medical voices that move members of Congress on Medicaid + ACA."
+  },
+  {
+    "id": 1126,
+    "title": "Train as asylum-evaluation clinician",
+    "url": "https://phr.org/",
+    "cat": "PROFESSIONAL SKILLS",
+    "syn": "PHR trains MDs for asylum medical exams",
+    "desc": "Train as an asylum-evaluation clinician. Forensic medical exams for asylum cases — without one, deportation odds spike."
+  },
+  {
+    "id": 1127,
+    "title": "Sign up to run for office (STEM)",
+    "url": "https://314action.org/",
+    "cat": "PROFESSIONAL SKILLS",
+    "syn": "314 Action helps scientists run for office",
+    "desc": "Sign up to run for office (STEM). Trump's anti-science agenda needs scientists in office — they'll train you."
+  },
+  {
+    "id": 1128,
+    "title": "Volunteer with Authors Against Book Bans",
+    "url": "https://www.authorsagainstbookbans.com/",
+    "cat": "PROFESSIONAL SKILLS",
+    "syn": "Author-led anti-book-ban organizing",
+    "desc": "Volunteer with Authors Against Book Bans. Authors, librarians, readers showing up at school-board meetings."
+  },
+  {
+    "id": 1129,
+    "title": "Join Concerned Archivists Alliance",
+    "url": "https://concernedarchivists.wordpress.com/",
+    "cat": "PROFESSIONAL SKILLS",
+    "syn": "Archivists preserving threatened records",
+    "desc": "Archivists organizing to preserve federal records as Trump scrubs them. Need archivists, devs, and metadata pros."
+  },
+  {
+    "id": 1130,
+    "title": "Volunteer on detained-immigrant cases",
+    "url": "https://immigrationjustice.us/",
+    "cat": "PROFESSIONAL SKILLS",
+    "syn": "ImmDef detained-immigrant defense cases",
+    "desc": "Volunteer on detained-immigrant cases. Free training + case match. Pro bono representation triples release odds."
+  },
+  {
+    "id": 1131,
+    "title": "Take the anti-coup civil-resistance pledge",
+    "url": "https://choosedemocracy.us/",
+    "cat": "PERSONAL COMMITMENT",
+    "syn": "Choose Democracy 10-point pledge",
+    "desc": "Take the anti-coup civil-resistance pledge. Public commitment to nonviolent action if Trump refuses to leave office."
+  },
+  {
+    "id": 1135,
+    "title": "Carry KYR cards for ICE encounters",
+    "url": "https://www.immigrantdefenseproject.org/",
+    "cat": "PERSONAL COMMITMENT",
+    "syn": "Know-Your-Rights wallet cards from ILRC",
+    "desc": "Print + carry Know-Your-Rights cards. Pull one out if ICE approaches — works for citizen and non-citizen alike."
+  },
+  {
+    "id": 1141,
+    "title": "Send email-your-rep",
+    "url": "https://www.citizen.org/",
+    "cat": "EMAIL CAMPAIGN",
+    "syn": "Common Cause prefilled email tool",
+    "desc": "Email-your-rep on consumer protection and corporate accountability fights. Their tracker is updated weekly."
+  },
+  {
+    "id": 1142,
+    "title": "Send anti-militarism email",
+    "url": "https://winwithoutwar.org/",
+    "cat": "EMAIL CAMPAIGN",
+    "syn": "Win Without War prefilled email-your-rep",
+    "desc": "Send an anti-militarism email to your reps. Win Without War targets Pentagon budget votes specifically."
+  },
+  {
+    "id": 1143,
+    "title": "Send Christian-rooted email-your-rep",
+    "url": "https://www.faithfulamerica.org/",
+    "cat": "EMAIL CAMPAIGN",
+    "syn": "Faithful America prefilled email tool",
+    "desc": "Send a Christian-rooted email-your-rep. Religious framing changes which Republicans actually engage."
+  },
+  {
+    "id": 1144,
+    "title": "Send Quaker constituent email",
+    "url": "https://www.fcnl.org/",
+    "cat": "EMAIL CAMPAIGN",
+    "syn": "FCNL prefilled email-your-rep",
+    "desc": "Send a Quaker constituent email. FCNL writes the script; email lands at your senator's office in seconds."
+  },
+  {
+    "id": 1145,
+    "title": "Email targeting specific ICE facilities",
+    "url": "https://www.detentionwatchnetwork.org/",
+    "cat": "EMAIL CAMPAIGN",
+    "syn": "Detention Watch facility-by-facility tool",
+    "desc": "Email actions against specific ICE facility operators. Detention Watch identifies who to pressure for closures."
+  },
+  {
+    "id": 1146,
+    "title": "Email your school board re: book bans",
+    "url": "https://www.authorsagainstbookbans.com/",
+    "cat": "EMAIL CAMPAIGN",
+    "syn": null,
+    "desc": "Email your school board against book bans. Pre-written templates work — boards capitulate when pressure hits."
+  },
+  {
+    "id": 1147,
+    "title": "Sign up for a workshop",
+    "url": "https://www.trainingforchange.org/",
+    "cat": "TRAINING",
+    "syn": "Beautiful Trouble action-design workshops",
+    "desc": "Workshops most arrest-action groups send people through. Get de-escalation and jail-support before you need them."
+  },
+  {
+    "id": 1148,
+    "title": "Sign up for a training",
+    "url": "https://ruckus.org/",
+    "cat": "TRAINING",
+    "syn": "Wellstone Action progressive-organizing training",
+    "desc": "Direct-action training. Ruckus prepared protesters at Standing Rock and Occupy. Sign up for a workshop."
+  },
+  {
+    "id": 1149,
+    "title": "Apply to a cohort",
+    "url": "https://wildfireproject.org/",
+    "cat": "TRAINING",
+    "syn": "Movement School organizer training program",
+    "desc": "Apply with your group for movement-strategy training. Best for orgs that need help going from reactive to strategic."
+  },
+  {
+    "id": 1150,
+    "title": "Take a course",
+    "url": "https://www.peopleshub.org/",
+    "cat": "TRAINING",
+    "syn": "AROC Arab-organizing political education",
+    "desc": "Take an organizer course. Sliding-scale tuition; classes on de-escalation, racial justice, and base-building."
+  },
+  {
+    "id": 1151,
+    "title": "Enroll in a free training",
+    "url": "https://righttobe.org/",
+    "cat": "TRAINING",
+    "syn": "Momentum mass-movement training",
+    "desc": "Learn what to actually do when ICE detains a neighbor or a Nazi accosts someone on transit. Free, 60–90 min."
+  },
+  {
+    "id": 1152,
+    "title": "Enroll in anti-coup training",
+    "url": "https://choosedemocracy.us/",
+    "cat": "TRAINING",
+    "syn": "Choose Democracy nonviolent-resistance training",
+    "desc": "Enroll in anti-coup training. Free workshop calendar — what to do if Trump refuses a peaceful transfer of power."
+  },
+  {
+    "id": 1153,
+    "title": "Enroll in programs",
+    "url": "https://beta.highlandercenter.org/",
+    "cat": "TRAINING",
+    "syn": "Highlander Center Southern organizing programs",
+    "desc": "Storied southern movement school — MLK and Rosa Parks trained here. Apply for residential or virtual programs."
+  },
+  {
+    "id": 1154,
+    "title": "Sign up for a curriculum",
+    "url": "https://movementgeneration.org/",
+    "cat": "TRAINING",
+    "syn": "Resource Generation wealthy-redistribution program",
+    "desc": "Sign up for just-transition + ecological-justice curriculum. Climate work that connects to labor and racial justice."
+  },
+  {
+    "id": 1155,
+    "title": "Take an abolitionist study course",
+    "url": "https://project-nia.org/",
+    "cat": "TRAINING",
+    "syn": "Critical Resistance prison-abolition study",
+    "desc": "Take an abolitionist study course. Free curricula; reading groups online and in cities. Replaces police 101 with care 101."
+  },
+  {
+    "id": 1156,
+    "title": "Sign up for a reading group",
+    "url": "https://criticalresistance.org/",
+    "cat": "TRAINING",
+    "syn": "Showing Up for Racial Justice reading group",
+    "desc": "Sign up for an abolitionist reading group. Critical Resistance is OG abolition — Angela Davis co-founded it."
+  },
+  {
+    "id": 1157,
+    "title": "Apply to be a paid poll worker",
+    "url": "https://www.powerthepolls.org/",
+    "cat": "TRAINING",
+    "syn": "Power the Polls election-worker signup",
+    "desc": "Apply to be a paid poll worker. Local elections are short on workers; you get paid + protect access for hours of your day."
+  },
+  {
+    "id": 1158,
+    "title": "Take a Know Your Rights training",
+    "url": "https://www.immigrantdefenseproject.org/",
+    "cat": "TRAINING",
+    "syn": "ACLU KYR online training session",
+    "desc": "Take a Know Your Rights training for ICE encounters. Live calendar; bring your block, household, or workplace."
+  },
+  {
+    "id": 1160,
+    "title": "Sign up for kindness-toned voter postcards",
+    "url": "https://postcardstovoters.org/",
+    "cat": "Act of Kindness",
+    "syn": "Vote Forward warm voter-turnout letters",
+    "desc": "Write hand-written postcards to swing-state voters. Personal mail still cuts through algorithm-fried discourse."
+  },
+  {
+    "id": 1161,
+    "title": "Become a pen pal to a detained migrant",
+    "url": "https://www.freedomforimmigrants.org/",
+    "cat": "Act of Kindness",
+    "syn": "Connect with those in need — your letters bring hope and human contact behind detention walls",
+    "desc": "Become a pen pal to a detained migrant. Mail breaks isolation in ICE detention; bilingual letters welcome."
+  },
+  {
+    "id": 1162,
+    "title": "Volunteer (LGBTQ youth digital crisis support)",
+    "url": "https://www.thetrevorproject.org/",
+    "cat": "Act of Kindness",
+    "syn": "Trevor Project 24/7 crisis volunteer role — paid training, chat / text / phone shifts",
+    "desc": "Volunteer for LGBTQ youth digital crisis support. 24/7 chat/text/phone — paid training, ongoing support."
+  },
+  {
+    "id": 1164,
+    "title": "Practice rest-as-resistance prompts",
+    "url": "https://thenapministry.wordpress.com/",
+    "cat": "Act of Kindness",
+    "syn": "Tricia Hersey's Nap Ministry prompts — burnout is fascism's goal, sleep is the counter",
+    "desc": "Practice rest-as-resistance prompts. Tricia Hersey's free library — burnout is the goal of fascism, sleep counters it."
+  },
+  {
+    "id": 1165,
+    "title": "Find + amplify your local mutual aid",
+    "url": "https://www.mutualaidhub.org/",
+    "cat": "BOOST",
+    "syn": "US-wide mutual-aid network map — money, supplies, on-the-ground neighbors near you",
+    "desc": "Find + amplify your local mutual aid network. Map of US-wide groups — money, supplies, people on the ground."
+  },
+  {
+    "id": 1167,
+    "title": "Subscribe + share Capital B (Black-led)",
+    "url": "https://capitalbnews.org/",
+    "cat": "BOOST",
+    "syn": "Stay informed on underreported Black stories Support investigative journalism that challenges the mainstream narrative",
+    "desc": "Subscribe + share Capital B coverage. Black-led investigative work that mainstream outlets don't cover."
+  },
+  {
+    "id": 1168,
+    "title": "Subscribe + share The 19th* (gender + politics)",
+    "url": "https://19thnews.org/",
+    "cat": "BOOST",
+    "syn": "Stay informed on gender issues and amplify voices fighting for rights",
+    "desc": "Subscribe + share The 19th. Gender + politics reporting on abortion, trans rights, and women's health under Trump."
+  },
+  {
+    "id": 1169,
+    "title": "Subscribe + share Documented (NYC immigration)",
+    "url": "https://documentedny.com/",
+    "cat": "BOOST",
+    "syn": "Stay informed on ICE activities Support NYC's immigrant communities through real-time journalism",
+    "desc": "Subscribe + share Documented. NYC immigration-focused journalism that hits ICE operations in real time."
+  },
+  {
+    "id": 1171,
+    "title": "Subscribe + share The Lever",
+    "url": "https://www.levernews.com/",
+    "cat": "BOOST",
+    "syn": "Stay informed on corporate influence Join a community fighting for transparency and accountability",
+    "desc": "Subscribe + share The Lever. Sirota's outfit on dark money and corporate corruption — best independent reporting."
+  },
+  {
+    "id": 1172,
+    "title": "Submit + share a press-freedom incident",
+    "url": "https://pressfreedomtracker.us/",
+    "cat": "BOOST",
+    "syn": "Document attacks on press freedom. Share incidents to build a powerful public record and drive change",
+    "desc": "Submit + share press-freedom incidents. Public record of every press attack — fuels lawsuits and policy fights."
+  },
+  {
+    "id": 1174,
+    "title": "Download free protest art",
+    "url": "https://amplifier.org/",
+    "cat": "ART/PERFORMANCE ART",
+    "syn": "Access high-quality protest designs for your next march. Create impact with your message",
+    "desc": "Download free protest art. Pro-grade posters from Shepard Fairey and others; print at home for any march."
+  },
+  {
+    "id": 1175,
+    "title": "Download free anti-fascist posters",
+    "url": "https://justseeds.org/",
+    "cat": "ART/PERFORMANCE ART",
+    "syn": "Grab bold designs to amplify your message Print, share, and stand against fascism",
+    "desc": "Download free anti-fascist posters. Co-op of printmakers; high-quality designs for protests, walls, and zines."
+  },
+  {
+    "id": 1176,
+    "title": "Download educational graphics",
+    "url": "https://beehivecollective.org/",
+    "cat": "ART/PERFORMANCE ART",
+    "syn": "Empower your activism with visuals Print and share graphics on critical issues today",
+    "desc": "Download educational graphics. Hand-drawn movement art — climate, mining, Trump-era issues. Free to print."
+  },
+  {
+    "id": 1177,
+    "title": "Submit an embroidery piece",
+    "url": "https://www.tinypricksproject.com/",
+    "cat": "ART/PERFORMANCE ART",
+    "syn": "Stitch your resistance into history Join the collective memory and showcase your art",
+    "desc": "Embroider a Trump quote and ship to the project archive. Permanent record + group-show exhibitions."
+  },
+  {
+    "id": 1178,
+    "title": "Apply to programs",
+    "url": "https://www.tonyc.nyc/",
+    "cat": "ART/PERFORMANCE ART",
+    "syn": "Join a community of activists to explore and rehearse powerful protest techniques",
+    "desc": "Apply for forum theater + virtual workshops. Boal's method for rehearsing political action — practice the protest."
+  },
+  {
+    "id": 1179,
+    "title": "Use the tactical-prank toolkit",
+    "url": "https://theyesmen.org/",
+    "cat": "ART/PERFORMANCE ART",
+    "syn": "Unleash satire to disrupt corporate deception Follow the Yes Men's playbook for impactful pranks",
+    "desc": "Use the Yes Men's tactical-prank toolkit. Step-by-step satire playbook — they impersonated execs to expose climate lies."
+  },
+  {
+    "id": 1180,
+    "title": "Refer an artist at risk",
+    "url": "https://artistsatriskconnection.org/",
+    "cat": "ART/PERFORMANCE ART",
+    "syn": "Support artists in peril Join the movement to provide urgent legal and relocation aid",
+    "desc": "Refer an artist at risk. Solidarity for persecuted artists — visa, legal, and relocation support during crackdowns."
+  },
+  {
+    "id": 1181,
+    "title": "Find your local mutual aid network",
+    "url": "https://www.mutualaidhub.org/",
+    "cat": "ACT OF KINDNESS",
+    "syn": "Connect with your community support group Offer help to a neighbor in need this week",
+    "desc": "Find your local mutual aid network. Pick one neighbor to support this week — money, food, rides, anything."
+  },
+  {
+    "id": 1186,
+    "title": "Volunteer as a translator for asylum seekers",
+    "url": "https://respondcrisistranslation.org/",
+    "cat": "ACT OF KINDNESS",
+    "syn": "Help asylum seekers navigate the system Your language skills can change lives",
+    "desc": "Translate documents for asylum seekers. Hours of your time can prevent a deportation; bilingual = high-value."
+  },
+  {
+    "id": 1192,
+    "title": "Boost Sludge's dark-money & GOP-donor reporting",
+    "url": "https://readsludge.com/",
+    "cat": "BOOST",
+    "syn": "Stay informed with Sludge's investigations Share facts to challenge dark-money narratives",
+    "desc": "Subscribe to Sludge and share their campaign-finance investigations on social. Counter dark-money disinfo with sourced reporting."
+  },
+  {
+    "id": 1193,
+    "title": "Boost Bolts Magazine's local-democracy reporting",
+    "url": "https://boltsmag.org/",
+    "cat": "BOOST",
+    "syn": "Support grassroots journalism that holds local officials accountable. Share vital insights on democracy and elections",
+    "desc": "Subscribe to Bolts and share their local DA, sheriff, and election-admin coverage. Local democracy is where Trump-era threats land first."
+  },
+  {
+    "id": 1194,
+    "title": "Boost Drop Site News on Trump's wars & civil liberties",
+    "url": "https://www.dropsitenews.com/",
+    "cat": "BOOST",
+    "syn": "Stay informed on critical issues Amplify independent analysis from Drop Site",
+    "desc": "Subscribe to Drop Site (ex-Intercept staff) and share their war and civil-liberties coverage. Counter the war-machine narrative."
+  },
+  {
+    "id": 1196,
+    "title": "Boost More Perfect Union's worker-power journalism",
+    "url": "https://perfectunion.us/",
+    "cat": "BOOST",
+    "syn": "Empower labor voices through impactful journalism Support anti-corporate reporting that challenges Trump’s backers",
+    "desc": "Subscribe to More Perfect Union and share their worker-power video reporting. Anti-corporate journalism that hits Trump donors directly."
+  },
+  {
+    "id": 1202,
+    "title": "Boost Inkstick's anti-war foreign-policy reporting",
+    "url": "https://inkstickmedia.com/",
+    "cat": "BOOST",
+    "syn": "Support independent journalism for a new foreign policy perspective Help amplify anti-war narratives and challenge the status quo",
+    "desc": "Subscribe to Inkstick and share their non-DC foreign policy coverage. Counter the bipartisan war-and-empire consensus."
+  },
+  {
+    "id": 1203,
+    "title": "Read + share data",
+    "url": "https://inequality.org/",
+    "cat": "BOOST",
+    "syn": "Explore key wealth data from Inequality.org and amplify the message against economic injustice",
+    "desc": "Read + share wealth-concentration data. Inequality.org has the charts that make 'eat the rich' arguments concrete."
+  },
+  {
+    "id": 1204,
+    "title": "Sign up for op-ed training",
+    "url": "https://www.theopedproject.org/",
+    "cat": "Letter Writing",
+    "syn": "Join a workshop to amplify your voice Learn to write impactful op-eds for change",
+    "desc": "Sign up for op-ed training. They've placed thousands of underrepresented voices in major papers — works."
+  },
+  {
+    "id": 1205,
+    "title": "Use weekly LTE prompts (formerly Sister District)",
+    "url": "https://stateswin.org/",
+    "cat": "Letter Writing",
+    "syn": "Mobilize your voice with targeted letters Boost local resistance and influence state politics",
+    "desc": "Use weekly LTE prompts targeting state-level fights. Coordinated submissions to district papers move ratings."
+  },
+  {
+    "id": 1206,
+    "title": "Use the Two-Minute Activist tool",
+    "url": "https://www.aauw.org/",
+    "cat": "Letter Writing",
+    "syn": "Quickly craft and send letters to the editor Leverage women's organization strength for impactful change",
+    "desc": "Use AAUW's two-minute activist tool. LTE templates + submission. Women's-org muscle behind every signature."
+  },
+  {
+    "id": 1207,
+    "title": "Use the LTE writer tool",
+    "url": "https://www.sierraclub.org/",
+    "cat": "Letter Writing",
+    "syn": "Craft your message for local impact Engage your community with climate-focused letters",
+    "desc": "Use Sierra Club's LTE writer. Climate-focused, chapter-targeted, gets published in regional papers regularly."
+  },
+  {
+    "id": 1208,
+    "title": "Use LTE templates with verified statistics",
+    "url": "https://inequality.org/",
+    "cat": "Letter Writing",
+    "syn": "Craft compelling letters to the editor Leverage verified stats from Inequality.org to amplify your message",
+    "desc": "Use Inequality.org's LTE templates with verified stats. Drop the chart links and let editors do the rest."
+  },
+  {
+    "id": 1215,
+    "title": "Call peer crisis line: 877-565-8860",
+    "url": "https://translifeline.org/",
+    "cat": "Call",
+    "syn": null,
+    "desc": "Trans peer crisis line: 877-565-8860. No police dispatch, no involuntary holds. Save the number for your friends."
+  },
+  {
+    "id": 1216,
+    "title": "Reach via 24/7 chat / text / phone",
+    "url": "https://www.thetrevorproject.org/",
+    "cat": "MENTAL HEALTH",
+    "syn": "Support LGBTQ youth in crisis anytime. Share this vital resource for those who need it most",
+    "desc": "LGBTQ youth crisis line — 24/7 chat, text, phone. Save it; share it with any kid in your life feeling targeted."
+  },
+  {
+    "id": 1217,
+    "title": "Call peer hotline / chat",
+    "url": "https://lgbthotline.org/",
+    "cat": "Call",
+    "syn": "Connect with supportive peers for LGBTQ folks facing tough times",
+    "desc": "Peer hotline + chat for LGBTQ folks of any age. Calm peer support, not crisis — for the bad-day moments."
+  },
+  {
+    "id": 1218,
+    "title": "Text HOME to 741741",
+    "url": "https://www.crisistextline.org/",
+    "cat": "MENTAL HEALTH",
+    "syn": "Reach out for support when you need it most Share this resource with those in crisis",
+    "desc": "Trained counselor 24/7 — free, anonymous, no police dispatch. Save it now; share with anyone queer, trans, or targeted."
+  },
+  {
+    "id": 1220,
+    "title": "Find a peer mental-health chapter",
+    "url": "https://activeminds.org/",
+    "cat": "MENTAL HEALTH",
+    "syn": "Join a supportive community for mental health resources and connection",
+    "desc": "Find a peer mental-health chapter. Campus + online network — good fit for college students or new grads."
+  },
+  {
+    "id": 1221,
+    "title": "Find a free virtual support group",
+    "url": "https://www.nami.org/",
+    "cat": "MENTAL HEALTH",
+    "syn": "Join peers for emotional support and coping strategies Weekly online meetings, no insurance required",
+    "desc": "Find a free virtual support group. Family + peer mental-health support; weekly, online, no insurance needed."
+  },
+  {
+    "id": 1223,
+    "title": "Sign up to run for office (under 40, progressive)",
+    "url": "https://runforsomething.net/",
+    "cat": "TRAINING",
+    "syn": "Join the movement to reshape leadership Get support for your campaign and make your voice heard",
+    "desc": "Sign up to run for office. Under 40, progressive — they handle the hard parts, you focus on the door knocks."
+  },
+  {
+    "id": 1224,
+    "title": "Apply to candidate training (women)",
+    "url": "https://voterunlead.org/",
+    "cat": "TRAINING",
+    "syn": "Join a powerful network of women leaders Get trained to run for office and make change",
+    "desc": "Apply for free women's candidate training. They've run thousands of women — training is rigorous, free, ongoing."
+  },
+  {
+    "id": 1225,
+    "title": "Apply to candidate training (Dem women)",
+    "url": "https://emergeamerica.org/",
+    "cat": "TRAINING",
+    "syn": "Join a six-month training program to empower Democratic women leaders and candidates",
+    "desc": "Apply to candidate training for Democratic women. Six-month program; alumni include 1,200+ elected officials."
+  },
+  {
+    "id": 1226,
+    "title": "Apply to candidate training (Black women)",
+    "url": "https://higherheightsforamerica.org/",
+    "cat": "TRAINING",
+    "syn": "Empower Black women to lead. Join our candidate training program and break barriers in politics",
+    "desc": "Apply to Black women's candidate training. Pipeline org for the most underrepresented group in elected office."
+  },
+  {
+    "id": 1233,
+    "title": "Find DOJ-accredited rep training",
+    "url": "https://www.cliniclegal.org/",
+    "cat": "PROFESSIONAL SKILLS",
+    "syn": "Join the fight against mass deportation Get trained as a DOJ-accredited representative today",
+    "desc": "Free DOJ-accredited rep training. Trump's mass deportation needs more accredited reps — non-lawyers can do this."
+  },
+  {
+    "id": 1251,
+    "title": "Sell your Tesla",
+    "url": "https://www.teslatakedown.com",
+    "cat": "BOYCOTT",
+    "syn": "Join the movement to weaken Musk's influence. Sell your Tesla and make a statement today",
+    "desc": "Tesla Takedown's headline ask — divest from Musk's company. Trade in, sell to a dealer, or post on Bring-A-Trailer. Every sale chips at the Musk valuation that funds his political project."
+  },
+  {
+    "id": 1252,
+    "title": "Dump your TSLA stock",
+    "url": "https://www.teslatakedown.com",
+    "cat": "BOYCOTT",
+    "syn": "Take a stand against Musk's influence Divest your Tesla shares and push for change",
+    "desc": "Tesla Takedown asks anyone holding Tesla shares — directly, in a 401(k), or via index funds — to divest. Switch to a Musk-free ETF; pressure your fund manager."
+  },
+  {
+    "id": 1253,
+    "title": "Find a Tesla Takedown protest near you",
+    "url": "https://www.teslatakedown.com",
+    "cat": "PROTEST",
+    "syn": "Join local activists in peaceful protests against Tesla's support for Trump. Find your nearest event and make your voice heard",
+    "desc": "Map and calendar of weekly Tesla showroom protests across the US. Pick the closest, RSVP, show up. Peaceful, sign-holding, First Amendment."
+  },
+  {
+    "id": 1254,
+    "title": "Plan a Tesla Takedown protest in your city",
+    "url": "https://www.teslatakedown.com",
+    "cat": "PROTEST",
+    "syn": "Organize a local protest against Tesla's support for Trump Use our toolkit to mobilize your community and make an impact",
+    "desc": "No protest in your area yet? Tesla Takedown has a host-an-action toolkit — permits, sign templates, safety protocol, comms scripts. Pick a Saturday and start a chapter."
+  },
+  {
+    "id": 1270,
+    "title": "50501 Joplin / Citizens Against Tyranny — monthly meeting",
+    "url": "https://events.pol-rev.com/",
+    "cat": "MEETING",
+    "syn": null,
+    "desc": "Sat May 16, 2:00 PM. Joplin, MO. 50501 Joplin and Citizens Against Tyranny Network's monthly chapter meeting. Local organizing in deep-red Missouri."
+  },
+  {
+    "id": 1271,
+    "title": "BloNo IL community meeting & cookout (Central IL Iron Front)",
+    "url": "https://events.pol-rev.com/",
+    "cat": "MEETING",
+    "syn": "Join local antifascists for strategy discussions and community building. Bring a dish to share and connect",
+    "desc": "Sun May 17, 2:00 PM. Bloomington, IL. Central Illinois Iron Front community meeting + cookout. Antifascist organizing meets potluck. Bring a side dish."
+  },
+  {
+    "id": 1272,
+    "title": "We The People of Ohio — Constitution day in Mentor",
+    "url": "https://events.pol-rev.com/",
+    "cat": "PROTEST",
+    "syn": null,
+    "desc": "Sun May 17, 8:00 AM. Mentor, OH. Constitution-themed visibility action. Peaceful, free, family-friendly. Hosted by Kathy."
+  },
+  {
+    "id": 1278,
+    "title": "Subscribe to Blaire Erskine's Substack",
+    "url": "https://blaireerskine.substack.com/",
+    "cat": "NEWS STORY",
+    "syn": "Get weekly doses of sharp satire and exclusive insights from a top voice against Trump",
+    "desc": "The newsletter version of Blaire Erskine's deadpan-news-anchor MAGA satire — bonus fake interviews skewering Trump talking points, behind-the-scenes on her viral TikTok reels, no algorithm gating. Direct to your inbox."
+  },
+  {
+    "id": 1360,
+    "title": "Color Your Way Through Trump 2.0 with Fresh Prints' Anti-Trump Resistance Coloring Book",
+    "url": "https://freshprintshandmade.etsy.com",
+    "cat": "Represent",
+    "syn": "Unwind and resist with every stroke Grab your coloring tools and get creative",
+    "desc": "Indie coloring book full of anti-Trump pages — calming, shareable craft for tense news days. Pages are also sold as standalone prints."
+  },
+  {
+    "id": 1383,
+    "title": "Build (and Whack) a Trumpiñata with Carlyn Yandle's Collaborative How-To",
+    "url": "https://carlynyandle.substack.com",
+    "cat": "ART/PERFORMANCE ART",
+    "syn": "Create a symbol of resistance with this DIY guide from artist Carlyn Yandle",
+    "desc": "Artist Carlyn Yandle's step-by-step guide to building a Trump piñata — perfect for a protest prep party, a neighborhood block gathering, or just your living room ceiling."
+  },
+  {
+    "id": 1401,
+    "title": "Color Your Way Through Resistance With Fresh Prints's Anti-Trump Coloring Book",
+    "url": "https://freshprintshandmade.etsy.com/",
+    "cat": "Crafting",
+    "syn": null,
+    "desc": "Bluesky's @freshprintsdesign sells a No-Kings-themed anti-Trump resistance coloring book on Etsy — protest art, calm-the-nerves coloring, and gift-able resistance you can spread at any meeting or march."
+  }
+]
