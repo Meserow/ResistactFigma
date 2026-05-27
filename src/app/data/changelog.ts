@@ -16,6 +16,59 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.97",
+    date: "2026-05-27",
+    title: "Two card banners regenerated to fix nonsense text and off-topic art",
+    sections: [
+      {
+        heading: "Visual polish",
+        items: [
+          "The \"Subscribe to actions\" card (Faithful America) was showing a banner with a misspelled protest sign that read \"SUBSCRITE TO ACTIONS.\" Replaced with a new banner — a young woman with a small cross necklace and a few fellow congregants in front of a stained-glass church. No more invented words.",
+          "The \"Buy a Fifth Amendment Sticker or Magnet\" card (Dissent Pins) was showing a generic protester holding a blank orange sign, which didn't tell you the act was actually a sticker purchase. Replaced with a banner showing hands applying a sticker to a laptop, plus a bumper sticker and round magnet on a wood tabletop. Now reads clearly as merch.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.96",
+    date: "2026-05-27",
+    title: "Welcome email logo now actually loads in Apple Mail",
+    sections: [
+      {
+        heading: "Bug fix",
+        items: [
+          "Apple Mail's privacy proxy pre-fetches images via Apple servers, but doesn't follow 301 redirects. Our bare-apex resistact.org URL was 301-redirecting to www.resistact.org, so the proxy got a redirect and returned nothing — the inbox showed a missing-image placeholder where the banner should be. Switched the email template to hit www.resistact.org directly, bypassing the redirect.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.95",
+    date: "2026-05-27",
+    title: "Admin: Missing Image tab now correctly flags 111 cards with broken cartoon paths",
+    sections: [
+      {
+        heading: "Admin",
+        items: [
+          "The Missing Image tab was reporting zero broken cards even though 111 approved acts had a cartoon banner path pointing to the old local file location (not the CDN). The check now only counts a cartoon URL as valid if it's an absolute https:// URL — relative paths from before the CDN migration are treated as missing. The Missing Image tab will now show all 111 affected cards.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.94",
+    date: "2026-05-27",
+    title: "Fix: cartoon banners missing on some cards after CDN move",
+    sections: [
+      {
+        heading: "Bug fix",
+        items: [
+          "Some cards (like the Refuse Fascism march card) were showing a broken image placeholder despite having a cartoon banner. The cartoon URL stored in the database still pointed to the old local file path from before images moved to Supabase's CDN. The app now always prefers the CDN URL from the manifest over the stale database value, so all cartoon banners load correctly.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.93",
     date: "2026-05-27",
     title: "Welcome and waitlist emails: branded redesign",
