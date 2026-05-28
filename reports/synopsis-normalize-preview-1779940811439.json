@@ -1,0 +1,102 @@
+[
+  {
+    "source": "seed",
+    "id": 19,
+    "title": "SH*T Bag: Two Bags, One Movement",
+    "reason": "missing",
+    "before": "",
+    "after": "Eco-friendly dog bags with Trump's face, fair-trade and leak-proof",
+    "beforeLen": 0,
+    "afterLen": 66
+  },
+  {
+    "source": "seed",
+    "id": 1000,
+    "title": "Search any brand's political donations before you buy",
+    "reason": "short",
+    "before": "Database lookup for 7,000+ brands",
+    "after": "Database lookup for 7,000+ brands’ political donations before you buy",
+    "beforeLen": 33,
+    "afterLen": 69
+  },
+  {
+    "source": "seed",
+    "id": 1001,
+    "title": "Get the browser extension that flags MAGA-aligned brands",
+    "reason": "short",
+    "before": "Auto-tags MAGA companies as you shop",
+    "after": "Auto-tags MAGA companies in real-time while you shop online",
+    "beforeLen": 36,
+    "afterLen": 59
+  },
+  {
+    "source": "seed",
+    "id": 1002,
+    "title": "Use the Trump-tied retailers boycott list",
+    "reason": "short",
+    "before": "Curated list of MAGA-aligned retailers",
+    "after": "Curated list of MAGA-aligned retailers, updated weekly for your reference",
+    "beforeLen": 38,
+    "afterLen": 73
+  },
+  {
+    "source": "seed",
+    "id": 1003,
+    "title": "Join coordinated 24-hour economic blackouts",
+    "reason": "short",
+    "before": "Calendar of organized buy-nothing days",
+    "after": "Calendar of organized buy-nothing days, plan for the next blackout",
+    "beforeLen": 38,
+    "afterLen": 66
+  },
+  {
+    "source": "seed",
+    "id": 1004,
+    "title": "Sign the Tesla Takedown commitment",
+    "reason": "short",
+    "before": "Pledge to sell stock + protest dealerships",
+    "after": "Pledge to sell your Tesla stock and protest dealerships this Saturday",
+    "beforeLen": 42,
+    "afterLen": 69
+  },
+  {
+    "source": "seed",
+    "id": 1005,
+    "title": "Join the Latino-led economic blackout",
+    "reason": "short",
+    "before": "Spending freeze against mass deportation",
+    "after": "Spending freeze against mass deportation policies — mark your calendar",
+    "beforeLen": 40,
+    "afterLen": 70
+  },
+  {
+    "source": "seed",
+    "id": 1006,
+    "title": "Switch your spending to a Black-women-owned biz",
+    "reason": "short",
+    "before": "Directory of Black-women-owned businesses",
+    "after": "Directory of Black-women-owned businesses to replace your usual orders",
+    "beforeLen": 41,
+    "afterLen": 70
+  },
+  {
+    "source": "seed",
+    "id": 1007,
+    "title": "Buy Anti-Trump Merch from Individual Makers",
+    "reason": "short",
+    "before": "Etsy storefronts for resistance art",
+    "after": "Etsy storefronts for handmade anti-Trump shirts, signs, and stickers",
+    "beforeLen": 35,
+    "afterLen": 68
+  },
+  {
+    "source": "seed",
+    "id": 1008,
+    "title": "Buy from a Native-owned business instead",
+    "reason": "short",
+    "before": "Native-owned business marketplace + directory",
+    "after": "Native-owned business directory and marketplace for shopping with purpose",
+    "beforeLen": 45,
+    "afterLen": 73
+  }
+]

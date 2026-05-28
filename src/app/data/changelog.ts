@@ -16,6 +16,21 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.107",
+    date: "2026-05-27",
+    title: "Card subtitles: 313 cards rewritten for consistent 2-line length",
+    sections: [
+      {
+        heading: "Card grid",
+        items: [
+          "Rewrote the italic subtitle on 313 cards so each one fills ~2 lines of text at the wide-desktop layout instead of being either one bare line (a location/date like 'Tukwila WA (May 29)') or a wall of three. Most rewrites kept the original punchy phrase intact and added the missing context — who runs it, what the format is, what action you actually take.",
+          "Examples: the NoTechForIce card now reads 'Pressure Palantir, Amazon, and Microsoft to end ICE surveillance tools' instead of having no subtitle at all. 'Search any brand's political donations before you buy' now reads 'Database lookup for 7,000+ brands' political donations before you buy' instead of the bare 'Database lookup for 7,000+ brands'.",
+          "Event-day protest cards now name the cause (e.g. 'Show up for Southend Indivisible's protest against ICE's expansion') instead of only showing the city and date.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.106",
     date: "2026-05-28",
     title: "Hotfix: restored the orange 'But what can one person do?' line",

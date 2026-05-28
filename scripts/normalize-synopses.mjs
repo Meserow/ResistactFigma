@@ -72,22 +72,61 @@ if (!API_KEY) {
   process.exit(1);
 }
 
-const SYSTEM_PROMPT =
-  "You write very short subtitle text for an anti-Trump resistance website's action cards. " +
-  "Target length: 60–75 characters total, about 10–13 words — the subtitle has to wrap onto exactly two short lines at a narrow column width. " +
-  "Style: punchy, action-focused, specific. Do NOT restate the title. " +
-  "Add CONTEXT — what kind of action it is, who runs it, the format, the angle, the date/location for events. " +
-  "Avoid promotional language ('great', 'amazing'). Avoid 'click here' style. " +
-  "No emojis. No quotation marks around the output. No trailing period. " +
-  "Output ONLY the subtitle text — no labels, no explanations.";
+const SYSTEM_PROMPT = `You write subtitle text that sits below the title on an anti-Trump
+resistance website's action cards. Each subtitle wraps onto exactly two
+short lines at a narrow column width.
+
+LENGTH: 60–75 characters total, 10–13 words. Hit that range tightly.
+
+VOICE: punchy, plainspoken, specific. Reads like a knowing friend, not
+marketing copy. Concrete nouns and named details beat generic verbs.
+
+DO NOT START with these dead-on-arrival phrases (they're banned):
+"Support", "Stay informed", "Get involved", "Shop smarter", "Commit to",
+"Take action", "Make your voice heard", "Join the movement", "Participate
+in", "Empower", "Discover", "Explore", "Learn about", "Engage with".
+
+DO NOT restate the title. DO NOT promise vague outcomes ("for change",
+"for the future", "today"). DO NOT use exclamation marks. DO NOT add
+trailing filler words like "now", "today", "this season".
+
+INSTEAD, lead with the SPECIFIC THING the card does: a number, a brand
+name, an org name, a place, a date, a verb-object that names exactly
+what action the user takes. If the original synopsis already nails a
+punchy detail, KEEP it and add only the missing context.
+
+DO NOT invent specifics not in the card data. Do NOT add days of the
+week ("this Saturday"), times ("at noon"), exact counts, locations, or
+deadlines unless they appear in the provided description, location, or
+event date fields. If you don't have a concrete detail to add, just
+state the WHO or the FORMAT plainly instead of fabricating one.
+
+Examples of the voice we want (do not output these — they're for tone):
+  "7,000+ brand donations searchable before you check out"
+  "Dog poop bags featuring Trump's face — leak-proof, BSCI-compliant"
+  "24-hour buy-nothing blackouts, dates on a shared calendar"
+  "Pledge to sell Tesla stock and picket dealerships in your city"
+  "Curated Etsy storefronts for one-of-a-kind resistance merch"
+
+Examples of voice we DON'T want (avoid this register):
+  "Support eco-friendly activism with every bag you use. Get involved!"
+  "Stay informed on retailers linked to Trump—update before you shop"
+  "Shop smarter by identifying MAGA-aligned brands in real-time"
+
+FORMAT: no emojis, no quotation marks around the output, no trailing
+period, no labels. Output ONLY the subtitle text.`;
 
 async function authorSynopsis({ title, description, location, eventDate, existing }) {
   const parts = [`Card title: ${title}`];
   if (description) parts.push(`Card description: ${String(description).slice(0, 300)}`);
   if (location) parts.push(`Location: ${location}`);
   if (eventDate) parts.push(`Event date: ${eventDate}`);
-  if (existing) parts.push(`Existing subtitle (TOO SHORT — make it ~10-13 words while keeping its idea): ${existing}`);
-  parts.push(`Write the subtitle now. Aim for ~${TARGET_GOAL} characters.`);
+  if (existing) {
+    parts.push(
+      `Existing subtitle (it's already punchy but too short — KEEP its specific details and ADD missing context to reach 10–13 words): ${existing}`,
+    );
+  }
+  parts.push(`Write the subtitle now. Aim for ~${TARGET_GOAL} characters (60–75).`);
   const userMsg = parts.join("\n\n");
 
   const r = await fetch("https://api.openai.com/v1/chat/completions", {

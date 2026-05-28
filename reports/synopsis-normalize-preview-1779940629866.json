@@ -1,0 +1,102 @@
+[
+  {
+    "source": "seed",
+    "id": 19,
+    "title": "SH*T Bag: Two Bags, One Movement",
+    "reason": "missing",
+    "before": "",
+    "after": "Support eco-friendly activism with every bag you use. Get involved!",
+    "beforeLen": 0,
+    "afterLen": 67
+  },
+  {
+    "source": "seed",
+    "id": 1000,
+    "title": "Search any brand's political donations before you buy",
+    "reason": "short",
+    "before": "Database lookup for 7,000+ brands",
+    "after": "Investigate political donations of over 7,000 brands before purchasing",
+    "beforeLen": 33,
+    "afterLen": 70
+  },
+  {
+    "source": "seed",
+    "id": 1001,
+    "title": "Get the browser extension that flags MAGA-aligned brands",
+    "reason": "short",
+    "before": "Auto-tags MAGA companies as you shop",
+    "after": "Shop smarter by identifying MAGA-aligned brands in real-time",
+    "beforeLen": 36,
+    "afterLen": 60
+  },
+  {
+    "source": "seed",
+    "id": 1002,
+    "title": "Use the Trump-tied retailers boycott list",
+    "reason": "short",
+    "before": "Curated list of MAGA-aligned retailers",
+    "after": "Stay informed on retailers linked to Trump—update before you shop",
+    "beforeLen": 38,
+    "afterLen": 65
+  },
+  {
+    "source": "seed",
+    "id": 1003,
+    "title": "Join coordinated 24-hour economic blackouts",
+    "reason": "short",
+    "before": "Calendar of organized buy-nothing days",
+    "after": "Participate in national buy-nothing days to disrupt corporate profits",
+    "beforeLen": 38,
+    "afterLen": 69
+  },
+  {
+    "source": "seed",
+    "id": 1004,
+    "title": "Sign the Tesla Takedown commitment",
+    "reason": "short",
+    "before": "Pledge to sell stock + protest dealerships",
+    "after": "Commit to divesting from Tesla and join protests at dealerships",
+    "beforeLen": 42,
+    "afterLen": 63
+  },
+  {
+    "source": "seed",
+    "id": 1005,
+    "title": "Join the Latino-led economic blackout",
+    "reason": "short",
+    "before": "Spending freeze against mass deportation",
+    "after": "Participate in a Latino-led boycott to stop mass deportation policies",
+    "beforeLen": 40,
+    "afterLen": 69
+  },
+  {
+    "source": "seed",
+    "id": 1006,
+    "title": "Switch your spending to a Black-women-owned biz",
+    "reason": "short",
+    "before": "Directory of Black-women-owned businesses",
+    "after": "Support local Black women entrepreneurs by changing your shopping habits",
+    "beforeLen": 41,
+    "afterLen": 72
+  },
+  {
+    "source": "seed",
+    "id": 1007,
+    "title": "Buy Anti-Trump Merch from Individual Makers",
+    "reason": "short",
+    "before": "Etsy storefronts for resistance art",
+    "after": "Support individual creators with unique anti-Trump art and merch",
+    "beforeLen": 35,
+    "afterLen": 64
+  },
+  {
+    "source": "seed",
+    "id": 1008,
+    "title": "Buy from a Native-owned business instead",
+    "reason": "short",
+    "before": "Native-owned business marketplace + directory",
+    "after": "Support Indigenous communities by shopping Native-owned businesses today",
+    "beforeLen": 45,
+    "afterLen": 72
+  }
+]
