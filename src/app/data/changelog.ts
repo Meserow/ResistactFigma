@@ -16,6 +16,19 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.105",
+    date: "2026-05-28",
+    title: "Fixed the script-font flash on the hero headline",
+    sections: [
+      {
+        heading: "Hero",
+        items: [
+          "Fixed the brief flash where 'But what can one person do?' would render in the system handwriting font (Apple Chancery / Snell Roundhand on Mac) before swapping to Rock Salt. The font now preloads during initial HTML parse, hides the text until Rock Salt is ready (up to 3s), and falls back to a neutral sans-serif instead of generic cursive if anything slips through.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.104",
     date: "2026-05-27",
     title: "Card subtitles now cap at two lines",
