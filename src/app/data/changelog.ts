@@ -16,6 +16,19 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.104",
+    date: "2026-05-27",
+    title: "Card subtitles now cap at two lines",
+    sections: [
+      {
+        heading: "Card grid",
+        items: [
+          "On the main feed and Quick Match preview, the italic subtitle under each card's title can no longer spill onto three or four lines. Anything longer than two lines now gets a trailing ellipsis instead of pushing the card taller than its neighbors. Cards line up cleanly across the grid again.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.103",
     date: "2026-05-27",
     title: "Admin: read-only 'View as' impersonation",
