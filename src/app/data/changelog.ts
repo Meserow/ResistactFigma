@@ -16,6 +16,45 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.106",
+    date: "2026-05-28",
+    title: "Hotfix: restored the orange 'But what can one person do?' line",
+    sections: [
+      {
+        heading: "Hero",
+        items: [
+          "Reverted the previous hero font fix from `display=block` to `display=swap`. The block mode was hiding the orange handwritten line during its entire ~2.4s visibility window before the logo took over, so first-time visitors weren't seeing it at all. The preload + sans-serif fallback stay in place, so the script-font flash is still much briefer than before — just no longer hidden.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.105",
+    date: "2026-05-28",
+    title: "Fixed the script-font flash on the hero headline",
+    sections: [
+      {
+        heading: "Hero",
+        items: [
+          "Fixed the brief flash where 'But what can one person do?' would render in the system handwriting font (Apple Chancery / Snell Roundhand on Mac) before swapping to Rock Salt. The font now preloads during initial HTML parse, hides the text until Rock Salt is ready (up to 3s), and falls back to a neutral sans-serif instead of generic cursive if anything slips through.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.104",
+    date: "2026-05-27",
+    title: "Card subtitles now cap at two lines",
+    sections: [
+      {
+        heading: "Card grid",
+        items: [
+          "On the main feed and Quick Match preview, the italic subtitle under each card's title can no longer spill onto three or four lines. Anything longer than two lines now gets a trailing ellipsis instead of pushing the card taller than its neighbors. Cards line up cleanly across the grid again.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.103",
     date: "2026-05-27",
     title: "Admin: read-only 'View as' impersonation",

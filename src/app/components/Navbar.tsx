@@ -11,7 +11,7 @@ import { colorForCategory } from "../lib/categoryGroups";
 
 function ResistActLogo() {
   return (
-    <img src={logoImg} alt="ResistAct — Citizen Action" className="h-12 md:h-14 w-auto object-contain" />
+    <img src={logoImg} alt="ResistAct — Citizen Action" className="h-11 md:h-[52px] w-auto object-contain" />
   );
 }
 

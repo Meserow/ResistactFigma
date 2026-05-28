@@ -45,7 +45,7 @@ export function HomeHero({ onMatchClick, onAskClick, onHowClick }: HomeHeroProps
               {phase >= 1 && (
                 <p
                   key="orange"
-                  className="hero-orange-slide-in font-['Rock_Salt',cursive] not-italic font-bold text-[#ed6624] text-[17px] md:text-[22px] leading-none mt-2 md:mt-3"
+                  className="hero-orange-slide-in font-['Rock_Salt',sans-serif] not-italic font-bold text-[#ed6624] text-[17px] md:text-[22px] leading-none mt-2 md:mt-3"
                   style={{ WebkitTextStroke: "1.25px #ed6624", paintOrder: "stroke fill" }}
                 >
                   But what can one person do?
