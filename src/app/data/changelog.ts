@@ -16,6 +16,20 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.108",
+    date: "2026-05-27",
+    title: "Fix: 'Spread the Word' email invites now actually send",
+    sections: [
+      {
+        heading: "Spread the Word",
+        items: [
+          "Sending email invites from the Spread the Word modal was failing with 'Something went wrong — try again.' for everyone. The request was being rejected before it even reached our server because it was missing the auth header that Supabase requires on every function call.",
+          "Now: type in an email, hit Send Invites, and the invite actually goes out.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.107",
     date: "2026-05-27",
     title: "Card subtitles: 313 cards rewritten for consistent 2-line length",
