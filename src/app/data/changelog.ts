@@ -16,6 +16,19 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.106",
+    date: "2026-05-28",
+    title: "Hotfix: restored the orange 'But what can one person do?' line",
+    sections: [
+      {
+        heading: "Hero",
+        items: [
+          "Reverted the previous hero font fix from `display=block` to `display=swap`. The block mode was hiding the orange handwritten line during its entire ~2.4s visibility window before the logo took over, so first-time visitors weren't seeing it at all. The preload + sans-serif fallback stay in place, so the script-font flash is still much briefer than before — just no longer hidden.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.105",
     date: "2026-05-28",
     title: "Fixed the script-font flash on the hero headline",
