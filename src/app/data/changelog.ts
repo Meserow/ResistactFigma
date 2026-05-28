@@ -16,6 +16,22 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.103",
+    date: "2026-05-27",
+    title: "Admin: read-only 'View as' impersonation",
+    sections: [
+      {
+        heading: "Admin",
+        items: [
+          "New 'View as' button on every approved non-admin user in Admin Panel → Users. Click it and the app reloads the feed exactly as that user sees it — their Match Me preferences, their bookmarks, their day streak, their completed cards, their boosted cards. A persistent dark-blue banner at the top of the page makes it impossible to forget you're in view-as mode.",
+          "Read-only. Boost, complete, bookmark, approve-card, Match Me edit, and 'Add an Act' are all disabled — they no-op with a toast saying 'View-as is read-only'. Anything you DO accidentally type still wouldn't write to the impersonated user's account because the underlying admin token is still yours.",
+          "Click 'Exit' on the banner to drop back to your own view. Every start and end gets written to KV under `audit:impersonation:<adminId>:<targetId>:<timestamp>` so we have a trail. The impersonated user is NOT notified.",
+          "Known limitations (intentional for v1): static smacks are still pencil-editable, the admin-panel button is still visible (so you can exit and re-enter), and submitting flag-a-card / feedback while impersonating works normally (it tags as you, not them). Future polish.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.102",
     date: "2026-05-27",
     title: "Refine Your Matches: renamed modal + more obvious Next/Back buttons",

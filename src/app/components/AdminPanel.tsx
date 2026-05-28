@@ -30,6 +30,11 @@ interface AdminPanelProps {
   accessToken: string;
   onClose: () => void;
   imageMap?: Record<string, string>;
+  /** Fires when admin clicks "View as" on a user row. Parent closes the
+   *  panel, calls POST /admin/impersonate/:id, and overlays the snapshot
+   *  on top of the app's normal state. Read-only — the impersonation
+   *  banner is what tells the admin they're in view-as mode. */
+  onImpersonate?: (userId: string, name: string) => void;
 }
 
 type TabFilter = "active" | "pending" | "approved" | "rejected" | "all";
@@ -280,7 +285,7 @@ function ImageModal({
   );
 }
 
-export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) {
+export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate }: AdminPanelProps) {
   // Default to "online" — quickest read on engagement when an admin opens
   // the panel. Other modes (cards, users, …) are one dropdown click away.
   const [mode, setMode] = useState<PanelMode>("online");
@@ -1245,6 +1250,23 @@ export function AdminPanel({ accessToken, onClose, imageMap }: AdminPanelProps) 
                               >
                                 {actionLoading === user.userId + ":approve" ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={13} />}
                                 Approve anyway
+                              </button>
+                            </div>
+                          )}
+
+                          {/* View-as (read-only impersonation) — only for approved
+                              non-admin users. Click hands the userId + name back
+                              to the parent App, which closes this panel and pulls
+                              the user's snapshot via POST /admin/impersonate/:id. */}
+                          {!user.isAdmin && user.status === "approved" && onImpersonate && (
+                            <div className="flex gap-2 mt-3 ml-13">
+                              <button
+                                onClick={() => onImpersonate(user.userId, user.name || user.email || "user")}
+                                className="flex items-center gap-1.5 py-1.5 px-3 bg-[#23297e]/5 hover:bg-[#23297e]/10 border border-[#23297e]/20 rounded-lg font-['Poppins',sans-serif] font-semibold text-xs text-[#23297e] transition-colors"
+                                title="See the site as this user sees it. Read-only — you can't act on their behalf."
+                              >
+                                <Eye size={13} />
+                                View as
                               </button>
                             </div>
                           )}

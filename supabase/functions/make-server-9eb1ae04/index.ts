@@ -5019,6 +5019,121 @@ app.get("/make-server-9eb1ae04/admin/users/:id/activity", async (c) => {
   }
 });
 
+// ─── ADMIN: POST /admin/impersonate/:id — start a view-as session ─────────────
+// Returns everything the client needs to render the target user's view:
+// approval record (name + status), Match Me preferences, bookmarks,
+// completions (so completed cards drop to the bottom), boosted IDs, and
+// streak count. The client overlays these on top of its normal state for
+// the duration of the impersonation. NO writes — this is read-only.
+//
+// Every call writes an audit row at
+//   audit:impersonation:{adminId}:{targetId}:{iso-timestamp}
+// with action="start" so we have a trail for the kind of "did anyone look
+// at my account?" question that pops up after the fact.
+app.post("/make-server-9eb1ae04/admin/impersonate/:id", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const targetId = c.req.param("id");
+    const approval = await kv.get(`user:approval:${targetId}`) as any;
+    if (!approval) return c.json({ error: "User not found" }, 404);
+
+    // Block impersonating yourself — pointless and clutters the audit log.
+    if (admin.user.id === targetId) {
+      return c.json({ error: "Cannot impersonate yourself" }, 400);
+    }
+
+    // Pull everything per-user in parallel. None of these is huge; doing
+    // them serially would add ~5 round-trips of latency for no reason.
+    const [prefs, bookmarks, completionRecords, boostRecords, streakKv] = await Promise.all([
+      kv.get(`user:preferences:${targetId}`),
+      kv.get(`user-bookmarks:${targetId}`),
+      kv.getByPrefix(`complete:${targetId}:`),
+      kv.getByPrefix(`boost:${targetId}:`),
+      kv.get(`streak:${targetId}`),
+    ]) as [any, any, any[], any[], any];
+
+    // Same aggregation shape /me/completions returns so the client can
+    // drop this in without conditional logic on which slot to read.
+    const byCategory: Record<string, number> = {};
+    const completedIds: number[] = [];
+    for (const r of (completionRecords ?? [])) {
+      if (!r) continue;
+      const cat = (r.category ?? "OTHER").toString().toUpperCase();
+      byCategory[cat] = (byCategory[cat] ?? 0) + 1;
+      if (typeof r.actionId === "number") completedIds.push(r.actionId);
+    }
+    const boostedIds: number[] = ((boostRecords ?? []) as any[])
+      .filter(Boolean)
+      .map((r: any) => r.actionId)
+      .filter((id: unknown) => typeof id === "number");
+
+    // Write the audit row. Best-effort: if this fails we still return the
+    // snapshot, but log loudly so it's visible in function logs.
+    const startedAt = new Date().toISOString();
+    try {
+      await kv.set(`audit:impersonation:${admin.user.id}:${targetId}:${startedAt}`, {
+        action: "start",
+        adminId: admin.user.id,
+        adminName: admin.record?.name ?? null,
+        targetId,
+        targetName: approval.name ?? null,
+        startedAt,
+      });
+    } catch (err) {
+      console.log("audit:impersonation write failed (continuing):", err);
+    }
+
+    console.log(`Admin ${admin.record?.name ?? admin.user.id} started impersonating ${approval.name ?? targetId}`);
+    return c.json({
+      approval,
+      preferences: prefs ?? null,
+      bookmarks: Array.isArray(bookmarks) ? bookmarks : [],
+      completions: {
+        total: (completionRecords ?? []).length,
+        byCategory,
+        completedIds,
+      },
+      boostedIds,
+      streak: streakKv ? (streakKv as any).count ?? 1 : 1,
+      startedAt,
+    });
+  } catch (err) {
+    console.log("Impersonate error:", err);
+    return c.json({ error: `Failed: ${err}` }, 500);
+  }
+});
+
+// ─── ADMIN: POST /admin/impersonate/:id/exit — end a view-as session ──────────
+// Writes the closing audit row. Client calls this on Exit-banner click.
+// Idempotent — multiple exit calls just write extra audit rows; not a problem.
+app.post("/make-server-9eb1ae04/admin/impersonate/:id/exit", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    const targetId = c.req.param("id");
+    const endedAt = new Date().toISOString();
+    try {
+      await kv.set(`audit:impersonation:${admin.user.id}:${targetId}:${endedAt}`, {
+        action: "end",
+        adminId: admin.user.id,
+        adminName: admin.record?.name ?? null,
+        targetId,
+        endedAt,
+      });
+    } catch (err) {
+      console.log("audit:impersonation exit write failed (continuing):", err);
+    }
+    return c.json({ ok: true });
+  } catch (err) {
+    return c.json({ error: `Failed: ${err}` }, 500);
+  }
+});
+
 // ─── GET /me/boosts — card IDs this user has boosted ─────────────────────────
 app.get("/make-server-9eb1ae04/me/boosts", async (c) => {
   try {

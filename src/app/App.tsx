@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useDeferredValue } from "react";
-import { Wrench, Clock, Globe, Flame, Smile, VenetianMask, Sun, Zap, MapPin, Users, DollarSign, EyeOff, Loader2 } from "lucide-react";
+import { Wrench, Clock, Globe, Flame, Smile, VenetianMask, Sun, Zap, MapPin, Users, DollarSign, EyeOff, Loader2, Eye, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { initAnalytics, analytics } from "./lib/analytics";
 import { GAMIFICATION_KEYFRAMES } from "./lib/animations";
@@ -450,6 +450,86 @@ export default function App() {
     window.setTimeout(() => setToastMessage((current) => (current === msg ? null : current)), 2200);
   }
 
+  // ── Admin impersonation (read-only view-as) ──────────────────────────────
+  // When non-null, the app overlays this user's state on top of the admin's
+  // own state for the duration of the view-as session. Writes (boost,
+  // complete, bookmark, etc.) are suppressed via the isImpersonating guard
+  // in each handler — they no-op with a toast. Exiting clears the snapshot
+  // and posts to /admin/impersonate/:id/exit so the audit log closes.
+  type ImpersonationSession = {
+    userId: string;
+    approval: UserApproval;
+    matchPrefs: Preferences | null;
+    bookmarks: number[];
+    completions: { total: number; byCategory: Record<string, number>; completedIds: number[] };
+    boostedIds: number[];
+    streak: number;
+    startedAt: string;
+  };
+  const [impersonating, setImpersonating] = useState<ImpersonationSession | null>(null);
+  const isImpersonating = impersonating !== null;
+
+  async function startImpersonation(targetUserId: string, fallbackName: string) {
+    if (!accessToken) { showToast("Not signed in"); return; }
+    try {
+      const res = await fetch(`${API}/admin/impersonate/${targetUserId}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const data = await res.json();
+      if (!res.ok) { showToast(data?.error ?? "Could not start view-as"); return; }
+      setImpersonating({
+        userId: targetUserId,
+        approval: data.approval,
+        matchPrefs: data.preferences ?? null,
+        bookmarks: Array.isArray(data.bookmarks) ? data.bookmarks : [],
+        completions: data.completions ?? { total: 0, byCategory: {}, completedIds: [] },
+        boostedIds: Array.isArray(data.boostedIds) ? data.boostedIds : [],
+        streak: typeof data.streak === "number" ? data.streak : 1,
+        startedAt: data.startedAt ?? new Date().toISOString(),
+      });
+      setAdminPanelOpen(false);
+      setStaggerKey((k) => k + 1); // re-stagger the feed so the new view animates in
+      showToast(`Viewing as ${data.approval?.name ?? fallbackName}`);
+    } catch {
+      showToast("Network error starting view-as");
+    }
+  }
+
+  async function exitImpersonation() {
+    const target = impersonating;
+    setImpersonating(null);
+    setStaggerKey((k) => k + 1);
+    showToast("Exited view-as");
+    if (target && accessToken) {
+      // Best-effort audit-log close. Don't block the UI on it.
+      fetch(`${API}/admin/impersonate/${target.userId}/exit`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }).catch(() => { /* ignore */ });
+    }
+  }
+
+  // Computed values that swap in the impersonated user's state when active.
+  // Component code reads these instead of the raw state slots so the
+  // override is a single substitution point per render, not 20.
+  const effectiveApproval     = isImpersonating ? impersonating!.approval               : approval;
+  const effectiveMatchPrefs   = isImpersonating ? impersonating!.matchPrefs             : matchPrefs;
+  const effectiveBookmarked   = isImpersonating ? new Set<number>(impersonating!.bookmarks)        : bookmarkedCards;
+  const effectiveCompleted    = isImpersonating ? new Set<number>(impersonating!.completions.completedIds) : completedCards;
+  const effectiveBoosted      = isImpersonating ? new Set<number>(impersonating!.boostedIds)       : boostedCards;
+  const effectiveMyCompletions = isImpersonating ? impersonating!.completions            : myCompletions;
+  const effectiveLoginStreak  = isImpersonating ? impersonating!.streak                 : loginStreak;
+
+  // Block any write handler during view-as. Returns true (write was blocked)
+  // if impersonating; otherwise false (caller should proceed). Single source
+  // of truth for the "view-as is read-only" rule.
+  function blockWriteIfImpersonating(): boolean {
+    if (!isImpersonating) return false;
+    showToast("View-as is read-only — exit to make changes");
+    return true;
+  }
+
   // ── Live stats from server ──
   const [statsCitiesCount, setStatsCitiesCount] = useState<number | null>(null);
   const [statsUsersCount, setStatsUsersCount] = useState<number | null>(null);
@@ -728,6 +808,15 @@ export default function App() {
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const displayedCards = useMemo(() => {
+    // IMPERSONATION OVERRIDE — when view-as is active, shadow the per-user
+    // state slots with the impersonated user's data so the rest of this
+    // memo's existing references (matchPrefs, completedCards, boostedCards,
+    // isAdminUser) automatically reflect the target user's POV. Cheaper
+    // than threading effective* values through every internal reference.
+    const matchPrefs      = effectiveMatchPrefs;
+    const completedCards  = effectiveCompleted;
+    const boostedCards    = effectiveBoosted;
+    const isAdminUser     = isImpersonating ? false : (approval?.isAdmin === true);
     // ── Global gate: expiry + approval + already-done ────────────────────────
     const gated = cards.filter((card) => {
       // Hide expired events from everyone
@@ -977,7 +1066,10 @@ export default function App() {
   // then re-runs the memo only after the deferred value settles.
   }, [cards, deferredSearchQuery, activeFilters, quickActionsOnly, showDone,
       completedCards, matchPrefs, isAdminUser, todayISO, boostedCards,
-      sortBy, demoteHyperLocal]); // eslint-disable-line react-hooks/exhaustive-deps
+      sortBy, demoteHyperLocal,
+      // Impersonation override — recompute when entering / exiting view-as,
+      // and when any of the impersonated slots change underneath us.
+      isImpersonating, effectiveMatchPrefs, effectiveCompleted, effectiveBoosted, approval]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // True when any filter chip is selected OR a search is active — bypasses
   // server pagination so client-side filtering sees the full dataset.
@@ -1219,6 +1311,7 @@ export default function App() {
     // localStorage and fire SIGNED_OUT locally without calling the auth
     // server to revoke; that revoke is what was failing intermittently on
     // Safari and leaving the UI stuck in a "signed in" state.
+    if (isImpersonating) setImpersonating(null);
     setApproval(null);
     setAccessToken(null);
     supabase.auth.signOut({ scope: "local" }).catch((err) => {
@@ -1522,6 +1615,7 @@ export default function App() {
 
   // ── Self-reported "I did this" toggle ──
   const handleComplete = async (id: number) => {
+    if (blockWriteIfImpersonating()) return;
     const alreadyCompleted = completedCards.has(id);
     const delta = alreadyCompleted ? -1 : 1;
 
@@ -1582,6 +1676,7 @@ export default function App() {
 
   // ── Act ──
   const handleBoost = async (id: number) => {
+    if (blockWriteIfImpersonating()) return;
     const alreadyActed = boostedCards.has(id);
     const delta = alreadyActed ? -1 : 1;
 
@@ -1623,6 +1718,7 @@ export default function App() {
   };
 
   const handleBookmark = (id: number) => {
+    if (blockWriteIfImpersonating()) return;
     setBookmarkedCards((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
@@ -1681,6 +1777,7 @@ export default function App() {
 
   // ── One-click approve from the main feed (admin only) ────────────────────────
   async function handleApproveCard(id: number) {
+    if (blockWriteIfImpersonating()) return;
     if (!accessToken) return;
     try {
       const res = await fetch(`${API}/admin/approve-action/${id}`, {
@@ -1743,23 +1840,54 @@ export default function App() {
       {/* Gamification keyframes injected once. Centralised in lib/animations.ts
           so individual components only need to add a class name to opt in. */}
       <style>{GAMIFICATION_KEYFRAMES}</style>
+
+      {/* Impersonation banner — persistent strip at the very top of the
+          page while admin is view-as'ing another user. Hard-to-miss colours;
+          single Exit button. Kept outside any container so it sticks above
+          everything including the navbar. */}
+      {isImpersonating && impersonating && (
+        <div
+          className="sticky top-0 z-[200] bg-[#23297e] text-white shadow-lg border-b-2 border-[#ed6624]"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="max-w-[1200px] mx-auto px-4 py-2 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <Eye size={15} className="shrink-0 text-[#ed6624]" />
+              <p className="font-['Poppins',sans-serif] text-sm truncate">
+                Viewing as{" "}
+                <strong className="font-bold">{impersonating.approval.name || impersonating.approval.email || "user"}</strong>
+                <span className="hidden sm:inline text-white/70 font-normal"> — read-only. Boosts, completions, edits, and saves are disabled.</span>
+              </p>
+            </div>
+            <button
+              onClick={exitImpersonation}
+              className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-[#23297e] hover:bg-[#ed6624] hover:text-white rounded-full font-['Poppins',sans-serif] font-bold text-xs transition-colors"
+            >
+              <X size={13} strokeWidth={3} />
+              Exit
+            </button>
+          </div>
+        </div>
+      )}
+
       <Navbar
-        approval={approval}
-        myCompletions={myCompletions ?? localCompletions}
+        approval={effectiveApproval}
+        myCompletions={effectiveMyCompletions ?? localCompletions}
         onLoginClick={() => setAuthModalOpen(true)}
         onLogout={handleLogout}
         onAdminClick={() => setAdminPanelOpen(true)}
         onPendingActsClick={() => { handleTabChange("acts"); setPendingActsVersion((v) => v + 1); }}
         onPendingSmacksClick={() => { handleTabChange("receipts"); setSmacksPendingVersion((v) => v + 1); }}
         onFlaggedActsClick={() => setFlagsAdminOpen(true)}
-        pendingActsCount={pendingActsCount}
-        pendingSmacksCount={pendingSmacksCount}
-        pendingUsersCount={pendingUsersCount}
-        flagsCount={isAdminUser ? flagsCount : 0}
+        pendingActsCount={isImpersonating ? 0 : pendingActsCount}
+        pendingSmacksCount={isImpersonating ? 0 : pendingSmacksCount}
+        pendingUsersCount={isImpersonating ? 0 : pendingUsersCount}
+        flagsCount={isAdminUser && !isImpersonating ? flagsCount : 0}
         onInfoClick={() => setInfoOpen(true)}
         onActClick={() => setActOpen(true)}
         onBookmarksClick={() => setBookmarksOpen(true)}
-        bookmarkCount={bookmarkedCards.size}
+        bookmarkCount={effectiveBookmarked.size}
         onFeedbackClick={() => setFeedbackOpen(true)}
         onMatchClick={() => setMatchOpen(true)}
         onTierClick={() => setTierModalOpen(true)}
@@ -1796,9 +1924,9 @@ export default function App() {
         onSmacksTagsClear={() => setSmacksActiveTags([])}
         smacksSortBy={smacksSortBy}
         onSmacksSortChange={setSmacksSortBy}
-        smacksIsAdmin={isAdminUser}
+        smacksIsAdmin={isAdminUser && !isImpersonating}
         heroSlot={
-          approval
+          effectiveApproval
             ? activeTab === "acts"
               ? (() => {
                   const todayStr = new Date().toISOString().slice(0, 10);
@@ -1808,14 +1936,14 @@ export default function App() {
                   }).length;
                   return (
                     <LoggedInHero
-                      userId={approval.userId}
-                      name={approval.name || "Resistor"}
-                      streak={loginStreak}
+                      userId={effectiveApproval.userId}
+                      name={effectiveApproval.name || "Resistor"}
+                      streak={effectiveLoginStreak}
                       newActionsToday={newToday}
-                      onMatchClick={() => setMatchOpen(true)}
-                      onAskClick={() => setAskOpen(true)}
+                      onMatchClick={() => isImpersonating ? showToast("View-as is read-only") : setMatchOpen(true)}
+                      onAskClick={() => isImpersonating ? showToast("View-as is read-only") : setAskOpen(true)}
                       onHowClick={() => setInfoOpen(true)}
-                      hasMatchPrefs={matchPrefs !== null}
+                      hasMatchPrefs={effectiveMatchPrefs !== null}
                     />
                   );
                 })()
@@ -2216,14 +2344,14 @@ export default function App() {
                   onComplete={handleComplete}
                   onShare={handleShare}
                   onBookmark={handleBookmark}
-                  onEdit={(id) => setEditCardId(id)}
+                  onEdit={isImpersonating ? undefined : (id) => setEditCardId(id)}
                   onInfoClick={card.pinToTop ? () => setInfoOpen(true) : undefined}
-                  isBoosted={boostedCards.has(card.id)}
-                  isCompleted={completedCards.has(card.id)}
-                  isBookmarked={bookmarkedCards.has(card.id)}
-                  canEdit={canEditCard(card)}
-                  isPending={isAdminUser && card.adminApproved === false}
-                  onApprove={isAdminUser ? handleApproveCard : undefined}
+                  isBoosted={effectiveBoosted.has(card.id)}
+                  isCompleted={effectiveCompleted.has(card.id)}
+                  isBookmarked={effectiveBookmarked.has(card.id)}
+                  canEdit={!isImpersonating && canEditCard(card)}
+                  isPending={!isImpersonating && isAdminUser && card.adminApproved === false}
+                  onApprove={!isImpersonating && isAdminUser ? handleApproveCard : undefined}
                   accessToken={accessToken}
                   onCardUpdated={handleCardSaved}
                 />
@@ -2388,6 +2516,7 @@ export default function App() {
           accessToken={accessToken}
           onClose={() => setAdminPanelOpen(false)}
           imageMap={IMAGE_MAP}
+          onImpersonate={startImpersonation}
         />
       )}
 
@@ -2414,8 +2543,11 @@ export default function App() {
         />
       )}
 
-      {/* Match Me wizard */}
-      {matchOpen && (
+      {/* Match Me wizard — suppressed during impersonation so admin can't
+          accidentally save Match Me changes to their own account while
+          they're trying to see the impersonated user's view. */}
+      {matchOpen && isImpersonating && (() => { setMatchOpen(false); return null; })()}
+      {matchOpen && !isImpersonating && (
         <ErrorBoundary>
         <MatchMeModal
           cards={cards}
@@ -2493,7 +2625,8 @@ export default function App() {
       )}
 
       {/* Make an ASK modal (navy — Ask button) */}
-      {askOpen && (
+      {askOpen && isImpersonating && (() => { setAskOpen(false); return null; })()}
+      {askOpen && !isImpersonating && (
         <AskFlowModal
           accessToken={accessToken}
           approval={approval}
