@@ -24,23 +24,33 @@ export interface CategoryGroup {
 export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     heading: "Make / Do",
-    categories: ["Art/Performance Art", "Boycott", "Crafting", "Flash Mob", "Protest", "Video"],
+    // "Irreverence" → creative expression (memes, satire, street theater).
+    // "Boost" → amplifying others' work is also a make/do action; lived
+    // briefly in "Care" but felt out of place next to Mental Health/Prayer.
+    categories: ["Art/Performance Art", "Boost", "Boycott", "Crafting", "Flash Mob", "Irreverence", "Protest", "Video"],
   },
   {
     heading: "Reach Out",
     categories: ["Call", "Email Campaign", "Letter Writing", "Petition", "Social Media"],
   },
   {
-    heading: "Show Up",
-    categories: ["Join a Group", "Labor", "Meeting", "Professional Skills", "Show Up", "Training", "Witness"],
+    // Renamed from "Show Up" — the heading collided with the "Show Up"
+    // category button rendered inside this very group, which read as a
+    // duplicate. "Get Involved" covers the same idea (active in-person/
+    // participatory acts) without the naming clash.
+    heading: "Get Involved",
+    // "Host" → hosting an event is showing up from the organizer side.
+    // "Transportation" → giving people rides to actions / canvasses /
+    // hearings is showing up by enabling others' presence.
+    categories: ["Host", "Join a Group", "Labor", "Meeting", "Professional Skills", "Show Up", "Training", "Transportation", "Witness"],
   },
   {
     heading: "Care",
-    categories: ["Act of Kindness", "Boost", "Mental Health", "Prayer"],
+    categories: ["Act of Kindness", "Mental Health", "Prayer"],
   },
   {
     heading: "Money / Stuff",
-    categories: ["Funding", "Housing", "Represent", "Transportation"],
+    categories: ["Funding", "Housing", "Represent"],
   },
   {
     heading: "Other",

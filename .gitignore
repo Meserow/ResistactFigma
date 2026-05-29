@@ -23,3 +23,4 @@ scripts/generated-card-art/
 # Claude Code: local worktrees and patch backups — these never belong in develop.
 .claude/worktrees/
 .claude/worktree-changes.patch
+scripts/cartoon-banners-backup/

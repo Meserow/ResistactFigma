@@ -16,6 +16,145 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.111",
+    date: "2026-05-28",
+    title: "Admin edit pencil moved off the card and into the details modal",
+    sections: [
+      {
+        heading: "Admin UX",
+        items: [
+          "The little pencil button admins use to edit an Act used to sit in the top-right of every card on the main page (in the time-pill cluster). It now lives in the details modal instead — a bright orange round button anchored to the bottom-left of the banner image, mirroring the location pill on the bottom-right. Cards on the main grid stay clean for everyone, and admins get a hard-to-miss editor when they open a card.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.110",
+    date: "2026-05-28",
+    title: "Banner images: removed gradient fade at the bottom",
+    sections: [
+      {
+        heading: "Visual cleanup",
+        items: [
+          "Cards and the card details modal had a subtle dark gradient overlay at the bottom of every banner image (a holdover for white-text legibility from earlier designs). It made cartoon banners look washed/faded near the bottom edge. Removed everywhere — in ActionCard (compact + full), CardDetailsModal, and FactCard. Banners now end cleanly into the card body with no fade.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.109",
+    date: "2026-05-27",
+    title: "Cartoon banners trimmed + slimmed — 54% smaller on disk",
+    sections: [
+      {
+        heading: "Performance",
+        items: [
+          "All 854 cartoon banners in public/cartoon-banners/ ran through sharp.trim() + resize-to-1024-wide. Solid-color beige borders are gone (cartoon content fills the full frame now), and total disk usage dropped from 135 MB → 62 MB (-54%, -73.7 MB). At the actual display sizes (320×106 grid, 560×360 modal) the resize is invisible — still 2-3× supersampled. Backups of the originals are at scripts/cartoon-banners-backup/ (gitignored) in case we want to roll back.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.108",
+    date: "2026-05-28",
+    title: "Quick Matches: one card per row on iPhone",
+    sections: [
+      {
+        heading: "Mobile layout",
+        items: [
+          "On the Quick Matches preview in Refine Your Matches, mobile now shows one full-width card per row instead of a cramped 2-column grid. Each card now has room for a properly sized banner image, a readable title that wraps cleanly, and the full description and synopsis. Tablet and desktop still show the 4-column grid as before. Paging through groups of 4 still works via the arrows at the bottom.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.107",
+    date: "2026-05-28",
+    title: "Quick Matches carousel: readable cards on iPhone",
+    sections: [
+      {
+        heading: "Mobile layout",
+        items: [
+          "On the Quick Matches preview in Refine Your Matches, the side-by-side arrow buttons were eating ~112px out of a 343px-wide row, leaving only 94px per card. Titles wrapped to one word per line, handles like \"@teslatakedown\" clipped mid-word, and category labels like \"ART/PERFORMANCE ART\" got chopped. The arrows now sit below the cards (flanking the page dots) on phones, giving each card ~150px — text wraps cleanly, handles fit, and the orange right-arrow no longer overlaps the second card. Tablet and desktop still show the arrows on the sides as before.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.106",
+    date: "2026-05-28",
+    title: "Refine Your Matches: tighter header alignment and clearer labels",
+    sections: [
+      {
+        heading: "Layout",
+        items: [
+          "The Time Commitment row used to sit slightly indented from the Location row below it. Both rows now anchor to the same left edge, so the clock and pin icons line up cleanly.",
+        ],
+      },
+      {
+        heading: "Copy",
+        items: [
+          "Renamed the chip-grid section from \"Match these categories\" to \"Preferred Categories.\" Shorter, more inviting.",
+          "Replaced the subtitle \"— pick one or more, or leave blank for all\" with \"— pick as many as you want.\" Less prescriptive about what blank means; same behavior.",
+        ],
+      },
+      {
+        heading: "Removed",
+        items: [
+          "Removed the \"Show all states\" checkbox that appeared when you selected a state. The state filter now strictly filters by the picked state.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.105",
+    date: "2026-05-28",
+    title: "Refine Your Matches: cleaner pill grid on mobile, smarter category buckets",
+    sections: [
+      {
+        heading: "Mobile layout",
+        items: [
+          "On the Refine Your Matches screen, the category pills used to wrap raggedly on iPhone — long labels like \"Professional Skills\" would share a row with short ones like \"Boost\" and leave big patches of empty whitespace. Pills now have a small minimum-width floor on mobile so short labels don't get dwarfed, and the rows pack more evenly. Care, Money / Stuff, and Other now each fit on a single line.",
+        ],
+      },
+      {
+        heading: "Category buckets",
+        items: [
+          "\"Show Up\" was both a section heading AND a category button inside that section — confusing. Renamed the section to \"Get Involved.\" The Show Up category button is unchanged.",
+          "Moved \"Boost\" from Care into Make / Do — amplifying others' work felt out of place next to Mental Health and Prayer.",
+          "Moved \"Transportation\" from Money / Stuff into Get Involved — giving people rides to events / canvasses / hearings is about showing up for the cause, not money.",
+          "\"Host\" and \"Irreverence\" used to fall into Other because they weren't listed anywhere. Host is now under Get Involved (hosting an event = showing up from the organizer side), and Irreverence is under Make / Do (memes, satire, street theater = creative output).",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.104",
+    date: "2026-05-27",
+    title: "Supabase \"Confirm Your Signup\" email is now ResistAct-branded",
+    sections: [
+      {
+        heading: "Onboarding",
+        items: [
+          "The confirmation email Supabase sends to email/password signups was a plain default \"Confirm Your Signup\" message from an unbranded sender. Replaced it with a full branded template (ResistAct banner, navy headline, orange confirm-email CTA, what-happens-next tip block, and a friendlier footer). Subject is now \"Confirm your ResistAct sign-up\" so it stands out in the inbox.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.103",
+    date: "2026-05-27",
+    title: "Signup welcome / waitlist emails actually send now",
+    sections: [
+      {
+        heading: "Bug fix",
+        items: [
+          "New Google-OAuth signups (and admin-allowlist auto-approvals) were creating the user record cleanly but never receiving the welcome/waitlist email. The send was happening fire-and-forget, and Supabase Edge Functions reap the worker the instant the HTTP response goes out — which was killing the Resend POST mid-flight before it ever left the box. Switched both signup and admin-approval paths to await the send. Adds ~200-500ms of one-time latency on the first sign-in, in exchange for reliable email delivery.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.102",
     date: "2026-05-27",
     title: "Refine Your Matches: renamed modal + more obvious Next/Back buttons",

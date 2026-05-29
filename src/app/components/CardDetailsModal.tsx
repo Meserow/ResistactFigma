@@ -29,6 +29,11 @@ interface CardDetailsModalProps {
       renders a small flag icon button at top-right. Skipped for the
       pinned Spread the Word card. */
   onFlag?: () => void;
+  /** Admin "edit this act" handler — opens the full EditCardModal. When
+   *  provided alongside `canEdit`, the modal renders a pencil button in
+   *  the top-right utility cluster. Lives in the modal (not on the card)
+   *  so the grid stays uncluttered for non-admin users. */
+  onEdit?: (id: number) => void;
   /** Admin-only: when true, the category pill becomes click-to-edit so
    *  admins can re-categorize a card without opening the full edit modal.
    *  Pairs with `accessToken` + `onCardUpdated`; if either is missing the
@@ -47,7 +52,7 @@ interface CardDetailsModalProps {
  * `line-clamp-5` cuts it off in the grid view. Click the "Read more" link on a
  * card to open this; click overlay / Escape / X to close.
  */
-export function CardDetailsModal({ card, onClose, onShare, onComplete, isCompleted, onBoost, isBoosted, onBookmark, isBookmarked, onFlag, canEdit, accessToken, onCardUpdated }: CardDetailsModalProps) {
+export function CardDetailsModal({ card, onClose, onShare, onComplete, isCompleted, onBoost, isBoosted, onBookmark, isBookmarked, onFlag, onEdit, canEdit, accessToken, onCardUpdated }: CardDetailsModalProps) {
   const cardRef = useRef<HTMLDivElement>(null);
 
   // ── Admin: inline category editor ──────────────────────────────────────
@@ -205,9 +210,6 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
               alt={card.title}
               className={`w-full h-full ${card.imageContain ? "object-contain p-3" : "object-cover object-top"}`}
             />
-            {!card.imageContain && (
-              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-            )}
             {(card.isOnline || card.location) && (
               <div className="absolute bottom-3 right-3 flex items-center gap-1 bg-white/95 backdrop-blur-sm rounded-md px-2.5 py-1 shadow-sm">
                 {card.isOnline
@@ -215,6 +217,19 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
                   : <><MapPin size={12} className="text-gray-700" /><span className="font-['Poppins',sans-serif] text-[12px] text-gray-700">{card.location}</span></>
                 }
               </div>
+            )}
+            {/* Admin edit pencil — bottom-left of the banner. Brand-orange
+                so it pops against any photo and reads as a primary admin
+                affordance. */}
+            {canEdit && onEdit && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onClose(); onEdit(card.id); }}
+                title="Edit this act"
+                aria-label="Edit"
+                className="absolute bottom-3 left-3 flex h-9 w-9 items-center justify-center rounded-full bg-[#ed6624] text-white shadow-md transition-colors hover:bg-[#d8551b]"
+              >
+                <Pencil size={15} />
+              </button>
             )}
             {/* Category pill — top-left of the banner, matches the on-card
                 placement so the modal feels like a zoomed-in card. Admins
