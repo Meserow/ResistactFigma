@@ -287,7 +287,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
                   no title-split for hero cards. Trailing ellipsis matches
                   the rest of the grid. */}
               {card.synopsis && (
-                <span className={`block font-normal italic text-gray-400 leading-snug ${compact ? "text-[11px] mt-1" : "text-[12px] mt-1.5"}`}>
+                <span className={`font-normal italic text-gray-400 leading-snug line-clamp-2 ${compact ? "text-[11px] mt-1" : "text-[12px] mt-1.5"}`}>
                   {/[.…!?]$/.test(card.synopsis) ? card.synopsis : card.synopsis + "…"}
                 </span>
               )}
@@ -566,7 +566,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
                   // than before: smaller, lighter gray, italic, and a bigger
                   // vertical gap. Previously the subtitle read as natural
                   // line-wrap because the visual delta was too small.
-                  <span className={`block font-normal italic text-gray-400 leading-snug ${compact ? "text-[11px] mt-1" : "text-[12px] mt-1.5"}`}>
+                  <span className={`font-normal italic text-gray-400 leading-snug line-clamp-2 ${compact ? "text-[11px] mt-1" : "text-[12px] mt-1.5"}`}>
                     {displayedTail}
                   </span>
                 )}

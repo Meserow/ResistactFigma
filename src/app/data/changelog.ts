@@ -16,6 +16,90 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.117",
+    date: "2026-05-27",
+    title: "Fix: 'Spread the Word' email invites now actually send",
+    sections: [
+      {
+        heading: "Spread the Word",
+        items: [
+          "Sending email invites from the Spread the Word modal was failing with 'Something went wrong — try again.' for everyone. The request was being rejected before it even reached our server because it was missing the auth header that Supabase requires on every function call.",
+          "Now: type in an email, hit Send Invites, and the invite actually goes out.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.116",
+    date: "2026-05-27",
+    title: "Card subtitles: 313 cards rewritten for consistent 2-line length",
+    sections: [
+      {
+        heading: "Card grid",
+        items: [
+          "Rewrote the italic subtitle on 313 cards so each one fills ~2 lines of text at the wide-desktop layout instead of being either one bare line (a location/date like 'Tukwila WA (May 29)') or a wall of three. Most rewrites kept the original punchy phrase intact and added the missing context — who runs it, what the format is, what action you actually take.",
+          "Examples: the NoTechForIce card now reads 'Pressure Palantir, Amazon, and Microsoft to end ICE surveillance tools' instead of having no subtitle at all. 'Search any brand's political donations before you buy' now reads 'Database lookup for 7,000+ brands' political donations before you buy' instead of the bare 'Database lookup for 7,000+ brands'.",
+          "Event-day protest cards now name the cause (e.g. 'Show up for Southend Indivisible's protest against ICE's expansion') instead of only showing the city and date.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.115",
+    date: "2026-05-28",
+    title: "Hotfix: restored the orange 'But what can one person do?' line",
+    sections: [
+      {
+        heading: "Hero",
+        items: [
+          "Reverted the previous hero font fix from `display=block` to `display=swap`. The block mode was hiding the orange handwritten line during its entire ~2.4s visibility window before the logo took over, so first-time visitors weren't seeing it at all. The preload + sans-serif fallback stay in place, so the script-font flash is still much briefer than before — just no longer hidden.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.114",
+    date: "2026-05-28",
+    title: "Fixed the script-font flash on the hero headline",
+    sections: [
+      {
+        heading: "Hero",
+        items: [
+          "Fixed the brief flash where 'But what can one person do?' would render in the system handwriting font (Apple Chancery / Snell Roundhand on Mac) before swapping to Rock Salt. The font now preloads during initial HTML parse, hides the text until Rock Salt is ready (up to 3s), and falls back to a neutral sans-serif instead of generic cursive if anything slips through.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.113",
+    date: "2026-05-27",
+    title: "Card subtitles now cap at two lines",
+    sections: [
+      {
+        heading: "Card grid",
+        items: [
+          "On the main feed and Quick Match preview, the italic subtitle under each card's title can no longer spill onto three or four lines. Anything longer than two lines now gets a trailing ellipsis instead of pushing the card taller than its neighbors. Cards line up cleanly across the grid again.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.2.112",
+    date: "2026-05-27",
+    title: "Admin: read-only 'View as' impersonation",
+    sections: [
+      {
+        heading: "Admin",
+        items: [
+          "New 'View as' button on every approved non-admin user in Admin Panel → Users. Click it and the app reloads the feed exactly as that user sees it — their Match Me preferences, their bookmarks, their day streak, their completed cards, their boosted cards. A persistent dark-blue banner at the top of the page makes it impossible to forget you're in view-as mode.",
+          "Read-only. Boost, complete, bookmark, approve-card, Match Me edit, and 'Add an Act' are all disabled — they no-op with a toast saying 'View-as is read-only'. Anything you DO accidentally type still wouldn't write to the impersonated user's account because the underlying admin token is still yours.",
+          "Click 'Exit' on the banner to drop back to your own view. Every start and end gets written to KV under `audit:impersonation:<adminId>:<targetId>:<timestamp>` so we have a trail. The impersonated user is NOT notified.",
+          "Known limitations (intentional for v1): static smacks are still pencil-editable, the admin-panel button is still visible (so you can exit and re-enter), and submitting flag-a-card / feedback while impersonating works normally (it tags as you, not them). Future polish.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.2.111",
     date: "2026-05-28",
     title: "Admin edit pencil moved off the card and into the details modal",
@@ -143,7 +227,7 @@ export const CHANGELOG: ChangelogEntry[] = [
   },
   {
     version: "1.2.103",
-    date: "2026-05-27",
+    date: "2026-05-28",
     title: "Signup welcome / waitlist emails actually send now",
     sections: [
       {

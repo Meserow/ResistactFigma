@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 import { analytics } from "../lib/analytics";
 import { X, Flame, Send, Check, Loader2, AlertCircle, Link, Mail, MessageSquare } from "lucide-react";
-import { projectId } from "/utils/supabase/info";
+import { projectId, publicAnonKey } from "/utils/supabase/info";
 
 const SHARE_API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04/share-invite`;
 
@@ -185,7 +185,10 @@ export function SpreadTheWordModal({ onClose }: { onClose: () => void }) {
     try {
       const res = await fetch(SHARE_API, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${publicAnonKey}`,
+        },
         body: JSON.stringify({ emails: allTags, note }),
       });
 
