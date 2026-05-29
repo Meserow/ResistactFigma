@@ -720,14 +720,17 @@ function StepToneAndPreview({
         </p>
       </div>
 
-      <div className="pl-5 grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-1 mb-1">
-        {/* Time Commitment — spans both columns, aligned with the grid below */}
+      {/* Time Commitment — header left-aligned flush with Location below
+          so the two rows visually anchor to the same x. Slider track keeps
+          its own pl-5 (line further down) so "Quick wins" / "All in" labels
+          sit cleanly in the slider's own padding zones. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-1 mb-1">
         {(() => {
           const tIdx = timeIndex(prefs.time);
           const tLevel = TIME_LEVELS[tIdx];
           return (
             <div className="sm:col-span-2 flex flex-col gap-0 mb-0">
-              <div className="flex items-center gap-1.5 pl-1">
+              <div className="flex items-center gap-1.5">
                 <Clock size={12} strokeWidth={1.75} className="text-gray-500 shrink-0" />
                 <span className="font-['Poppins',sans-serif] font-medium text-[12px] text-gray-800">
                   Time Commitment
@@ -779,19 +782,10 @@ function StepToneAndPreview({
             <option key={s} value={s}>{s}</option>
           ))}
         </select>
-        {prefs.state && (
-          <label className="flex items-center gap-1.5 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={prefs.includeAnywhere}
-              onChange={(e) => onPrefsChange((p) => ({ ...p, includeAnywhere: e.target.checked }))}
-              className="w-3.5 h-3.5 rounded accent-[#ed6624]"
-            />
-            <span className="font-['Poppins',sans-serif] text-[11px] text-gray-600">
-              Show all states
-            </span>
-          </label>
-        )}
+        {/* "Show all states" checkbox removed — the state filter is now a
+            strict filter on the picked state (the matcher still respects
+            prefs.includeAnywhere if it's true from a saved profile, but
+            new users have no UI to flip it). */}
       </div>
 
       {/* ── Include these — category INCLUDE chip grid (positive picker) ──
@@ -805,14 +799,14 @@ function StepToneAndPreview({
           <span className="flex items-center gap-1.5">
             <Sparkles size={12} strokeWidth={1.75} className="text-[#23297e] shrink-0" />
             <span className="font-['Poppins',sans-serif] text-xs font-bold uppercase tracking-wider text-gray-700">
-              Match these categories
+              Preferred Categories
             </span>
             {includedSet.size > 0 ? (
               <span className="font-['Poppins',sans-serif] text-[11px] font-semibold text-[#23297e]">
                 · {includedSet.size} picked
               </span>
             ) : (
-              <span className="font-['Poppins',sans-serif] text-[11.5px] text-gray-500">— pick one or more, or leave blank for all</span>
+              <span className="font-['Poppins',sans-serif] text-[11.5px] text-gray-500">— pick as many as you want</span>
             )}
           </span>
           {includedSet.size > 0 && (
@@ -840,7 +834,17 @@ function StepToneAndPreview({
                       type="button"
                       onClick={() => toggleIncludedCategory(cat)}
                       aria-pressed={isIncluded}
-                      className={`px-2.5 py-1 rounded-full text-[11px] font-['Poppins',sans-serif] font-medium transition-all border ${
+                      // `min-w-[64px] sm:min-w-0` — on mobile (iPhone) the
+                      // pills have a small width floor so short labels
+                      // ("Call", "Boost", "Host") aren't dwarfed by long ones
+                      // ("Professional Skills", "Art/Performance Art"). The
+                      // 64px floor is calibrated against the actual chip-row
+                      // width (~311px at iPhone 375) so 3 mid-length pills
+                      // (e.g. OTHER: News Story / Other / Personal Commitment)
+                      // can sit on one line without wrapping. Pills hug their
+                      // natural width past the floor — no stretching to fill
+                      // the row. On sm+ viewports the floor goes away.
+                      className={`min-w-[64px] sm:min-w-0 px-2.5 py-1 rounded-full text-[11px] font-['Poppins',sans-serif] font-medium transition-all border ${
                         isIncluded
                           ? "bg-[#23297e] text-white border-[#23297e]"
                           : "bg-white text-gray-700 border-gray-300 hover:border-[#23297e] hover:text-[#23297e]"
@@ -914,16 +918,21 @@ function StepToneAndPreview({
           return (
             <div className="mb-4">
               <div className="flex items-center gap-2">
-                {/* Left circle nav — invisible (not hidden) when single page so grid width stays stable */}
+                {/* Left circle nav — visible on tablet+ only. On mobile, the
+                    h-12 w-12 arrow eats ~48px of a 343px row (two of them =
+                    112px), leaving only 94px per card — text wraps to
+                    single-word lines and handles like "@teslatakedown" clip
+                    mid-word. On mobile the arrows move below next to the
+                    page dots so cards get the full row width. */}
                 <button
                   onClick={() => setCarouselPage((p) => Math.max(0, p - 1))}
                   disabled={carouselPage === 0}
                   aria-label="Previous matches"
-                  className={`shrink-0 flex h-12 w-12 items-center justify-center rounded-full bg-[#ed6624] text-white shadow-md hover:bg-[#c2521b] disabled:opacity-20 disabled:cursor-not-allowed transition-all ${totalPages <= 1 ? "invisible pointer-events-none" : ""}`}
+                  className={`hidden sm:flex shrink-0 h-12 w-12 items-center justify-center rounded-full bg-[#ed6624] text-white shadow-md hover:bg-[#c2521b] disabled:opacity-20 disabled:cursor-not-allowed transition-all ${totalPages <= 1 ? "invisible pointer-events-none" : ""}`}
                 >
                   <ChevronLeft size={22} strokeWidth={2.5} />
                 </button>
-                <ul className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-3 min-h-[270px]">
+                <ul className="flex-1 grid grid-cols-1 sm:grid-cols-4 gap-3 min-h-[270px]">
                 {pageCards.map((m) => {
                   const isFlagged = flagged.has(m.id);
                   return (
@@ -970,32 +979,54 @@ function StepToneAndPreview({
                   );
                 })}
                 </ul>
-                {/* Right circle nav */}
+                {/* Right circle nav — hidden on mobile, see comment on the
+                    left nav above. */}
                 <button
                   onClick={() => setCarouselPage((p) => Math.min(totalPages - 1, p + 1))}
                   disabled={carouselPage === totalPages - 1}
                   aria-label="Next matches"
-                  className={`shrink-0 flex h-12 w-12 items-center justify-center rounded-full bg-[#ed6624] text-white shadow-md hover:bg-[#c2521b] disabled:opacity-20 disabled:cursor-not-allowed transition-all ${totalPages <= 1 ? "invisible pointer-events-none" : ""}`}
+                  className={`hidden sm:flex shrink-0 h-12 w-12 items-center justify-center rounded-full bg-[#ed6624] text-white shadow-md hover:bg-[#c2521b] disabled:opacity-20 disabled:cursor-not-allowed transition-all ${totalPages <= 1 ? "invisible pointer-events-none" : ""}`}
                 >
                   <ChevronRight size={22} strokeWidth={2.5} />
                 </button>
               </div>
 
-              {/* Page dots — centred below the grid */}
+              {/* Bottom nav row — page dots, flanked by arrow buttons on
+                  mobile. Desktop hides the arrows here (they sit beside the
+                  grid above instead). Only renders when there's more than
+                  one page of matches. */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-1.5 mt-2">
-                  {Array.from({ length: totalPages }).map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setCarouselPage(i)}
-                      className={`rounded-full transition-all ${
-                        i === carouselPage
-                          ? "w-4 h-1.5 bg-[#23297e]"
-                          : "w-1.5 h-1.5 bg-gray-300 hover:bg-gray-400"
-                      }`}
-                      aria-label={`Page ${i + 1}`}
-                    />
-                  ))}
+                <div className="flex items-center justify-center gap-3 mt-3">
+                  <button
+                    onClick={() => setCarouselPage((p) => Math.max(0, p - 1))}
+                    disabled={carouselPage === 0}
+                    aria-label="Previous matches"
+                    className="sm:hidden shrink-0 flex h-9 w-9 items-center justify-center rounded-full bg-[#ed6624] text-white shadow hover:bg-[#c2521b] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  >
+                    <ChevronLeft size={18} strokeWidth={2.5} />
+                  </button>
+                  <div className="flex items-center justify-center gap-1.5">
+                    {Array.from({ length: totalPages }).map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setCarouselPage(i)}
+                        className={`rounded-full transition-all ${
+                          i === carouselPage
+                            ? "w-4 h-1.5 bg-[#23297e]"
+                            : "w-1.5 h-1.5 bg-gray-300 hover:bg-gray-400"
+                        }`}
+                        aria-label={`Page ${i + 1}`}
+                      />
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => setCarouselPage((p) => Math.min(totalPages - 1, p + 1))}
+                    disabled={carouselPage === totalPages - 1}
+                    aria-label="Next matches"
+                    className="sm:hidden shrink-0 flex h-9 w-9 items-center justify-center rounded-full bg-[#ed6624] text-white shadow hover:bg-[#c2521b] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  >
+                    <ChevronRight size={18} strokeWidth={2.5} />
+                  </button>
                 </div>
               )}
             </div>

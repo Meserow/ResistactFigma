@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from "react";
-import { CheckCircle2, Clock, Globe, MapPin, Pencil } from "lucide-react";
+import { CheckCircle2, Clock, Globe, MapPin } from "lucide-react";
 import { useAnimatedNumber } from "../lib/animations";
 import { ShareModal } from "./ShareModal";
 import { SpreadTheWordModal } from "./SpreadTheWordModal";
@@ -237,33 +237,6 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
     );
   }
 
-  // ── Shared top-right controls (edit pencil only — bookmark moved to modal) ─
-  // On image (`light`), the icons sit inside a translucent dark pill so they
-  // stay legible regardless of the photo behind them — bright/light images
-  // were swallowing the white icon previously.
-  // TopControls now holds only the admin "edit" pencil. Bookmark moved
-  // into CardDetailsModal as a labeled button so non-admin users
-  // actually discover the feature. For non-admins (canEdit=false), this
-  // component renders nothing — the caller should skip rendering its
-  // wrapper too so the absolute-positioned slot doesn't reserve space.
-  function TopControls({ light = true }: { light?: boolean }) {
-    if (!canEdit) return null;
-    const btnCls = light
-      ? "w-7 h-7 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-sm text-white hover:bg-black/55 transition-colors"
-      : "text-gray-500 hover:text-[#23297e] transition-colors";
-    return (
-      <div className="flex items-center gap-1">
-        <button
-          onClick={(e) => { e.stopPropagation(); onEdit?.(card.id); }}
-          title="Edit this act"
-          className={btnCls}
-        >
-          <Pencil size={14} />
-        </button>
-      </div>
-    );
-  }
-
   /* ── Featured (navy) card ─────────────────────────────── */
   if (card.isFeatured) {
     return (
@@ -287,10 +260,11 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
               ? <img src={effectiveTopImage} alt={card.title} className={`${card.cartoonImageUrl || card.pinToTop ? "" : "resistact-banner-desat"} absolute inset-0 w-full h-full object-cover ${card.cartoonImageUrl ? "object-[center_20%]" : "object-top"}`} />
               : card.featuredIllustration
             }
-            <div className="absolute top-2.5 right-3 flex items-center gap-1.5">
-              {!compact && <TimeBadge light={true} />}
-              <TopControls light={true} />
-            </div>
+            {!compact && (
+              <div className="absolute top-2.5 right-3 flex items-center gap-1.5">
+                <TimeBadge light={true} />
+              </div>
+            )}
             {/* Boost lives only inside the card-details modal now — keeping
                 it off the card itself declutters the grid; users still
                 get to it after opening the card. Spread the Word never
@@ -372,6 +346,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
             isBoosted={isBoosted}
             onBookmark={onBookmark}
             isBookmarked={isBookmarked}
+            onEdit={onEdit}
             canEdit={canEdit}
             accessToken={accessToken}
             onCardUpdated={onCardUpdated}
@@ -430,9 +405,6 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
             ) : (
               <img src={cardFallbackImg} alt="" aria-hidden="true" className="w-full h-full object-contain p-2" />
             )}
-            {showTopImage && !card.imageContain && (
-              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-            )}
           </div>
         ) : (
           /* Non-compact: full-width banner on top (matches the Spread the
@@ -457,15 +429,10 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
             ) : (
               <img src={cardFallbackImg} alt="" aria-hidden="true" className="w-full h-full object-contain p-4" />
             )}
-            {/* Gradient overlay for readability — only on real photos. */}
-            {showTopImage && !card.imageContain && (
-              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-            )}
-
-            {/* Top-right cluster: time pill + admin edit pencil. */}
+            {/* Top-right: time pill. Admin edit pencil lives in the
+                details modal so the grid stays uncluttered. */}
             <div className="absolute top-2.5 right-3 flex items-center gap-1.5">
               <TimeBadge light={showTopImage} />
-              <TopControls light={showTopImage} />
             </div>
 
             {/* Type tag on top-left of the banner. */}
@@ -689,6 +656,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           isBookmarked={isBookmarked}
           onShare={() => setShareOpen(true)}
           onFlag={() => setFlagOpen(true)}
+          onEdit={onEdit}
           canEdit={canEdit}
           accessToken={accessToken}
           onCardUpdated={onCardUpdated}

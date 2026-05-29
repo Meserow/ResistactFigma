@@ -100,18 +100,21 @@ async function ensureApprovalRecord(user: any) {
 
   await kv.set(`user:approval:${user.id}`, record);
 
-  // Fire the right intro email best-effort. Admin-allowlisted users skip the
-  // manual /admin/approve step entirely, so without this they'd never get the
-  // welcome email that pending-then-approved users get. Pending users get a
-  // "we got your application" note so signup doesn't feel like a black hole.
-  if (record.status === "approved") {
-    sendApprovalEmail(record).catch((err) => {
-      console.log(`Welcome email (auto-approved) failed for ${record.email}:`, err);
-    });
-  } else {
-    sendWaitlistEmail(record).catch((err) => {
-      console.log(`Waitlist email failed for ${record.email}:`, err);
-    });
+  // Fire the right intro email. We AWAIT the send (rather than firing and
+  // forgetting) because Supabase Edge Functions reap the worker once the
+  // HTTP response is sent — and that reaping was killing the Resend POST
+  // mid-flight, so users were getting no email even though the KV record
+  // was being created cleanly. Adds ~200-500ms to the first /auth/status
+  // after signup. Errors are still caught so a Resend hiccup never breaks
+  // the actual record-creation flow.
+  try {
+    if (record.status === "approved") {
+      await sendApprovalEmail(record);
+    } else {
+      await sendWaitlistEmail(record);
+    }
+  } catch (err) {
+    console.log(`Intro email failed for ${record.email}:`, err);
   }
 
   return record;
@@ -1284,12 +1287,16 @@ app.post("/make-server-9eb1ae04/admin/approve/:userId", async (c) => {
     await kv.set(`user:approval:${targetId}`, record);
     console.log(`Admin approved user ${record.email}`);
 
-    // Best-effort welcome email. Wrapped so a Resend hiccup never blocks
-    // the approval flow itself — the admin still sees success, the user
-    // record is still flipped, and the email is logged either way.
-    sendApprovalEmail(record).catch((err) => {
+    // Awaited (not fire-and-forget) so the Supabase Edge worker doesn't
+    // get reaped mid-send. The Resend POST is ~200KB with the inline
+    // banner, and reaping was killing the send before it completed,
+    // leaving users without their welcome email. Try/catch ensures a
+    // Resend hiccup never blocks the approval flow.
+    try {
+      await sendApprovalEmail(record);
+    } catch (err) {
       console.log(`Approval email failed for ${record.email}:`, err);
-    });
+    }
 
     return c.json({ user: record });
   } catch (err) {

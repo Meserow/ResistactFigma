@@ -63,8 +63,6 @@ export function FactCard({ card, onBoost, isBoosted, boostCount = 0 }: FactCardP
             className="absolute inset-0 w-full h-full object-cover"
             loading="lazy"
           />
-          {/* Bottom fade into card */}
-          <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white to-transparent" />
           {/* Category badge overlaid on image */}
           <div className="absolute top-2.5 left-3">
             <span
