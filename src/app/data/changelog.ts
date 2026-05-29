@@ -16,7 +16,7 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: "1.2.117",
+    version: "1.3.0",
     date: "2026-05-27",
     title: "Fix: 'Spread the Word' email invites now actually send",
     sections: [
