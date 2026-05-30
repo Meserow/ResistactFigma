@@ -120,6 +120,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, onDeleted }: EditCardModalProps) {
   const [title,          setTitle]          = useState(card.title);
+  const [synopsis,       setSynopsis]       = useState(card.synopsis ?? ""); // one-line subtitle shown below the title on the card
   const [description,    setDescription]    = useState(card.description);
   const [category,       setCategory]       = useState(() => normaliseCategory(card.category));
   const [categoryColor,  setCategoryColor]  = useState(card.categoryColor);
@@ -236,6 +237,8 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
 
       const payload = {
         title:          title.trim(),
+        // null (not "") clears it back to the manifest fallback, mirroring targetUrl.
+        synopsis:       synopsis.trim() || null,
         description:    description.trim(),
         category,
         categoryColor,
@@ -325,6 +328,15 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
               type="text" value={title} maxLength={100}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Clear, compelling title…"
+              className={INPUT_CLS}
+            />
+          </Field>
+
+          <Field label="Subtitle">
+            <input
+              type="text" value={synopsis} maxLength={100}
+              onChange={(e) => setSynopsis(e.target.value)}
+              placeholder="One line in plainer language — shows under the title on the card"
               className={INPUT_CLS}
             />
           </Field>

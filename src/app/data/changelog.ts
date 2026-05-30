@@ -16,6 +16,20 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.12",
+    date: "2026-05-30",
+    title: "Set an Act's subtitle when you add or edit it",
+    sections: [
+      {
+        heading: "Add & edit an Act",
+        items: [
+          "Both the \"Add an Act\" and \"Edit Action\" forms now have a Subtitle field, right under the title. It's the short one-line summary that shows below the title on the act card — a chance to say in plainer language what the act is. It's optional: leave it blank and the card behaves exactly as before.",
+          "The forms and the cards now use the same word — \"Subtitle\" — for the same line, so what you type is exactly what shows under the title. Clearing the subtitle on an existing Act resets it to its default.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.11",
     date: "2026-05-30",
     title: "Footer acts count jumps back to The Acts from other tabs",

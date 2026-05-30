@@ -4814,9 +4814,9 @@ app.post("/make-server-9eb1ae04/actions/create", async (c) => {
       return c.json({ error: "Your account must be approved before posting." }, 403);
     }
 
-    const { title, description, category, categoryColor, location, isOnline, spotsTotal, sponsor, link, targetUrl: targetUrlField, authorName: reqAuthorName, authorRole: reqAuthorRole, authorLink, vettingInfo, actionType, timeCommitment, quickAction, topImageUrl, imageContain, toneOverride, amplifiesGroups } =
+    const { title, synopsis, description, category, categoryColor, location, isOnline, spotsTotal, sponsor, link, targetUrl: targetUrlField, authorName: reqAuthorName, authorRole: reqAuthorRole, authorLink, vettingInfo, actionType, timeCommitment, quickAction, topImageUrl, imageContain, toneOverride, amplifiesGroups } =
       await c.req.json<{
-        title: string; description: string; category: string; categoryColor: string;
+        title: string; synopsis?: string; description: string; category: string; categoryColor: string;
         location?: string; isOnline?: boolean; spotsTotal: number | "Unlimited";
         sponsor?: string; link?: string; targetUrl?: string;
         authorName?: string; authorRole?: string; authorLink?: string;
@@ -4855,6 +4855,7 @@ app.post("/make-server-9eb1ae04/actions/create", async (c) => {
       category: category.toUpperCase(),
       categoryColor,
       title,
+      synopsis: synopsis?.trim() || undefined,
       description,
       location: location || undefined,
       isOnline: isOnline ?? false,

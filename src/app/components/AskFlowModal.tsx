@@ -119,6 +119,7 @@ export function AskFlowModal({
 
   // Form state
   const [formTitle,        setFormTitle]        = useState("");
+  const [formSynopsis,     setFormSynopsis]     = useState(""); // one-line subtitle shown below the title on the card
   const [formDesc,         setFormDesc]         = useState("");
   const [formLink,         setFormLink]         = useState(""); // action URL → sent as targetUrl
   const [formAuthorLink,   setFormAuthorLink]   = useState(""); // org/author homepage
@@ -260,6 +261,7 @@ export function AskFlowModal({
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
           body: JSON.stringify({
             title:          formTitle.trim(),
+            synopsis:       formSynopsis.trim()     || undefined,
             description:    formDesc.trim(),
             category:       selectedCategory!,
             categoryColor:  selectedCat?.color ?? "#23297e",
@@ -357,6 +359,16 @@ export function AskFlowModal({
                     className={inputCls}
                   />
                   <Counter value={formTitle} max={80} />
+                </Field>
+
+                <Field label="Subtitle">
+                  <input
+                    type="text" value={formSynopsis} maxLength={100} autoComplete="off"
+                    onChange={(e) => setFormSynopsis(e.target.value)}
+                    placeholder="One line in plainer language — shows under the title on the card"
+                    className={inputCls}
+                  />
+                  <Counter value={formSynopsis} max={100} />
                 </Field>
 
                 <Field label="Category" required>
