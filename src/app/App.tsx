@@ -75,6 +75,13 @@ interface ServerCard {
   imageContain?: boolean;
   adminApproved?: boolean;
   firstTimerFriendly?: boolean;
+  /** Admin editorial pin: floats the card to the top of the feed (just below
+   *  the unconditional "Spread the Word" pinToTop card), above the automatic
+   *  state-local event band. Distinct from `firstTimerFriendly`, which is a
+   *  broad "good for first-timers / Today's Five" curation flag set on many
+   *  seed cards — that one must NOT pin to the top. Set via the Edit modal's
+   *  "⭐ Highlighted action" checkbox. */
+  highlighted?: boolean;
   urlOk?: boolean;
   urlCheckedAt?: string;
   eventDate?: string;
@@ -809,6 +816,13 @@ export default function App() {
   // close over them.
   const todayISO = new Date().toISOString().slice(0, 10);
 
+  // Count of acts created today (UTC). Surfaced as a parenthetical next to
+  // the total acts count in the persistent footer ("701 acts (1 new today)").
+  const newActionsToday = useMemo(
+    () => cards.filter((c) => (((c as any).createdAt as string | undefined) ?? "").slice(0, 10) === todayISO).length,
+    [cards, todayISO],
+  );
+
   // Upcoming-event boost — pushes time-sensitive cards toward the top of the
   // Popular sort. Closer event = bigger boost. Past events return 0 because
   // they're already filtered out of the visible feed (see gated[] above).
@@ -956,15 +970,27 @@ export default function App() {
     })();
 
     const withPinned = (arr: ActionCardData[]): ActionCardData[] => {
-      // Order: pinToTop cards (Spread the Word) → state-local upcoming events
-      // → everything else, with the latter two de-duped against each other and
-      // against the rest of the array so cards never appear twice.
+      // Order: pinToTop cards (Spread the Word) → admin-highlighted cards →
+      // state-local upcoming events → everything else, with each band de-duped
+      // against the ones above it and against the rest so cards never appear
+      // twice.
       const usedIds = new Set<number>();
       for (const c of pinnedAlwaysShow) if (typeof c.id === "number") usedIds.add(c.id);
+      // Admin editorial highlights sit directly below the Spread-the-Word pin.
+      // They're pulled out of `arr` (not `cards`) so they still respect the
+      // active filters / search / Match Me result set — highlighting floats a
+      // card to the top OF THE CURRENT VIEW, it doesn't override an explicit
+      // filter the way the unconditional pinToTop card does. Because they keep
+      // their relative order from `arr`, they're already ordered among
+      // themselves by whatever sort is active (engagement for Popular, etc.).
+      const highlightBand = arr.filter(
+        (c) => c.highlighted && !c.pinToTop && typeof c.id === "number" && !usedIds.has(c.id),
+      );
+      for (const c of highlightBand) usedIds.add(c.id!);
       const localBand = localUpcomingCards.filter((c) => !usedIds.has(c.id!));
       for (const c of localBand) usedIds.add(c.id!);
       const rest = arr.filter((c) => !c.pinToTop && !(typeof c.id === "number" && usedIds.has(c.id)));
-      return [...pinnedAlwaysShow, ...localBand, ...rest];
+      return [...pinnedAlwaysShow, ...highlightBand, ...localBand, ...rest];
     };
     // Backwards-compat alias used further down — same behaviour now.
     const pinFirst = withPinned;
@@ -1988,25 +2014,17 @@ export default function App() {
         heroSlot={
           effectiveApproval
             ? activeTab === "acts"
-              ? (() => {
-                  const todayStr = new Date().toISOString().slice(0, 10);
-                  const newToday = cards.filter((c: any) => {
-                    const created = (c.createdAt as string | undefined) ?? "";
-                    return created.slice(0, 10) === todayStr;
-                  }).length;
-                  return (
-                    <LoggedInHero
-                      userId={effectiveApproval.userId}
-                      name={effectiveApproval.name || "Resistor"}
-                      streak={effectiveLoginStreak}
-                      newActionsToday={newToday}
-                      onMatchClick={() => isImpersonating ? showToast("View-as is read-only") : setMatchOpen(true)}
-                      onAskClick={() => isImpersonating ? showToast("View-as is read-only") : setAskOpen(true)}
-                      onHowClick={() => setInfoOpen(true)}
-                      hasMatchPrefs={effectiveMatchPrefs !== null}
-                    />
-                  );
-                })()
+              ? (
+                  <LoggedInHero
+                    userId={effectiveApproval.userId}
+                    name={effectiveApproval.name || "Resistor"}
+                    streak={effectiveLoginStreak}
+                    onMatchClick={() => isImpersonating ? showToast("View-as is read-only") : setMatchOpen(true)}
+                    onAskClick={() => isImpersonating ? showToast("View-as is read-only") : setAskOpen(true)}
+                    onHowClick={() => setInfoOpen(true)}
+                    hasMatchPrefs={effectiveMatchPrefs !== null}
+                  />
+                )
               : null
             : <HomeHero
                 onMatchClick={() => setMatchOpen(true)}
@@ -2470,11 +2488,17 @@ export default function App() {
           so the center tag stays on one line. */}
       <div className="fixed bottom-0 inset-x-0 z-30 bg-white border-t border-gray-200 shadow-[0_-1px_3px_rgba(0,0,0,0.08)]">
         <div className="flex items-center justify-between gap-2 md:gap-5 py-4 px-3 md:px-6">
-          {/* Left: acts count */}
+          {/* Left: acts count, with a "(N new today)" parenthetical when any
+              acts were created today. The "acts" word is hidden on mobile to
+              save space; the "new today" note rides along with it. */}
           <div className="flex items-center gap-1.5 shrink-0">
             <div className="w-2 h-2 rounded-full bg-[#ed6624]" />
             <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
-              <strong className="text-[#ed6624] font-bold">{synced ? displayedCards.length : "—"}</strong><span className="hidden md:inline">{" "}acts</span>
+              <strong className="text-[#ed6624] font-bold">{synced ? displayedCards.length : "—"}</strong>
+              <span className="hidden md:inline">
+                {" "}acts
+                {synced && newActionsToday > 0 && ` (${newActionsToday} new today)`}
+              </span>
             </span>
           </div>
           {/* Center: call-to-action tag */}

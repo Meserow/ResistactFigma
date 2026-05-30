@@ -16,6 +16,35 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.8",
+    date: "2026-05-30",
+    title: "\"New today\" count moved from the welcome header to the footer",
+    sections: [
+      {
+        heading: "Look & feel",
+        items: [
+          "The \"N new actions today\" line under the welcome greeting is gone — that count now rides as a parenthetical next to the acts total in the persistent footer, e.g. \"701 acts (1 new today)\". The welcome header is now just the greeting and your day-streak.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.7",
+    date: "2026-05-30",
+    title: "Highlighted acts now pin to the top of the feed",
+    sections: [
+      {
+        heading: "Admin",
+        items: [
+          "The \"⭐ Highlighted action\" checkbox now does what you'd expect: a highlighted act floats to the top of the main feed, just below the pinned \"Spread the Word\" card — instead of only nudging it in Quick Match results.",
+          "Multiple highlighted acts sit together in a band at the top, ordered among themselves by the usual rules (popularity, upcoming events, location).",
+          "Highlighted acts still respect the active filters and search — highlighting floats an act to the top of whatever you're currently viewing, it doesn't force it past a filter you've set.",
+          "Highlighted acts also keep their boost in Quick Match, same as before.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.6",
     date: "2026-05-30",
     title: "Reworked act-card layout: category pill in the footer, stats on the image",

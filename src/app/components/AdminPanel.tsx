@@ -162,6 +162,7 @@ interface PendingCard {
   adminApproved?: boolean;
   notOnTopic?: boolean;
   firstTimerFriendly?: boolean;
+  highlighted?: boolean;
   _store?: string;
 }
 
@@ -856,7 +857,7 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
                                   </span>
                                 )}
                                 {/* Highlighted action badge */}
-                                {card.firstTimerFriendly && (
+                                {card.highlighted && (
                                   <span className="inline-flex items-center gap-1 text-[10px] font-bold font-['Poppins',sans-serif] uppercase tracking-wider px-1.5 py-0.5 rounded-md text-emerald-700 bg-emerald-50 border border-emerald-200">
                                     ⭐ HIGHLIGHTED
                                   </span>

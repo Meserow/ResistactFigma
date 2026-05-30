@@ -146,7 +146,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
   const [topImageUrl,        setTopImageUrl]        = useState<string>((card as any).topImageUrl ?? "");
   const [imageContain,       setImageContain]       = useState<boolean>(card.imageContain === true);
   const [atHome,             setAtHome]             = useState<boolean>(card.atHome === true);
-  const [firstTimerFriendly, setFirstTimerFriendly] = useState<boolean>((card as any).firstTimerFriendly === true);
+  const [highlighted, setHighlighted] = useState<boolean>((card as any).highlighted === true);
   const [eventDate,          setEventDate]          = useState<string>((card as any).eventDate ?? "");
   const [toneAnger,      setToneAnger]      = useState<number | null>((card.toneOverride?.anger      ?? null) as number | null);
   const [toneComedy,     setToneComedy]     = useState<number | null>((card.toneOverride?.comedy     ?? null) as number | null);
@@ -253,7 +253,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
         topImageUrl:    topImageUrl.trim() || null,
         imageContain,
         atHome,
-        firstTimerFriendly,
+        highlighted,
         eventDate:      eventDate.trim() || undefined,
         toneOverride,
       };
@@ -309,12 +309,12 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
           {isAdmin && (
             <label className="flex items-center gap-2 cursor-pointer select-none bg-[#23297e]/5 rounded-xl px-3 py-2.5">
               <input
-                type="checkbox" checked={firstTimerFriendly}
-                onChange={(e) => setFirstTimerFriendly(e.target.checked)}
+                type="checkbox" checked={highlighted}
+                onChange={(e) => setHighlighted(e.target.checked)}
                 className="w-4 h-4 rounded accent-[#23297e]"
               />
               <span className="font-['Poppins',sans-serif] text-sm font-semibold text-[#23297e]">
-                ⭐ Highlighted action <span className="font-normal text-gray-500">(boosts in matching)</span>
+                ⭐ Highlighted action <span className="font-normal text-gray-500">(pins to top of the feed)</span>
               </span>
             </label>
           )}

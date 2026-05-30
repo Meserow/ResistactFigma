@@ -4,21 +4,17 @@ interface LoggedInHeroProps {
   userId: string;
   name: string;
   streak: number;
-  newActionsToday: number;
   onMatchClick?: () => void;
   onAskClick?: () => void;
   onHowClick?: () => void;
   hasMatchPrefs?: boolean;
 }
 
-export function LoggedInHero({ name, streak, newActionsToday, onMatchClick, onAskClick, onHowClick, hasMatchPrefs }: LoggedInHeroProps) {
+export function LoggedInHero({ name, streak, onMatchClick, onAskClick, onHowClick, hasMatchPrefs }: LoggedInHeroProps) {
   const firstName = name.split(/\s+/)[0] || name;
   const greeting = streak <= 1 ? "Welcome to the resistance" : "Welcome back to the resistance";
-  const subline =
-    newActionsToday > 0
-      ? `${newActionsToday} new action${newActionsToday === 1 ? "" : "s"} today.`
-      : "";
-
+  // The "N new actions today" line moved to the persistent footer (next to
+  // the total acts count) so the hero stays focused on the greeting + streak.
   const showStreakFlame = streak >= 7;
 
   return (
@@ -32,9 +28,6 @@ export function LoggedInHero({ name, streak, newActionsToday, onMatchClick, onAs
             )}
             Day {streak}.
           </em>
-        </p>
-        <p className="mt-1 font-['Poppins',sans-serif] text-sm text-gray-600 m-0">
-          {subline}
         </p>
 
         <div className="mt-4">
