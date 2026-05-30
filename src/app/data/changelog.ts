@@ -16,6 +16,20 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.1",
+    date: "2026-05-27",
+    title: "Fix: Share Feedback form now actually sends + silent smack-boost sync fixed",
+    sections: [
+      {
+        heading: "Fixes",
+        items: [
+          "The Share Feedback modal was returning 'Couldn't send — Missing authorization header' on every submission. Same root cause as the Spread-the-Word email fix in 1.3.0: the request was missing the Supabase gateway auth header, so it never reached our handler. Added the standard anon-key Bearer token to the fetch call.",
+          "While auditing, found the same missing-header bug on smack boosts — clicking 🔥 boost on a smack was updating your local count but the server-side count was silently failing. Fixed too. Your local boost count and the public count should now stay in sync.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.0",
     date: "2026-05-27",
     title: "Fix: 'Spread the Word' email invites now actually send",
