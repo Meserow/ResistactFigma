@@ -275,7 +275,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
               without flashing or strobing. */}
           <div className={`resistact-anim-shimmer relative ${compact ? "h-[70px]" : "h-[106px]"} shrink-0 bg-[#23297e] flex items-center justify-center overflow-hidden`}>
             {effectiveTopImage
-              ? <img src={effectiveTopImage} alt={card.title} loading="lazy" decoding="async" className={`${card.cartoonImageUrl || card.pinToTop ? "" : "resistact-banner-desat"} absolute inset-0 w-full h-full object-cover ${card.cartoonImageUrl ? "object-[center_20%]" : "object-top"}`} />
+              ? <img src={effectiveTopImage} alt={card.title} loading="lazy" decoding="async" className={`${card.pinToTop ? "" : "resistact-banner-desat"} absolute inset-0 w-full h-full object-cover ${card.cartoonImageUrl ? "object-[center_20%]" : "object-top"}`} />
               : card.featuredIllustration
             }
             {!compact && (
@@ -424,7 +424,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
               <ImageWithFallback
                 src={effectiveTopImage}
                 alt={card.title}
-                className={`${card.cartoonImageUrl ? "" : "resistact-banner-desat"} w-full h-full ${card.imageContain ? "object-contain p-2" : `object-cover ${card.cartoonImageUrl ? "object-[center_20%]" : "object-top"}`}`}
+                className={`${card.pinToTop ? "" : "resistact-banner-desat"} w-full h-full ${card.imageContain ? "object-contain p-2" : `object-cover ${card.cartoonImageUrl ? "object-[center_20%]" : "object-top"}`}`}
                 onError={() => setImageFailed(true)}
               />
             ) : (
@@ -448,7 +448,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
                    center so heads stay in frame at the 4:1 card aspect.
                    For original photos (no cartoon), use object-top to keep
                    the legacy behavior. */
-                className={`${card.cartoonImageUrl ? "" : "resistact-banner-desat"} w-full h-full ${card.imageContain ? "object-contain p-2" : `object-cover ${card.cartoonImageUrl ? "[object-position:50%_15%]" : "object-top"}`}`}
+                className={`${card.pinToTop ? "" : "resistact-banner-desat"} w-full h-full ${card.imageContain ? "object-contain p-2" : `object-cover ${card.cartoonImageUrl ? "[object-position:50%_15%]" : "object-top"}`}`}
                 onError={() => setImageFailed(true)}
               />
             ) : (

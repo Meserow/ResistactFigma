@@ -16,6 +16,46 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.11",
+    date: "2026-05-30",
+    title: "Footer acts count jumps back to The Acts from other tabs",
+    sections: [
+      {
+        heading: "Navigation",
+        items: [
+          "Following yesterday's clickable facts/smacks counts: the \"N acts\" count in the footer is now also a button — but only when you're on The Facts or The Smacks tab, where it takes you back to The Acts. On the Acts tab it stays a plain label (no point linking to the page you're already on).",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.10",
+    date: "2026-05-30",
+    title: "Act cards now rest in near-full color",
+    sections: [
+      {
+        heading: "Look & feel",
+        items: [
+          "Act card images now sit at 90% color at rest and pop to full color on hover, instead of resting nearly grayscale. The old heavy desaturation dated from when the whole feed was muted photos — now that almost every card has a full-color illustrated banner, the few plain-photo cards (like the \"I Want to Do Something\" newsletter) were the only ones left looking washed out. They match the rest of the feed now.",
+          "The pinned \"Spread the Word\" card stays at full color as the brand anchor.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.9",
+    date: "2026-05-30",
+    title: "Footer facts & smacks counts are now clickable shortcuts",
+    sections: [
+      {
+        heading: "Navigation",
+        items: [
+          "The \"N facts\" and \"N smacks\" counts in the bottom footer are now buttons — click them to jump straight to The Facts or The Smacks tab (and scroll to the top). The footer doubles as quick section nav.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.8",
     date: "2026-05-30",
     title: "\"New today\" count moved from the welcome header to the footer",

@@ -2491,16 +2491,36 @@ export default function App() {
           {/* Left: acts count, with a "(N new today)" parenthetical when any
               acts were created today. The "acts" word is hidden on mobile to
               save space; the "new today" note rides along with it. */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            <div className="w-2 h-2 rounded-full bg-[#ed6624]" />
-            <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
-              <strong className="text-[#ed6624] font-bold">{synced ? displayedCards.length : "—"}</strong>
-              <span className="hidden md:inline">
-                {" "}acts
-                {synced && newActionsToday > 0 && ` (${newActionsToday} new today)`}
-              </span>
-            </span>
-          </div>
+          {/* On the Facts/Smacks tabs the acts count becomes a button that
+              jumps back to The Acts (and scrolls to top). On the Acts tab
+              itself it stays a plain label — clicking your current tab is a
+              no-op, so we don't dress it up as a link. */}
+          {(() => {
+            const innerContent = (
+              <>
+                <div className="w-2 h-2 rounded-full bg-[#ed6624]" />
+                <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
+                  <strong className="text-[#ed6624] font-bold">{synced ? displayedCards.length : "—"}</strong>
+                  <span className="hidden md:inline">
+                    {" "}acts
+                    {synced && newActionsToday > 0 && ` (${newActionsToday} new today)`}
+                  </span>
+                </span>
+              </>
+            );
+            return activeTab === "acts" ? (
+              <div className="flex items-center gap-1.5 shrink-0">{innerContent}</div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => { handleTabChange("acts"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                className="flex items-center gap-1.5 shrink-0 rounded-md px-1 -mx-1 hover:bg-[#ed6624]/10 transition-colors cursor-pointer"
+                title="Go to The Acts"
+              >
+                {innerContent}
+              </button>
+            );
+          })()}
           {/* Center: call-to-action tag */}
           <p className="font-['Poppins',sans-serif] text-center text-[12px] md:text-base leading-tight min-w-0 flex-1">
             <strong className="font-bold text-[#23297e]">
@@ -2508,20 +2528,32 @@ export default function App() {
             </strong>{" "}
             <em className="italic font-bold text-[#ed6624]">Come back tomorrow.</em>
           </p>
-          {/* Right: facts + smacks counts */}
+          {/* Right: facts + smacks counts — each is a button that jumps to
+              its tab and scrolls to the top, so the footer doubles as quick
+              nav between sections. */}
           <div className="flex items-center gap-2 md:gap-3 shrink-0">
-            <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => { handleTabChange("facts"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+              className="flex items-center gap-1.5 rounded-md px-1 -mx-1 hover:bg-[#127f05]/10 transition-colors cursor-pointer"
+              title="Go to The Facts"
+            >
               <div className="w-2 h-2 rounded-full bg-[#127f05]" />
               <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
                 <strong className="text-[#127f05] font-bold">{FACT_CARDS.length}</strong><span className="hidden md:inline">{" "}facts</span>
               </span>
-            </div>
-            <div className="flex items-center gap-1.5">
+            </button>
+            <button
+              type="button"
+              onClick={() => { handleTabChange("receipts"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+              className="flex items-center gap-1.5 rounded-md px-1 -mx-1 hover:bg-[#23297e]/10 transition-colors cursor-pointer"
+              title="Go to The Smacks"
+            >
               <div className="w-2 h-2 rounded-full bg-[#23297e]" />
               <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
                 <strong className="text-[#23297e] font-bold">{receipts.length + STATIC_SMACKS.length}</strong><span className="hidden md:inline">{" "}smacks</span>
               </span>
-            </div>
+            </button>
           </div>
         </div>
       </div>
