@@ -126,13 +126,18 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
   const [involvement,    setInvolvement]    = useState<TimeBucket>(() =>
     timeBucketFromCard(card.timeCommitment, (card as any).quickAction)
   );
-  const initialLocation = card.isOnline
-    ? "Online"
+  // "Remote" is the single canonical location-agnostic value. Legacy
+  // online/at-home cards (isOnline:true, or location "Online"/"At Home"/
+  // "From Home") all normalize to "Remote" so the dropdown — which now
+  // only offers "Remote" — reflects them correctly.
+  const LEGACY_REMOTE = new Set(["Online", "At Home", "From Home", "Remote"]);
+  const initialLocation = (card.isOnline || LEGACY_REMOTE.has(card.location ?? ""))
+    ? "Remote"
     : (LOCATION_OPTIONS as readonly string[]).includes(card.location ?? "")
       ? (card.location as string)
       : "";
   const [location,           setLocation]           = useState(initialLocation);
-  const isOnline = location === "Online";
+  const isOnline = location === "Remote";
   const isLegacyLocation = !card.isOnline && !!card.location && !initialLocation;
   const [authorName,         setAuthorName]         = useState(card.authorName);
   const [authorRole,         setAuthorRole]         = useState(card.authorRole);
@@ -237,7 +242,9 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
         timeCommitment: TIME_COMMITMENT_MAP[involvement],
         quickAction:    involvement === "5min",
         isOnline,
-        location:       isOnline ? undefined : (location || undefined),
+        // Keep location:"Remote" on the record (not undefined) so the string
+        // and the isOnline flag stay in lock-step — both say "remote".
+        location:       location || undefined,
         spotsTotal:     "Unlimited",
         authorName:     authorName.trim(),
         authorRole:     authorRole.trim(),

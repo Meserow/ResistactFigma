@@ -327,6 +327,7 @@ const KNOWN_MIGRATION_FLAG_KEYS: readonly string[] = [
   "cleanup:dropped-seeds:v1",
   "cleanup:fake-seeds:v1",
   "cleanup:fix-quickaction-mistags:v1",
+  "cleanup:unify-remote-location:v1",
   "cleanup:link-to-targeturl:v1",
   "cleanup:purge-fake-seeds:v2",
   "cleanup:reapprove-beanie:v1",
@@ -4280,6 +4281,31 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       console.log(`Cleared mis-tagged quickAction on ${fixed} of ${idsToFix.length} cards: ${idsToFix.join(", ")}`);
     }
 
+    // ── Unify all "remote-ish" location values into a single "Remote" ──────
+    // Product decision: "Online", "At Home", and "From Home" all collapse to
+    // "Remote". A Remote act carries BOTH location:"Remote" AND isOnline:true
+    // so every filter path agrees. Also fixes acts created before the form
+    // bug fix that had location:"Remote" but isOnline:false. Idempotent.
+    const unifyRemoteDone = await getMigrationFlag("cleanup:unify-remote-location:v1");
+    if (!unifyRemoteDone) {
+      const REMOTE_ALIASES = new Set(["Online", "At Home", "From Home", "Remote"]);
+      let unified = 0;
+      for (const prefix of ["action:", "user-action:"]) {
+        for (const c of (await kv.getByPrefix(prefix)) as any[]) {
+          if (!c || typeof c !== "object" || typeof c.id !== "number") continue;
+          const loc = (c.location ?? "").trim();
+          const isRemoteish = REMOTE_ALIASES.has(loc) || c.isOnline === true || c.atHome === true;
+          if (!isRemoteish) continue;
+          // Already fully canonical? skip to avoid a needless write.
+          if (loc === "Remote" && c.isOnline === true) continue;
+          await kv.set(`${prefix}${c.id}`, { ...c, location: "Remote", isOnline: true });
+          unified++;
+        }
+      }
+      await setMigrationFlag("cleanup:unify-remote-location:v1");
+      console.log(`Unified ${unified} cards to location:"Remote" + isOnline:true.`);
+    }
+
     const retirePastDatedDone = await getMigrationFlag("cleanup:retire-past-dated-2026-05:v1");
     if (!retirePastDatedDone) {
       const retireTitles = new Set([
@@ -5701,13 +5727,44 @@ app.post("/make-server-9eb1ae04/actions/upload-image", async (c) => {
       }
     }
 
-    const ext = (file.name?.split(".").pop() ?? "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
-    const key = `${crypto.randomUUID()}.${ext}`;
+    const reqExt = (file.name?.split(".").pop() ?? "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
     const buf = await file.arrayBuffer();
 
+    // Resize-on-upload: cap stored originals so we never warehouse 2000px+
+    // camera photos. The feed already serves an 800px render transform on top
+    // of this (see storageRenderUrl in App.tsx), but capping the stored bytes
+    // shrinks storage, the admin recompress workload, and the render endpoint's
+    // per-request cost. PNG/JPEG only — imagescript can't decode WebP/AVIF/GIF,
+    // so those (already-compressed formats) pass through untouched. Same
+    // RECOMPRESS_MAX_WIDTH / quality used by the admin recompress endpoint.
+    let outBuf: ArrayBuffer | Uint8Array = buf;
+    let outType = file.type;
+    let outExt = reqExt;
+    try {
+      const ct = file.type.toLowerCase();
+      if (ct.includes("png") || ct.includes("jpeg") || ct.includes("jpg")) {
+        const img = await Image.decode(new Uint8Array(buf));
+        if (img.width > RECOMPRESS_MAX_WIDTH) {
+          const isPng = ct.includes("png");
+          const resized = img.resize(RECOMPRESS_MAX_WIDTH, Image.RESIZE_AUTO);
+          const encoded = isPng ? await resized.encode() : await resized.encodeJPEG(85);
+          // Only keep the re-encode if it actually saved bytes.
+          if (encoded.length < buf.byteLength) {
+            outBuf = encoded;
+            outType = isPng ? "image/png" : "image/jpeg";
+            outExt = isPng ? "png" : "jpg";
+            console.log(`Resize-on-upload: ${img.width}px ${buf.byteLength}B → ${RECOMPRESS_MAX_WIDTH}px ${encoded.length}B`);
+          }
+        }
+      }
+    } catch (e) {
+      console.log("Resize-on-upload skipped (decode failed, storing original):", e);
+    }
+
+    const key = `${crypto.randomUUID()}.${outExt}`;
     const { error: upErr } = await supabase.storage
       .from(BUCKET)
-      .upload(key, buf, { contentType: file.type, upsert: false });
+      .upload(key, outBuf, { contentType: outType, upsert: false });
     if (upErr) {
       console.log("Upload error:", upErr);
       return c.json({ error: `Upload failed: ${upErr.message}` }, 500);

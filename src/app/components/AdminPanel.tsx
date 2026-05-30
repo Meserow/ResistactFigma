@@ -35,6 +35,12 @@ interface AdminPanelProps {
    *  on top of the app's normal state. Read-only — the impersonation
    *  banner is what tells the admin they're in view-as mode. */
   onImpersonate?: (userId: string, name: string) => void;
+  /** Fires after a card is approved (or deleted) here so the parent can
+   *  update its own `cards` array. Without this, the feed keeps showing a
+   *  just-approved card with the PENDING badge until a full reload, because
+   *  the panel only mutates its local pending list. `approved` distinguishes
+   *  the two so the parent flips adminApproved vs. removes the card. */
+  onCardChanged?: (id: number, change: "approved" | "deleted") => void;
 }
 
 type TabFilter = "active" | "pending" | "approved" | "rejected" | "all";
@@ -285,7 +291,7 @@ function ImageModal({
   );
 }
 
-export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate }: AdminPanelProps) {
+export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCardChanged }: AdminPanelProps) {
   // Default to "online" — quickest read on engagement when an admin opens
   // the panel. Other modes (cards, users, …) are one dropdown click away.
   const [mode, setMode] = useState<PanelMode>("online");
@@ -672,6 +678,9 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate }: Ad
       const data = await res.json();
       if (!res.ok) { alert(data.error); return; }
       setPendingCards((prev) => prev.filter((c) => c.id !== id));
+      // Propagate to the parent so the live feed flips this card from
+      // PENDING to approved without needing a full reload.
+      onCardChanged?.(id, "approved");
     } finally {
       setCardActionLoading(null);
     }
@@ -684,6 +693,7 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate }: Ad
       const res = await fetch(`${API}/actions/${id}`, { method: "DELETE", headers: authHeaders });
       if (!res.ok) { const d = await res.json(); alert(d.error); return; }
       setPendingCards((prev) => prev.filter((c) => c.id !== id));
+      onCardChanged?.(id, "deleted");
     } finally {
       setCardActionLoading(null);
     }

@@ -112,10 +112,14 @@ export const GAMIFICATION_KEYFRAMES = `
     70%  { transform: scale(0.92); }
     100% { transform: scale(1); }
   }
-  /* Stagger-in: fade up + slide. Used by match results to feel "built for you". */
+  /* Slide-up only — NO opacity. Card resting opacity (0.85, → 1 on hover)
+     is governed by CSS classes on the card itself; animating opacity here
+     too would fight that and re-introduce the fade-in we deliberately
+     dropped. The translateY still gives the "lineup built for you" motion
+     on Match Me re-stagger without touching opacity. */
   @keyframes resistact-stagger-in {
-    0%   { opacity: 0; transform: translateY(14px); }
-    100% { opacity: 1; transform: translateY(0); }
+    0%   { transform: translateY(14px); }
+    100% { transform: translateY(0); }
   }
   /* Counter pop: brief scale bump on the parent when the number rolls. */
   @keyframes resistact-count-pop {

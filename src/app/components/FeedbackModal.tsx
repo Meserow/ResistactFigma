@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { X, MessageCircle, Send, Check } from "lucide-react";
-import { projectId } from "/utils/supabase/info";
+import { projectId, publicAnonKey } from "/utils/supabase/info";
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
 
@@ -46,7 +46,14 @@ export function FeedbackModal({ onClose, userEmail, userName }: FeedbackModalPro
     try {
       const res = await fetch(`${API}/feedback`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        // Supabase's edge-function gateway requires an Authorization header
+        // even on endpoints that don't authenticate the caller — without it
+        // the gateway rejects the request before it reaches our handler with
+        // UNAUTHORIZED_NO_AUTH_HEADER. The anon key satisfies the gateway.
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${publicAnonKey}`,
+        },
         body: JSON.stringify({
           type,
           message: message.trim(),

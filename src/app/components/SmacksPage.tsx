@@ -3,7 +3,7 @@ import {
   X, Upload, Loader2, Share2, Copy, Check, Download,
   ExternalLink, Plus, Tag, Flame, Trash2, ZoomIn, Pencil,
 } from "lucide-react";
-import { projectId } from "/utils/supabase/info";
+import { projectId, publicAnonKey } from "/utils/supabase/info";
 import type { UserApproval } from "../lib/supabase";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { analytics } from "../lib/analytics";
@@ -745,10 +745,17 @@ export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds =
       return next;
     });
     setBoostDeltas((prev) => ({ ...prev, [id]: (prev[id] ?? 0) + delta }));
-    // Fire-and-forget to server — no auth required
+    // Fire-and-forget to server. The endpoint itself is anonymous, but
+    // Supabase's gateway still requires an Authorization header to route
+    // the call — the anon key satisfies it. Without this the request gets
+    // rejected with UNAUTHORIZED_NO_AUTH_HEADER before our handler runs
+    // and the boost count silently fails to sync.
     fetch(`${API}/receipts/${id}/boost`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${publicAnonKey}`,
+      },
       body: JSON.stringify({ delta }),
     }).catch(() => {});
   }
