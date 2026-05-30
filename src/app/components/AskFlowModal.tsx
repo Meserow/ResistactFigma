@@ -246,7 +246,13 @@ export function AskFlowModal({
     setFormError(null);
     setCreateLoading(true);
     try {
-      const isOnline = formLocation === "Online";
+      // "Remote" is the single canonical location-agnostic value. A Remote
+      // act carries BOTH location:"Remote" AND isOnline:true so every filter
+      // path (location dropdown, Remote pill, isLocationAgnostic) agrees.
+      // (Previously this compared against "Online" — which was never a form
+      // option — so isOnline was always false and Remote acts came in with
+      // location:"Remote", isOnline:false, breaking the state filter.)
+      const isOnline = formLocation === "Remote";
       let res: Response;
       try {
         res = await fetch(`${API}/actions/create`, {
@@ -257,7 +263,7 @@ export function AskFlowModal({
             description:    formDesc.trim(),
             category:       selectedCategory!,
             categoryColor:  selectedCat?.color ?? "#23297e",
-            location:       isOnline ? undefined : formLocation || undefined,
+            location:       formLocation || undefined,
             isOnline,
             actionType:     isOnline ? "Online" : "In Person Group",
             timeCommitment: TIME_COMMITMENT_MAP[involvement],

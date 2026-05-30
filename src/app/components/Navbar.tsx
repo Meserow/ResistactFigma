@@ -814,10 +814,10 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                     ? "bg-[#23297e] text-white border-[#23297e]"
                     : "bg-white text-gray-600 border-gray-200 hover:border-[#23297e] hover:text-[#23297e]"
                 }`}
-                title="Include online and at-home actions"
+                title="Include remote actions (doable from anywhere)"
               >
                 <Globe size={11} className={locSelected.includes("Remote") ? "text-white" : "text-gray-400"} />
-                Prefer Online
+                Remote
               </button>
               {/* 5 Minutes Max pill — same chip style as categories. Toggles
                   the quickAction-only filter. Sits at the very end after the
@@ -1050,7 +1050,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                     <ChevronDown size={11} className={catMobileOpen ? "rotate-180" : ""} />
                   </button>
 
-                  {/* Prefer Online toggle */}
+                  {/* Remote toggle */}
                   <button
                     onClick={() => toggleFilterOption("Location", "Remote")}
                     className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
@@ -1060,7 +1060,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                     }`}
                   >
                     <Globe size={11} />
-                    Prefer Online
+                    Remote
                   </button>
 
                   {/* 5 Minutes Max toggle */}

@@ -139,6 +139,29 @@ const SPREAD_THE_WORD_DESCRIPTION =
 // and the in-card render benefits from the smaller payload.
 const SPREAD_THE_WORD_TOP_IMAGE = "/og-image.webp";
 
+// Rewrite a Supabase Storage public-object URL to the on-the-fly image render
+// endpoint, resizing to `width` px at quality 75. This is the single biggest
+// payload win on the feed: raw uploads are warehoused at up to 1200px wide but
+// the card image slot is only ~400px CSS wide, so we were shipping 3-4x the
+// pixels (and 150-360 KB) per card. The render endpoint hands back a resized,
+// re-compressed variant instead.
+//
+// Only our own Supabase object URLs are rewritten. Local "/foo.jpg" paths
+// (which get WebP siblings), IMAGE_MAP bundle assets, and external CDNs all
+// pass through untouched. Cartoon banners are deliberately NOT routed through
+// here — they're pre-generated, already-optimized WebP at the card aspect.
+const STORAGE_OBJECT_SEG = "/storage/v1/object/public/";
+function storageRenderUrl(url: string | undefined, width: number, quality = 75): string | undefined {
+  if (!url) return url;
+  if (!url.includes(`${projectId}.supabase.co`)) return url; // only our own storage
+  const i = url.indexOf(STORAGE_OBJECT_SEG);
+  if (i === -1) return url; // not an object URL (already a render URL, signed, etc.)
+  const rendered =
+    url.slice(0, i) + "/storage/v1/render/image/public/" + url.slice(i + STORAGE_OBJECT_SEG.length);
+  const sep = rendered.includes("?") ? "&" : "?";
+  return `${rendered}${sep}width=${width}&quality=${quality}`;
+}
+
 function resolveCard(raw: ServerCard): ActionCardData {
   // Compute the topImage with the normal priority order (explicit URL beats
   // key beats undefined), THEN clobber it for the pinned Spread-the-Word
@@ -155,7 +178,7 @@ function resolveCard(raw: ServerCard): ActionCardData {
     boosts:       raw.boosts ?? raw.spotsUsed ?? 0,
     completions:  raw.completions ?? 0,
     targetUrl:    raw.targetUrl ?? undefined,
-    topImage:     raw.pinToTop ? SPREAD_THE_WORD_TOP_IMAGE : baseTopImage,
+    topImage:     raw.pinToTop ? SPREAD_THE_WORD_TOP_IMAGE : storageRenderUrl(baseTopImage, 800),
     // Cartoonized banner: server-provided value wins, then fall back to
     // the local manifest (public/cartoon-banners/ + cartoon-manifest.ts).
     // Spread the Word always shows its hand-designed art, so cartoon is
@@ -606,16 +629,36 @@ export default function App() {
   }
 
   // ── Apply filters client-side ──
+  // A card is "location-agnostic" — doable from anywhere, so it must NEVER be
+  // hidden by a state filter (it sorts below local results instead). Single
+  // source of truth shared by the Location filter chip AND the Match Me
+  // state filter so the two paths can't disagree. Critically this includes
+  // the canonical "Remote"/"At Home" location strings: a card can carry
+  // location:"Remote" while isOnline is false (the create/edit form doesn't
+  // always set both), and locationToState("Remote") returns "Remote" (not
+  // null), so without these explicit cases such a card would wrongly fail
+  // both the isOnline check and the cardState===null check and get dropped.
+  function isLocationAgnostic(card: ActionCardData): boolean {
+    if (card.isOnline) return true;
+    if ((card as any).atHome === true) return true;
+    const loc = (card.location ?? "").trim();
+    if (loc === "" || loc === "Remote" || loc === "At Home" ||
+        loc === "National" || loc === "Multi-state" || loc === "Multi-State") return true;
+    // Unrecognized freeform location that doesn't resolve to a known state →
+    // treat as agnostic so it's never hidden by a state filter.
+    return locationToState(loc) === null;
+  }
+
   function applyFilters(allCards: ActionCardData[]): ActionCardData[] {
     const q = deferredSearchQuery.toLowerCase().trim();
-    return allCards.filter((card) => {
-      // Search — matches across the broadest reasonable surface so a user can
-      // find a card by partial title, a phrase in the description, an author,
-      // a sponsor name, a category/type tag, a location, the time bucket, or
-      // even a substring of the linked URL ("events.pol-rev.com"). Sponsor
-      // isn't on the card type today (server stores it on user-submissions),
-      // hence the cast.
-      if (q) {
+    // SEARCH OVERRIDES EVERYTHING — when the user types a query, the
+    // explicit intent ("find me THIS thing") is much stronger than any
+    // filter chip they set earlier. Bypass all other filters (category,
+    // location, 5 Minutes Max, Show Done, completed-hiding) so the user
+    // never wonders why they can't find a card they know exists. The
+    // chips stay lit in the UI but they don't apply while q is non-empty.
+    if (q) {
+      return allCards.filter((card) => {
         const haystack = [
           card.title,
           card.description,
@@ -629,8 +672,10 @@ export default function App() {
           card.timeCommitment ?? "",
           (card as { sponsor?: string }).sponsor ?? "",
         ].join(" ").toLowerCase();
-        if (!haystack.includes(q)) return false;
-      }
+        return haystack.includes(q);
+      });
+    }
+    return allCards.filter((card) => {
 
       // Category
       const cats = activeFilters["Category"] ?? [];
@@ -654,25 +699,19 @@ export default function App() {
         const stateFilters = locs.filter(l => l !== "Remote");
         const hasStateFilter = stateFilters.length > 0;
 
-        // "Remote" pill: show only online/at-home acts (original hard-filter)
-        const matchesRemote = locs.includes("Remote") && (card.isOnline || (card as any).atHome === true);
-
-        // Location-agnostic cards pass through whenever a state filter is active —
-        // they sort below the local acts but are never eliminated.
-        const locStr = (card.location ?? "").trim();
-        const isLocationAgnostic =
-          card.isOnline ||
-          (card as any).atHome === true ||
-          locStr === "National" ||
-          locStr === "Multi-state" ||
-          locStr === "Multi-State" ||
-          locStr === "" ||
-          cardState === null;
+        // "Remote" pill: show only online/at-home acts. Accept both the
+        // isOnline/atHome booleans AND the canonical "Remote"/"At Home"
+        // location strings, since the create/edit form doesn't always set
+        // both (a card can be location:"Remote" with isOnline:false).
+        const remoteLoc = (card.location ?? "").trim();
+        const matchesRemote = locs.includes("Remote") &&
+          (card.isOnline || (card as any).atHome === true ||
+           remoteLoc === "Remote" || remoteLoc === "At Home");
 
         if (hasStateFilter) {
           // State filter is active: keep matching-state cards + location-agnostic cards.
           // Hard-filter only cards pinned to a specific OTHER state.
-          if (!matchesState && !isLocationAgnostic) return false;
+          if (!matchesState && !isLocationAgnostic(card)) return false;
         } else {
           // "Remote"-only filter: strict — show only online/at-home acts.
           if (!matchesRemote) return false;
@@ -949,7 +988,14 @@ export default function App() {
     // the matcher's score already incorporates engagement and the user's intent
     // is more specific. We pass an empty completedIds so the matcher doesn't
     // drop completed cards — completedLast pushes them to the bottom instead.
-    if (matchPrefs) {
+    //
+    // SEARCH OVERRIDE: when the user has typed a query, skip the Match Me
+    // branch entirely. applyFilters has already bypassed all chips above, so
+    // `filtered` holds the raw search hits. Running them through the matcher
+    // would apply the 30%-of-top-score threshold and the time-bucket hard
+    // caps — both of which can hide cards the user explicitly searched for.
+    // Fall through to the normal Popular/AZ/Newest sort below instead.
+    if (matchPrefs && !deferredSearchQuery.trim()) {
       // Admins always see pending cards — pull them out so the score threshold
       // doesn't silently drop them, then append them after the ranked results.
       // Admin-only "still pending" set surfaced in their match feed. Apply the
@@ -962,7 +1008,7 @@ export default function App() {
             if (c.adminApproved !== false) return false;
             if (!settingMatches(c, matchPrefs.setting)) return false;
             if (!matchPrefs.includeAnywhere && matchPrefs.state) {
-              if (!cardIsLocalToState(c, matchPrefs.state) && !(c.isOnline || c.location === "National" || c.location === "Multi-state")) {
+              if (!cardIsLocalToState(c, matchPrefs.state) && !isLocationAgnostic(c)) {
                 return false;
               }
             }
@@ -1835,6 +1881,20 @@ export default function App() {
     setServerTotal((t) => Math.max(0, t - 1));
   }
 
+  // Called by the AdminPanel after it approves/deletes a card in its pending
+  // list, so the live feed reflects the change immediately instead of going
+  // stale until the next full sync. Approve → flip adminApproved (so the
+  // PENDING badge drops); delete → remove from the feed entirely.
+  function handleAdminCardChanged(id: number, change: "approved" | "deleted") {
+    if (change === "approved") {
+      setCards((prev) => prev.map((c) => c.id === id ? { ...c, adminApproved: true } : c));
+      setServerPendingActsCount((n) => Math.max(0, n - 1));
+    } else {
+      handleCardDeleted(id);
+      setServerPendingActsCount((n) => Math.max(0, n - 1));
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 font-['Poppins',sans-serif]">
       {/* Gamification keyframes injected once. Centralised in lib/animations.ts
@@ -2517,6 +2577,7 @@ export default function App() {
           onClose={() => setAdminPanelOpen(false)}
           imageMap={IMAGE_MAP}
           onImpersonate={startImpersonation}
+          onCardChanged={handleAdminCardChanged}
         />
       )}
 

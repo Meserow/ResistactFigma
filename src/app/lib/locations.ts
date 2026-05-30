@@ -5,7 +5,6 @@
 
 export const LOCATION_OPTIONS = [
   "Remote",
-  "At Home",
   "National",
   "Multi-State",
   "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado",
@@ -21,9 +20,13 @@ export const LOCATION_OPTIONS = [
 
 // Legacy location strings that existed before the canonical rename. Mapped
 // to their new equivalents so existing cards and filter chips stay consistent.
+// "Remote" is now the single canonical value for ALL location-agnostic acts —
+// "Online", "From Home", and "At Home" all fold into it (product decision:
+// one "do it from anywhere" concept, not three).
 const LEGACY_MAP: Record<string, string> = {
-  "Online":     "Remote",
-  "From Home":  "At Home",
+  "Online":      "Remote",
+  "From Home":   "Remote",
+  "At Home":     "Remote",
   "Multi-state": "Multi-State",
 };
 

@@ -175,33 +175,30 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
   // card grid stays calm. onBoost / isBoosted props are still passed
   // through to the modal.
 
-  // ── ActionRow — quartet of pills/circles that lives in the card footer.
-  //    Boost and Done stats: rounded pills with icon + count, color-tinted.
-  //    Counts tick-up via useAnimatedNumber so bumps don't pop in instantly.
-  //    Flag and Share: icon-only circles. All share h-7 and rounded-full so
-  //    they read as one cohesive control set rather than two separate ones.
-  //    Cards with boosts >= HOT_BOOST_THRESHOLD get a slow flicker on the
-  //    🔥 emoji to signal "this one is moving" without screaming for
-  //    attention.
+  // Boost/done stat counts tick-up via useAnimatedNumber so bumps don't pop
+  // in instantly. Cards with boosts >= HOT_BOOST_THRESHOLD get a slow flicker
+  // on the 🔥 emoji to signal "this one is moving" without screaming for
+  // attention.
   // 5 is roughly the top-of-distribution today (max boost in the catalog
   // is single digits). If/when the data grows and boost counts rise into
   // the tens, this should drift upward so the flicker stays meaningful.
   const HOT_BOOST_THRESHOLD = 5;
-  function ActionRow() {
+  // Boost / done stats, rendered as a frosted pill overlaid on the banner's
+  // lower-left (mirrors the location badge at lower-right). Hidden entirely
+  // when both counts are zero — a brand-new act shows a clean banner. Hooks
+  // run before the early return so hook order stays stable.
+  function BannerStatsPill() {
     const boostCount = card.boosts ?? 0;
     const showBoost = !card.pinToTop && boostCount > 0;
     const showDone = effectiveCount > 0;
     const animatedBoosts = useAnimatedNumber(boostCount);
     const animatedDones = useAnimatedNumber(effectiveCount);
     const isHotBoost = boostCount >= HOT_BOOST_THRESHOLD;
-    // Empty placeholder when both stats are zero — keeps the flex layout
-    // stable (justify-between still pushes the author block to the right)
-    // without rendering any visible badges. Quiet by default; the badges
-    // only earn space once there's something to count.
+    if (!showBoost && !showDone) return null;
     return (
-      <div className="flex items-center gap-1.5 shrink-0">
+      <div className="absolute bottom-2 left-3 flex items-center gap-2 bg-white/95 backdrop-blur-sm rounded-md px-2 py-0.5 shadow-sm">
         {showBoost && (
-          <span className="inline-flex items-center gap-1 px-1 text-gray-400 font-['Poppins',sans-serif] font-medium text-[11px] whitespace-nowrap">
+          <span className="inline-flex items-center gap-1 text-gray-600 font-['Poppins',sans-serif] font-medium text-[11px] whitespace-nowrap">
             <span aria-hidden className={isHotBoost ? "resistact-anim-flicker inline-block" : "inline-block"}>🔥</span>
             <span>{animatedBoosts.toLocaleString()}</span>
           </span>
@@ -210,14 +207,27 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           // Done badge: brand teal-green (#0d8c6e — same identity as the
           // "I did this!" pill inside the modal) so the checkmark reads
           // as a positive signal at a glance, not as a neutral metric.
-          // Count stays in the same color but a touch dimmer so the
-          // checkmark anchors the eye.
-          <span className="inline-flex items-center gap-1 px-1 text-[#0d8c6e] font-['Poppins',sans-serif] font-medium text-[11px] whitespace-nowrap">
+          <span className="inline-flex items-center gap-1 text-[#0d8c6e] font-['Poppins',sans-serif] font-medium text-[11px] whitespace-nowrap">
             <span aria-hidden>✓</span>
             <span className="text-[#0d8c6e]/80">{animatedDones.toLocaleString()}</span>
           </span>
         )}
       </div>
+    );
+  }
+
+  // Category pill — solid category color, white text. Moved from the banner
+  // top-left overlay down into the card footer (where the stats used to be).
+  function CategoryPill() {
+    return (
+      <span
+        className="inline-flex items-center rounded-md px-2 py-0.5 shrink-0"
+        style={{ backgroundColor: categoryColor }}
+      >
+        <span className="font-['Poppins',sans-serif] font-bold tracking-wide text-[11px] text-white">
+          {card.category}
+        </span>
+      </span>
     );
   }
 
@@ -247,7 +257,11 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           // haven't asked the OS for reduced motion (vestibular safety).
           // hover:z-10 keeps the lifted card painting above its neighbors
           // in the grid rather than getting clipped at edges.
-          className={`resistact-card-shine resistact-banner-host transform-gpu cursor-pointer bg-white rounded-2xl border border-gray-200 flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:border-gray-300 hover:shadow-md motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10`}
+          className={`resistact-card-shine resistact-banner-host transform-gpu cursor-pointer bg-white rounded-2xl border border-gray-200 flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:border-gray-300 hover:shadow-md motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10 ${
+            // Pinned "Spread the Word" is always full color; any other
+            // featured card follows the grid-wide 85%→100%-on-hover rule.
+            card.pinToTop ? "opacity-100" : "opacity-90 hover:opacity-100"
+          }`}
           onClick={card.pinToTop ? () => setShareOpen(true) : () => setDetailsOpen(true)}
         >
           {/* Illustration — use uploaded image if available, else navy illustration */}
@@ -257,7 +271,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
               without flashing or strobing. */}
           <div className={`resistact-anim-shimmer relative ${compact ? "h-[70px]" : "h-[106px]"} shrink-0 bg-[#23297e] flex items-center justify-center overflow-hidden`}>
             {effectiveTopImage
-              ? <img src={effectiveTopImage} alt={card.title} className={`${card.cartoonImageUrl || card.pinToTop ? "" : "resistact-banner-desat"} absolute inset-0 w-full h-full object-cover ${card.cartoonImageUrl ? "object-[center_20%]" : "object-top"}`} />
+              ? <img src={effectiveTopImage} alt={card.title} loading="lazy" decoding="async" className={`${card.cartoonImageUrl || card.pinToTop ? "" : "resistact-banner-desat"} absolute inset-0 w-full h-full object-cover ${card.cartoonImageUrl ? "object-[center_20%]" : "object-top"}`} />
               : card.featuredIllustration
             }
             {!compact && (
@@ -265,18 +279,19 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
                 <TimeBadge light={true} />
               </div>
             )}
-            {/* Boost lives only inside the card-details modal now — keeping
-                it off the card itself declutters the grid; users still
-                get to it after opening the card. Spread the Word never
-                showed a boost anyway. */}
+            {/* Stats pill — bottom-left of the banner, same as regular cards.
+                Spread the Word suppresses boost (pinToTop) but can still show
+                a done count; self-hides when there's nothing to show. */}
+            {!compact && <BannerStatsPill />}
           </div>
 
           {/* Content */}
           <div className={`relative flex flex-col flex-1 ${compact ? "gap-1 px-3 pb-2 pt-1.5" : "gap-2 px-5 pb-3 pt-3"}`}>
-            {/* Category hidden on the pinToTop Spread the Word card —
-                it's the hero card, not a category-bucketed Act. */}
-            {!card.pinToTop && (
-              <span className={`font-['Poppins',sans-serif] font-bold tracking-wider uppercase ${compact ? "text-[10px]" : "text-[11px]"}`} style={{ color: categoryColor }}>
+            {/* Category moved to a pill in the footer (below), matching the
+                regular cards. Compact preview still shows it inline as text
+                since the preview has no footer row. */}
+            {!card.pinToTop && compact && (
+              <span className="font-['Poppins',sans-serif] font-bold tracking-wider uppercase text-[10px]" style={{ color: categoryColor }}>
                 {card.category}
               </span>
             )}
@@ -311,12 +326,11 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
               </button>
             )}
 
-            {/* Action circles (left) + author (right). Stats + Flag +
-                Share share the row as one unified pill set. Spread the
-                Word suppresses both Flag (not user-submitted) and Boost
-                (can't boost yourself). */}
+            {/* Footer: category pill (left) + author (right), matching the
+                regular cards. Spread the Word (pinToTop) has no category, so
+                an empty spacer holds the author in the right corner. */}
             <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-100">
-              <ActionRow />
+              {card.pinToTop ? <div /> : <CategoryPill />}
 
               <div className="flex items-center gap-2.5 min-w-0 justify-end">
                 <div className="min-w-0 text-right">
@@ -372,7 +386,14 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           end-to-end in the modal. */}
       <div
         onClick={() => setDetailsOpen(true)}
-        className={`resistact-banner-host transform-gpu cursor-pointer bg-white rounded-2xl border border-gray-200 flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:border-gray-300 hover:shadow-md motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10 ${isPending ? "ring-2 ring-red-400" : ""}`}
+        className={`resistact-banner-host transform-gpu cursor-pointer bg-white rounded-2xl border border-gray-200 flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:border-gray-300 hover:shadow-md motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10 ${
+          // Resting 85% opacity, full color on hover — gives the grid a calm,
+          // browsable feel and makes the hovered card pop. The pinned
+          // "Spread the Word" card is exempt: it's the one card that should
+          // always read at full strength. `transition-all` above covers the
+          // opacity tween so it eases in/out smoothly.
+          card.pinToTop ? "opacity-100" : "opacity-90 hover:opacity-100"
+        } ${isPending ? "ring-2 ring-red-400" : ""}`}
       >
         {/* ── Admin: pending approval banner ── */}
         {isPending && !compact && (
@@ -454,18 +475,10 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
               </div>
             )}
 
-            {/* Category pill — top-left of the banner. Solid category
-                color background with white text so each card carries
-                strong identity at a glance. Replaces the plain-text
-                category label that used to sit in the content area. */}
-            <div
-              className="absolute top-2.5 left-3 inline-flex items-center rounded-md px-2 py-0.5 shadow-sm"
-              style={{ backgroundColor: categoryColor }}
-            >
-              <span className="font-['Poppins',sans-serif] font-bold tracking-wide text-[11px] text-white">
-                {card.category}
-              </span>
-            </div>
+            {/* Boost/done stats pill — bottom-left of the banner. Moved here
+                from the card footer; the category pill took its old spot.
+                Self-hides when both counts are zero. */}
+            <BannerStatsPill />
           </div>
         )}
 
@@ -608,7 +621,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
               mode (Quick Match preview is too small for this density). */}
           {!compact && (
             <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-100">
-              <ActionRow />
+              <CategoryPill />
 
               {/* Author */}
               <div className="flex items-center gap-2.5 min-w-0 justify-end">

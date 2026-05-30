@@ -16,6 +16,93 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.6",
+    date: "2026-05-30",
+    title: "Reworked act-card layout: category pill in the footer, stats on the image",
+    sections: [
+      {
+        heading: "Look & feel",
+        items: [
+          "The category pill moved off the banner image and down into the card footer, sitting where the boost/done counts used to be (next to the author).",
+          "The 🔥 boost and ✓ done counts moved up onto a small frosted pill in the lower-left corner of the banner image — mirroring the location badge in the lower-right. The pill hides itself on brand-new acts that have no boosts or completions yet, so the image stays clean.",
+          "Same treatment on the pinned 'Spread the Word' card, which keeps its always-full-color styling.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.5",
+    date: "2026-05-30",
+    title: "Faster-loading act images",
+    sections: [
+      {
+        heading: "Performance",
+        items: [
+          "Act card images now load dramatically faster. We were serving full-size uploaded photos — sometimes several megabytes each — and shrinking them in the browser. Now the feed requests a right-sized, web-optimized version of each image, cutting the typical card image from hundreds of kilobytes (or more) down to well under 100 KB.",
+          "New photos uploaded with an act are automatically resized on upload, so the site never warehouses oversized originals going forward.",
+          "Every card image now loads lazily — images load as you scroll to them instead of all at once — so the page feels responsive immediately.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.4",
+    date: "2026-05-27",
+    title: "One \"Remote\" everywhere + cards rest at 90% color, full on hover",
+    sections: [
+      {
+        heading: "Locations",
+        items: [
+          "Collapsed three overlapping labels — \"Online\", \"At Home\", and \"Remote\" — into a single \"Remote\" everywhere: the Add-an-Act form, the Edit form, the filter pills, and the underlying data. One concept: doable from anywhere.",
+          "The \"Prefer Online\" filter pill is now just \"Remote\".",
+          "Fixed the form bug behind all of this: picking \"Remote\" when adding an act used to leave the act's online flag unset (it was checking for \"Online\", which was never an option), so Remote acts came in half-tagged and got hidden by state filters. Now a Remote act is consistently tagged as remote in both places.",
+          "A one-time data cleanup rewrites every existing Online / At Home act to the unified Remote value.",
+        ],
+      },
+      {
+        heading: "Look & feel",
+        items: [
+          "Act cards now rest at 90% color and brighten to full color when you hover over them — a calmer, more browsable grid where whatever you're pointing at pops. The \"Spread the Word\" card stays full color at all times.",
+          "Removed the opacity fade-in on the first row of cards; the gentle slide-up on Match Me results stays.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.3",
+    date: "2026-05-27",
+    title: "Remote acts no longer hidden by a state filter + just-approved acts update instantly",
+    sections: [
+      {
+        heading: "Filters",
+        items: [
+          "Fixed: Remote / At Home acts were being hidden when you had a state (e.g. Washington) selected in the Location filter or in Match Me. Remote acts are doable from anywhere, so they should always show below your local results — never disappear. The bug bit cards labeled 'Remote' whose 'online' flag wasn't also set. Now any Remote / At Home / National / Multi-State act stays visible regardless of which state you've picked.",
+          "The 'Remote' Location pill now also matches acts labeled Remote/At Home even if their online flag wasn't set, so it's consistent with the above.",
+        ],
+      },
+      {
+        heading: "Admin",
+        items: [
+          "Fixed: approving a pending act from the Admin Panel now updates the live feed immediately — the PENDING badge drops and the act counts as approved without a page reload. Previously the panel approved it on the server but the feed kept showing it as pending until you refreshed. Deleting from the panel now also removes it from the feed right away.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.2",
+    date: "2026-05-27",
+    title: "Search now finds everything, regardless of active filters",
+    sections: [
+      {
+        heading: "Search",
+        items: [
+          "Typing in the search box now overrides every other filter — Category, Location, '5 Minutes Max', 'Show Done', and Match Me. If a card matches your search term, you'll see it. Period. Previously, if you had 'Match Me' running and '5 Minutes Max' lit up, a search for a perfectly valid card could come back empty because one of those filters was quietly excluding it.",
+          "Filter chips stay lit while you search — they're just temporarily ignored. Clear the search box and your filters apply again exactly as before. Match Me's ranking + score threshold also takes a back seat to the search query; you get the raw search hits sorted by your chosen sort (Popular / A–Z / Newest).",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.1",
     date: "2026-05-27",
     title: "Fix: Share Feedback form now actually sends + silent smack-boost sync fixed",
