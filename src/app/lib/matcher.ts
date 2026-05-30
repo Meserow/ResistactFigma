@@ -616,8 +616,10 @@ export function score(card: ActionCardData, prefs: Preferences, ctx?: UserContex
   const boostBonus = (card.id != null && inSet(ctx?.boostedIds, card.id)) ? 5 : 0;
 
   // Highlighted bonus — admin-curated cards get a lift so they reliably
-  // appear in Quick Matches regardless of tone slider position.
-  const highlightBonus = (card as any).firstTimerFriendly ? 7 : 0;
+  // appear in Quick Matches regardless of tone slider position. Honors both
+  // the new editorial `highlighted` pin AND the legacy `firstTimerFriendly`
+  // curation flag (set on many seed cards) so neither loses its match boost.
+  const highlightBonus = ((card as any).highlighted || (card as any).firstTimerFriendly) ? 7 : 0;
 
   // Upcoming-event bonus — pushes time-sensitive cards up in Match Me
   // results. Past events return 0 (they're filtered out of the visible feed

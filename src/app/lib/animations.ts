@@ -196,13 +196,17 @@ export const GAMIFICATION_KEYFRAMES = `
                                        grid
      Tweak the value to taste:
        1.00 = full color
+       0.90 = barely muted (current default — rests just shy of full,
+              pops to full on hover; the feed is now almost entirely
+              full-color cartoon banners, so heavy desaturation made the
+              few plain-photo cards look broken)
        0.70 = subtle, "still colored just less neon"
-       0.50 = half-saturated (Spread the Word default)
+       0.50 = half-saturated
        0.35 = strong, editorial
-       0.10 = whisper of color (current default for everything else)
+       0.10 = whisper of color
        0.00 = full grayscale */
   .resistact-banner-desat {
-    filter: saturate(0.1);
+    filter: saturate(0.9);
     transition: filter 250ms ease-out;
   }
   .resistact-banner-half-desat {
