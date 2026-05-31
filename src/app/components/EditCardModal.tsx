@@ -223,7 +223,13 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
 
   async function handleSave() {
     if (!title.trim() || !description.trim()) { setError("Title and description are required."); return; }
-    if (!topImageUrl.trim() && !(card as any).topImageKey) { setError("A header image is required."); return; }
+    // Any image satisfies the requirement — a pasted/uploaded URL, a static
+    // image key, or the act's cartoon (cartoonImageUrl/topImage). The cartoon
+    // is what the feed actually renders, so a card with a cartoon is never
+    // "missing" a header image.
+    const hasImage =
+      topImageUrl.trim() || (card as any).topImageKey || card.cartoonImageUrl || card.topImage;
+    if (!hasImage) { setError("A header image is required."); return; }
     setError(null);
     setLoading(true);
     try {
@@ -492,13 +498,13 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
               placeholder="https://… (paste any image URL)"
               className={INPUT_CLS}
             />
-            {(topImageUrl.trim() || card.topImage) && (
+            {(topImageUrl.trim() || card.cartoonImageUrl || card.topImage) && (
               <div
                 className="mt-2 relative h-24 rounded-xl overflow-hidden bg-gray-50 border border-gray-200 cursor-zoom-in group"
                 onClick={() => setLightboxOpen(true)}
               >
                 <img
-                  src={topImageUrl.trim() || card.topImage}
+                  src={topImageUrl.trim() || card.cartoonImageUrl || card.topImage}
                   alt="Header preview"
                   className="w-full h-full object-cover"
                   onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = "none"; }}
@@ -616,7 +622,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
           <X size={18} />
         </button>
         <img
-          src={topImageUrl.trim() || card.topImage}
+          src={topImageUrl.trim() || card.cartoonImageUrl || card.topImage}
           alt="Header image"
           className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
           onClick={(e) => e.stopPropagation()}

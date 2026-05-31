@@ -166,7 +166,12 @@ function storageRenderUrl(url: string | undefined, width: number, quality = 75):
   const rendered =
     url.slice(0, i) + "/storage/v1/render/image/public/" + url.slice(i + STORAGE_OBJECT_SEG.length);
   const sep = rendered.includes("?") ? "&" : "?";
-  return `${rendered}${sep}width=${width}&quality=${quality}`;
+  // resize=contain is REQUIRED. The render endpoint defaults to resize=cover,
+  // and with only a width given it crops to the source's original-height box —
+  // i.e. a center crop that silently lops the sides off a wide banner (a 3:2
+  // 1536×1024 came back as a face-only 800×1024). contain scales to the width
+  // and preserves aspect (→ 800×533), letting CSS object-fit do any cropping.
+  return `${rendered}${sep}width=${width}&resize=contain&quality=${quality}`;
 }
 
 function resolveCard(raw: ServerCard): ActionCardData {
