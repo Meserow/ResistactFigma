@@ -5,14 +5,12 @@ import type { LucideIcon } from "lucide-react";
 import { ToneRangeSlider } from "./ToneSlider";
 import {
   DEFAULT_PREFERENCES,
-  cardIsAtHome,
   cardIsLocalToState,
   loadPreferences,
   rankCards,
   savePreferences,
   topN,
   type Preferences,
-  type Setting,
   type TimeBucket,
   type UserContext,
   type VulnerableGroup,
@@ -256,27 +254,14 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJo
     // Walk the ranking and fill 12 slots with UNIQUE images so the
     // carousel doesn't show two Tesla cards back-to-back. Falls back to score
     // order if we run out of unique-image cards before we hit 12.
-    //
-    // When the user picks "Both equal" (online + in-person), enforce a ~50/50
-    // split so the carousel doesn't skew 11/12 online just because there are
-    // more online cards in the DB.
     const TARGET = 12;
-    const wantsBothEqual =
-      prefs.setting.includes("online") && prefs.setting.includes("inPerson");
-    // Spread card is always online — count it toward the online quota.
-    const ONLINE_MAX = wantsBothEqual ? Math.ceil(TARGET / 2) : TARGET;
-    const IN_PERSON_MAX = wantsBothEqual ? Math.floor(TARGET / 2) : TARGET;
-
     const picked: ActionCardData[] = [];
     const seenImages = new Set<string>();
-    let onlineCount = 0;
-    let inPersonCount = 0;
 
     const addCard = (c: ActionCardData) => {
       picked.push(c);
       const img = (c.topImage ?? "").trim();
       if (img) seenImages.add(img);
-      if (cardIsAtHome(c)) onlineCount++; else inPersonCount++;
     };
 
     if (spreadCard) {
@@ -288,11 +273,6 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJo
       if (isCompleted(c.id)) continue;
       const img = (c.topImage ?? "").trim();
       if (img && seenImages.has(img)) continue;
-      // Quota check — skip if this bucket is already full.
-      if (wantsBothEqual) {
-        if (cardIsAtHome(c) && onlineCount >= ONLINE_MAX) continue;
-        if (!cardIsAtHome(c) && inPersonCount >= IN_PERSON_MAX) continue;
-      }
       addCard(c);
     }
     // Fallback 1: fill remaining slots ignoring quotas if one bucket ran dry.
@@ -305,14 +285,14 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJo
         addCard(c);
       }
     }
-    // Fallback 2: if setting/state prefs were so restrictive that ranked itself
-    // had fewer than TARGET cards (e.g. "In-person only" + "Massachusetts" with
-    // only 3 local in-person cards), re-rank ignoring setting and state so the
-    // carousel always fills 12 slots. Cards already picked are skipped.
+    // Fallback 2: if state prefs were so restrictive that ranked itself had
+    // fewer than TARGET cards (e.g. "Massachusetts" with only 3 local cards),
+    // re-rank ignoring state so the carousel always fills 12 slots. Cards
+    // already picked are skipped.
     if (picked.length < TARGET) {
       const relaxedRanked = rankCards(
         cards,
-        { ...prefs, setting: [], state: null },
+        { ...prefs, state: null },
         carouselCtx,
       );
       const pickedIds = new Set(picked.map((c) => c.id));
@@ -327,9 +307,7 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJo
 
     // State-local guarantee — swap in the best-scoring local card if none of
     // the unique-image top picks were local to the user's state.
-    const wantsLocal =
-      prefs.state &&
-      (prefs.setting.length === 0 || prefs.setting.includes("inPerson"));
+    const wantsLocal = !!prefs.state;
     if (!wantsLocal) return top;
     if (top.some((c) => cardIsLocalToState(c, prefs.state))) return top;
     const bestLocal = ranked.find((c) => cardIsLocalToState(c, prefs.state));

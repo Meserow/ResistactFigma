@@ -13,16 +13,6 @@ import type { ActionCardData } from "../components/ActionCard";
 
 export type TimeBucket = "5min" | "10min" | "30min" | "1hr" | "fewHours" | "fullDay" | "ongoing";
 
-/**
- * What kind of action context the user is willing to engage in. Stored as
- * an array on Preferences so the user can pick more than one. An empty array
- * means "any" — no filter.
- *  - "online":   "Remote" in the UI; can be done from home (online OR offline
- *                tasks like knitting, letter-writing, phone-calling reps)
- *  - "inPerson": requires showing up somewhere
- */
-export type Setting = "online" | "inPerson";
-
 export type VulnerableGroup =
   // ── Identity (original 7) ──────────────────────────────────────────
   | "woman"
@@ -86,9 +76,6 @@ export interface Tone {
 
 export interface Preferences {
   time: TimeBucket | null;
-  /** Empty array = "any" (no filter). One or more entries = card must match
-   * at least one of them. */
-  setting: Setting[];
   /** State name (e.g. "California", "New York", "Washington DC") or null for
    * "Anywhere". When set, hard-filters out cards tied to other states.
    * Cards marked "Online", "National", "Multi-state", or `atHome=true` always
@@ -138,7 +125,6 @@ export const DEFAULT_PREFERENCES: Preferences = {
   // The wizard shows time as a slider, so it must be a real value (not null) —
   // null was a holdover from the old pill-picker step.
   time: "30min",
-  setting: [],
   state: null,
   includeAnywhere: false,
   vulnerableGroups: [],
@@ -376,26 +362,12 @@ export function assessAmplification(card: ActionCardData, groups: VulnerableGrou
   return false;
 }
 
-// ─── Setting / online / at-home filter ────────────────────────────────────────
+// ─── Online / at-home helper ───────────────────────────────────────────────────
 
 /** True for cards that can be done from a couch — online, the legacy `atHome`
  * boolean, or the canonical `location === "From Home"` string. */
 export function cardIsAtHome(card: ActionCardData): boolean {
   return !!card.isOnline || !!card.atHome || card.location === "From Home" || card.location === "At Home";
-}
-
-/** True if the card matches at least one of the requested settings, or if
- * the request is empty (= "any"). */
-export function settingMatches(card: ActionCardData, settings: Setting[]): boolean {
-  if (!settings || settings.length === 0) return true;
-  return settings.some((s) => {
-    // "online" covers anything that can be done remotely — online actions plus
-    // the rare atHome=true / location="From Home" cards. The "At home" pill
-    // collapsed into this in v0.2; remote === from home for our purposes.
-    if (s === "online")   return cardIsAtHome(card);
-    if (s === "inPerson") return !card.isOnline;
-    return false;
-  });
 }
 
 // ─── Location / state filter ──────────────────────────────────────────────────
@@ -499,8 +471,6 @@ export function score(card: ActionCardData, prefs: Preferences, ctx?: UserContex
   // Hard filter: already completed — don't re-suggest things the user did
   if (card.id != null && inSet(ctx?.completedIds, card.id)) return 0;
 
-  // Hard filter: setting mismatch
-  if (!settingMatches(card, prefs.setting)) return 0;
   // Hard filter: state mismatch — keeps Illinois events out of California's
   // feed. When `includeAnywhere` is true, the state field is used for ranking
   // only and the filter is bypassed (every state passes).
@@ -693,12 +663,6 @@ export function explainMatch(card: ActionCardData, prefs: Preferences, ctx?: Use
     reasons.push(TIME_LABEL[prefs.time]);
   }
 
-  // Setting match — only call out if the user picked a specific subset.
-  if (prefs.setting.length > 0 && prefs.setting.length < 2) {
-    if (prefs.setting.includes("online")   && cardIsAtHome(card)) reasons.push("remote");
-    else if (prefs.setting.includes("inPerson") && !card.isOnline) reasons.push("in-person");
-  }
-
   // State match — call out a local card when the user picked a state.
   if (prefs.state) {
     const cardLoc = (card.location ?? "").trim();
@@ -799,26 +763,11 @@ export async function pushUserPreferences(token: string, prefs: Preferences): Pr
 /** Shared validation/migration so both `loadPreferences` (localStorage) and
  * `fetchUserPreferences` (server) hand back a fully-shaped Preferences. */
 function normalizePreferences(parsed: any): Preferences {
-  // Migration: "atHome" collapsed into "online" (now "Remote") in v0.2.
-  // Old stored prefs with atHome get rewritten to online; dedup the array.
-  const migrate = (s: unknown): Setting | null => {
-    if (s === "online" || s === "atHome") return "online";
-    if (s === "inPerson") return "inPerson";
-    return null;
-  };
-  let setting: Setting[] = [];
-  if (Array.isArray(parsed.setting)) {
-    const mapped = parsed.setting
-      .map(migrate)
-      .filter((s: Setting | null): s is Setting => s !== null);
-    setting = Array.from(new Set(mapped));
-  } else if (typeof parsed.setting === "string" && parsed.setting !== "either") {
-    const one = migrate(parsed.setting);
-    if (one) setting = [one];
-  }
+  // Note: the legacy online/in-person `setting` preference was removed — any
+  // stored value is simply ignored. Location intent now lives entirely in the
+  // Location filter (a state, or the "Remote" chip).
   return {
     time: parsed.time ?? null,
-    setting,
     state: typeof parsed.state === "string" ? parsed.state : null,
     includeAnywhere: parsed.includeAnywhere === true,
     vulnerableGroups: Array.isArray(parsed.vulnerableGroups) ? parsed.vulnerableGroups : [],
