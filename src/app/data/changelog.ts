@@ -16,6 +16,19 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.19",
+    date: "2026-05-30",
+    title: "Cartoon banners load far lighter",
+    sections: [
+      {
+        heading: "Performance",
+        items: [
+          "The illustrated cartoon banners were being delivered at full size — about 170 KB each (and up to half a megabyte) — even though they're shown in a much smaller card. They now go through the same on-the-fly resizing the other card photos already use, dropping each one to roughly 40–60 KB with no visible change. On a feed full of cards that's the difference between megabytes of images and a fraction of that, so the page loads and scrolls noticeably lighter — especially on phones.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.18",
     date: "2026-05-30",
     title: "Changelog opens faster — older releases load on demand",

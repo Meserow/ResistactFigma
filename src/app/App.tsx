@@ -160,8 +160,9 @@ const SPREAD_THE_WORD_TOP_IMAGE = "/og-image.webp";
 //
 // Only our own Supabase object URLs are rewritten. Local "/foo.jpg" paths
 // (which get WebP siblings), IMAGE_MAP bundle assets, and external CDNs all
-// pass through untouched. Cartoon banners are deliberately NOT routed through
-// here — they're pre-generated, already-optimized WebP at the card aspect.
+// pass through untouched. Cartoon banners ARE routed through here now (at the
+// card width) — they're generated at a full 1536px, far larger than the card
+// renders, so resizing cuts each one to a fraction of its weight.
 const STORAGE_OBJECT_SEG = "/storage/v1/object/public/";
 function storageRenderUrl(url: string | undefined, width: number, quality = 60): string | undefined {
   if (!url) return url;
@@ -203,9 +204,16 @@ function resolveCard(raw: ServerCard): ActionCardData {
     // cartoonUrlFor() (CDN) takes priority over the KV value — some KV rows
     // still have the old local path (/cartoon-banners/card-N.webp) from before
     // images moved to Supabase Storage, and those would 404.
+    //
+    // The resolved CDN URL is run through the same image-transform endpoint as
+    // topImage (width 800): the source webp is a full 1536px / ~170 KB, which
+    // is ~4× the card's display size. Resizing to 800px drops each banner to
+    // ~40–60 KB (under our 100 KB budget) without changing the crop — ActionCard
+    // still does the final object-cover. A stale local "/cartoon-banners/…" path
+    // isn't a Supabase URL, so storageRenderUrl passes it through untouched.
     cartoonImageUrl: raw.pinToTop
       ? undefined
-      : (cartoonUrlFor(raw.id) ?? raw.cartoonImageUrl ?? undefined),
+      : storageRenderUrl(cartoonUrlFor(raw.id) ?? raw.cartoonImageUrl, 800) ?? undefined,
     // Synopsis (card subtitle): server value wins, then local manifest
     // fallback so we can ship subtitle copy without an Edge Function
     // deploy. Applies to Spread the Word too now — its synopsis lives
