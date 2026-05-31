@@ -16,6 +16,36 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.14",
+    date: "2026-05-30",
+    title: "Editing an Act no longer falsely demands a header image",
+    sections: [
+      {
+        heading: "Add & edit an Act",
+        items: [
+          "Editing an Act sometimes refused to save with \"A header image is required\" — even when the card clearly had its cartoon banner. The check was only looking at the old stored image URL and ignored the cartoon the feed actually shows. Now any image counts, so a card with a cartoon always passes.",
+          "The image preview (and its zoom view) inside the edit form now shows the cartoon banner the card actually displays, instead of the old original image.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.13",
+    date: "2026-05-30",
+    title: "Broken-images scan now checks the image cards actually show",
+    sections: [
+      {
+        heading: "Admin",
+        items: [
+          "The admin \"Broken images\" scan was wildly over-reporting (~139) because of two problems, both now fixed.",
+          "Biggest one: it was checking each card's stored topImageUrl — but cards display their cartoon banner instead, so that URL is never shown. A card like \"Boost Randy Rainbow\" was flagged \"broken\" on an expired TikTok link while the feed happily showed its cartoon. The scan now skips any card that displays a cartoon banner (almost all of them), so a dead fallback URL no longer counts as broken.",
+          "It also now uses a browser-style request instead of a HEAD request — many image hosts reject HEAD or block our server's IP even though the image loads fine for real visitors. Those are no longer false-flagged.",
+          "Only genuinely-unviewable images count now: dead links (404), DNS/SSL failures, and non-image responses. Hosts that merely blocked our scan are listed separately as \"couldn't confirm,\" and each real problem says why.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.12",
     date: "2026-05-30",
     title: "Set an Act's subtitle when you add or edit it",

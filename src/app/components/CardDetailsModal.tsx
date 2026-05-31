@@ -196,19 +196,19 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
           </button>
         </div>
 
-        {/* Header image — large on desktop (360px) so the banner reads as a
-            real piece of the experience, not a thumbnail. Phone still
-            moderate (180px) so the title + buttons stay above the fold on
-            small screens. Modal capped at max-h-[90vh] either way — content
-            scrolls inside if it overflows. */}
+        {/* Header image — rendered at the banner's native 3:2 aspect so the
+            whole cartoon (1536×1024) reads, text and all, with no crop. A
+            fixed height would crop a wide banner to fill, lopping off the
+            side art/copy. Modal capped at max-h-[90vh] — content scrolls
+            inside if it overflows. */}
         {/* Prefer the cartoonized banner if generated; fall back to the
             card's original topImage. Keeps the modal in sync with the grid. */}
         {(card.cartoonImageUrl || card.topImage) && (
-          <div className={`relative h-[180px] sm:h-[360px] shrink-0 ${card.imageContain ? "bg-gray-50" : ""}`}>
+          <div className={`relative w-full aspect-[3/2] shrink-0 ${card.imageContain ? "bg-gray-50" : ""}`}>
             <ImageWithFallback
               src={card.cartoonImageUrl ?? card.topImage}
               alt={card.title}
-              className={`w-full h-full ${card.imageContain ? "object-contain p-3" : "object-cover object-top"}`}
+              className={`w-full h-full ${card.imageContain ? "object-contain p-3" : "object-cover"}`}
             />
             {(card.isOnline || card.location) && (
               <div className="absolute bottom-3 right-3 flex items-center gap-1 bg-white/95 backdrop-blur-sm rounded-md px-2.5 py-1 shadow-sm">

@@ -72,6 +72,8 @@ interface BrokenImageCard {
   fullUrl: string;
   status: number;
   error: string | null;
+  /** Why the scan flagged it: dead link, expiring social CDN, non-image body, or network failure. */
+  reason?: "not-found" | "expiring-cdn" | "non-image" | "network";
   adminApproved?: boolean;
 }
 
@@ -360,6 +362,13 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
   const [brokenError, setBrokenError] = useState<string | null>(null);
   const [brokenOrigin, setBrokenOrigin] = useState<string>(() => window.location.origin);
   const [brokenScannedCount, setBrokenScannedCount] = useState<number>(0);
+  // Cards the scan couldn't confirm either way — host blocked our request
+  // (403/429/5xx) or timed out. Likely fine in a real browser; surfaced
+  // separately so they don't inflate the "broken" count.
+  const [brokenInconclusive, setBrokenInconclusive] = useState<number>(0);
+  // Cards skipped because they display a cartoon banner — their topImageUrl is
+  // a stale fallback that's never shown, so a dead URL there is harmless.
+  const [brokenViaCartoon, setBrokenViaCartoon] = useState<number>(0);
 
   // ── Same-URL audit state (action url == author link) ─────────────────────────
   const [sameUrlCards, setSameUrlCards] = useState<SameUrlCard[]>([]);
@@ -622,6 +631,8 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
       if (!res.ok) { setBrokenError(data.error ?? "Failed to scan broken images."); return; }
       setBrokenImages(data.cards ?? []);
       setBrokenScannedCount(data.scanned ?? 0);
+      setBrokenInconclusive(data.inconclusive ?? 0);
+      setBrokenViaCartoon(data.displaysViaCartoon ?? 0);
     } catch {
       setBrokenError("Network error scanning broken images.");
     } finally {
@@ -1547,12 +1558,22 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
                 </div>
                 <p className="font-['Poppins',sans-serif] text-xs text-gray-500">
                   {brokenLoading && brokenImages.length === 0
-                    ? "Scanning every card's topImageUrl — this can take 30+ seconds…"
-                    : brokenImages.length === 0 && brokenScannedCount === 0
+                    ? "Scanning the actually-displayed image of each card with a browser-style GET — this can take 30+ seconds…"
+                    : brokenScannedCount === 0 && brokenViaCartoon === 0
                       ? "Haven't scanned yet — click Re-scan."
                       : brokenImages.length === 0
-                        ? `All ${brokenScannedCount} image-bearing cards return 2xx. Nice.`
-                        : `${brokenImages.length} of ${brokenScannedCount} cards have a broken topImageUrl`}
+                        ? `No broken card images. All ${brokenScannedCount} cards that render a direct image URL load fine.`
+                        : `${brokenImages.length} of ${brokenScannedCount} cards that render a direct image URL are genuinely broken`}
+                  {brokenViaCartoon > 0 && (
+                    <span className="block text-gray-400 mt-0.5">
+                      {brokenViaCartoon} cards display a cartoon banner instead, so their topImageUrl isn't shown and isn't checked (a dead URL there is harmless).
+                    </span>
+                  )}
+                  {brokenInconclusive > 0 && (
+                    <span className="block text-gray-400 mt-0.5">
+                      + {brokenInconclusive} couldn't be confirmed (host blocked the scan or timed out — usually fine in a real browser, not counted as broken)
+                    </span>
+                  )}
                 </p>
               </div>
               <div className="flex-1 overflow-y-auto">
@@ -1579,7 +1600,12 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
                           <p className="font-['Poppins',sans-serif] text-[11px] text-gray-500 mt-0.5">
                             <span className="font-mono">{b.topImageUrl}</span>
                             <span className="ml-2 text-amber-700">
-                              {b.error ? `network error: ${b.error.slice(0, 50)}` : `HTTP ${b.status}`}
+                              {b.reason === "not-found"    ? `HTTP ${b.status} · dead link`
+                               : b.reason === "expiring-cdn" ? `HTTP ${b.status} · expiring TikTok/Instagram link`
+                               : b.reason === "non-image"    ? `HTTP ${b.status} · not an image`
+                               : b.reason === "network"      ? `network error: ${(b.error ?? "").slice(0, 50)}`
+                               : b.error                     ? `network error: ${b.error.slice(0, 50)}`
+                               : `HTTP ${b.status}`}
                             </span>
                             {b.adminApproved === false && (
                               <span className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-semibold uppercase tracking-wide">Pending</span>

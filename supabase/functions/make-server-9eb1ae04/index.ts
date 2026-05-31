@@ -6043,23 +6043,113 @@ app.get("/make-server-9eb1ae04/admin/actions/broken-images", async (c) => {
       if (cc && typeof cc === "object" && typeof cc.id === "number") cards.push({ ...cc, _store: "user-action" });
     }
 
-    const candidates = cards.filter((cc) => typeof cc.topImageUrl === "string" && cc.topImageUrl.length > 0);
+    // CRITICAL: a card displays its cartoon banner when one exists — the
+    // frontend renders `effectiveTopImage = cartoonImageUrl ?? topImage`, and
+    // cartoonImageUrl is resolved from the cartoon-banners bucket (CDN), not
+    // from KV's topImageUrl. The whole catalog has been cartoonized, so for
+    // almost every card the topImageUrl is a STALE FALLBACK that is never
+    // shown. Checking it produced 100% false positives (e.g. #1349 reported
+    // "broken" on its expired TikTok URL while the feed happily shows
+    // card-1349.webp). So: pull the set of cartoon-banner card IDs once and
+    // skip any card that displays a cartoon — those can never show a broken
+    // topImageUrl. We only HTTP-check cards that genuinely render topImageUrl
+    // (i.e. have no cartoon banner yet, e.g. a brand-new upload mid-pipeline).
+    const cartoonIds = new Set<number>();
+    try {
+      const supabase = adminClient();
+      let offset = 0;
+      // Bucket has ~850+ objects; page through in 1000-chunks.
+      while (true) {
+        const { data: files, error } = await supabase.storage
+          .from("cartoon-banners")
+          .list("", { limit: 1000, offset });
+        if (error || !files || files.length === 0) break;
+        for (const f of files) {
+          const m = /^card-(\d+)\.webp$/.exec(f.name ?? "");
+          if (m) cartoonIds.add(Number(m[1]));
+        }
+        if (files.length < 1000) break;
+        offset += files.length;
+      }
+    } catch (e) {
+      console.log("broken-images: cartoon-banner listing failed, falling back to topImageUrl-only:", e);
+    }
+
+    const displaysViaCartoon = cards.filter((cc) => cartoonIds.has(cc.id)).length;
+    const candidates = cards.filter(
+      (cc) => typeof cc.topImageUrl === "string" && cc.topImageUrl.length > 0 && !cartoonIds.has(cc.id),
+    );
+
+    // We use a ranged GET with browser-like headers instead of HEAD. The old
+    // HEAD scan massively over-reported (~139 when only ~40 truly fail for
+    // users): many hosts reject HEAD with 405, or block this edge function's
+    // datacenter IP with 403, while serving the image fine to a real browser
+    // on GET. Switching to GET + UA/Referer/Accept recovers most of those
+    // false positives.
+    //
+    // Classification — only count a card as BROKEN when the image genuinely
+    // won't load for a user:
+    //   • 404 / 410                         → dead
+    //   • DNS / SSL / connection failure    → dead
+    //   • 2xx but not an image content-type → an HTML error page, not a photo
+    //   • a known-expiring social CDN (TikTok / Instagram) returning non-2xx
+    //     → these are hotlink-protected and genuinely don't render
+    // Ambiguous blocks from OTHER hosts (403/401/429/5xx — almost always
+    // anti-bot / datacenter blocking rather than a real dead image) and
+    // timeouts are reported as `inconclusive`, NOT broken, so the count
+    // reflects reality.
+    const EXPIRING_CDN = /tiktokcdn|cdninstagram/i;
     const broken: any[] = [];
+    let inconclusive = 0;
     const BATCH = 12;
     for (let i = 0; i < candidates.length; i += BATCH) {
       const slice = candidates.slice(i, i + BATCH);
       const results = await Promise.all(slice.map(async (cc) => {
         const raw = cc.topImageUrl as string;
         const url = raw.startsWith("/") ? `${origin}${raw}` : raw;
+        const knownExpiring = EXPIRING_CDN.test(url);
         try {
-          const r = await fetch(url, { method: "HEAD" });
-          if (r.ok) return null;
-          return { card: cc, status: r.status, fullUrl: url, error: null };
+          const r = await fetch(url, {
+            method: "GET",
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+              "Accept": "image/avif,image/webp,image/apng,image/*,*/*",
+              "Referer": `${origin}/`,
+              "Range": "bytes=0-2047",
+            },
+            signal: AbortSignal.timeout(12000),
+          });
+          const ct = (r.headers.get("content-type") ?? "").toLowerCase();
+          // Cancel the body so the connection frees up — we only needed status.
+          try { await r.body?.cancel(); } catch { /* ignore */ }
+          if (r.ok) {
+            if (ct && !ct.startsWith("image/")) {
+              return { card: cc, status: r.status, fullUrl: url, error: null, reason: "non-image", kind: "broken" };
+            }
+            return null; // genuinely fine
+          }
+          if (r.status === 404 || r.status === 410) {
+            return { card: cc, status: r.status, fullUrl: url, error: null, reason: "not-found", kind: "broken" };
+          }
+          if (knownExpiring) {
+            return { card: cc, status: r.status, fullUrl: url, error: null, reason: "expiring-cdn", kind: "broken" };
+          }
+          // 403/401/429/5xx from a normal host → most likely blocking us, not dead.
+          return { card: cc, status: r.status, fullUrl: url, error: null, reason: "blocked", kind: "inconclusive" };
         } catch (e) {
-          return { card: cc, status: 0, fullUrl: url, error: String(e) };
+          const name = (e as { name?: string })?.name ?? "";
+          if (name === "TimeoutError" || name === "AbortError") {
+            return { card: cc, status: 0, fullUrl: url, error: "timeout", reason: "timeout", kind: "inconclusive" };
+          }
+          // Real DNS / SSL / connection failure → the image won't load.
+          return { card: cc, status: 0, fullUrl: url, error: String(e), reason: "network", kind: "broken" };
         }
       }));
-      for (const r of results) if (r) broken.push(r);
+      for (const r of results) {
+        if (!r) continue;
+        if (r.kind === "inconclusive") { inconclusive++; continue; }
+        broken.push(r);
+      }
     }
 
     broken.sort((a, b) => (a.card.id ?? 0) - (b.card.id ?? 0));
@@ -6067,6 +6157,8 @@ app.get("/make-server-9eb1ae04/admin/actions/broken-images", async (c) => {
       origin,
       scanned: candidates.length,
       total: broken.length,
+      inconclusive,
+      displaysViaCartoon,
       cards: broken.map((b) => ({
         id: b.card.id,
         title: b.card.title,
@@ -6075,6 +6167,7 @@ app.get("/make-server-9eb1ae04/admin/actions/broken-images", async (c) => {
         fullUrl: b.fullUrl,
         status: b.status,
         error: b.error,
+        reason: b.reason,
         adminApproved: b.card.adminApproved,
         _store: b.card._store,
       })),
