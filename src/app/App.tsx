@@ -26,6 +26,7 @@ import { locationToState, LOCATION_OPTIONS } from "./lib/locations";
 import { HomeHero } from "./components/HomeHero";
 import { LoggedInHero } from "./components/LoggedInHero";
 import { MatchMeModal } from "./components/MatchMeModal";
+import { SwipeDeck } from "./components/SwipeDeck";
 // Lazy-loaded: the changelog data (~68 KB gzipped) is admin-only and rarely
 // opened, so it's code-split into its own chunk instead of riding in the main
 // bundle every visitor downloads.
@@ -466,6 +467,8 @@ export default function App() {
   }, [completedCards, cards]);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [adminPanelOpen, setAdminPanelOpen] = useState(false);
+  // Swipe "Discover" mode — presents the current ranked feed one card at a time.
+  const [swipeOpen, setSwipeOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [actOpen, setActOpen] = useState(false);
   const [changelogOpen, setChangelogOpen] = useState(false);
@@ -2191,6 +2194,15 @@ export default function App() {
                     onShowDoneChange={setShowDone}
                     completedCount={myCompletions?.total ?? 0}
                   />
+                  {/* Admin-only while the Swipe "Discover" mode is in preview. */}
+                  {isAdminUser && (
+                    <button
+                      onClick={() => setSwipeOpen(true)}
+                      className="font-['Poppins',sans-serif] text-xs font-bold text-[#23297e] hover:text-[#ed6624] hover:underline transition-colors whitespace-nowrap"
+                    >
+                      🃏 Swipe →
+                    </button>
+                  )}
                   <button
                     onClick={() => setMatchOpen(true)}
                     className="font-['Poppins',sans-serif] text-xs font-bold text-[#ed6624] hover:text-[#e07a28] hover:underline transition-colors whitespace-nowrap"
@@ -2686,6 +2698,21 @@ export default function App() {
       {/* Match Me wizard — suppressed during impersonation so admin can't
           accidentally save Match Me changes to their own account while
           they're trying to see the impersonated user's view. */}
+      {/* Swipe "Discover" mode — full-screen overlay over the current feed.
+          Right swipe ("interested") adds the card to bookmarks; left swipe
+          ("pass") is recorded but not yet fed back into the matcher. The
+          learning loop (a swipeAffinity term in matcher.ts) is the next step. */}
+      {swipeOpen && isAdminUser && (
+        <ErrorBoundary>
+          <SwipeDeck
+            cards={displayedCards.filter((c) => !c.pinToTop)}
+            onClose={() => setSwipeOpen(false)}
+            onInterested={(card) => {
+              if (!bookmarkedCards.has(card.id)) handleBookmark(card.id);
+            }}
+          />
+        </ErrorBoundary>
+      )}
       {matchOpen && isImpersonating && (() => { setMatchOpen(false); return null; })()}
       {matchOpen && !isImpersonating && (
         <ErrorBoundary>
