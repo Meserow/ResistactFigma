@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useDeferredValue, lazy, Suspense } from "react";
-import { Wrench, Clock, Globe, Flame, Smile, VenetianMask, Sun, Zap, MapPin, Users, DollarSign, EyeOff, Loader2, Eye, X } from "lucide-react";
+import { Wrench, Clock, Flame, Smile, VenetianMask, Sun, Zap, MapPin, Users, DollarSign, EyeOff, Loader2, Eye, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { initAnalytics, analytics } from "./lib/analytics";
 import { GAMIFICATION_KEYFRAMES } from "./lib/animations";
@@ -36,7 +36,7 @@ import { TierModal } from "./components/TierModal";
 import { CelebrationModal } from "./components/CelebrationModal";
 import { FeedbackModal } from "./components/FeedbackModal";
 import { SmacksPage, STATIC_SMACKS, type ReceiptCard } from "./components/SmacksPage";
-import { rankCards, score as scoreCard, loadPreferences, clearPreferences, applyMatcherConfig, fetchUserPreferences, pushUserPreferences, savePreferences, timeBucketFor, cardIsLocalToState, settingMatches, DEFAULT_PREFERENCES, type Preferences, type UserContext } from "./lib/matcher";
+import { rankCards, score as scoreCard, loadPreferences, clearPreferences, applyMatcherConfig, fetchUserPreferences, pushUserPreferences, savePreferences, timeBucketFor, cardIsLocalToState, DEFAULT_PREFERENCES, type Preferences, type UserContext } from "./lib/matcher";
 import svgPaths from "../imports/svg-77lgd1zdt6";
 import { projectId, publicAnonKey } from "/utils/supabase/info";
 import { supabase } from "./lib/supabase";
@@ -947,20 +947,13 @@ export default function App() {
     // band are sorted by event date ASC (soonest first). Reuses the outer
     // `todayISO` constant declared above the useMemo.
     const userState = matchPrefs?.state ?? null;
-    const userSetting = matchPrefs?.setting ?? [];
     const localUpcomingIds = new Set<number>();
     if (userState) {
-      // Candidates: future-dated, state-local, setting-matching, approved.
+      // Candidates: future-dated, state-local, approved.
       const candidates = cards.filter((c) => {
         const d = (c as any).eventDate as string | undefined;
         if (!d || d < todayISO) return false;
         if (!cardIsLocalToState(c, userState)) return false;
-        // Respect the user's online/in-person Match Me preference —
-        // pinning an in-person rally when they picked Remote only would
-        // contradict the explicit setting. settingMatches returns true
-        // when the setting array is empty ("any") so users without a
-        // preference still get the lift.
-        if (!settingMatches(c, userSetting)) return false;
         if (c.adminApproved === false && !isAdminUser) return false;
         return true;
       });
@@ -987,28 +980,54 @@ export default function App() {
       return matches;
     })();
 
+    // The in-person lift only kicks in once the user has actually set a
+    // location (a non-Remote state in the Location filter — which is mirrored
+    // from the Match Me state). Without a location, in-person events come from
+    // all over the country and floating them up is just noise, so we keep the
+    // original order (pin → highlights → rest). With a location set, the feed
+    // is already scoped to that state + agnostic cards, so the in-person tier
+    // surfaces *local* show-up-somewhere actions.
+    const hasStateLocation = (activeFilters["Location"] ?? []).some((l) => l !== "Remote");
+
     const withPinned = (arr: ActionCardData[]): ActionCardData[] => {
-      // Order: pinToTop cards (Spread the Word) → admin-highlighted cards →
-      // state-local upcoming events → everything else, with each band de-duped
-      // against the ones above it and against the rest so cards never appear
-      // twice.
+      // Order (location set): pinToTop (Spread the Word) → IN-PERSON tier →
+      // admin-highlighted → everything else. Order (no location): pinToTop →
+      // admin-highlighted → everything else (in-person tier is empty).
+      // Each band is de-duped against the ones above it and against the rest so
+      // cards never appear twice.
+      //
+      // The in-person tier sits ABOVE admin highlights (product call: physical,
+      // show-up-somewhere actions are the priority once we know where you are).
+      // It has two sub-bands:
+      //   1. state-local upcoming events, soonest-first (localUpcomingCards is
+      //      already date-sorted) — preserves the "what's near me & soon" lift;
+      //   2. every other location-specific (non-agnostic) card, in the active
+      //      sort order.
+      // Online / remote / national / at-home cards are location-agnostic and
+      // stay below. Highlights are still pulled from `arr` (not `cards`) so they
+      // keep respecting the active filters / search / Match Me result set.
       const usedIds = new Set<number>();
       for (const c of pinnedAlwaysShow) if (typeof c.id === "number") usedIds.add(c.id);
-      // Admin editorial highlights sit directly below the Spread-the-Word pin.
-      // They're pulled out of `arr` (not `cards`) so they still respect the
-      // active filters / search / Match Me result set — highlighting floats a
-      // card to the top OF THE CURRENT VIEW, it doesn't override an explicit
-      // filter the way the unconditional pinToTop card does. Because they keep
-      // their relative order from `arr`, they're already ordered among
-      // themselves by whatever sort is active (engagement for Popular, etc.).
+
+      const localBand = hasStateLocation
+        ? localUpcomingCards.filter((c) => typeof c.id === "number" && !usedIds.has(c.id))
+        : [];
+      for (const c of localBand) usedIds.add(c.id!);
+
+      const inPersonBand = hasStateLocation
+        ? arr.filter(
+            (c) => !c.pinToTop && typeof c.id === "number" && !usedIds.has(c.id) && !isLocationAgnostic(c),
+          )
+        : [];
+      for (const c of inPersonBand) usedIds.add(c.id!);
+
       const highlightBand = arr.filter(
         (c) => c.highlighted && !c.pinToTop && typeof c.id === "number" && !usedIds.has(c.id),
       );
       for (const c of highlightBand) usedIds.add(c.id!);
-      const localBand = localUpcomingCards.filter((c) => !usedIds.has(c.id!));
-      for (const c of localBand) usedIds.add(c.id!);
+
       const rest = arr.filter((c) => !c.pinToTop && !(typeof c.id === "number" && usedIds.has(c.id)));
-      return [...pinnedAlwaysShow, ...highlightBand, ...localBand, ...rest];
+      return [...pinnedAlwaysShow, ...localBand, ...inPersonBand, ...highlightBand, ...rest];
     };
     // Backwards-compat alias used further down — same behaviour now.
     const pinFirst = withPinned;
@@ -1043,14 +1062,12 @@ export default function App() {
       // Admins always see pending cards — pull them out so the score threshold
       // doesn't silently drop them, then append them after the ranked results.
       // Admin-only "still pending" set surfaced in their match feed. Apply the
-      // same hard filters the matcher's `score()` uses (setting + state) so
-      // toggling "Remote only" or picking a state actually hides in-person /
-      // out-of-state pending cards from the matched view. Admins still see
-      // everything in the AdminPanel — this only narrows the consumer feed.
+      // same state hard filter the matcher's `score()` uses so picking a state
+      // actually hides out-of-state pending cards from the matched view. Admins
+      // still see everything in the AdminPanel — this only narrows the feed.
       const pendingForAdmin = isAdminUser
         ? filtered.filter((c) => {
             if (c.adminApproved !== false) return false;
-            if (!settingMatches(c, matchPrefs.setting)) return false;
             if (!matchPrefs.includeAnywhere && matchPrefs.state) {
               if (!cardIsLocalToState(c, matchPrefs.state) && !isLocationAgnostic(c)) {
                 return false;
@@ -2269,14 +2286,6 @@ export default function App() {
                 : matchPrefs.time === "ongoing"  ? "Ongoing"
                 : null
               );
-              // Location label derived from the setting array.
-              const settingLabel = (() => {
-                const s = matchPrefs.setting ?? [];
-                if (s.includes("online") && s.includes("inPerson")) return "Mostly Remote";
-                if (s.includes("online")) return "Remote only";
-                if (s.includes("inPerson")) return "In-person";
-                return "Remote + In-person";
-              })();
               // Tone-stop names — must match MatchMeModal TONE_LABELS so the
               // banner chip says exactly what the user picked. Icons render as
               // simple navy line-icons (lucide-react) — replaced the older
@@ -2338,10 +2347,6 @@ export default function App() {
                           {timeLabel}
                         </button>
                       )}
-                      <button onClick={() => { setMatchInitialStep(0); setMatchOpen(true); }} className="inline-flex items-center gap-0.5 rounded-full bg-white/70 border border-gray-200 px-1.5 py-0.5 text-[10px] leading-tight hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
-                        <Globe size={10} className="text-[#23297e] shrink-0" strokeWidth={2} />
-                        {settingLabel}
-                      </button>
                       {toneChips.map((c) => {
                         const Icon = c.Icon;
                         return (

@@ -3,7 +3,7 @@ import { X, Loader2, Pencil, Trash2, Upload, Clock, Flame, Laugh, VenetianMask, 
 import type { LucideIcon } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
 import type { ActionCardData } from "./ActionCard";
-import { LOCATION_OPTIONS } from "../lib/locations";
+import { LOCATION_OPTIONS, locationToState } from "../lib/locations";
 import { ToneRangeSlider } from "./ToneSlider";
 import { InvolvementPicker, involvementLevelFor } from "./InvolvementPicker";
 import type { TimeBucket } from "../lib/matcher";
@@ -132,10 +132,17 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
   // "From Home") all normalize to "Remote" so the dropdown — which now
   // only offers "Remote" — reflects them correctly.
   const LEGACY_REMOTE = new Set(["Online", "At Home", "From Home", "Remote"]);
+  // Resolve the stored location to a canonical dropdown value. locationToState
+  // maps "City, ST" → state ("Beverly, MA" → "Massachusetts"), passes through
+  // canonical values, folds legacy online strings → "Remote", and returns null
+  // for free-form venue/setting strings it can't place. This means editing a
+  // legacy card pre-selects the right state instead of forcing a manual re-pick
+  // (and avoids the silent-wipe footgun where saving cleared the location).
+  const normalizedLocation = locationToState(card.location);
   const initialLocation = (card.isOnline || LEGACY_REMOTE.has(card.location ?? ""))
     ? "Remote"
-    : (LOCATION_OPTIONS as readonly string[]).includes(card.location ?? "")
-      ? (card.location as string)
+    : (normalizedLocation && (LOCATION_OPTIONS as readonly string[]).includes(normalizedLocation))
+      ? normalizedLocation
       : "";
   const [location,           setLocation]           = useState(initialLocation);
   const isOnline = location === "Remote";

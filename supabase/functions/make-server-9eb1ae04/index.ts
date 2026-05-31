@@ -354,6 +354,7 @@ const KNOWN_MIGRATION_FLAG_KEYS: readonly string[] = [
   "migration:event-dates:v1",
   "migration:fix-regional-search-urls:v1",
   "migration:fix-yarn-sisters-url:v1",
+  "migration:location-canonicalize:v1",
   "migration:mobilize-actions-v2:v1",
   "migration:mobilize-local-actions:v1",
   "migration:no-image-review:v1",
@@ -2373,6 +2374,146 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       }
       await setMigrationFlag("migration:petitions-10min:v1");
       console.log(`Petitions 10-min migration: updated ${updated} cards.`);
+    }
+
+    // One-time: canonicalize free-form `location` strings to the standard
+    // dropdown vocabulary (a state name / Remote / National / Multi-State) so
+    // location-based search works. Bulk imports left "City, ST" values (e.g.
+    // "Beverly, MA") and venue/setting descriptions ("In person — your home")
+    // that matched no state filter, so those cards were unsearchable by
+    // location. The exact id→{from,to} map below was generated AND reviewed
+    // against live data on 2026-05-30. Safety: a card is only rewritten if its
+    // CURRENT location still equals `from`, so any manual edit made since the
+    // audit is never clobbered. Prior values are saved to
+    // `migration:location-canonicalize:v1:backup` so the change is reversible.
+    const locCanonDone = await getMigrationFlag("migration:location-canonicalize:v1");
+    if (!locCanonDone) {
+      const LOCATION_FIXES: Record<number, { from: string; to: string }> = {
+        58: { from: "Multi-state", to: "Multi-State" },
+        208: { from: "Beaver County, PA", to: "Pennsylvania" },
+        216: { from: "Roxbury, NJ", to: "New Jersey" },
+        292: { from: "Multi-state", to: "Multi-State" },
+        1254: { from: "Multi-state", to: "Multi-State" },
+        1255: { from: "Multi-state", to: "Multi-State" },
+        2028: { from: "District of Columbia", to: "Washington DC" },
+        2034: { from: "Multi-state", to: "Multi-State" },
+        2042: { from: "Beverly, MA", to: "Massachusetts" },
+        2043: { from: "Joplin, MO", to: "Missouri" },
+        2044: { from: "Fort Myers, FL", to: "Florida" },
+        2045: { from: "Seattle, WA", to: "Washington" },
+        2046: { from: "Tukwila, WA", to: "Washington" },
+        2048: { from: "New York, NY", to: "New York" },
+        2049: { from: "Yonkers, NY", to: "New York" },
+        2050: { from: "Bronx, NY", to: "New York" },
+        2051: { from: "New York, NY", to: "New York" },
+        2052: { from: "Los Angeles, CA", to: "California" },
+        2053: { from: "Los Angeles, CA", to: "California" },
+        2054: { from: "Portland, OR", to: "Oregon" },
+        2055: { from: "Portland, OR", to: "Oregon" },
+        2056: { from: "Vancouver, WA", to: "Washington" },
+        2057: { from: "Fremont, CA", to: "California" },
+        2059: { from: "Seattle, WA", to: "Washington" },
+        2061: { from: "Palo Alto, CA", to: "California" },
+        2062: { from: "Seattle, WA", to: "Washington" },
+        2063: { from: "Washington, DC", to: "Washington DC" },
+        2064: { from: "Lumpkin, GA", to: "Georgia" },
+        2066: { from: "Tacoma, WA", to: "Washington" },
+        2086: { from: "Washington, DC", to: "Washington DC" },
+        2234: { from: "In person — Tesla dealer", to: "National" },
+        2235: { from: "In person — your printer", to: "National" },
+        2239: { from: "In person — federal courthouse hosting the trial", to: "National" },
+        2241: { from: "Online + In person follow-ups", to: "National" },
+        2242: { from: "In person — NY State Capitol, Albany", to: "New York" },
+        2243: { from: "In person — Manhattan or Brooklyn", to: "New York" },
+        2244: { from: "In person — Chicago Loop", to: "Illinois" },
+        2245: { from: "In person — Collier County, FL", to: "Florida" },
+        2247: { from: "In person — Tesla Portland location", to: "Oregon" },
+        2248: { from: "In person — Eden Prairie or Maplewood Tesla locations", to: "Minnesota" },
+        2249: { from: "In person — Owings Mills, MD", to: "Maryland" },
+        2250: { from: "In person — MN State Capitol, St. Paul", to: "Minnesota" },
+        2251: { from: "In person — Times Square, NYC", to: "New York" },
+        2253: { from: "In person — Seattle Tesla showroom", to: "Washington" },
+        2257: { from: "Online to get ask; in person to mail", to: "National" },
+        2267: { from: "In person — your local highway overpass, federal building wall, or large blank facade after dark", to: "National" },
+        2268: { from: "In person — workshop at home, then deploy on a highway overpass at dusk", to: "National" },
+        2269: { from: "In person — your House representative's next town hall or public event", to: "National" },
+        2271: { from: "In person — hotel ballroom, university auditorium, or industry gala where a cabinet member is speaking", to: "National" },
+        2272: { from: "In person — your nearest big-city plaza on a Saturday afternoon", to: "National" },
+        2274: { from: "In person — the public sidewalk outside an Amazon fulfillment center near you", to: "National" },
+        2275: { from: "In person — your local Tesla showroom or service center", to: "National" },
+        2276: { from: "In person — any non-Tesla EV dealership", to: "National" },
+        2277: { from: "In person — a public Tesla Supercharger station", to: "National" },
+        2278: { from: "In person or hybrid — Seattle (Capitol Hill rotating venues)", to: "Washington" },
+        2279: { from: "In person — your home", to: "National" },
+        2283: { from: "In person — any public street", to: "National" },
+        2284: { from: "In person — your nearest federal immigration court", to: "National" },
+        2285: { from: "In person — your state capitol building", to: "National" },
+        2286: { from: "In person — your home or local church basement", to: "National" },
+        2287: { from: "Anywhere", to: "National" },
+        2288: { from: "In person — a public plaza, parade route, or steps of a legislator's office", to: "National" },
+        2289: { from: "In person — your state capitol", to: "National" },
+        2290: { from: "In person + online training", to: "National" },
+        2291: { from: "In person or online — 200+ Sunrise hubs across the US", to: "National" },
+        2292: { from: "In person — your high school or college", to: "National" },
+        2293: { from: "In person — your home", to: "National" },
+        2294: { from: "In person — your front porch, a public park, or church steps", to: "National" },
+        2295: { from: "In person — a pedestrian-safe highway overpass", to: "National" },
+        2296: { from: "In person — sidewalks outside city hall, federal courthouse, or major plaza", to: "National" },
+        2298: { from: "In person — your home", to: "National" },
+        2299: { from: "In person — a household in your city", to: "National" },
+        2302: { from: "In person — your county polling place", to: "National" },
+        2303: { from: "In person — your local school district board room", to: "National" },
+        2304: { from: "In person — your front yard, porch, or window", to: "National" },
+        2305: { from: "In person — sidewalk outside your county or city jail", to: "National" },
+        2306: { from: "In person — your living room", to: "National" },
+        2307: { from: "In person — your local farmers market or community fair", to: "National" },
+        2308: { from: "In person — your local Pride parade route", to: "National" },
+        2309: { from: "In person — community bulletin boards", to: "National" },
+        2310: { from: "In person — your living room or backyard", to: "National" },
+        2311: { from: "Online or in person", to: "National" },
+        2312: { from: "Online to find address, then a postcard", to: "Remote" },
+        2313: { from: "In person — anywhere your rep appears that week", to: "National" },
+        2314: { from: "In person — the protest staging area", to: "National" },
+        2315: { from: "In person — a concert, sports game, parade, or college campus", to: "National" },
+        2317: { from: "In person — a target neighborhood in your city", to: "National" },
+        2319: { from: "In person — your local Little Free Library or community center", to: "National" },
+        2320: { from: "In person — utility poles and construction barriers downtown", to: "National" },
+        2321: { from: "In person — publicly visible federal-lot or hotel parking lots", to: "National" },
+        2324: { from: "In person + online", to: "National" },
+        2328: { from: "In person — your neighborhood", to: "National" },
+        2329: { from: "In person — the airport when you happen to be flying", to: "National" },
+        2330: { from: "In person — the union outpost near a unionized Amazon facility (JFK8 in Staten Island; LDJ5 in NJ; ALB1 in Albany)", to: "National" },
+        2338: { from: "In person + online coordination", to: "National" },
+        2355: { from: "In person — your local Tesla dealership", to: "National" },
+        2359: { from: "In person + posted online", to: "National" },
+        2360: { from: "In person + posted online", to: "National" },
+        2361: { from: "Online (filmed at home)", to: "Remote" },
+        2367: { from: "Online (filmed at home)", to: "Remote" },
+        2369: { from: "In person — your block", to: "National" },
+        2370: { from: "In person — your city", to: "National" },
+        2371: { from: "In person + posted online", to: "National" },
+        2372: { from: "In person + posted online", to: "National" },
+        2380: { from: "In person + Online", to: "National" },
+      };
+      const backup: Record<string, string> = {};
+      let updated = 0;
+      let skipped = 0;
+      for (const prefix of ["action:", "user-action:"]) {
+        for (const c of (await kv.getByPrefix(prefix)) as any[]) {
+          if (!c || typeof c !== "object" || typeof c.id !== "number") continue;
+          const fix = LOCATION_FIXES[c.id];
+          if (!fix) continue;
+          // Only rewrite if the card still holds the value we audited — never
+          // clobber an edit made between the audit and this migration running.
+          if ((c.location ?? "") !== fix.from) { skipped++; continue; }
+          backup[`${prefix}${c.id}`] = c.location ?? "";
+          await kv.set(`${prefix}${c.id}`, { ...c, location: fix.to });
+          updated++;
+        }
+      }
+      await kv.set("migration:location-canonicalize:v1:backup", backup);
+      await setMigrationFlag("migration:location-canonicalize:v1");
+      console.log(`Location canonicalize migration: updated ${updated}, skipped ${skipped} (changed since audit).`);
     }
 
     // ── Self-heal user-action:ids ──────────────────────────────────────────────

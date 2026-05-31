@@ -16,6 +16,36 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.21",
+    date: "2026-05-30",
+    title: "Location search fixed — acts now use clean state names",
+    sections: [
+      {
+        heading: "Search & filters",
+        items: [
+          "Fixed location search: 105 acts had messy location values from bulk imports — city-and-state strings like \"Beverly, MA\" and free-form descriptions like \"In person — your home\" — that matched none of the state filters, so they were effectively invisible when you filtered by location.",
+          "City/state values are now normalized to just the state (\"Beverly, MA\" → Massachusetts, \"Seattle, WA\" → Washington, etc.), so they show up correctly under their state.",
+          "\"Do-it-anywhere\" actions (host a postcard night at your home, picket your local Tesla dealership) are now tagged National, so they surface for everyone regardless of which state you've filtered to.",
+          "Editing an act now pre-selects the correct state for legacy entries instead of showing a blank dropdown — and no longer risks silently wiping the location when you save.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.20",
+    date: "2026-05-30",
+    title: "In-person actions near you rise to the top of the feed",
+    sections: [
+      {
+        heading: "Acts",
+        items: [
+          "Once you've set your location, in-person show-up-somewhere actions (protests, rallies, volunteer shifts, local events) now sort to the top of the feed — above the editorially highlighted cards — so the things you can physically go do lead the page. Upcoming events come first within that group, soonest first. The permanent \"Spread the Word\" card stays at the very top, and online/remote actions follow below.",
+          "If you haven't set a location yet, the feed is unchanged — in-person events from all over the country only float up once we know where you are.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.19",
     date: "2026-05-30",
     title: "Cartoon banners load far lighter",
