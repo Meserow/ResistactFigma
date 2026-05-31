@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Bookmark, BookmarkCheck, CheckCircle2, ExternalLink, Flag, Flame, Globe, Loader2, MapPin, Pencil, Share2, X } from "lucide-react";
+import { Heart, CheckCircle2, ExternalLink, Flag, Flame, Globe, Loader2, MapPin, Pencil, Share2, X } from "lucide-react";
 import type { ActionCardData } from "./ActionCard";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { CATEGORY_COLORS, CATEGORY_GROUPS, colorForCategory } from "../lib/categoryGroups";
@@ -156,15 +156,15 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
           {onBookmark && (
             <button
               onClick={() => onBookmark(card.id)}
-              title={isBookmarked ? "Remove bookmark" : "Bookmark"}
-              aria-label={isBookmarked ? "Remove bookmark" : "Bookmark"}
+              title={isBookmarked ? "Remove from My Matches" : "Save to My Matches"}
+              aria-label={isBookmarked ? "Remove from My Matches" : "Save to My Matches"}
               className={`flex h-9 w-9 items-center justify-center rounded-full backdrop-blur-sm transition-colors ${
                 isBookmarked
                   ? "bg-[#23297e] text-white hover:bg-[#1a2060]"
                   : "bg-white/80 text-gray-600 hover:bg-white hover:text-[#23297e]"
               }`}
             >
-              {isBookmarked ? <BookmarkCheck size={15} /> : <Bookmark size={15} />}
+              <Heart size={15} fill={isBookmarked ? "currentColor" : "none"} />
             </button>
           )}
           {onFlag && (

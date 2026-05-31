@@ -24,3 +24,7 @@ scripts/generated-card-art/
 .claude/worktrees/
 .claude/worktree-changes.patch
 scripts/cartoon-banners-backup/
+
+# Root-level cartoon bucket backup + slimmed staging (137MB/31MB — never commit)
+/cartoon-banners-backup/
+/cartoon-banners-slim/

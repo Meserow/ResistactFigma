@@ -20,6 +20,7 @@ import { AskFlowModal } from "./components/AskFlowModal";
 import { JoinACTersModal } from "./components/JoinACTersModal";
 import { InfoModal } from "./components/InfoModal";
 import { EditCardModal } from "./components/EditCardModal";
+import { CardDetailsModal } from "./components/CardDetailsModal";
 import { BookmarksPanel } from "./components/BookmarksPanel";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { locationToState, LOCATION_OPTIONS } from "./lib/locations";
@@ -206,15 +207,19 @@ function resolveCard(raw: ServerCard): ActionCardData {
     // still have the old local path (/cartoon-banners/card-N.webp) from before
     // images moved to Supabase Storage, and those would 404.
     //
-    // The resolved CDN URL is run through the same image-transform endpoint as
-    // topImage (width 800): the source webp is a full 1536px / ~170 KB, which
-    // is ~4× the card's display size. Resizing to 800px drops each banner to
-    // ~40–60 KB (under our 100 KB budget) without changing the crop — ActionCard
-    // still does the final object-cover. A stale local "/cartoon-banners/…" path
-    // isn't a Supabase URL, so storageRenderUrl passes it through untouched.
+    // Served RAW — NOT through the image-transform endpoint. Cartoons are
+    // pre-generated, already-optimized static webp assets and ~every card has
+    // one (855 in the manifest), so routing them through /render/image meant
+    // ~every card view counted as a transformed origin image. Supabase bills
+    // per distinct origin image transformed, and that blew past the Pro plan's
+    // 100-image allowance (837 in a period) — cartoons were the whole overage.
+    // Serving the object directly costs a little more egress (~145 KB vs a
+    // resized ~50 KB) but egress is cheap and within plan; the overage was not.
+    // ActionCard still does the final object-cover. (If banner egress ever
+    // matters, slim the stored webps to ~800px once at rest, not per-view.)
     cartoonImageUrl: raw.pinToTop
       ? undefined
-      : storageRenderUrl(cartoonUrlFor(raw.id) ?? raw.cartoonImageUrl, 800) ?? undefined,
+      : (cartoonUrlFor(raw.id) ?? raw.cartoonImageUrl ?? undefined),
     // Synopsis (card subtitle): server value wins, then local manifest
     // fallback so we can ship subtitle copy without an Edge Function
     // deploy. Applies to Spread the Word too now — its synopsis lives
@@ -469,6 +474,10 @@ export default function App() {
   const [adminPanelOpen, setAdminPanelOpen] = useState(false);
   // Swipe "Discover" mode — presents the current ranked feed one card at a time.
   const [swipeOpen, setSwipeOpen] = useState(false);
+  // App-level card detail modal. Opened from surfaces that aren't an ActionCard
+  // (e.g. My Matches) so clicking a saved act pops the full modal first,
+  // instead of jumping straight out to the act's external link.
+  const [detailCardId, setDetailCardId] = useState<number | null>(null);
   const [infoOpen, setInfoOpen] = useState(false);
   const [actOpen, setActOpen] = useState(false);
   const [changelogOpen, setChangelogOpen] = useState(false);
@@ -2015,8 +2024,6 @@ export default function App() {
         onFeedbackClick={() => setFeedbackOpen(true)}
         onMatchClick={() => setMatchOpen(true)}
         onTierClick={() => setTierModalOpen(true)}
-        siteUpdating={siteUpdating}
-        onToggleSiteUpdating={handleToggleSiteUpdating}
         matchActive={matchPrefs !== null}
         onMatchClear={() => { setMatchPrefs(null); clearPreferences(); }}
         statsActsCount={displayedCards.length}
@@ -2641,8 +2648,34 @@ export default function App() {
           onClose={() => setBookmarksOpen(false)}
           isLoggedIn={!!approval}
           onLoginClick={() => { setBookmarksOpen(false); setAuthModalOpen(true); }}
+          onOpenCard={(card) => { setBookmarksOpen(false); setDetailCardId(card.id); }}
         />
       )}
+
+      {/* App-level card detail modal — used when a card is opened from a
+          non-feed surface (My Matches). Mirrors the props ActionCard passes to
+          its own CardDetailsModal so behaviour is identical. */}
+      {(() => {
+        const detailCard = detailCardId != null ? cards.find((c) => c.id === detailCardId) : null;
+        if (!detailCard) return null;
+        return (
+          <CardDetailsModal
+            card={detailCard}
+            onClose={() => setDetailCardId(null)}
+            onComplete={handleComplete}
+            isCompleted={effectiveCompleted.has(detailCard.id)}
+            onBoost={handleBoost}
+            isBoosted={effectiveBoosted.has(detailCard.id)}
+            onBookmark={handleBookmark}
+            isBookmarked={effectiveBookmarked.has(detailCard.id)}
+            onShare={() => handleShare(detailCard.id)}
+            onEdit={isImpersonating ? undefined : (id) => { setDetailCardId(null); setEditCardId(id); }}
+            canEdit={!isImpersonating && canEditCard(detailCard)}
+            accessToken={accessToken ?? undefined}
+            onCardUpdated={handleCardSaved}
+          />
+        );
+      })()}
 
       {/* Auth Modal */}
       {authModalOpen && (
@@ -2660,6 +2693,13 @@ export default function App() {
           imageMap={IMAGE_MAP}
           onImpersonate={startImpersonation}
           onCardChanged={handleAdminCardChanged}
+          siteUpdating={siteUpdating}
+          onToggleSiteUpdating={handleToggleSiteUpdating}
+          onCardCreated={(card) => {
+            handleNewCard(card);          // inject the live card into the feed
+            setAdminPanelOpen(false);     // close the admin panel
+            setDetailCardId(card.id);     // pop its detail modal to test
+          }}
         />
       )}
 

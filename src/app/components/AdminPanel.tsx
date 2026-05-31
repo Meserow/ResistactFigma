@@ -42,10 +42,18 @@ interface AdminPanelProps {
    *  the panel only mutates its local pending list. `approved` distinguishes
    *  the two so the parent flips adminApproved vs. removes the card. */
   onCardChanged?: (id: number, change: "approved" | "deleted") => void;
+  /** Current state of the global "site updating" banner shown to all visitors. */
+  siteUpdating?: boolean;
+  /** Toggle the global site-updating banner on/off. Admin-only. */
+  onToggleSiteUpdating?: (enabled: boolean) => void;
+  /** Fires after the "Create from URL" tool publishes a new (live) card. The
+   *  parent injects it into the feed, closes the panel, and opens its detail
+   *  modal so the admin can immediately test it. */
+  onCardCreated?: (card: ActionCardData) => void;
 }
 
 type TabFilter = "active" | "pending" | "approved" | "rejected" | "all";
-type PanelMode = "cards" | "users" | "nourl" | "noimage" | "matcher" | "online" | "bigimages" | "brokenimages" | "sameurl" | "newcard";
+type PanelMode = "cards" | "users" | "nourl" | "noimage" | "matcher" | "online" | "bigimages" | "brokenimages" | "sameurl" | "newcard" | "siteupdate";
 
 // Category labels + colors for the "Create from URL" form's dropdown. Mirrors
 // EditCardModal's CATEGORY_OPTIONS so a created card gets the right pill color.
@@ -330,7 +338,7 @@ function ImageModal({
   );
 }
 
-export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCardChanged }: AdminPanelProps) {
+export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCardChanged, siteUpdating, onToggleSiteUpdating, onCardCreated }: AdminPanelProps) {
   // Default to "online" — quickest read on engagement when an admin opens
   // the panel. Other modes (cards, users, …) are one dropdown click away.
   const [mode, setMode] = useState<PanelMode>("online");
@@ -416,6 +424,10 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
     Authorization: `Bearer ${accessToken}`,
   };
 
+  // True when a backdrop mousedown started on the overlay itself (not dragged
+  // out of the panel) — gates close-on-backdrop-click. See the overlay below.
+  const backdropMouseDown = useRef(false);
+
   // ── "Create from URL" state ────────────────────────────────────────────────
   const [nc, setNc] = useState<NewCardForm>(EMPTY_NEWCARD);
   const [ncRefImage, setNcRefImage] = useState<string | null>(null);
@@ -494,9 +506,11 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
       });
       const data = await res.json();
       if (!res.ok) { setNcError(data.error ?? "Create failed."); return; }
-      setNcToast(`Created card #${data.card?.id ?? ""} — it's in the Pending queue for review.`);
+      // Published live. Reset the form, then hand the card to the parent, which
+      // injects it into the feed, closes this panel, and opens its detail modal
+      // so the admin can immediately test it.
       setNc(EMPTY_NEWCARD); setNcRefImage(null); setNcCartoon(null);
-      fetchPendingCards();
+      onCardCreated?.(data.card);
     } catch { setNcError("Network error creating the card."); }
     finally { setNcCreating(false); }
   }
@@ -859,7 +873,15 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-end" onClick={onClose}>
+      {/* Close only on a genuine backdrop click. Tracking where the mousedown
+          started prevents the panel from closing when you drag a selection out
+          of a text field and release on the backdrop — which used to wipe a
+          half-filled "Create from URL" form. */}
+      <div
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-end"
+        onMouseDown={(e) => { backdropMouseDown.current = e.target === e.currentTarget; }}
+        onClick={(e) => { if (e.target === e.currentTarget && backdropMouseDown.current) onClose(); }}
+      >
         <div
           className="bg-white h-full w-full max-w-md shadow-2xl flex flex-col overflow-hidden"
           onClick={(e) => e.stopPropagation()}
@@ -873,7 +895,7 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
               <div>
                 <p className="font-['Poppins',sans-serif] font-bold text-gray-900 text-base leading-tight">Admin Panel</p>
                 <p className="font-['Poppins',sans-serif] text-gray-400 text-xs">
-                  {mode === "users" ? "Manage user approvals" : mode === "nourl" ? "Approved cards with no action link" : mode === "noimage" ? "Approved cards with no image" : mode === "online" ? "Users active in the last 7 days" : mode === "bigimages" ? "Stored images over 500 KB — optimize to shrink" : mode === "brokenimages" ? "Cards whose topImageUrl 404s — needs re-upload" : mode === "sameurl" ? "Cards where action URL = author link — bulk-import default" : "Review submitted actions"}
+                  {mode === "users" ? "Manage user approvals" : mode === "newcard" ? "Build an Act from a URL with AI" : mode === "siteupdate" ? "Global 'site updating' banner" : mode === "nourl" ? "Approved cards with no action link" : mode === "noimage" ? "Approved cards with no image" : mode === "online" ? "Users active in the last 7 days" : mode === "bigimages" ? "Stored images over 500 KB — optimize to shrink" : mode === "brokenimages" ? "Cards whose topImageUrl 404s — needs re-upload" : mode === "sameurl" ? "Cards where action URL = author link — bulk-import default" : "Review submitted actions"}
                 </p>
               </div>
             </div>
@@ -911,8 +933,38 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
               <option value="brokenimages">{`Broken images${brokenImages.length > 0 ? ` (${brokenImages.length})` : ""}`}</option>
               <option value="sameurl">{`URL = Author link${sameUrlCards.length > 0 ? ` (${sameUrlCards.length})` : ""}`}</option>
               <option value="matcher">Matcher</option>
+              {onToggleSiteUpdating && <option value="siteupdate">{`🔧 Site-updating banner${siteUpdating ? " (ON)" : ""}`}</option>}
             </select>
           </div>
+
+          {/* ── SITE-UPDATING BANNER mode ──────────────────────────────────────────── */}
+          {mode === "siteupdate" && onToggleSiteUpdating && (
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+              <p className="font-['Poppins',sans-serif] text-xs text-gray-500 leading-relaxed">
+                Shows a site-wide "we're updating" banner to every visitor. Use it while pushing changes so people know things may briefly look off.
+              </p>
+              <div className="flex items-center justify-between rounded-xl border border-gray-200 px-4 py-3">
+                <div>
+                  <p className="font-['Poppins',sans-serif] text-sm font-semibold text-gray-900">Updating banner</p>
+                  <p className="font-['Poppins',sans-serif] text-[11px] text-gray-500">
+                    {siteUpdating ? "Currently shown to all visitors." : "Currently hidden."}
+                  </p>
+                </div>
+                <button
+                  onClick={() => onToggleSiteUpdating(!siteUpdating)}
+                  className={[
+                    "font-['Poppins',sans-serif] text-sm font-bold rounded-lg border px-4 py-2 transition-colors whitespace-nowrap flex items-center gap-1.5",
+                    siteUpdating
+                      ? "text-orange-600 border-orange-300 bg-orange-50 hover:bg-orange-100"
+                      : "text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50",
+                  ].join(" ")}
+                >
+                  <span className="text-base leading-none">🔧</span>
+                  {siteUpdating ? "Turn banner OFF" : "Turn banner ON"}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* ── CREATE FROM URL mode ───────────────────────────────────────────────── */}
           {mode === "newcard" && (() => {
@@ -925,7 +977,7 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
             return (
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
               <p className="font-['Poppins',sans-serif] text-xs text-gray-500 leading-relaxed">
-                Paste a URL — AI drafts the card fields and a brand cartoon banner. Review and tweak everything, then create. New cards land in the <span className="font-semibold">Cards</span> (Pending) queue for approval; nothing goes live automatically.
+                Paste a URL — AI drafts the card fields and a brand cartoon banner. Review and tweak everything, then publish. The card goes <span className="font-semibold">live immediately</span> and opens so you can test it.
               </p>
 
               {/* URL + generate draft */}
@@ -1036,7 +1088,7 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
                 onClick={ncCreate} disabled={ncCreating || !nc.title.trim() || !nc.description.trim() || !nc.category}
                 className="w-full py-2.5 bg-[#23297e] hover:bg-[#1a2060] disabled:bg-gray-200 disabled:text-gray-400 text-white font-['Poppins',sans-serif] font-bold text-sm rounded-xl flex items-center justify-center gap-2"
               >
-                {ncCreating ? <><Loader2 size={15} className="animate-spin" /> Creating…</> : "Create card (pending review)"}
+                {ncCreating ? <><Loader2 size={15} className="animate-spin" /> Publishing…</> : "Create & publish card"}
               </button>
             </div>
             );
