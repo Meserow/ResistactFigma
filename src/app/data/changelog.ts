@@ -16,6 +16,59 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.18",
+    date: "2026-05-30",
+    title: "Changelog opens faster — older releases load on demand",
+    sections: [
+      {
+        heading: "Performance",
+        items: [
+          "The changelog now shows the 30 most recent releases when it opens, with a \"Show older releases\" button to reveal the rest. The full history is still here — it just doesn't all render at once, so the window opens quickly no matter how long the log gets.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.17",
+    date: "2026-05-30",
+    title: "Lighter banner images",
+    sections: [
+      {
+        heading: "Performance",
+        items: [
+          "Banner images are now delivered at a slightly higher compression, shaving roughly 20% off each banner's file size (e.g. ~73 KB → ~59 KB) with no visible drop in quality on the comic-style art. Faster loads across the feed.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.16",
+    date: "2026-05-30",
+    title: "Faster first load — the changelog no longer ships with the main page",
+    sections: [
+      {
+        heading: "Performance",
+        items: [
+          "The changelog had grown to about 68 KB (compressed) and was being bundled into the main page, so every visitor downloaded it on first load even though it's only ever opened from the admin version badge. It's now split into its own file that loads on demand — only when someone actually opens the changelog — trimming that weight off everyone's initial page load.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.15",
+    date: "2026-05-30",
+    title: "Banner images now show the whole picture, not just the middle",
+    sections: [
+      {
+        heading: "Acts",
+        items: [
+          "Wide banner images were getting cropped down to their center — on a poster-style banner that meant the headline on the left and any sign or detail on the right just vanished, leaving only the middle. The image server was quietly trimming the sides before the picture even loaded; it now keeps the full image and only scales it.",
+          "The big banner in an Act's detail view now shows at the image's natural 3:2 shape, so the entire banner reads — top to bottom, edge to edge — instead of being squeezed into a short letterbox that lopped off the top and bottom.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.14",
     date: "2026-05-30",
     title: "Editing an Act no longer falsely demands a header image",

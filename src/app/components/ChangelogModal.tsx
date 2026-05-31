@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { CHANGELOG } from "../data/changelog";
 
@@ -6,7 +6,16 @@ interface ChangelogModalProps {
   onClose: () => void;
 }
 
+/** How many of the most recent releases to show before the "older" toggle. */
+const INITIAL_COUNT = 30;
+
 export function ChangelogModal({ onClose }: ChangelogModalProps) {
+  // Render only the most recent entries up front; the full log keeps growing
+  // one entry per release, so we defer rendering the long tail behind a toggle
+  // to keep the modal snappy to open.
+  const [showAll, setShowAll] = useState(false);
+  const visible = showAll ? CHANGELOG : CHANGELOG.slice(0, INITIAL_COUNT);
+  const hiddenCount = CHANGELOG.length - visible.length;
   // Esc to close + body scroll lock, matching the other modals' pattern.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -43,7 +52,7 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
           A running log of every release. Newest at the top.
         </p>
 
-        {CHANGELOG.map((entry) => (
+        {visible.map((entry) => (
           <article key={entry.version} className="mb-7 last:mb-0">
             <header className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-2 pb-2 border-b border-gray-200">
               <h3 className="font-['Poppins',sans-serif] text-lg font-bold text-[#23297e]">
@@ -76,6 +85,15 @@ export function ChangelogModal({ onClose }: ChangelogModalProps) {
             ))}
           </article>
         ))}
+
+        {hiddenCount > 0 && (
+          <button
+            onClick={() => setShowAll(true)}
+            className="mt-2 w-full py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 font-['Poppins',sans-serif] text-sm font-semibold text-[#23297e] transition-colors"
+          >
+            Show older releases ({hiddenCount} more)
+          </button>
+        )}
       </div>
     </div>
   );
