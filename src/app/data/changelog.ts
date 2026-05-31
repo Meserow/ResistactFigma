@@ -16,6 +16,32 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.23",
+    date: "2026-05-31",
+    title: "No more \"Something went wrong\" after an update",
+    sections: [
+      {
+        heading: "Reliability",
+        items: [
+          "Fixed the \"Failed to fetch dynamically imported module\" error some people hit (e.g. opening the Changelog) when the site had been updated while their tab was still open. The page now quietly reloads to the latest version instead of showing an error card. If you ever do see it, the Reload Page button always fixes it.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.22",
+    date: "2026-05-31",
+    title: "Simpler location preferences",
+    sections: [
+      {
+        heading: "Match Me",
+        items: [
+          "Cleaned up a leftover \"online vs. in-person\" preference that no longer had a control in the Match Me flow — it sat unused behind the scenes and did nothing. Your location preference now lives in one place: the Location filter (pick a state, or \"Remote\"). The redundant \"Remote + In-person\" chip has been removed from the match summary. No change to how matches are picked.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.21",
     date: "2026-05-30",
     title: "Location search fixed — acts now use clean state names",

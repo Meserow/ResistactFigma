@@ -1,5 +1,12 @@
 import { Component, type ReactNode, type ErrorInfo } from "react";
 
+// Matches the various browser/Vite phrasings for "a lazily-imported chunk
+// failed to load" — almost always a stale tab after a redeploy (the hashed
+// chunk filename it references no longer exists on the server).
+const CHUNK_LOAD_ERROR =
+  /failed to fetch dynamically imported module|error loading dynamically imported module|importing a module script failed/i;
+const CHUNK_RELOAD_KEY = "resistact:lastChunkReload";
+
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
@@ -21,6 +28,17 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error("[ErrorBoundary] Caught render error:", error, info.componentStack);
+    // Stale-deploy recovery: a failed lazy-chunk load is almost always a tab
+    // opened before a redeploy. Reload once to fetch the current build instead
+    // of showing the error card. Loop-guarded so a genuinely broken chunk
+    // surfaces the card rather than reloading forever.
+    if (CHUNK_LOAD_ERROR.test(error?.message ?? "")) {
+      const last = Number(sessionStorage.getItem(CHUNK_RELOAD_KEY) || "0");
+      if (Date.now() - last > 10_000) {
+        sessionStorage.setItem(CHUNK_RELOAD_KEY, String(Date.now()));
+        window.location.reload();
+      }
+    }
   }
 
   render() {
