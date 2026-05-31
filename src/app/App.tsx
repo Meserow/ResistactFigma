@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useDeferredValue } from "react";
+import { useState, useEffect, useMemo, useRef, useDeferredValue, lazy, Suspense } from "react";
 import { Wrench, Clock, Globe, Flame, Smile, VenetianMask, Sun, Zap, MapPin, Users, DollarSign, EyeOff, Loader2, Eye, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { initAnalytics, analytics } from "./lib/analytics";
@@ -26,7 +26,12 @@ import { locationToState, LOCATION_OPTIONS } from "./lib/locations";
 import { HomeHero } from "./components/HomeHero";
 import { LoggedInHero } from "./components/LoggedInHero";
 import { MatchMeModal } from "./components/MatchMeModal";
-import { ChangelogModal } from "./components/ChangelogModal";
+// Lazy-loaded: the changelog data (~68 KB gzipped) is admin-only and rarely
+// opened, so it's code-split into its own chunk instead of riding in the main
+// bundle every visitor downloads.
+const ChangelogModal = lazy(() =>
+  import("./components/ChangelogModal").then((m) => ({ default: m.ChangelogModal })),
+);
 import { TierModal } from "./components/TierModal";
 import { CelebrationModal } from "./components/CelebrationModal";
 import { FeedbackModal } from "./components/FeedbackModal";
@@ -147,7 +152,7 @@ const SPREAD_THE_WORD_DESCRIPTION =
 const SPREAD_THE_WORD_TOP_IMAGE = "/og-image.webp";
 
 // Rewrite a Supabase Storage public-object URL to the on-the-fly image render
-// endpoint, resizing to `width` px at quality 75. This is the single biggest
+// endpoint, resizing to `width` px at quality 60. This is the single biggest
 // payload win on the feed: raw uploads are warehoused at up to 1200px wide but
 // the card image slot is only ~400px CSS wide, so we were shipping 3-4x the
 // pixels (and 150-360 KB) per card. The render endpoint hands back a resized,
@@ -158,7 +163,7 @@ const SPREAD_THE_WORD_TOP_IMAGE = "/og-image.webp";
 // pass through untouched. Cartoon banners are deliberately NOT routed through
 // here — they're pre-generated, already-optimized WebP at the card aspect.
 const STORAGE_OBJECT_SEG = "/storage/v1/object/public/";
-function storageRenderUrl(url: string | undefined, width: number, quality = 75): string | undefined {
+function storageRenderUrl(url: string | undefined, width: number, quality = 60): string | undefined {
   if (!url) return url;
   if (!url.includes(`${projectId}.supabase.co`)) return url; // only our own storage
   const i = url.indexOf(STORAGE_OBJECT_SEG);
@@ -2793,7 +2798,11 @@ export default function App() {
           >
             v{__APP_VERSION__}
           </button>
-          {changelogOpen && <ChangelogModal onClose={() => setChangelogOpen(false)} />}
+          {changelogOpen && (
+            <Suspense fallback={null}>
+              <ChangelogModal onClose={() => setChangelogOpen(false)} />
+            </Suspense>
+          )}
         </>
       )}
 
