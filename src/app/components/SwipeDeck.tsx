@@ -134,20 +134,25 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckPro
   const done = index >= cards.length;
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-[#23297e]/95 backdrop-blur-sm">
+    <div className="hero-modal-overlay fixed inset-0 z-[100] flex flex-col bg-[#0d1b2a]/80 backdrop-blur-sm">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 text-white">
+      <div className="flex items-center justify-between gap-3 px-4 py-3 text-white">
         <button
           onClick={onClose}
-          className="font-['Poppins',sans-serif] text-sm font-semibold inline-flex items-center gap-1 rounded-full px-3 py-1.5 hover:bg-white/10 transition-colors"
+          className="font-['Poppins',sans-serif] text-sm font-semibold inline-flex items-center gap-1 rounded-full px-3 py-1.5 hover:bg-white/10 transition-colors shrink-0"
         >
           <X size={16} /> Done
         </button>
-        <p className="font-['Poppins',sans-serif] text-sm">
-          <span className="resistact-anim-twinkle" aria-hidden>✨</span>{" "}
-          <strong>Swipe to discover</strong>
-        </p>
-        <span className="font-['Poppins',sans-serif] text-xs text-white/80 tabular-nums w-16 text-right">
+        <div className="min-w-0 text-center">
+          <p className="font-['Poppins',sans-serif] text-sm leading-tight">
+            <span className="resistact-anim-twinkle" aria-hidden>✨</span>{" "}
+            <strong>Swipe to discover</strong>
+          </p>
+          <p className="font-['Poppins',sans-serif] text-[11px] text-white/70 leading-tight mt-0.5">
+            Swipe right to save it · left to pass
+          </p>
+        </div>
+        <span className="font-['Poppins',sans-serif] text-xs text-white/80 tabular-nums w-16 text-right shrink-0">
           {done ? "—" : `${remaining} to go`}
         </span>
       </div>
@@ -162,7 +167,7 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckPro
               You're interested in <strong>{interestedCount}</strong> act{interestedCount === 1 ? "" : "s"}.
             </p>
             <p className="font-['Poppins',sans-serif] text-sm text-white/70 mb-6">
-              They've been saved to your bookmarks so you can act on them.
+              They've been saved to My Matches so you can act on them.
             </p>
             <div className="flex items-center justify-center gap-3">
               <button
@@ -194,7 +199,7 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckPro
             return (
               <div
                 key={card.id}
-                className="absolute w-[min(92vw,400px)]"
+                className="absolute w-[min(92vw,500px)]"
                 style={style}
                 onPointerDown={isTop ? onPointerDown : undefined}
                 onPointerMove={isTop ? onPointerMove : undefined}
@@ -215,23 +220,36 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckPro
         )}
       </div>
 
-      {/* Action bar */}
+      {/* Action bar + always-visible help so the gesture is never a guess. */}
       {!done && (
-        <div className="flex items-center justify-center gap-6 py-5">
-          <DeckButton label="Pass" onClick={() => commit("left")} className="border-red-400 text-red-500 hover:bg-red-50">
-            <X size={26} />
-          </DeckButton>
-          <DeckButton
-            label="Undo"
-            onClick={undo}
-            disabled={history.length === 0}
-            className="h-12 w-12 border-white/40 text-white/80 hover:bg-white/10 disabled:opacity-30"
-          >
-            <RotateCcw size={18} />
-          </DeckButton>
-          <DeckButton label="Interested" onClick={() => commit("right")} className="border-green-400 text-green-500 hover:bg-green-50">
-            <Heart size={24} />
-          </DeckButton>
+        <div className="flex flex-col items-center gap-2.5 py-5">
+          <div className="flex items-center justify-center gap-2 font-['Poppins',sans-serif] text-[11px] text-white/80">
+            <span className="inline-flex items-center gap-1"><X size={12} className="text-red-400" /> Left = not for me</span>
+            <span className="text-white/30">•</span>
+            <span className="inline-flex items-center gap-1"><Heart size={12} className="text-green-400" /> Right = save as a possibility</span>
+          </div>
+          <div className="flex items-start justify-center gap-7">
+            <ActionButton label="Pass" caption="Pass">
+              <DeckButton label="Pass" onClick={() => commit("left")} className="border-red-400 text-red-500 hover:bg-red-50">
+                <X size={26} />
+              </DeckButton>
+            </ActionButton>
+            <ActionButton label="Undo" caption="Undo">
+              <DeckButton
+                label="Undo"
+                onClick={undo}
+                disabled={history.length === 0}
+                className="h-12 w-12 border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
+              >
+                <RotateCcw size={18} />
+              </DeckButton>
+            </ActionButton>
+            <ActionButton label="Save" caption="Save">
+              <DeckButton label="Interested" onClick={() => commit("right")} className="border-green-400 text-green-500 hover:bg-green-50">
+                <Heart size={24} />
+              </DeckButton>
+            </ActionButton>
+          </div>
         </div>
       )}
     </div>
@@ -244,43 +262,63 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckPro
 function SwipeCardFace({ card }: { card: ActionCardData }) {
   const banner = card.cartoonImageUrl || card.topImage || cardFallbackImg;
   const catColor = card.categoryColor || colorForCategory(card.category) || "#23297e";
-  const subtitle = card.synopsis || card.description;
   return (
-    <div className="overflow-hidden rounded-2xl bg-white shadow-2xl">
-      <div className="relative h-44 bg-[#23297e] overflow-hidden">
+    // Mirrors the card-details modal: rounded white panel, 3:2 banner with
+    // category + location pills, full title and description, time meta.
+    <div className="flex max-h-[76vh] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+      <div className={`relative aspect-[3/2] w-full shrink-0 ${card.imageContain ? "bg-gray-50" : "bg-[#23297e]"}`}>
         <ImageWithFallback
           src={banner}
           alt=""
-          className={`h-full w-full ${card.imageContain ? "object-contain" : "object-cover"}`}
+          className={`h-full w-full ${card.imageContain ? "object-contain p-3" : "object-cover"}`}
           draggable={false}
         />
         <span
-          className="absolute left-3 top-3 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white font-['Poppins',sans-serif]"
+          className="absolute left-3 top-3 rounded-md px-2.5 py-1 font-['Poppins',sans-serif] text-[12px] font-bold tracking-wide text-white shadow-sm"
           style={{ backgroundColor: catColor }}
         >
           {card.category}
         </span>
+        {(card.isOnline || card.location) && (
+          <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-md bg-white/95 px-2.5 py-1 shadow-sm backdrop-blur-sm">
+            {card.isOnline ? (
+              <><Globe size={12} className="text-gray-700" /><span className="font-['Poppins',sans-serif] text-[12px] text-gray-700">Online</span></>
+            ) : (
+              <><MapPin size={12} className="text-gray-700" /><span className="font-['Poppins',sans-serif] text-[12px] text-gray-700">{card.location}</span></>
+            )}
+          </div>
+        )}
       </div>
-      <div className="p-4">
-        <h3 className="font-['Poppins',sans-serif] text-lg font-bold leading-snug text-[#23297e]">
+      <div className="overflow-hidden p-5">
+        <h3 className="font-['Poppins',sans-serif] text-xl font-bold leading-snug text-[#23297e]">
           {card.title}
         </h3>
-        {subtitle && (
-          <p className="mt-1.5 font-['Poppins',sans-serif] text-sm leading-relaxed text-gray-600 line-clamp-4">
-            {subtitle}
+        {card.synopsis && (
+          <p className="mt-1.5 font-['Poppins',sans-serif] text-sm italic leading-relaxed text-gray-500 line-clamp-2">
+            {card.synopsis}
           </p>
         )}
-        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-gray-500 font-['Poppins',sans-serif]">
-          {card.timeCommitment && (
-            <span className="inline-flex items-center gap-1"><Clock size={13} /> {card.timeCommitment}</span>
-          )}
-          {card.isOnline ? (
-            <span className="inline-flex items-center gap-1"><Globe size={13} /> Online</span>
-          ) : card.location ? (
-            <span className="inline-flex items-center gap-1"><MapPin size={13} /> {card.location}</span>
-          ) : null}
-        </div>
+        {card.description && (
+          <p className="mt-2.5 font-['Poppins',sans-serif] text-[15px] leading-relaxed text-gray-700 line-clamp-6">
+            {card.description}
+          </p>
+        )}
+        {card.timeCommitment && (
+          <div className="mt-3 inline-flex items-center gap-1 font-['Poppins',sans-serif] text-[12px] text-gray-500">
+            <Clock size={13} /> {card.timeCommitment}
+          </div>
+        )}
       </div>
+    </div>
+  );
+}
+
+// Round action button with a caption underneath (so the icons are labelled).
+function ActionButton({ children, caption }: { children: React.ReactNode; caption: string; label: string }) {
+  return (
+    <div className="flex flex-col items-center gap-1.5">
+      {children}
+      <span className="font-['Poppins',sans-serif] text-[11px] font-semibold text-white/80">{caption}</span>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import logoImg from "../../assets/resistact-logo-horizontal.webp";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import type { ReactNode } from "react";
 import { FACT_CARDS } from "../data/factCards";
-import { Bell, Bookmark, ChevronDown, Clock, Flag, Flame, Globe, Info, Loader2, LogOut, MapPin, Menu, MessageCircle, Search, ShieldCheck, SlidersHorizontal, Sparkles, Tag, X, Zap } from "lucide-react";
+import { Bell, Heart, ChevronDown, Clock, Flag, Flame, Globe, Info, Loader2, LogOut, MapPin, Menu, MessageCircle, Search, ShieldCheck, SlidersHorizontal, Sparkles, Tag, X, Zap } from "lucide-react";
 import type { UserApproval } from "../lib/supabase";
 import { TierProgress } from "./TierProgress";
 import { getUserTier } from "../lib/tiers";
@@ -69,8 +69,6 @@ interface NavbarProps {
   pendingSmacksCount?: number;
   flagsCount?: number;
   onTierClick?: () => void;
-  siteUpdating?: boolean;
-  onToggleSiteUpdating?: (enabled: boolean) => void;
   pendingUsersCount?: number;
   // ── Smacks filter / sort, surfaced in the navbar's filter bar so chips and
   //   sort sit on one row with the stats counts (instead of a second row
@@ -87,7 +85,7 @@ interface NavbarProps {
   completedCount?: number;
 }
 
-export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, isSearchPending = false, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, showDone, onShowDoneChange, completedCount, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick, onPendingSmacksClick, onPendingActsClick, onFlaggedActsClick, pendingActsCount, pendingSmacksCount, flagsCount = 0, pendingUsersCount = 0, onTierClick, siteUpdating, onToggleSiteUpdating, smacksAvailableTags, smacksActiveTags, onSmacksTagToggle, onSmacksTagsClear, smacksSortBy, onSmacksSortChange, smacksIsAdmin }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
+export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, isSearchPending = false, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, showDone, onShowDoneChange, completedCount, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick, onPendingSmacksClick, onPendingActsClick, onFlaggedActsClick, pendingActsCount, pendingSmacksCount, flagsCount = 0, pendingUsersCount = 0, onTierClick, smacksAvailableTags, smacksActiveTags, onSmacksTagToggle, onSmacksTagsClear, smacksSortBy, onSmacksSortChange, smacksIsAdmin }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
   // Acts filters in render order: Location dropdown first, Category pills second.
   // Used for "Clear all" and the mobile filter row that shows just the names.
   const ACTS_FILTER_OPTIONS: Record<string, string[]> = {
@@ -418,8 +416,8 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                       onClick={() => { setDropdownOpen(false); onBookmarksClick?.(); }}
                       className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-['Poppins',sans-serif] font-medium text-gray-600 hover:bg-gray-50 transition-colors"
                     >
-                      <Bookmark size={15} />
-                      My Bookmarks
+                      <Heart size={15} />
+                      My Matches
                       {bookmarkCount != null && bookmarkCount > 0 && (
                         <span className="ml-auto bg-[#ed6624] text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
                           {bookmarkCount > 99 ? "99+" : bookmarkCount}
@@ -467,23 +465,6 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                         <span className="ml-auto bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center">
                           {flagsCount > 99 ? "99+" : flagsCount}
                         </span>
-                      </button>
-                    )}
-                    {isAdmin && (
-                      <button
-                        onClick={() => onToggleSiteUpdating?.(!siteUpdating)}
-                        className={[
-                          "w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-['Poppins',sans-serif] font-medium transition-colors",
-                          siteUpdating
-                            ? "text-orange-600 hover:bg-orange-50"
-                            : "text-gray-600 hover:bg-gray-50",
-                        ].join(" ")}
-                      >
-                        <span className="text-base leading-none">🔧</span>
-                        {siteUpdating ? "Turn off updating banner" : "Show updating banner"}
-                        {siteUpdating && (
-                          <span className="ml-auto text-[10px] font-bold bg-orange-500 text-white rounded-full px-1.5 py-0.5">ON</span>
-                        )}
                       </button>
                     )}
                     {isAdmin && (

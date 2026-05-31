@@ -5979,7 +5979,9 @@ app.post("/make-server-9eb1ae04/admin/cards/create", async (c) => {
       topImageKey: null,
       topImageUrl: raw.topImageUrl ?? null,
       cartoonImageUrl: raw.cartoonImageUrl ? String(raw.cartoonImageUrl).trim() : undefined,
-      adminApproved: false,
+      // Created by an admin through the review form — publish live immediately
+      // (no pending queue). The admin has already vetted every field here.
+      adminApproved: true,
       createdAt: new Date().toISOString(),
       createdBy: "admin-url-tool",
       importSource: "admin-url-tool",

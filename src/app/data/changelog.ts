@@ -16,6 +16,46 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.26",
+    date: "2026-05-31",
+    title: "Admin panel: safer to fill out, tidier controls",
+    sections: [
+      {
+        heading: "Admin tools",
+        items: [
+          "The admin panel no longer closes when you drag a text selection out of a field and release outside it — so a half-filled \"Create from URL\" form won't get wiped by accident. It still closes on a real backdrop click, the X, or Esc.",
+          "Moved the \"site-updating banner\" toggle out of the top bar and into the mode dropdown, so it can't be hit by mistake and the header stays uncluttered.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.25",
+    date: "2026-05-31",
+    title: "Admin: build an Act from a URL with AI",
+    sections: [
+      {
+        heading: "Admin tools",
+        items: [
+          "New \"Create from URL\" tool in the admin panel: paste a link to an action and it drafts the title, subtitle, description, category, location, and tone, then generates a brand-style cartoon banner. Everything is editable before you publish. Creating publishes the card live immediately, closes the panel, and opens the new card so you can test it right away.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.24",
+    date: "2026-05-31",
+    title: "Stopped blowing through our image-transform allowance",
+    sections: [
+      {
+        heading: "Behind the scenes",
+        items: [
+          "Cartoon banners were being run through Supabase's on-the-fly image resizer on every view. Since nearly every Act has a cartoon, that counted almost every card view against our monthly transform allowance — we'd hit 837 against a limit of 100. Banners are already pre-optimized, so they now load directly with no per-view resizing, which takes that overage to roughly zero. No visible change to the banners themselves.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.23",
     date: "2026-05-31",
     title: "No more \"Something went wrong\" after an update",
