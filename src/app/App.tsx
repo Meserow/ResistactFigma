@@ -2194,15 +2194,6 @@ export default function App() {
                     onShowDoneChange={setShowDone}
                     completedCount={myCompletions?.total ?? 0}
                   />
-                  {/* Admin-only while the Swipe "Discover" mode is in preview. */}
-                  {isAdminUser && (
-                    <button
-                      onClick={() => setSwipeOpen(true)}
-                      className="font-['Poppins',sans-serif] text-xs font-bold text-[#23297e] hover:text-[#ed6624] hover:underline transition-colors whitespace-nowrap"
-                    >
-                      🃏 Swipe →
-                    </button>
-                  )}
                   <button
                     onClick={() => setMatchOpen(true)}
                     className="font-['Poppins',sans-serif] text-xs font-bold text-[#ed6624] hover:text-[#e07a28] hover:underline transition-colors whitespace-nowrap"
@@ -2698,6 +2689,19 @@ export default function App() {
       {/* Match Me wizard — suppressed during impersonation so admin can't
           accidentally save Match Me changes to their own account while
           they're trying to see the impersonated user's view. */}
+      {/* Admin-only floating entry to the Swipe "Discover" preview. Persistent
+          (not tied to a banner) so it's reachable on the Acts tab regardless of
+          search / filter / match state. Hidden while the deck itself is open. */}
+      {isAdminUser && activeTab === "acts" && !swipeOpen && (
+        <button
+          onClick={() => setSwipeOpen(true)}
+          title="Swipe to discover Acts (admin preview)"
+          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full bg-[#23297e] px-4 py-3 text-white shadow-lg hover:bg-[#ed6624] transition-colors font-['Poppins',sans-serif] text-sm font-bold"
+        >
+          🃏 <span className="hidden sm:inline">Swipe</span>
+        </button>
+      )}
+
       {/* Swipe "Discover" mode — full-screen overlay over the current feed.
           Right swipe ("interested") adds the card to bookmarks; left swipe
           ("pass") is recorded but not yet fed back into the matcher. The
