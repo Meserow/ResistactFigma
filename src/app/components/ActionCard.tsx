@@ -9,6 +9,12 @@ import { ImageWithFallback } from "./figma/ImageWithFallback";
 import cardFallbackImg from "../../assets/resistact-card-fallback.webp";
 import { colorForCategory } from "../lib/categoryGroups";
 
+// Hand-authored subtitle shown ONLY on the pinned "Spread the Word" hero card
+// (in the full feed, not the compact carousel). Longer than a normal synopsis —
+// it fills the card body in place of the author footer.
+const SPREAD_THE_WORD_SUBTITLE =
+  "Resistance grows one share at a time — but only if you actually share. Pick a friend who's been doomscrolling and send this their way. If everyone here invites two friends, ResistAct doubles by Tuesday. That's how movements actually scale — not virally, but two-by-two, through people who trust each other.";
+
 // Approximate threshold for when the description gets clamped in the grid view.
 // We use a character count rather than measuring DOM because measuring on every
 // card render is overkill and ResizeObserver is overkill-er. ~150 chars roughly
@@ -261,10 +267,11 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           // haven't asked the OS for reduced motion (vestibular safety).
           // hover:z-10 keeps the lifted card painting above its neighbors
           // in the grid rather than getting clipped at edges.
-          className={`resistact-card-shine resistact-banner-host transform-gpu cursor-pointer bg-white rounded-2xl border border-gray-200 flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:border-gray-300 hover:shadow-md motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10 ${
-            // Pinned "Spread the Word" is always full color; any other
-            // featured card follows the grid-wide 85%→100%-on-hover rule.
-            card.pinToTop ? "opacity-100" : "opacity-90 hover:opacity-100"
+          className={`resistact-card-shine resistact-banner-host transform-gpu cursor-pointer bg-white rounded-2xl flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:shadow-md motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10 ${
+            // Pinned "Spread the Word" gets a hairline navy outline (and stays
+            // full color); any other featured card uses the grid-wide gray
+            // border + 85%→100%-on-hover rule.
+            card.pinToTop ? "border-[0.75px] border-gray-400 opacity-100" : "border-[0.75px] border-gray-400 opacity-90 hover:opacity-100"
           }`}
           onClick={card.pinToTop ? () => setShareOpen(true) : () => setDetailsOpen(true)}
         >
@@ -275,7 +282,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
               without flashing or strobing. */}
           <div className={`resistact-anim-shimmer relative ${compact ? "h-[70px]" : "h-[106px]"} shrink-0 bg-[#23297e] flex items-center justify-center overflow-hidden`}>
             {effectiveTopImage
-              ? <img src={effectiveTopImage} alt={card.title} loading="lazy" decoding="async" className={`${card.pinToTop ? "" : "resistact-banner-desat"} absolute inset-0 w-full h-full object-cover ${card.cartoonImageUrl ? "object-[center_20%]" : "object-top"}`} />
+              ? <img src={effectiveTopImage} alt={card.title} loading="lazy" decoding="async" style={card.pinToTop ? { transform: "scale(1.01)" } : undefined} className={`${card.pinToTop ? "" : "resistact-banner-desat"} absolute inset-0 w-full h-full object-cover ${card.cartoonImageUrl ? "object-[center_20%]" : "object-top"}`} />
               : card.featuredIllustration
             }
             {!compact && (
@@ -300,17 +307,32 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
               </span>
             )}
 
-            <h3 className={`font-['Poppins',sans-serif] font-bold text-gray-900 leading-snug ${compact ? "text-[13px]" : "text-[15px]"}`}>
-              {card.title}
+            <h3 className={`font-['Poppins',sans-serif] font-bold leading-snug ${compact ? "text-[13px]" : "text-[15px]"} ${card.pinToTop ? "text-[#23297e]" : "text-gray-900"} ${card.pinToTop && !compact ? "flex items-center justify-between gap-2" : ""}`}>
+              <span>{card.title}</span>
+              {/* Spread the Word: a boost flame pushed to the right edge of the
+                  title row (no count) — title stays left, flame sits right. */}
+              {card.pinToTop && (
+                <span aria-hidden className="resistact-anim-flicker ml-1.5 inline-block shrink-0">🔥</span>
+              )}
               {/* Featured card subtitle — only the hand-authored synopsis;
                   no title-split for hero cards. Trailing ellipsis matches
                   the rest of the grid. */}
-              {card.synopsis && (
+              {card.synopsis && !(card.pinToTop && !compact) && (
                 <span className={`font-normal italic text-gray-400 leading-snug line-clamp-2 ${compact ? "text-[11px] mt-1" : "text-[12px] mt-1.5"}`}>
                   {/[.…!?]$/.test(card.synopsis) ? card.synopsis : card.synopsis + "…"}
                 </span>
               )}
             </h3>
+
+            {/* Pinned "Spread the Word" hero: a longer share-prompt passage that
+                fills the body (a touch darker grey than other subtitles). Same
+                font size as other cards' subtitles, sitting close under the
+                title. flex-1 + overflow-hidden shows as much as fits. */}
+            {card.pinToTop && !compact && (
+              <p className="font-['Poppins',sans-serif] not-italic text-gray-500 text-[12px] leading-snug mt-1 flex-1 overflow-hidden">
+                {SPREAD_THE_WORD_SUBTITLE}
+              </p>
+            )}
 
             {/* Description: compact-only, matches the regular card. The
                 full message lives in the share modal that opens on click. */}
@@ -319,7 +341,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
                 {card.description}
               </p>
             )}
-            {!compact && <div className="flex-1" />}
+            {!compact && !card.pinToTop && <div className="flex-1" />}
 
             {compact && isDescriptionLong && (
               <button
@@ -331,21 +353,23 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
             )}
 
             {/* Footer: category pill (left) + author (right), matching the
-                regular cards. Spread the Word (pinToTop) has no category, so
-                an empty spacer holds the author in the right corner. */}
-            <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-100">
-              {card.pinToTop ? <div /> : <CategoryPill />}
-
-              <div className="flex items-center gap-2.5 min-w-0 justify-end">
-                <div className="min-w-0 text-right">
-                  <p className="font-['Poppins',sans-serif] font-semibold text-[12px] text-gray-800 truncate leading-tight">{card.authorName}</p>
-                  <p className="font-['Poppins',sans-serif] text-[11px] text-gray-400 truncate leading-tight">{card.authorRole}</p>
+                regular cards. The pinned "Spread the Word" card hides this
+                entirely — no author name/avatar — so the passage above can use
+                the full body. */}
+            {!card.pinToTop && (
+              <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-100">
+                <CategoryPill />
+                <div className="flex items-center gap-2.5 min-w-0 justify-end">
+                  <div className="min-w-0 text-right">
+                    <p className="font-['Poppins',sans-serif] font-semibold text-[12px] text-gray-800 truncate leading-tight">{card.authorName}</p>
+                    <p className="font-['Poppins',sans-serif] text-[11px] text-gray-400 truncate leading-tight">{card.authorRole}</p>
+                  </div>
+                  {card.authorAvatar && (
+                    <ImageWithFallback src={card.authorAvatar} alt={card.authorName} className="w-8 h-8 rounded-full object-cover ring-1 ring-gray-200 shrink-0" />
+                  )}
                 </div>
-                {card.authorAvatar && (
-                  <ImageWithFallback src={card.authorAvatar} alt={card.authorName} className="w-8 h-8 rounded-full object-cover ring-1 ring-gray-200 shrink-0" />
-                )}
               </div>
-            </div>
+            )}
           </div>
         </div>
         {shareOpen && (
@@ -390,7 +414,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
           end-to-end in the modal. */}
       <div
         onClick={() => setDetailsOpen(true)}
-        className={`resistact-banner-host transform-gpu cursor-pointer bg-white rounded-2xl border border-gray-200 flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:border-gray-300 hover:shadow-md motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10 ${
+        className={`resistact-banner-host transform-gpu cursor-pointer bg-white rounded-2xl border-[0.75px] border-gray-400 flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:shadow-md motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10 ${
           // Resting 85% opacity, full color on hover — gives the grid a calm,
           // browsable feel and makes the hovered card pop. The pinned
           // "Spread the Word" card is exempt: it's the one card that should

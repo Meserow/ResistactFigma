@@ -58,13 +58,13 @@ export function HomeHero({ onMatchClick, onAskClick, onHowClick }: HomeHeroProps
               <img
                 src={logoImg}
                 alt="ResistAct"
-                className="h-[68px] md:h-[95px] w-auto block"
+                className="h-[52px] md:h-[95px] w-auto block"
               />
             </div>
           )}
         </div>
 
-        <div className="mt-4 mb-0">
+        <div className="mt-2.5 md:mt-4 mb-0">
           <HeroPills onMatchClick={onMatchClick} onAskClick={onAskClick} onHowClick={onHowClick} />
         </div>
       </div>

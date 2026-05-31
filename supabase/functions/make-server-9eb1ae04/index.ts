@@ -357,6 +357,7 @@ const KNOWN_MIGRATION_FLAG_KEYS: readonly string[] = [
   "migration:location-canonicalize:v1",
   "migration:mobilize-actions-v2:v1",
   "migration:mobilize-local-actions:v1",
+  "migration:moveon-org-name:v1",
   "migration:no-image-review:v1",
   "migration:nourl-review:v1",
   "migration:petitions-10min:v1",
@@ -624,11 +625,11 @@ const SEED_CARDS = [
   { id: 1232, category: "PERSONAL COMMITMENT", categoryColor: "#5e1f7a", actionType: "Online", title: "Set election reminders (every contest)", synopsis: "Stay informed on all elections Ensure local contests don't go unnoticed", description: "Set election reminders for every contest. Off-cycle elections (judges, school boards) are where MAGA quietly stacks boards.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Vote.org", authorRole: "Movement Organization", targetUrl: "https://www.vote.org/", topImageKey: "org_vote-org" },
   { id: 1233, category: "PROFESSIONAL SKILLS", categoryColor: "#1f635c", actionType: "Online", title: "Find DOJ-accredited rep training", synopsis: "Join the fight against mass deportation Get trained as a DOJ-accredited representative today", description: "Free DOJ-accredited rep training. Trump's mass deportation needs more accredited reps — non-lawyers can do this.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "CLINIC (Catholic Legal Immigration Network)", authorRole: "Movement Organization", targetUrl: "https://www.cliniclegal.org/", topImageKey: "org_clinic-catholic-legal-immigration-network", amplifiesGroups: ["immigrant"] },
   // MoveOn front-page petitions — https://front.moveon.org/petitions/
-  { id: 1234, category: "PETITION", categoryColor: "#05737f", actionType: "Online", title: "Mandate that ICE agents show their face and identification", synopsis: "Push for transparency in immigration enforcement Join the call to hold ICE accountable and protect communities", description: "Demand Congress require immigration agents to display agency ID and name badges, like other law enforcement.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "MoveOn", authorRole: "Movement Organization", targetUrl: "https://sign.moveon.org/petitions/unmask-ice", topImageKey: "org_moveon", amplifiesGroups: ["immigrant"] },
-  { id: 1235, category: "PETITION", categoryColor: "#05737f", actionType: "Online", title: "Keep the U.S. out of forever wars", synopsis: "Demand your representatives prioritize diplomacy over conflict. Join grassroots efforts to halt military escalation in Iran", description: "Oppose U.S. military action in Iran. Tell Congress to prevent another Middle Eastern war.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "MoveOn", authorRole: "Movement Organization", targetUrl: "https://sign.moveon.org/petitions/no-war-with-iran-18", topImageKey: "org_moveon" },
-  { id: 1236, category: "PETITION", categoryColor: "#05737f", actionType: "Online", title: "Do not cooperate with ICE", synopsis: "Stand against harmful immigration policies Demand local leaders prioritize community safety over federal enforcement", description: "Tell mayors and local officials to refuse cooperation with ICE and protect their residents.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "MoveOn", authorRole: "Movement Organization", targetUrl: "https://sign.moveon.org/petitions/do-not-cooperate-with-ice", topImageKey: "org_moveon", amplifiesGroups: ["immigrant"] },
-  { id: 1237, category: "PETITION", categoryColor: "#05737f", actionType: "Online", title: "Pam Bondi must go", synopsis: "Join the grassroots push for accountability Sign the petition to remove Pam Bondi from office", description: "Demand Attorney General Pam Bondi resign or be impeached over her DOJ agenda.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "MoveOn", authorRole: "Movement Organization", targetUrl: "https://sign.moveon.org/petitions/pam-bondi-must-go", topImageKey: "org_moveon" },
-  { id: 1238, category: "PETITION", categoryColor: "#05737f", actionType: "Online", title: "No warehouses for ICE detention centers", synopsis: "Stand against ICE's expansion Join local protests and advocate for community-led alternatives", description: "Block ICE's $38B push to convert warehouses into immigration detention facilities.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "MoveOn", authorRole: "Movement Organization", targetUrl: "https://sign.moveon.org/petitions/no-warehouses-for-ice-detention-centers", topImageKey: "org_moveon", amplifiesGroups: ["immigrant"] },
+  { id: 1234, category: "PETITION", categoryColor: "#05737f", actionType: "Online", title: "Mandate that ICE agents show their face and identification", synopsis: "Push for transparency in immigration enforcement Join the call to hold ICE accountable and protect communities", description: "Demand Congress require immigration agents to display agency ID and name badges, like other law enforcement.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "MoveOn", authorRole: "MoveOn.org Political Action", targetUrl: "https://sign.moveon.org/petitions/unmask-ice", topImageKey: "org_moveon", amplifiesGroups: ["immigrant"] },
+  { id: 1235, category: "PETITION", categoryColor: "#05737f", actionType: "Online", title: "Keep the U.S. out of forever wars", synopsis: "Demand your representatives prioritize diplomacy over conflict. Join grassroots efforts to halt military escalation in Iran", description: "Oppose U.S. military action in Iran. Tell Congress to prevent another Middle Eastern war.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "MoveOn", authorRole: "MoveOn.org Political Action", targetUrl: "https://sign.moveon.org/petitions/no-war-with-iran-18", topImageKey: "org_moveon" },
+  { id: 1236, category: "PETITION", categoryColor: "#05737f", actionType: "Online", title: "Do not cooperate with ICE", synopsis: "Stand against harmful immigration policies Demand local leaders prioritize community safety over federal enforcement", description: "Tell mayors and local officials to refuse cooperation with ICE and protect their residents.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "MoveOn", authorRole: "MoveOn.org Political Action", targetUrl: "https://sign.moveon.org/petitions/do-not-cooperate-with-ice", topImageKey: "org_moveon", amplifiesGroups: ["immigrant"] },
+  { id: 1237, category: "PETITION", categoryColor: "#05737f", actionType: "Online", title: "Pam Bondi must go", synopsis: "Join the grassroots push for accountability Sign the petition to remove Pam Bondi from office", description: "Demand Attorney General Pam Bondi resign or be impeached over her DOJ agenda.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "MoveOn", authorRole: "MoveOn.org Political Action", targetUrl: "https://sign.moveon.org/petitions/pam-bondi-must-go", topImageKey: "org_moveon" },
+  { id: 1238, category: "PETITION", categoryColor: "#05737f", actionType: "Online", title: "No warehouses for ICE detention centers", synopsis: "Stand against ICE's expansion Join local protests and advocate for community-led alternatives", description: "Block ICE's $38B push to convert warehouses into immigration detention facilities.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "MoveOn", authorRole: "MoveOn.org Political Action", targetUrl: "https://sign.moveon.org/petitions/no-warehouses-for-ice-detention-centers", topImageKey: "org_moveon", amplifiesGroups: ["immigrant"] },
 
   // Common Cause direct-action campaigns — https://www.commoncause.org/take-action/
   { id: 1239, category: "PETITION", categoryColor: "#05737f", actionType: "Online", title: "Save the USPS and mail-in voting", synopsis: "Stand up for postal service integrity Protect mail-in voting and rural access from privatization threats", description: "Sign to defend USPS from privatization. Mail-in voting and rural delivery die together — voter suppression by infrastructure.", isOnline: true, boosts: 0, spotsTotal: "Unlimited", authorName: "Common Cause", authorRole: "Movement Organization", targetUrl: "https://www.commoncause.org/actions/save-the-us-postal-service/", topImageKey: "org_common-cause" },
@@ -2879,6 +2880,31 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       }
       await setMigrationFlag("migration:fix-yarn-sisters-url:v1");
       console.log(`Fixed Yarn Sisters URL on card 2130.`);
+    }
+
+    // MoveOn cards listed a generic "Movement Organization" role. The actual
+    // entity behind these petitions is "MoveOn.org Political Action" — use it
+    // as the role so the attribution is accurate. Scans seed + user cards and
+    // only touches ones authored by plain "MoveOn" (not multi-org combos).
+    const moveonOrgNameDone = await getMigrationFlag("migration:moveon-org-name:v1");
+    if (!moveonOrgNameDone) {
+      const NEW_ROLE = "MoveOn.org Political Action";
+      let updated = 0;
+      const fixIfMoveOn = async (key: string) => {
+        const c = await kv.get(key) as any;
+        if (c && typeof c === "object" && c.authorName === "MoveOn" && c.authorRole === "Movement Organization") {
+          await kv.set(key, { ...c, authorRole: NEW_ROLE });
+          updated++;
+        }
+      };
+      for (const c of (await kv.getByPrefix("action:")) as any[]) {
+        if (c && typeof c === "object" && typeof c.id === "number") await fixIfMoveOn(`action:${c.id}`);
+      }
+      const moUserIds = (await kv.get("user-action:ids") ?? []) as number[];
+      for (const id of moUserIds) await fixIfMoveOn(`user-action:${id}`);
+      await setMigrationFlag("migration:moveon-org-name:v1");
+      invalidateActionsCache();
+      console.log(`MoveOn org-name migration: updated ${updated} cards to "${NEW_ROLE}".`);
     }
 
     // Dedup the portland-seattle-yolo race: ids 2153/2154/2155 are duplicates

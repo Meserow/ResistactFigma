@@ -217,6 +217,13 @@ export const GAMIFICATION_KEYFRAMES = `
   .resistact-banner-host:hover .resistact-banner-half-desat {
     filter: saturate(1);
   }
+  /* Keep the rounded corners during the hover transform. Without this, the
+     hover scale/translate/rotate re-rasterizes the card's composited layer and
+     Chrome flashes square corners before re-applying the rounded overflow clip.
+     Pre-promoting with will-change keeps the rounded backing stable throughout. */
+  .resistact-banner-host {
+    will-change: transform;
+  }
   @media (prefers-reduced-motion: reduce) {
     .resistact-banner-desat,
     .resistact-banner-half-desat { transition: none; }
