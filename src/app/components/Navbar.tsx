@@ -207,6 +207,16 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
   const locOptions = actsLocations ?? [];
   const locSelected = activeFilters["Location"] ?? [];
   const locOpen = openFilter === "Location";
+  // Selected states (excludes the "Remote" token, which has its own pill).
+  const locStates = locSelected.filter((l) => l !== "Remote");
+  // What the navy Location pill reads: the state name when exactly one is
+  // picked, otherwise just "Location" (with a count badge for 2+).
+  const locLabel = locStates.length === 1 ? locStates[0] : "Location";
+  // Checked states float to the top of the dropdown. Stable sort keeps each
+  // group alphabetical since locOptions is already alpha-sorted.
+  const locOptionsOrdered = [...locOptions].sort(
+    (a, b) => (locSelected.includes(a) ? 0 : 1) - (locSelected.includes(b) ? 0 : 1),
+  );
 
   function handleActClick() {
     if (!isLoggedIn) { onLoginClick(); return; }
@@ -723,10 +733,10 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                   }`}
                 >
                   <MapPin size={11} className={locSelected.length > 0 ? "text-white" : "text-gray-400"} />
-                  Location
-                  {locSelected.length > 0 && (
+                  {locLabel}
+                  {locStates.length > 1 && (
                     <span className="ml-0.5 w-4 h-4 rounded-full bg-[#ed6624] text-white text-[9px] flex items-center justify-center font-bold shrink-0">
-                      {locSelected.length}
+                      {locStates.length}
                     </span>
                   )}
                   <ChevronDown size={11} className={`transition-transform duration-150 ${locOpen ? "rotate-180" : ""}`} />
@@ -737,7 +747,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                       Location
                     </p>
                     <div className="overflow-y-auto flex-1">
-                      {locOptions.map((option) => (
+                      {locOptionsOrdered.map((option) => (
                         <label key={option} className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
                           <input
                             type="checkbox"
@@ -923,8 +933,79 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
           </div>
         </div>
 
-        {/* Filter row — single Category dropdown for Facts, scrollable dropdown buttons for Acts */}
-        {activeTab === "facts" ? (
+        {/* Filter row — Smacks: tag chips + Top/New/Pending sort;
+            Facts: single Category dropdown; Acts: scrollable dropdown buttons. */}
+        {activeTab === "receipts" ? (
+          /* ── Mobile Smacks filter row — horizontally-scrollable tag chips
+              followed by the Top / New / Pending(admin) sort control. Mirrors
+              the desktop Smacks branch but uses the same scroll-strip pattern
+              as the mobile Acts row so it never overflows the viewport. The
+              prior code fell through to the Acts branch here, surfacing
+              Location/Category/Remote filters that don't apply to Smacks. ── */
+          <div className="px-4 pb-2">
+            <div className="flex gap-1.5 overflow-x-auto items-center" style={{ scrollbarWidth: "none" }}>
+              {(smacksAvailableTags ?? []).map((tag) => {
+                const selected = smacksActiveTags?.includes(tag);
+                return (
+                  <button
+                    key={tag}
+                    onClick={() => onSmacksTagToggle?.(tag)}
+                    className={`shrink-0 px-3 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
+                      selected
+                        ? "bg-[#23297e] text-white border-[#23297e]"
+                        : "bg-white text-gray-600 border-gray-200"
+                    }`}
+                  >
+                    {tag}
+                  </button>
+                );
+              })}
+              {smacksActiveTags && smacksActiveTags.length > 0 && (
+                <button
+                  onClick={onSmacksTagsClear}
+                  className="shrink-0 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] text-gray-500 border border-dashed border-gray-300 whitespace-nowrap"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <div className="flex items-center gap-1 mt-2 p-1 rounded-xl bg-gray-100 w-fit">
+              <button
+                onClick={() => onSmacksSortChange?.("top")}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-['Poppins',sans-serif] font-bold text-xs transition-all ${
+                  smacksSortBy === "top"
+                    ? "bg-white text-[#ed6624] shadow-sm"
+                    : "text-gray-500"
+                }`}
+              >
+                <Flame size={12} />
+                Top
+              </button>
+              <button
+                onClick={() => onSmacksSortChange?.("new")}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-['Poppins',sans-serif] font-bold text-xs transition-all ${
+                  smacksSortBy === "new"
+                    ? "bg-white text-[#23297e] shadow-sm"
+                    : "text-gray-500"
+                }`}
+              >
+                New
+              </button>
+              {smacksIsAdmin && (
+                <button
+                  onClick={() => onSmacksSortChange?.("pending")}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-['Poppins',sans-serif] font-bold text-xs transition-all ${
+                    smacksSortBy === "pending"
+                      ? "bg-white text-red-500 shadow-sm"
+                      : "text-gray-500"
+                  }`}
+                >
+                  Pending
+                </button>
+              )}
+            </div>
+          </div>
+        ) : activeTab === "facts" ? (
           <div className="px-4 pb-2">
             {(() => {
               const isOpen = openFilter === "facts-mobile";
@@ -1004,10 +1085,10 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                     }`}
                   >
                     <MapPin size={11} />
-                    Location
-                    {locSelected.length > 0 && (
+                    {locLabel}
+                    {locStates.length > 1 && (
                       <span className="w-4 h-4 rounded-full bg-[#ed6624] text-white text-[9px] flex items-center justify-center font-bold shrink-0">
-                        {locSelected.length}
+                        {locStates.length}
                       </span>
                     )}
                     <ChevronDown size={11} className={locMobileOpen ? "rotate-180" : ""} />
@@ -1063,7 +1144,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                 {/* Location drawer */}
                 {locMobileOpen && (
                   <div className="mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 max-h-80 overflow-y-auto">
-                    {locOptions.map((option) => (
+                    {locOptionsOrdered.map((option) => (
                       <label key={option} className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
                         <input
                           type="checkbox"

@@ -2071,11 +2071,15 @@ export default function App() {
                   />
                 )
               : null
-            : <HomeHero
-                onMatchClick={() => setMatchOpen(true)}
-                onAskClick={() => setAskOpen(true)}
-                onHowClick={() => setInfoOpen(true)}
-              />
+            : activeTab === "acts"
+              ? (
+                  <HomeHero
+                    onMatchClick={() => setMatchOpen(true)}
+                    onAskClick={() => setAskOpen(true)}
+                    onHowClick={() => setInfoOpen(true)}
+                  />
+                )
+              : null
         }
       />
 
@@ -2189,7 +2193,7 @@ export default function App() {
                 Also carries the Sort dropdown so the sort control lives
                 next to the live result count. */}
             {!matchPrefs && !hasActiveFilters && activeTab === "acts" && synced && (
-              <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5">
+              <div className="mb-4 flex flex-col items-start gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                 <p className="font-['Poppins',sans-serif] text-sm text-gray-600">
                   Showing all <strong className="text-[#23297e]">{displayedCards.length}</strong> actions — unfiltered.
                 </p>
@@ -2215,7 +2219,7 @@ export default function App() {
                 quick-actions filters are active (but no Match preferences).
                 Mirrors the unfiltered banner style; carries the Sort control. */}
             {!matchPrefs && hasActiveFilters && activeTab === "acts" && synced && !showPendingActsOnly && (
-              <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-[#23297e]/30 bg-[#23297e]/5 px-4 py-2.5">
+              <div className="mb-4 flex flex-col items-start gap-2 rounded-lg border border-[#23297e]/30 bg-[#23297e]/5 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                 <p className="font-['Poppins',sans-serif] text-sm text-gray-700">
                   <strong className="text-[#23297e]">{displayedCards.length}</strong> {displayedCards.length === 1 ? "action" : "actions"} match your filters.
                 </p>

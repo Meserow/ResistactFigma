@@ -16,6 +16,75 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.31",
+    date: "2026-05-31",
+    title: "Phone fixes: less scrolling, right filters on The Smacks, no cut-off buttons",
+    sections: [
+      {
+        heading: "On your phone",
+        items: [
+          "The big ResistAct welcome banner no longer repeats on top of The Facts and The Smacks — those tabs now jump straight to the content, so you see actual facts and smacks without scrolling past the intro every time.",
+          "On The Acts, the welcome banner is more compact, so the first action cards are closer to the top.",
+          "The Smacks tab now shows the right controls on mobile — topic tags plus the Top / New sort — instead of the Location and Category filters that only belong to The Acts.",
+          "The \"Find my match →\" link and Sort control no longer get cut off the right edge of the screen on The Acts. They now drop to their own line so everything stays tappable.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.30",
+    date: "2026-05-31",
+    title: "No more square-corner flicker on card hover",
+    sections: [
+      {
+        heading: "Look & feel",
+        items: [
+          "Fixed a glitch where an Act card's rounded corners would briefly snap square at the start of the hover animation before rounding back out. Cards now keep their rounded corners smoothly throughout the hover.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.29",
+    date: "2026-05-31",
+    title: "Spread the Word card carries the full pitch",
+    sections: [
+      {
+        heading: "Look & feel",
+        items: [
+          "The pinned \"Spread the Word\" card got a refresh: a navy title with a 🔥 beside it, the full share-the-movement message in its body (in a slightly darker grey), and no more author name/photo — so the message has room to breathe.",
+          "The logged-in greeting (\"Welcome back to the resistance, [name]. Day N.\") is now the same size as the logged-out headline, so the top of the page feels consistent whether or not you're signed in.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.28",
+    date: "2026-05-31",
+    title: "Location filter shows your pick front and center",
+    sections: [
+      {
+        heading: "Filters",
+        items: [
+          "When you check a state in the Location filter, it now jumps to the top of the list so your selection is always in view. And when you've picked a single state, the navy Location button shows its name (e.g. \"Texas\") instead of a generic count.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.27",
+    date: "2026-05-31",
+    title: "Subtler card edges",
+    sections: [
+      {
+        heading: "Look & feel",
+        items: [
+          "Act cards now have a thin, crisp grey hairline border for a cleaner, more defined feed. The pinned \"Spread the Word\" banner is also zoomed in slightly for a tighter crop.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.26",
     date: "2026-05-31",
     title: "Admin panel: safer to fill out, tidier controls",
