@@ -9,6 +9,7 @@ import type { LucideIcon } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
 import type { UserApproval } from "../lib/supabase";
 import { DEFAULT_CATEGORY_TONE, applyMatcherConfig, type Tone } from "../lib/matcher";
+import { LOCATION_OPTIONS } from "../lib/locations";
 import { ToneRangeSlider } from "./ToneSlider";
 import { getUserTier } from "../lib/tiers";
 
@@ -44,7 +45,42 @@ interface AdminPanelProps {
 }
 
 type TabFilter = "active" | "pending" | "approved" | "rejected" | "all";
-type PanelMode = "cards" | "users" | "nourl" | "noimage" | "matcher" | "online" | "bigimages" | "brokenimages" | "sameurl";
+type PanelMode = "cards" | "users" | "nourl" | "noimage" | "matcher" | "online" | "bigimages" | "brokenimages" | "sameurl" | "newcard";
+
+// Category labels + colors for the "Create from URL" form's dropdown. Mirrors
+// EditCardModal's CATEGORY_OPTIONS so a created card gets the right pill color.
+const NEWCARD_CATEGORIES: { label: string; color: string }[] = [
+  { label: "Act of Kindness", color: "#127f05" }, { label: "Art/Performance Art", color: "#896312" },
+  { label: "Boost", color: "#8a00e6" }, { label: "Boycott", color: "#23297e" },
+  { label: "Call", color: "#c2185b" }, { label: "Crafting", color: "#c34e00" },
+  { label: "Email Campaign", color: "#e44b4b" }, { label: "Flash Mob", color: "#ff00d5" },
+  { label: "Funding", color: "#127f05" }, { label: "Host", color: "#b45309" },
+  { label: "Housing", color: "#896312" }, { label: "Irreverence", color: "#ff00d5" },
+  { label: "Join a Group", color: "#0891b2" }, { label: "Labor", color: "#127f05" },
+  { label: "Letter Writing", color: "#c34e00" }, { label: "Meeting", color: "#23297e" },
+  { label: "Mental Health", color: "#ff00d5" }, { label: "News Story", color: "#896312" },
+  { label: "Personal Commitment", color: "#23297e" }, { label: "Petition", color: "#05737f" },
+  { label: "Prayer", color: "#8a00e6" }, { label: "Professional Skills", color: "#126d89" },
+  { label: "Protest", color: "#23297e" }, { label: "Represent", color: "#b45309" },
+  { label: "Show Up", color: "#23297e" }, { label: "Social Media", color: "#e44b4b" },
+  { label: "Training", color: "#126d89" }, { label: "Transportation", color: "#126d89" },
+  { label: "Video", color: "#e44b4b" }, { label: "Witness", color: "#767574" },
+  { label: "Other", color: "#767574" },
+];
+
+interface NewCardForm {
+  url: string; title: string; synopsis: string; description: string;
+  category: string; location: string; isOnline: boolean; targetUrl: string;
+  authorName: string; authorRole: string;
+  tone: { anger: number; comedy: number; subversion: number; hope: number; energy: number };
+  eventDate: string;
+}
+const EMPTY_NEWCARD: NewCardForm = {
+  url: "", title: "", synopsis: "", description: "", category: "", location: "",
+  isOnline: false, targetUrl: "", authorName: "", authorRole: "Movement Organization",
+  tone: { anger: 1, comedy: 1, subversion: 1, hope: 1, energy: 1 }, eventDate: "",
+};
+const clampTone = (v: unknown): number => Math.max(0, Math.min(3, Math.round(Number(v) || 0)));
 
 interface SameUrlCard {
   id: number;
@@ -379,6 +415,91 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
     "Content-Type": "application/json",
     Authorization: `Bearer ${accessToken}`,
   };
+
+  // ── "Create from URL" state ────────────────────────────────────────────────
+  const [nc, setNc] = useState<NewCardForm>(EMPTY_NEWCARD);
+  const [ncRefImage, setNcRefImage] = useState<string | null>(null);
+  const [ncCartoon, setNcCartoon] = useState<string | null>(null);
+  const [ncDrafting, setNcDrafting] = useState(false);
+  const [ncImaging, setNcImaging] = useState(false);
+  const [ncCreating, setNcCreating] = useState(false);
+  const [ncError, setNcError] = useState<string | null>(null);
+  const [ncToast, setNcToast] = useState<string | null>(null);
+
+  async function ncGenerateDraft() {
+    if (!/^https?:\/\//i.test(nc.url.trim())) { setNcError("Enter a valid http(s) URL."); return; }
+    setNcError(null); setNcToast(null); setNcDrafting(true);
+    try {
+      const res = await fetch(`${API}/admin/cards/from-url`, {
+        method: "POST", headers: authHeaders, body: JSON.stringify({ url: nc.url.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setNcError(data.error ?? "Couldn't draft from that URL."); return; }
+      const d = data.draft ?? {};
+      const t = d.toneOverride && typeof d.toneOverride === "object" ? d.toneOverride : null;
+      setNc((p) => ({
+        ...p,
+        title: d.title ?? p.title,
+        synopsis: d.synopsis ?? p.synopsis,
+        description: d.description ?? p.description,
+        category: d.category ?? p.category,
+        location: d.location ?? p.location,
+        isOnline: typeof d.isOnline === "boolean" ? d.isOnline : p.isOnline,
+        targetUrl: (d.targetUrl ?? p.url ?? p.targetUrl) || p.targetUrl,
+        authorName: d.authorName ?? p.authorName,
+        authorRole: d.authorRole ?? p.authorRole,
+        eventDate: d.eventDate ?? "",
+        tone: t ? {
+          anger: clampTone(t.anger), comedy: clampTone(t.comedy), subversion: clampTone(t.subversion),
+          hope: clampTone(t.hope), energy: clampTone(t.energy),
+        } : p.tone,
+      }));
+      setNcRefImage(data.refImageUrl ?? null);
+    } catch { setNcError("Network error drafting the card."); }
+    finally { setNcDrafting(false); }
+  }
+
+  async function ncGenerateCartoon() {
+    if (!nc.title.trim()) { setNcError("Add a title before generating a cartoon."); return; }
+    setNcError(null); setNcImaging(true);
+    try {
+      const res = await fetch(`${API}/admin/cards/generate-image`, {
+        method: "POST", headers: authHeaders,
+        body: JSON.stringify({ title: nc.title.trim(), description: nc.description.trim(), refImageUrl: ncRefImage }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setNcError(data.error ?? "Image generation failed."); return; }
+      setNcCartoon(data.url);
+    } catch { setNcError("Network error generating the cartoon."); }
+    finally { setNcImaging(false); }
+  }
+
+  async function ncCreate() {
+    if (!nc.title.trim() || !nc.description.trim() || !nc.category) {
+      setNcError("Title, description, and category are required."); return;
+    }
+    setNcError(null); setNcToast(null); setNcCreating(true);
+    try {
+      const color = NEWCARD_CATEGORIES.find((c) => c.label === nc.category)?.color;
+      const res = await fetch(`${API}/admin/cards/create`, {
+        method: "POST", headers: authHeaders,
+        body: JSON.stringify({
+          title: nc.title.trim(), synopsis: nc.synopsis.trim() || undefined, description: nc.description.trim(),
+          category: nc.category, categoryColor: color, location: nc.location || undefined, isOnline: nc.isOnline,
+          targetUrl: nc.targetUrl.trim() || undefined, authorName: nc.authorName.trim() || undefined,
+          authorRole: nc.authorRole.trim() || undefined, toneOverride: nc.tone,
+          eventDate: nc.eventDate || undefined, cartoonImageUrl: ncCartoon || undefined,
+          sourceUrl: nc.url.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setNcError(data.error ?? "Create failed."); return; }
+      setNcToast(`Created card #${data.card?.id ?? ""} — it's in the Pending queue for review.`);
+      setNc(EMPTY_NEWCARD); setNcRefImage(null); setNcCartoon(null);
+      fetchPendingCards();
+    } catch { setNcError("Network error creating the card."); }
+    finally { setNcCreating(false); }
+  }
 
   async function fetchUsers() {
     setLoading(true);
@@ -780,6 +901,7 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
               onChange={(e) => setMode(e.target.value as PanelMode)}
               className="w-full font-['Poppins',sans-serif] text-sm font-semibold text-[#23297e] bg-[#23297e]/5 border border-[#23297e]/20 rounded-lg px-3 py-1.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#23297e]/30"
             >
+              <option value="newcard">➕ Create from URL</option>
               <option value="users">Users</option>
               <option value="cards">{`Cards${!cardsLoading && pendingCardsCount > 0 ? ` (${pendingCardsCount})` : ""}`}</option>
               <option value="nourl">{`Missing URL${noUrlCards.length > 0 ? ` (${noUrlCards.length})` : ""}`}</option>
@@ -791,6 +913,134 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
               <option value="matcher">Matcher</option>
             </select>
           </div>
+
+          {/* ── CREATE FROM URL mode ───────────────────────────────────────────────── */}
+          {mode === "newcard" && (() => {
+            const NC_INPUT = "w-full px-3 py-2 border border-gray-200 rounded-lg font-['Poppins',sans-serif] text-sm text-gray-800 placeholder-gray-400 placeholder:italic focus:outline-none focus:ring-2 focus:ring-[#23297e]/30 focus:border-[#23297e]";
+            const NC_LABEL = "block font-['Poppins',sans-serif] text-[11px] font-semibold text-gray-500 mb-1 uppercase tracking-wider";
+            const TONE_KEYS: { k: keyof NewCardForm["tone"]; label: string }[] = [
+              { k: "anger", label: "Angry" }, { k: "comedy", label: "Funny" }, { k: "subversion", label: "Subversive" },
+              { k: "hope", label: "Hope" }, { k: "energy", label: "Energy" },
+            ];
+            return (
+            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+              <p className="font-['Poppins',sans-serif] text-xs text-gray-500 leading-relaxed">
+                Paste a URL — AI drafts the card fields and a brand cartoon banner. Review and tweak everything, then create. New cards land in the <span className="font-semibold">Cards</span> (Pending) queue for approval; nothing goes live automatically.
+              </p>
+
+              {/* URL + generate draft */}
+              <div>
+                <label className={NC_LABEL}>Action URL</label>
+                <div className="flex gap-2">
+                  <input
+                    value={nc.url} onChange={(e) => setNc((p) => ({ ...p, url: e.target.value }))}
+                    placeholder="https://… the page for this action" className={NC_INPUT}
+                  />
+                  <button
+                    onClick={ncGenerateDraft} disabled={ncDrafting}
+                    className="shrink-0 px-3 py-2 bg-[#23297e] hover:bg-[#1a2060] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-bold text-xs rounded-lg flex items-center gap-1.5"
+                  >
+                    {ncDrafting ? <Loader2 size={13} className="animate-spin" /> : "✨"} Draft
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 border-t border-gray-100 pt-3">
+                <div>
+                  <label className={NC_LABEL}>Title</label>
+                  <input value={nc.title} maxLength={80} onChange={(e) => setNc((p) => ({ ...p, title: e.target.value }))} placeholder="Verb-led headline…" className={NC_INPUT} />
+                </div>
+                <div>
+                  <label className={NC_LABEL}>Subtitle</label>
+                  <input value={nc.synopsis} maxLength={100} onChange={(e) => setNc((p) => ({ ...p, synopsis: e.target.value }))} placeholder="One-line plainer subtitle…" className={NC_INPUT} />
+                </div>
+                <div>
+                  <label className={NC_LABEL}>Description</label>
+                  <textarea rows={3} value={nc.description} onChange={(e) => setNc((p) => ({ ...p, description: e.target.value }))} placeholder="What to do and why…" className={`${NC_INPUT} resize-none`} />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={NC_LABEL}>Category</label>
+                    <select value={nc.category} onChange={(e) => setNc((p) => ({ ...p, category: e.target.value }))} className={NC_INPUT}>
+                      <option value="">— select —</option>
+                      {NEWCARD_CATEGORIES.map((c) => <option key={c.label} value={c.label}>{c.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={NC_LABEL}>Location</label>
+                    <select value={nc.location} onChange={(e) => setNc((p) => ({ ...p, location: e.target.value, isOnline: e.target.value === "Remote" }))} className={NC_INPUT}>
+                      <option value="">— select —</option>
+                      {LOCATION_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={NC_LABEL}>Action link (targetUrl)</label>
+                    <input value={nc.targetUrl} onChange={(e) => setNc((p) => ({ ...p, targetUrl: e.target.value }))} placeholder="https://…" className={NC_INPUT} />
+                  </div>
+                  <div>
+                    <label className={NC_LABEL}>Event date (optional)</label>
+                    <input type="date" value={nc.eventDate} onChange={(e) => setNc((p) => ({ ...p, eventDate: e.target.value }))} className={NC_INPUT} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={NC_LABEL}>Author / org</label>
+                    <input value={nc.authorName} onChange={(e) => setNc((p) => ({ ...p, authorName: e.target.value }))} placeholder="e.g. Indivisible" className={NC_INPUT} />
+                  </div>
+                  <div>
+                    <label className={NC_LABEL}>Author role</label>
+                    <input value={nc.authorRole} onChange={(e) => setNc((p) => ({ ...p, authorRole: e.target.value }))} placeholder="Movement Organization" className={NC_INPUT} />
+                  </div>
+                </div>
+
+                {/* Tone */}
+                <div className="rounded-lg border border-gray-100 bg-gray-50/60 px-3 py-2.5">
+                  <p className="font-['Poppins',sans-serif] text-[11px] font-semibold text-[#23297e] mb-2 uppercase tracking-wider">Tone</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
+                    {TONE_KEYS.map(({ k, label }) => (
+                      <div key={k}>
+                        <span className="font-['Poppins',sans-serif] text-[11px] text-gray-600">{label}</span>
+                        <ToneRangeSlider value={nc.tone[k]} onChange={(v) => setNc((p) => ({ ...p, tone: { ...p.tone, [k]: v } }))} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Cartoon */}
+                <div>
+                  <label className={NC_LABEL}>Cartoon banner</label>
+                  <div className="flex items-center gap-2 mb-2">
+                    <button
+                      onClick={ncGenerateCartoon} disabled={ncImaging || !nc.title.trim()}
+                      className="px-3 py-2 bg-[#ed6624] hover:bg-[#c2521b] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-semibold text-xs rounded-lg flex items-center gap-1.5"
+                    >
+                      {ncImaging ? <Loader2 size={13} className="animate-spin" /> : <ImageIcon size={13} />}
+                      {ncImaging ? "Generating…" : ncCartoon ? "Regenerate cartoon" : "Generate cartoon"}
+                    </button>
+                    {ncRefImage && <span className="font-['Poppins',sans-serif] text-[10px] text-gray-400">uses the page image as reference</span>}
+                  </div>
+                  {ncCartoon && (
+                    <div className="relative h-28 rounded-xl overflow-hidden bg-gray-50 border border-gray-200">
+                      <img src={ncCartoon} alt="Cartoon preview" className="w-full h-full object-cover object-[center_20%]" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {ncError && <p className="font-['Poppins',sans-serif] text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{ncError}</p>}
+              {ncToast && <p className="font-['Poppins',sans-serif] text-xs text-green-700 bg-green-50 border border-green-100 rounded-lg px-3 py-2">{ncToast}</p>}
+
+              <button
+                onClick={ncCreate} disabled={ncCreating || !nc.title.trim() || !nc.description.trim() || !nc.category}
+                className="w-full py-2.5 bg-[#23297e] hover:bg-[#1a2060] disabled:bg-gray-200 disabled:text-gray-400 text-white font-['Poppins',sans-serif] font-bold text-sm rounded-xl flex items-center justify-center gap-2"
+              >
+                {ncCreating ? <><Loader2 size={15} className="animate-spin" /> Creating…</> : "Create card (pending review)"}
+              </button>
+            </div>
+            );
+          })()}
 
           {/* ── CARDS mode ─────────────────────────────────────────────────────────── */}
           {mode === "cards" && (

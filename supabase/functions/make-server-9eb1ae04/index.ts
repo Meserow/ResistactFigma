@@ -5701,6 +5701,308 @@ app.post("/make-server-9eb1ae04/admin/bulk-import", async (c) => {
   }
 });
 
+// ─── Admin "Create Card from URL" — AI-assisted card builder ─────────────────
+// Three admin-only (JWT) endpoints powering the AdminPanel "Create from URL"
+// mode: draft fields from a URL (gpt-4o-mini), generate a cartoon banner
+// (gpt-image-1), and create the reviewed card as adminApproved:false.
+
+// Brand cartoon style — kept in sync with scripts/generate-card-art.mjs
+// (STYLE_PROMPT, lines ~78-89). If you change one, change the other.
+const CARTOON_STYLE_PROMPT =
+  "Create a clean modern comic-book illustration inspired by the reference image, adapted for a wide horizontal banner. " +
+  "Use the reference for INSPIRATION — capture the subject, mood, and spirit — but feel free to reinvent the composition so it fills a wide banner format well. The reference may be a square photo, a logo, or a portrait; reframe it as a horizontal scene. Keep the same general subject matter (e.g. if the reference shows a protest sign, paint a protest scene; if a phone, paint someone using a phone; if a product, paint someone using or holding it). " +
+  "Apply: clean black ink linework (refined, not heavy or grainy), flat colors with light gradient shading, subtle Ben-Day dot accents used sparingly only on skin tones or sky — not all over the image. " +
+  "Palette: cream/off-white background as the foundation, warm orange (#ed6624) and soft red as accents, deep navy (#23297e) and rich purple (#5a3e9e) for structure, sky blue for openness, occasional muted teal or green. Optimistic, hopeful, vibrant feeling — not dark or overwhelming. " +
+  "COMPOSITION — wide horizontal banner. CRITICAL: place the main subject (especially any face or head) in the UPPER portion of the frame so it stays visible when the banner is cropped to a narrow strip. Heads near the top, weight near the top. Background, hands, props, lower body, or ground can fill the bottom. " +
+  "TEXT RULES — short real-word slogans on signs are FINE and on-style (STOP, NO ICE, RESIST, ABOLISH ICE, VOTE NO, NO WAR, etc.). " +
+  "BUT NEVER: " +
+  "(a) invent fake/nonsense words or gibberish letter combinations. " +
+  "(b) render the card's own title as text painted into the image — the title appears separately above the banner in the UI. " +
+  "(c) invent logos or fake brand wordmarks. " +
+  "If you can't think of a real, accurate word to put on a sign, leave the sign blank or off-frame.";
+
+// Canonical card categories the drafting model may choose from (title case;
+// mirrors the AdminPanel/EditCardModal CATEGORY_OPTIONS list).
+const CURATED_CATEGORIES = [
+  "Act of Kindness", "Art/Performance Art", "Boost", "Boycott", "Call", "Crafting",
+  "Email Campaign", "Flash Mob", "Funding", "Host", "Housing", "Irreverence",
+  "Join a Group", "Labor", "Letter Writing", "Meeting", "Mental Health", "News Story",
+  "Personal Commitment", "Petition", "Prayer", "Professional Skills", "Protest",
+  "Represent", "Show Up", "Social Media", "Training", "Transportation", "Video",
+  "Witness", "Other",
+];
+const CURATED_LOCATIONS = [
+  "Remote", "National", "Multi-State", "Alabama", "Alaska", "Arizona", "Arkansas",
+  "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii",
+  "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine",
+  "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri",
+  "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico",
+  "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon",
+  "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee",
+  "Texas", "Utah", "Vermont", "Virginia", "Washington", "Washington DC",
+  "West Virginia", "Wisconsin", "Wyoming",
+];
+
+const _BROWSER_UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
+/** Strip a fetched HTML page down to the few signals the drafting model needs:
+ * <title>, og:title/og:description/meta description, og:image, and the visible
+ * body text (tags removed, capped). Pure regex — no DOM dep in Deno. */
+function extractPageSignals(html: string): { title: string; description: string; ogImage: string; text: string } {
+  const meta = (prop: string): string => {
+    const re = new RegExp(`<meta[^>]+(?:property|name)=["']${prop}["'][^>]*content=["']([^"']+)["']`, "i");
+    const re2 = new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]*(?:property|name)=["']${prop}["']`, "i");
+    return (html.match(re)?.[1] ?? html.match(re2)?.[1] ?? "").trim();
+  };
+  const titleTag = (html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1] ?? "").trim();
+  const title = meta("og:title") || titleTag;
+  const description = meta("og:description") || meta("description");
+  const ogImage = meta("og:image");
+  const body = html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&[a-z]+;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return { title, description, ogImage, text: body.slice(0, 4000) };
+}
+
+async function openaiChatJSON(system: string, user: string): Promise<any> {
+  const key = Deno.env.get("OPENAI_API_KEY");
+  if (!key) throw new Error("OPENAI_API_KEY not configured on server");
+  const r = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      response_format: { type: "json_object" },
+      temperature: 0.5,
+      messages: [{ role: "system", content: system }, { role: "user", content: user }],
+    }),
+  });
+  if (!r.ok) throw new Error(`OpenAI chat ${r.status}: ${(await r.text()).slice(0, 400)}`);
+  const j = await r.json();
+  return JSON.parse(j.choices?.[0]?.message?.content ?? "{}");
+}
+
+function b64ToBytes(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+// ─── POST /admin/cards/from-url — draft a card's fields from a web page ───────
+app.post("/make-server-9eb1ae04/admin/cards/from-url", async (c) => {
+  try {
+    const admin = await requireAdmin(c.req.header("Authorization")?.split(" ")[1]);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+    const { url } = await c.req.json<{ url?: string }>();
+    const target = (url ?? "").trim();
+    if (!/^https?:\/\//i.test(target)) return c.json({ error: "A valid http(s) URL is required." }, 400);
+
+    let html = "";
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 15000);
+      const r = await fetch(target, { headers: { "User-Agent": _BROWSER_UA }, signal: ctrl.signal });
+      clearTimeout(t);
+      html = await r.text();
+    } catch (e) {
+      return c.json({ error: `Couldn't fetch that URL: ${e}. You can still fill the fields in manually.` }, 502);
+    }
+    const sig = extractPageSignals(html);
+
+    const system =
+      "You write civic-action cards for ResistAct, an anti-Trump / pro-democracy resistance platform. " +
+      "Given a web page, produce ONE concrete action a user can take themselves. Return STRICT JSON only. " +
+      "Fields: title (<=80 chars, verb-led, e.g. 'Call your senators…', 'Show up to…'), " +
+      "synopsis (<=100 chars, one plain-language subtitle line — what it is, simply), " +
+      "description (1-3 sentences: what to do and why it matters; paraphrase, never copy the page), " +
+      `category (EXACTLY one of: ${CURATED_CATEGORIES.join(", ")}), ` +
+      `location (EXACTLY one of: ${CURATED_LOCATIONS.join(", ")} — use 'Remote' for online/from-anywhere actions, a US state for place-specific ones), ` +
+      "isOnline (boolean — true if it can be done from anywhere/online), " +
+      "targetUrl (the best link for taking the action; default to the page URL), " +
+      "authorName (the org or group behind it), authorRole (short, e.g. 'Movement Organization'), " +
+      "toneOverride (object with integer 0-3 values for anger, comedy, subversion, hope, energy), " +
+      "eventDate (YYYY-MM-DD if it's a specific dated event, else null). " +
+      "If the page isn't a real action, still produce the best-effort card from what's there.";
+    const userMsg =
+      `URL: ${target}\nPage title: ${sig.title}\nPage description: ${sig.description}\n\nPage text excerpt:\n${sig.text}`;
+
+    let draft: any;
+    try {
+      draft = await openaiChatJSON(system, userMsg);
+    } catch (e) {
+      return c.json({ error: `Drafting failed: ${e}` }, 502);
+    }
+    // Validate/normalize the few constrained fields.
+    if (!CURATED_CATEGORIES.includes(draft.category)) draft.category = "Other";
+    if (draft.location && !CURATED_LOCATIONS.includes(draft.location)) draft.location = draft.isOnline ? "Remote" : "National";
+    if (!draft.targetUrl) draft.targetUrl = target;
+
+    console.log(`Admin ${admin.record.name} drafted a card from ${target}`);
+    return c.json({ draft, refImageUrl: sig.ogImage || null });
+  } catch (err) {
+    console.log("from-url error:", err);
+    return c.json({ error: `from-url failed: ${err}` }, 500);
+  }
+});
+
+// ─── POST /admin/cards/generate-image — make a cartoon banner ─────────────────
+app.post("/make-server-9eb1ae04/admin/cards/generate-image", async (c) => {
+  try {
+    const admin = await requireAdmin(c.req.header("Authorization")?.split(" ")[1]);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+    const key = Deno.env.get("OPENAI_API_KEY");
+    if (!key) return c.json({ error: "OPENAI_API_KEY not configured on server" }, 500);
+
+    const { title, description, refImageUrl } = await c.req.json<{ title?: string; description?: string; refImageUrl?: string }>();
+    if (!title?.trim()) return c.json({ error: "title required" }, 400);
+
+    // Try image-to-image when we have a usable reference the Deno decoder can
+    // read (PNG/JPEG); otherwise fall back to text-to-image. Either way the
+    // brand STYLE_PROMPT drives the look.
+    let refPng: Uint8Array | null = null;
+    if (refImageUrl && /^https?:\/\//i.test(refImageUrl)) {
+      try {
+        const ir = await fetch(refImageUrl, { headers: { "User-Agent": _BROWSER_UA } });
+        const ct = ir.headers.get("content-type") ?? "";
+        if (ir.ok && (ct.includes("png") || ct.includes("jpeg") || ct.includes("jpg"))) {
+          const img = await Image.decode(new Uint8Array(await ir.arrayBuffer()));
+          refPng = await img.encode(); // PNG
+        }
+      } catch (_e) { /* fall through to text-to-image */ }
+    }
+
+    let b64: string | undefined;
+    if (refPng) {
+      const form = new FormData();
+      form.append("model", "gpt-image-1");
+      form.append("prompt", CARTOON_STYLE_PROMPT);
+      form.append("size", "1536x1024");
+      form.append("quality", "medium");
+      form.append("n", "1");
+      form.append("image", new Blob([refPng], { type: "image/png" }), "ref.png");
+      const r = await fetch("https://api.openai.com/v1/images/edits", {
+        method: "POST", headers: { Authorization: `Bearer ${key}` }, body: form,
+      });
+      if (!r.ok) return c.json({ error: `Image edit failed: ${(await r.text()).slice(0, 300)}` }, 502);
+      b64 = (await r.json())?.data?.[0]?.b64_json;
+    } else {
+      const prompt = `${CARTOON_STYLE_PROMPT}\n\nThe banner illustrates an action titled "${title.trim()}". ${(description ?? "").trim()} Depict a relevant, on-topic scene. No text painted into the image.`;
+      const r = await fetch("https://api.openai.com/v1/images/generations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+        body: JSON.stringify({ model: "gpt-image-1", prompt, size: "1536x1024", quality: "medium", n: 1 }),
+      });
+      if (!r.ok) return c.json({ error: `Image generation failed: ${(await r.text()).slice(0, 300)}` }, 502);
+      b64 = (await r.json())?.data?.[0]?.b64_json;
+    }
+    if (!b64) return c.json({ error: "No image returned by the model. Try again or tweak the text." }, 502);
+
+    // Downscale the 1536px PNG before storing (render endpoint resizes again at
+    // serve time). Reuse the upload pattern from /actions/upload-image.
+    let bytes: Uint8Array = b64ToBytes(b64);
+    try {
+      const img = await Image.decode(bytes);
+      if (img.width > RECOMPRESS_MAX_WIDTH) bytes = await img.resize(RECOMPRESS_MAX_WIDTH, Image.RESIZE_AUTO).encode();
+    } catch (_e) { /* store as-is */ }
+
+    const supabase = adminClient();
+    const BUCKET = "action-images";
+    const { data: buckets } = await supabase.storage.listBuckets();
+    if (!buckets?.some((b) => b.name === BUCKET)) {
+      await supabase.storage.createBucket(BUCKET, { public: true });
+    }
+    const objKey = `cartoon-${crypto.randomUUID()}.png`;
+    const { error: upErr } = await supabase.storage.from(BUCKET).upload(objKey, bytes, { contentType: "image/png", upsert: false });
+    if (upErr) return c.json({ error: `Upload failed: ${upErr.message}` }, 500);
+    const { data: urlData } = supabase.storage.from(BUCKET).getPublicUrl(objKey);
+    console.log(`Admin ${admin.record.name} generated a cartoon (${refPng ? "edits" : "generations"})`);
+    return c.json({ url: urlData.publicUrl });
+  } catch (err) {
+    console.log("generate-image error:", err);
+    return c.json({ error: `generate-image failed: ${err}` }, 500);
+  }
+});
+
+// ─── POST /admin/cards/create — create a reviewed card (adminApproved:false) ──
+app.post("/make-server-9eb1ae04/admin/cards/create", async (c) => {
+  try {
+    const admin = await requireAdmin(c.req.header("Authorization")?.split(" ")[1]);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+    const raw = await c.req.json<any>();
+
+    const title = String(raw.title ?? "").trim();
+    const description = String(raw.description ?? "").trim();
+    const rawCategory = String(raw.category ?? "").trim().toUpperCase();
+    const targetUrl = String(raw.targetUrl ?? "").trim();
+    if (!title || !description || !rawCategory) {
+      return c.json({ error: "title, description and category are required" }, 400);
+    }
+    // URL safety on any user-facing link/image.
+    for (const [field, value] of [["targetUrl", targetUrl], ["cartoonImageUrl", raw.cartoonImageUrl], ["topImageUrl", raw.topImageUrl]] as Array<[string, unknown]>) {
+      if (value) {
+        const check = validateSubmittedUrl(value, field);
+        if (!check.ok) return c.json({ error: check.reason }, 400);
+      }
+    }
+    if (targetUrl) {
+      const existing = await kv.get(`bulk-import:fp:${await bulkImportFingerprint(targetUrl, title)}`) as any;
+      if (existing?.id) return c.json({ error: `A card with this URL + title already exists (#${existing.id}).` }, 409);
+    }
+
+    const currentIds = (await kv.get("user-action:ids") ?? []) as number[];
+    const id = Math.max(...currentIds, 1271) + 1;
+    const isOnline = raw.isOnline === true || (typeof raw.location === "string" && raw.location.toLowerCase() === "remote");
+    const categoryColor = String(raw.categoryColor ?? "").trim() || BULK_IMPORT_CATEGORY_COLORS[rawCategory] || BULK_IMPORT_CATEGORY_COLORS.OTHER;
+
+    const card: any = {
+      id,
+      category: rawCategory,
+      categoryColor,
+      title,
+      synopsis: raw.synopsis ? String(raw.synopsis).trim() : undefined,
+      description,
+      location: isOnline ? undefined : (raw.location ? String(raw.location).trim() : undefined),
+      isOnline,
+      actionType: isOnline ? "Online" : "In Person Group",
+      boosts: 0,
+      spotsTotal: "Unlimited",
+      authorName: String(raw.authorName ?? "Unknown").trim(),
+      authorRole: String(raw.authorRole ?? "Movement Organization").trim(),
+      authorLink: raw.authorLink ? String(raw.authorLink).trim() : undefined,
+      targetUrl: targetUrl || undefined,
+      topImageKey: null,
+      topImageUrl: raw.topImageUrl ?? null,
+      cartoonImageUrl: raw.cartoonImageUrl ? String(raw.cartoonImageUrl).trim() : undefined,
+      adminApproved: false,
+      createdAt: new Date().toISOString(),
+      createdBy: "admin-url-tool",
+      importSource: "admin-url-tool",
+      sourceUrl: raw.sourceUrl ? String(raw.sourceUrl).trim() : (targetUrl || undefined),
+      eventDate: raw.eventDate ? String(raw.eventDate).trim() : undefined,
+      toneOverride: (raw.toneOverride && typeof raw.toneOverride === "object" && Object.keys(raw.toneOverride).length > 0) ? raw.toneOverride : undefined,
+      amplifiesGroups: Array.isArray(raw.amplifiesGroups) && raw.amplifiesGroups.length > 0 ? raw.amplifiesGroups : undefined,
+    };
+
+    await kv.set(`user-action:${id}`, card);
+    await kv.set("user-action:ids", [...currentIds, id]);
+    if (targetUrl) {
+      await kv.set(`bulk-import:fp:${await bulkImportFingerprint(targetUrl, title)}`, { id, importedAt: card.createdAt, targetUrl: normalizeBulkImportUrl(targetUrl), title });
+    }
+    invalidateActionsCache();
+    console.log(`Admin ${admin.record.name} created card #${id} via URL tool: "${title}"`);
+    return c.json({ card });
+  } catch (err) {
+    console.log("admin create card error:", err);
+    return c.json({ error: `Create failed: ${err}` }, 500);
+  }
+});
+
 // ─── POST /admin/bulk-update-time-commitment — audit-driven time fixes ───────
 // Same auth pattern as bulk-import (static admin token, NOT a user JWT). Built
 // for the 2026-05-17 time-commitment audit and reusable for future passes.
