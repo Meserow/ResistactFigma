@@ -695,7 +695,14 @@ export default function App() {
     // never wonders why they can't find a card they know exists. The
     // chips stay lit in the UI but they don't apply while q is non-empty.
     if (q) {
+      // Card-ID lookup: a purely-numeric query matches the card with that
+      // exact id (handy for admins jumping to a known card, e.g. "224"). It's
+      // just an integer compare per card — cheaper than the text scan below,
+      // so no measurable slowdown. Text matches still apply too (so a number
+      // appearing in a title/description isn't lost).
+      const numericId = /^\d+$/.test(q) ? Number(q) : null;
       return allCards.filter((card) => {
+        if (numericId !== null && card.id === numericId) return true;
         const haystack = [
           card.title,
           card.description,
@@ -1942,8 +1949,17 @@ export default function App() {
 
   // ── Handle card update from EditCardModal ──
   function handleCardSaved(updated: ActionCardData) {
+    // Re-run the raw server card through resolveCard() — the same resolver the
+    // initial feed load uses — instead of merging the raw row straight in.
+    // The raw KV row can still carry derived/stale values (e.g. an old local
+    // `cartoonImageUrl: /cartoon-banners/card-N.webp` left by the pending-card
+    // backfill) that 404 now that cartoons live on the CDN. resolveCard()
+    // re-derives cartoonImageUrl from the manifest (cartoonUrlFor → CDN),
+    // topImage, synopsis and category, so an edit can't visually drop the
+    // cartoon. Without this, saving any field re-introduced the stale path.
+    const resolved = resolveCard(updated as unknown as ServerCard);
     setCards((prev) =>
-      prev.map((c) => c.id === updated.id ? { ...c, ...updated } : c)
+      prev.map((c) => c.id === resolved.id ? { ...c, ...resolved } : c)
     );
     showToast("Changes saved");
   }

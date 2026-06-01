@@ -1199,9 +1199,23 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
         )}
       </div>
 
-      {/* Mobile dropdown */}
+      {/* Mobile dropdown — overlays the page (dims the content) instead of
+          pushing it down. The backdrop starts just below the sticky top bar
+          so the hamburger/X toggle stays tappable; tapping the backdrop
+          closes the menu. The panel itself scrolls if it ever outgrows the
+          available height. */}
       {mobileMenuOpen && (
-        <div className="md:hidden px-5 py-4 border-t border-gray-100 bg-white space-y-3">
+        <>
+        <div
+          className="md:hidden fixed inset-0 z-40 bg-black/30"
+          style={{ top: topBarHeight }}
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+        <div
+          className="md:hidden fixed inset-x-0 z-50 px-5 py-4 border-b border-gray-100 bg-white space-y-3 shadow-lg overflow-y-auto"
+          style={{ top: topBarHeight, maxHeight: `calc(100dvh - ${topBarHeight}px)` }}
+        >
           {onFeedbackClick && (
             <button
               onClick={() => { setMobileMenuOpen(false); onFeedbackClick(); }}
@@ -1286,6 +1300,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
             </button>
           )}
         </div>
+        </>
       )}
     </>
   );
