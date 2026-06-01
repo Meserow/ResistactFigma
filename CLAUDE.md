@@ -17,6 +17,25 @@ ResistAct (resistact.org) is an anti-Trump / MAGA-resistance action-matching pla
 - **Data store:** Supabase KV (accessed via `kv_store.ts`)
 - **Deployment:** Edge function is deployed via `npx supabase functions deploy` with the project ref `zkihnylrvdofdbnhmmoq`
 
+## Local secrets / tokens (where to find them)
+
+Local credentials for deploys, scripts, and the "Create from URL" tooling live in a
+**gitignored, machine-local** file OUTSIDE the repo:
+
+- **Path:** `/Users/ellenescarcega/GitHub/ResistAct/tools/automation/.env`
+  (the repo root is `ResistactFigma/`; `tools/` is its parent, so this file is not
+  tracked by git and can't be committed here).
+- **Keys it contains:** `SUPABASE_ACCESS_TOKEN` (Supabase personal access token, `sbp_…` —
+  used to authenticate `npx supabase functions deploy`) and `OPENAI_API_KEY` (`sk-…` —
+  used by the art-gen / "Create from URL" tooling).
+- **How to use:** source the values into the environment for a command, e.g.
+  `export SUPABASE_ACCESS_TOKEN=$(grep -m1 -E '^SUPABASE_ACCESS_TOKEN=.+' <path> | cut -d= -f2-)`
+  then run the deploy. **Never print, echo, or commit the secret values** — only their
+  path/key names belong in tracked files. (`.env.example` in that dir documents the
+  expected format; note it lists `ADMIN_IMPORT_TOKEN`, which the weekly scripts use.)
+- This file is per-machine and must be edited/overwritten in place — never appended to
+  on each run (it once ballooned to 8 MB from a runaway `cat >> .env <<EOF`).
+
 ## Version & changelog (always do this)
 
 After any meaningful batch of user-facing changes (same trigger as a commit — not after every single edit, but after a feature, fix, or group of related changes is complete):

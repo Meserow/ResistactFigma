@@ -16,6 +16,33 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.38",
+    date: "2026-06-01",
+    title: "Better (still anonymous) sense of what's helping",
+    sections: [
+      {
+        heading: "Behind the scenes",
+        items: [
+          "We now get a clearer, fully anonymous picture of which Acts people open, click through, and complete — so we can surface the ones that actually move people to act.",
+          "No change to our privacy promise: still no names, no emails, no personal profiles, and we still honor your browser's Do-Not-Track setting.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.37",
+    date: "2026-06-01",
+    title: "New Texting filter",
+    sections: [
+      {
+        heading: "Filters",
+        items: [
+          "Added a \"Texting\" pill to the filter row — tap it to show only texting / SMS actions (text-banking, \"text X to a number,\" Resistbot, and the like).",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.36",
     date: "2026-05-31",
     title: "Find a card by its number, and consistent MoveOn credits",

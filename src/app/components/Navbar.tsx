@@ -2,7 +2,7 @@ import logoImg from "../../assets/resistact-logo-horizontal.webp";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import type { ReactNode } from "react";
 import { FACT_CARDS } from "../data/factCards";
-import { Bell, Heart, ChevronDown, Clock, Flag, Flame, Globe, Info, Loader2, LogOut, MapPin, Menu, MessageCircle, Search, ShieldCheck, SlidersHorizontal, Sparkles, Tag, X, Zap } from "lucide-react";
+import { Bell, Heart, ChevronDown, Clock, Flag, Flame, Globe, Info, Loader2, LogOut, MapPin, Menu, MessageCircle, MessageSquare, Search, ShieldCheck, SlidersHorizontal, Sparkles, Tag, X, Zap } from "lucide-react";
 import type { UserApproval } from "../lib/supabase";
 import { TierProgress } from "./TierProgress";
 import { getUserTier } from "../lib/tiers";
@@ -56,6 +56,8 @@ interface NavbarProps {
   /** Quick-actions toggle: when true, only show 5–10 min "quick win" cards. */
   quickActionsOnly?: boolean;
   onQuickActionsChange?: (v: boolean) => void;
+  textingOnly?: boolean;
+  onTextingChange?: (v: boolean) => void;
   sortBy?: "popular" | "newest" | "az";
   onSortChange?: (sort: "popular" | "newest" | "az") => void;
   onBookmarksClick?: () => void;
@@ -85,7 +87,7 @@ interface NavbarProps {
   completedCount?: number;
 }
 
-export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, isSearchPending = false, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, showDone, onShowDoneChange, completedCount, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick, onPendingSmacksClick, onPendingActsClick, onFlaggedActsClick, pendingActsCount, pendingSmacksCount, flagsCount = 0, pendingUsersCount = 0, onTierClick, smacksAvailableTags, smacksActiveTags, onSmacksTagToggle, onSmacksTagsClear, smacksSortBy, onSmacksSortChange, smacksIsAdmin }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
+export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, isSearchPending = false, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, textingOnly, onTextingChange, showDone, onShowDoneChange, completedCount, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick, onPendingSmacksClick, onPendingActsClick, onFlaggedActsClick, pendingActsCount, pendingSmacksCount, flagsCount = 0, pendingUsersCount = 0, onTierClick, smacksAvailableTags, smacksActiveTags, onSmacksTagToggle, onSmacksTagsClear, smacksSortBy, onSmacksSortChange, smacksIsAdmin }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
   // Acts filters in render order: Location dropdown first, Category pills second.
   // Used for "Clear all" and the mobile filter row that shows just the names.
   const ACTS_FILTER_OPTIONS: Record<string, string[]> = {
@@ -173,7 +175,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
 
   const totalActiveFilters = Object.values(activeFilters).reduce((sum, arr) => sum + arr.length, 0);
   const hasActiveSearch = searchQuery.trim().length > 0;
-  const totalActiveAll = totalActiveFilters + (hasActiveSearch ? 1 : 0) + (quickActionsOnly ? 1 : 0);
+  const totalActiveAll = totalActiveFilters + (hasActiveSearch ? 1 : 0) + (quickActionsOnly ? 1 : 0) + (textingOnly ? 1 : 0);
 
   // ── Facts: distinct categories sorted alphabetically.
   //   First 5 show as inline pills; the rest go into a "More" dropdown.
@@ -827,6 +829,21 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                   5 Minutes Max
                 </button>
               )}
+              {/* Texting pill — show only SMS / text-banking actions. */}
+              {onTextingChange && (
+                <button
+                  onClick={() => onTextingChange(!textingOnly)}
+                  className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
+                    textingOnly
+                      ? "bg-[#ed6624] text-white border-[#ed6624]"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-[#ed6624] hover:text-[#ed6624]"
+                  }`}
+                  title="Show only texting / SMS actions"
+                >
+                  <MessageSquare size={11} className={textingOnly ? "text-white" : "text-gray-400"} />
+                  Texting
+                </button>
+              )}
               {/* Clear all — appended to the chip row so it doesn't claim
                   dedicated horizontal real estate on the right. Only shows
                   when at least one filter is active. */}
@@ -836,6 +853,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                     Object.keys(activeTab === "facts" ? FACTS_FILTER_OPTIONS : ACTS_FILTER_OPTIONS).forEach((f) => onFilterChange(f, []));
                     if (hasActiveSearch) onSearchChange("");
                     if (quickActionsOnly && onQuickActionsChange) onQuickActionsChange(false);
+                    if (textingOnly && onTextingChange) onTextingChange(false);
                   }}
                   className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-semibold whitespace-nowrap text-red-400 hover:text-red-600 hover:bg-red-50 transition-all"
                 >
@@ -1137,6 +1155,21 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                     >
                       <Zap size={11} fill={quickActionsOnly ? "#ffffff" : "none"} />
                       5 Min Max
+                    </button>
+                  )}
+
+                  {/* Texting toggle */}
+                  {onTextingChange && (
+                    <button
+                      onClick={() => onTextingChange(!textingOnly)}
+                      className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
+                        textingOnly
+                          ? "bg-[#ed6624] text-white border-[#ed6624]"
+                          : "bg-white text-gray-600 border-gray-200"
+                      }`}
+                    >
+                      <MessageSquare size={11} />
+                      Texting
                     </button>
                   )}
                 </div>

@@ -4,6 +4,7 @@ import { Heart, CheckCircle2, ExternalLink, Flag, Flame, Globe, Loader2, MapPin,
 import type { ActionCardData } from "./ActionCard";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { CATEGORY_COLORS, CATEGORY_GROUPS, colorForCategory } from "../lib/categoryGroups";
+import { analytics } from "../lib/analytics";
 import { projectId } from "/utils/supabase/info";
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
@@ -102,6 +103,13 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
   // for cards that are already completed.
   const clickedLinkRef = useRef(false);
   const [showDonePrompt, setShowDonePrompt] = useState(false);
+
+  // Fire card_opened exactly once per mount — the top of the engagement
+  // funnel. Empty deps so a category edit / re-render doesn't double-count.
+  useEffect(() => {
+    analytics.cardOpened(card.id, card.category);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -350,6 +358,7 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
                 href="https://www.aclu.org/know-your-rights/protesters-rights"
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => analytics.resourceLinkClicked("aclu_know_your_rights", card.id)}
                 className="mt-4 self-start inline-flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 font-['Poppins',sans-serif] text-[12px] font-semibold text-amber-800 hover:bg-amber-100 transition-colors"
                 title="ACLU protesters' rights guide"
               >
@@ -436,7 +445,10 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
                 href={link}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => { clickedLinkRef.current = true; }}
+                onClick={() => {
+                  clickedLinkRef.current = true;
+                  analytics.actionLinkClicked(card.id, card.category);
+                }}
                 className="inline-flex items-center gap-1.5 rounded-full bg-[#ed6624] px-5 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#c2521b]"
               >
                 I want to ResistAct! <ExternalLink size={14} />

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { X, Eye, EyeOff, Loader2, CheckCircle2, Clock, Flame, Mail, Zap, ArrowRight } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { analytics } from "../lib/analytics";
 import { projectId } from "/utils/supabase/info";
 import type { UserApproval } from "../lib/supabase";
 
@@ -135,6 +136,7 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
       });
 
       if (!signInErr) {
+        analytics.login("email");
         const approval = await fetchApproval(signInData.session!.access_token);
         if (approval) { onApproval(approval); onClose(); }
         return;
@@ -163,6 +165,7 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
           },
         });
         if (signUpErr) { setError(signUpErr.message); resetCaptcha(); return; }
+        analytics.signUp("email");
         setPendingSignUp(false);
         if (signUpData.session) {
           onClose();

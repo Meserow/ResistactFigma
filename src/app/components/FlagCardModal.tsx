@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Flag, X } from "lucide-react";
 import { projectId, publicAnonKey } from "/utils/supabase/info";
-import { track } from "../lib/analytics";
+import { analytics } from "../lib/analytics";
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
 
@@ -46,7 +46,7 @@ export function FlagCardModal({ cardId, cardTitle, accessToken, onClose }: FlagC
         throw new Error(text || `HTTP ${res.status}`);
       }
       setStatus("ok");
-      track("card_flagged", { cardId, reason });
+      analytics.cardFlagged(cardId, reason);
       // Auto-close after a short beat so the user sees the confirmation.
       setTimeout(onClose, 1400);
     } catch (e) {
