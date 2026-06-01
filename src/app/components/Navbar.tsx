@@ -2,7 +2,7 @@ import logoImg from "../../assets/resistact-logo-horizontal.webp";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import type { ReactNode } from "react";
 import { FACT_CARDS } from "../data/factCards";
-import { Bell, Heart, ChevronDown, Clock, Flag, Flame, Globe, Info, Loader2, LogOut, MapPin, Menu, MessageCircle, MessageSquare, Search, ShieldCheck, SlidersHorizontal, Sparkles, Tag, X, Zap } from "lucide-react";
+import { Bell, Heart, ChevronDown, Clock, Flag, Flame, Globe, Info, Loader2, LogOut, MapPin, Megaphone, Menu, MessageCircle, MessageSquare, Search, ShieldCheck, SlidersHorizontal, Sparkles, Tag, X, Zap } from "lucide-react";
 import type { UserApproval } from "../lib/supabase";
 import { TierProgress } from "./TierProgress";
 import { getUserTier } from "../lib/tiers";
@@ -53,6 +53,9 @@ interface NavbarProps {
   onTabChange: (tab: "facts" | "acts" | "receipts") => void;
   /** Render between the top bar and the filter row (e.g. the homepage hero). */
   heroSlot?: ReactNode;
+  /** True when a collapsing hero is present (Acts tab). Drives the left-logo
+      cross-fade: hidden at the top of the page, fades in as the hero collapses. */
+  hasHero?: boolean;
   /** Quick-actions toggle: when true, only show 5–10 min "quick win" cards. */
   quickActionsOnly?: boolean;
   onQuickActionsChange?: (v: boolean) => void;
@@ -64,6 +67,8 @@ interface NavbarProps {
   bookmarkCount?: number;
   onFeedbackClick?: () => void;
   onMatchClick?: () => void;
+  /** "Add an Act!" — opens the Ask/Add-an-Act flow (mirrors the hero pill). */
+  onAskClick?: () => void;
   onPendingSmacksClick?: () => void;
   onPendingActsClick?: () => void;
   onFlaggedActsClick?: () => void;
@@ -87,7 +92,7 @@ interface NavbarProps {
   completedCount?: number;
 }
 
-export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, isSearchPending = false, activeTab, onTabChange, heroSlot, quickActionsOnly, onQuickActionsChange, textingOnly, onTextingChange, showDone, onShowDoneChange, completedCount, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick, onPendingSmacksClick, onPendingActsClick, onFlaggedActsClick, pendingActsCount, pendingSmacksCount, flagsCount = 0, pendingUsersCount = 0, onTierClick, smacksAvailableTags, smacksActiveTags, onSmacksTagToggle, onSmacksTagsClear, smacksSortBy, onSmacksSortChange, smacksIsAdmin }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
+export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, isSearchPending = false, activeTab, onTabChange, heroSlot, hasHero = false, quickActionsOnly, onQuickActionsChange, textingOnly, onTextingChange, showDone, onShowDoneChange, completedCount, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick, onAskClick, onPendingSmacksClick, onPendingActsClick, onFlaggedActsClick, pendingActsCount, pendingSmacksCount, flagsCount = 0, pendingUsersCount = 0, onTierClick, smacksAvailableTags, smacksActiveTags, onSmacksTagToggle, onSmacksTagsClear, smacksSortBy, onSmacksSortChange, smacksIsAdmin }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
   // Acts filters in render order: Location dropdown first, Category pills second.
   // Used for "Clear all" and the mobile filter row that shows just the names.
   const ACTS_FILTER_OPTIONS: Record<string, string[]> = {
@@ -285,7 +290,11 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
        <div className="flex items-center gap-4">
         {/* Logo + Brand */}
         <div className="flex items-center gap-3 shrink-0">
-          <button onClick={onInfoClick} title="How does ResistAct work?" className="focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ed6624] rounded-md">
+          <button
+            onClick={onInfoClick}
+            title="How does ResistAct work?"
+            className="focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ed6624] rounded-md"
+          >
             <ResistActLogo />
           </button>
           {/* Margaret Mead quote moved into the "How does ResistAct work?"
@@ -345,6 +354,45 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
           </div>
 
         </div>
+
+        {/* ── Scroll-revealed action cluster — takes over the hero pills' role
+            once the hero collapses on scroll (Acts tab only). Hidden while the
+            hero is fully expanded; fades in via --hero-collapse. ── */}
+        {hasHero && (
+          <div className="scroll-reveal hidden xl:flex items-center gap-2 shrink-0">
+            <button
+              onClick={onInfoClick}
+              title="About — what is this site about?"
+              aria-label="About"
+              className="inline-flex items-center gap-1.5 rounded-full border border-gray-300 px-2.5 2xl:px-3 py-1.5 font-['Poppins',sans-serif] text-[13px] font-bold text-gray-600 transition-colors hover:border-[#ed6624] hover:bg-[#ed6624]/5 hover:text-[#ed6624] whitespace-nowrap group"
+            >
+              <Zap size={14} strokeWidth={2.5} className="text-gray-500 group-hover:text-[#ed6624]" />
+              <span className="hidden 2xl:inline">About</span>
+            </button>
+            {onMatchClick && (
+              <button
+                onClick={onMatchClick}
+                title="Refine Your Matches — your preferences stay saved"
+                aria-label="Refine Your Matches"
+                className="inline-flex items-center gap-1.5 rounded-full bg-[#ed6624] px-2.5 2xl:px-3.5 py-1.5 font-['Poppins',sans-serif] text-[13px] font-extrabold text-white shadow-sm ring-1 ring-[#ed6624] transition-all hover:bg-[#d35a1d] hover:shadow whitespace-nowrap"
+              >
+                <Sparkles size={15} strokeWidth={2.75} className="text-white" />
+                <span className="hidden 2xl:inline">Refine Matches</span>
+              </button>
+            )}
+            {onAskClick && (
+              <button
+                onClick={onAskClick}
+                title="Add an Act — find people to do a great idea"
+                aria-label="Add an Act"
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#23297e] bg-white px-2.5 2xl:px-3 py-1.5 font-['Poppins',sans-serif] text-[13px] font-bold text-[#23297e] transition-colors hover:bg-[#23297e]/5 whitespace-nowrap"
+              >
+                <Megaphone size={14} strokeWidth={2.5} className="text-[#23297e]" />
+                <span className="hidden 2xl:inline">Add an Act</span>
+              </button>
+            )}
+          </div>
+        )}
 
         {/* ── Auth / User section ── */}
         <div className="hidden md:flex items-center gap-3 shrink-0 ml-1">
@@ -527,7 +575,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               )}
               <button
                 onClick={onLoginClick}
-                className="inline-flex flex-col items-start rounded-2xl bg-[#ed6624] px-4 py-1.5 text-left font-['Poppins',sans-serif] text-white hover:bg-[#c2521b] transition-colors"
+                className="resistact-anim-shimmer inline-flex flex-col items-start rounded-2xl bg-[#23297e] px-4 py-1.5 text-left font-['Poppins',sans-serif] text-white hover:bg-[#1a1f63] transition-colors"
               >
                 <span className="inline-flex items-center gap-1.5 text-sm font-semibold leading-tight">
                   <Flame size={14} strokeWidth={2.25} className="shrink-0" />
@@ -738,12 +786,12 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                 <button
                   onClick={() => setOpenFilter(locOpen ? null : "Location")}
                   className={`flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
-                    locSelected.length > 0
+                    locStates.length > 0
                       ? "bg-[#23297e] text-white border-[#23297e]"
                       : "bg-white text-gray-600 border-gray-200 hover:border-[#23297e] hover:text-[#23297e]"
                   }`}
                 >
-                  <MapPin size={11} className={locSelected.length > 0 ? "text-white" : "text-gray-400"} />
+                  <MapPin size={11} className={locStates.length > 0 ? "text-white" : "text-gray-400"} />
                   {locLabel}
                   {locStates.length > 1 && (
                     <span className="ml-0.5 w-4 h-4 rounded-full bg-[#ed6624] text-white text-[9px] flex items-center justify-center font-bold shrink-0">
@@ -770,9 +818,9 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                         </label>
                       ))}
                     </div>
-                    {locSelected.length > 0 && (
+                    {locStates.length > 0 && (
                       <button
-                        onClick={() => onFilterChange("Location", [])}
+                        onClick={() => onFilterChange("Location", locSelected.filter((l) => l === "Remote"))}
                         className="w-full text-center text-xs text-red-400 hover:text-red-600 py-2 border-t border-gray-50 mt-1 font-['Poppins',sans-serif] font-medium transition-colors shrink-0"
                       >
                         Clear filter
@@ -781,9 +829,39 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                   </div>
                 )}
               </div>
+              {/* Remote pill (2nd) — strict filter: only online/at-home acts
+                  show, so every in-person card disappears. Underlying filter
+                  token is "Remote" in the Location array. */}
+              <button
+                onClick={() => toggleFilterOption("Location", "Remote")}
+                className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
+                  locSelected.includes("Remote")
+                    ? "bg-[#ed6624] text-white border-[#ed6624]"
+                    : "bg-white text-gray-600 border-gray-200 hover:border-[#ed6624] hover:text-[#ed6624]"
+                }`}
+                title="Show only remote actions (doable from anywhere)"
+              >
+                <Globe size={11} className={locSelected.includes("Remote") ? "text-white" : "text-gray-400"} />
+                Remote Only
+              </button>
+              {/* 5 Minutes Max pill (3rd) — toggles the quickAction-only filter.
+                  Clustered with Location + Remote at the front of the row. */}
+              {onQuickActionsChange && (
+                <button
+                  onClick={() => onQuickActionsChange(!quickActionsOnly)}
+                  className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
+                    quickActionsOnly
+                      ? "bg-[#5a3e9e] text-white border-[#5a3e9e]"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-[#5a3e9e] hover:text-[#5a3e9e]"
+                  }`}
+                  title="Show only actions that take 5 minutes or less"
+                >
+                  <Zap size={11} className={quickActionsOnly ? "text-white" : "text-gray-400"} fill={quickActionsOnly ? "#ffffff" : "none"} />
+                  5 Minutes Max
+                </button>
+              )}
               {/* Category pills — every category as a wrapping pill row.
-                  Sits after Location so the row reads: Location → categories
-                  → Prefer Online → 5 Minutes Max (matches mobile order). */}
+                  Sits after Location → Remote → 5 Minutes Max. */}
               {actsPillItems.map((option) => {
                 // Texting sentinel — render the special SMS-only toggle in its
                 // alphabetical slot instead of a category filter pill.
@@ -823,42 +901,6 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                   </button>
                 );
               })}
-              {/* "Prefer Online" pill — separate from the Location (state)
-                  dropdown. Toggles whether online + at-home actions are
-                  added to the result set. Composes with state picks: WA
-                  alone = in-person, Prefer Online alone = online + at-home
-                  everywhere, both = union. Underlying filter token is
-                  still "Remote" in the Location array for backwards
-                  compat with the matcher. */}
-              <button
-                onClick={() => toggleFilterOption("Location", "Remote")}
-                className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
-                  locSelected.includes("Remote")
-                    ? "bg-[#23297e] text-white border-[#23297e]"
-                    : "bg-white text-gray-600 border-gray-200 hover:border-[#23297e] hover:text-[#23297e]"
-                }`}
-                title="Include remote actions (doable from anywhere)"
-              >
-                <Globe size={11} className={locSelected.includes("Remote") ? "text-white" : "text-gray-400"} />
-                Remote
-              </button>
-              {/* 5 Minutes Max pill — same chip style as categories. Toggles
-                  the quickAction-only filter. Sits at the very end after the
-                  Location pill so quick filters are all clustered together. */}
-              {onQuickActionsChange && (
-                <button
-                  onClick={() => onQuickActionsChange(!quickActionsOnly)}
-                  className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
-                    quickActionsOnly
-                      ? "bg-[#ed6624] text-white border-[#ed6624]"
-                      : "bg-white text-gray-600 border-gray-200 hover:border-[#ed6624] hover:text-[#ed6624]"
-                  }`}
-                  title="Show only actions that take 5 minutes or less"
-                >
-                  <Zap size={11} className={quickActionsOnly ? "text-white" : "text-gray-400"} fill={quickActionsOnly ? "#ffffff" : "none"} />
-                  5 Minutes Max
-                </button>
-              )}
               {/* Texting pill now renders inline in its alphabetical slot among
                   the category pills above (see the actsPillItems map). */}
               {/* Clear all — appended to the chip row so it doesn't claim
@@ -1118,7 +1160,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                   <button
                     onClick={() => setOpenFilter(locMobileOpen ? null : "acts-loc-mobile")}
                     className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
-                      locSelected.length > 0
+                      locStates.length > 0
                         ? "bg-[#23297e] text-white border-[#23297e]"
                         : "bg-white text-gray-600 border-gray-200"
                     }`}
@@ -1132,6 +1174,34 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                     )}
                     <ChevronDown size={11} className={locMobileOpen ? "rotate-180" : ""} />
                   </button>
+
+                  {/* Remote toggle (2nd) */}
+                  <button
+                    onClick={() => toggleFilterOption("Location", "Remote")}
+                    className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
+                      locSelected.includes("Remote")
+                        ? "bg-[#ed6624] text-white border-[#ed6624]"
+                        : "bg-white text-gray-600 border-gray-200"
+                    }`}
+                  >
+                    <Globe size={11} />
+                    Remote Only
+                  </button>
+
+                  {/* 5 Minutes Max toggle (3rd) */}
+                  {onQuickActionsChange && (
+                    <button
+                      onClick={() => onQuickActionsChange(!quickActionsOnly)}
+                      className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
+                        quickActionsOnly
+                          ? "bg-[#5a3e9e] text-white border-[#5a3e9e]"
+                          : "bg-white text-gray-600 border-gray-200"
+                      }`}
+                    >
+                      <Zap size={11} fill={quickActionsOnly ? "#ffffff" : "none"} />
+                      5 Min Max
+                    </button>
+                  )}
 
                   {/* Category button */}
                   <button
@@ -1150,34 +1220,6 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                     )}
                     <ChevronDown size={11} className={catMobileOpen ? "rotate-180" : ""} />
                   </button>
-
-                  {/* Remote toggle */}
-                  <button
-                    onClick={() => toggleFilterOption("Location", "Remote")}
-                    className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
-                      locSelected.includes("Remote")
-                        ? "bg-[#23297e] text-white border-[#23297e]"
-                        : "bg-white text-gray-600 border-gray-200"
-                    }`}
-                  >
-                    <Globe size={11} />
-                    Remote
-                  </button>
-
-                  {/* 5 Minutes Max toggle */}
-                  {onQuickActionsChange && (
-                    <button
-                      onClick={() => onQuickActionsChange(!quickActionsOnly)}
-                      className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
-                        quickActionsOnly
-                          ? "bg-[#ed6624] text-white border-[#ed6624]"
-                          : "bg-white text-gray-600 border-gray-200"
-                      }`}
-                    >
-                      <Zap size={11} fill={quickActionsOnly ? "#ffffff" : "none"} />
-                      5 Min Max
-                    </button>
-                  )}
 
                   {/* Texting toggle */}
                   {onTextingChange && (
@@ -1209,9 +1251,9 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                         <span className="font-['Poppins',sans-serif] text-sm text-gray-700">{option}</span>
                       </label>
                     ))}
-                    {locSelected.length > 0 && (
+                    {locStates.length > 0 && (
                       <button
-                        onClick={() => onFilterChange("Location", [])}
+                        onClick={() => onFilterChange("Location", locSelected.filter((l) => l === "Remote"))}
                         className="w-full text-center text-xs text-red-400 hover:text-red-600 py-2 border-t border-gray-50 mt-1 font-['Poppins',sans-serif] font-medium transition-colors"
                       >
                         Clear
@@ -1323,7 +1365,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
           ) : (
             <button
               onClick={() => { setMobileMenuOpen(false); onLoginClick(); }}
-              className="w-full flex flex-col items-center py-2 rounded-2xl bg-[#ed6624] text-white font-['Poppins',sans-serif] hover:bg-[#c2521b] transition-colors"
+              className="resistact-anim-shimmer w-full flex flex-col items-center py-2 rounded-2xl bg-[#23297e] text-white font-['Poppins',sans-serif] hover:bg-[#1a1f63] transition-colors"
             >
               <span className="inline-flex items-center gap-1.5 text-sm font-semibold leading-tight">
                 <Flame size={14} strokeWidth={2.25} />

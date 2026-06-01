@@ -770,26 +770,27 @@ export default function App() {
       const locs = activeFilters["Location"] ?? [];
       if (locs.length > 0) {
         const cardState = locationToState(card.location);
-        const matchesState = cardState !== null && locs.some(l => l !== "Remote" && l === cardState);
         const stateFilters = locs.filter(l => l !== "Remote");
         const hasStateFilter = stateFilters.length > 0;
+        const wantsRemote = locs.includes("Remote");
+        const matchesState = cardState !== null && stateFilters.includes(cardState);
 
         // "Remote" pill: show only online/at-home acts. Accept both the
         // isOnline/atHome booleans AND the canonical "Remote"/"At Home"
         // location strings, since the create/edit form doesn't always set
         // both (a card can be location:"Remote" with isOnline:false).
         const remoteLoc = (card.location ?? "").trim();
-        const matchesRemote = locs.includes("Remote") &&
-          (card.isOnline || (card as any).atHome === true ||
-           remoteLoc === "Remote" || remoteLoc === "At Home");
+        const matchesRemote = card.isOnline || (card as any).atHome === true ||
+          remoteLoc === "Remote" || remoteLoc === "At Home";
 
-        if (hasStateFilter) {
-          // State filter is active: keep matching-state cards + location-agnostic cards.
+        if (wantsRemote) {
+          // Remote is a hard filter: ONLY online/at-home acts survive, so every
+          // in-person card disappears — even when a state is also selected.
+          if (!matchesRemote) return false;
+        } else if (hasStateFilter) {
+          // State filter only: keep matching-state cards + location-agnostic cards.
           // Hard-filter only cards pinned to a specific OTHER state.
           if (!matchesState && !isLocationAgnostic(card)) return false;
-        } else {
-          // "Remote"-only filter: strict — show only online/at-home acts.
-          if (!matchesRemote) return false;
         }
       }
 
@@ -1308,6 +1309,29 @@ export default function App() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, [scrollNudgeDismissed, matchPrefs, activeTab]);
+
+  // ── Hero → toolbar morph: expose scroll progress (0→1 over the first ~120px)
+  //   as the CSS var --hero-collapse on <html>. The hero (HomeHero/LoggedInHero)
+  //   shrinks + fades while the top bar's left logo fades in. Written directly
+  //   to the DOM (no React state) so scrolling doesn't re-render App. Tabs with
+  //   no hero pin the var at 1 so the left logo stays fully visible. ──
+  useEffect(() => {
+    const root = document.documentElement;
+    const COLLAPSE_DISTANCE = 120;
+    if (activeTab !== "acts") {
+      root.style.setProperty("--hero-collapse", "1");
+      root.dataset.heroCollapsed = "true";
+      return;
+    }
+    const update = () => {
+      const p = Math.min(1, Math.max(0, window.scrollY / COLLAPSE_DISTANCE));
+      root.style.setProperty("--hero-collapse", String(p));
+      root.dataset.heroCollapsed = p > 0 ? "true" : "false";
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
+  }, [activeTab]);
 
   // Hide nudge if user sets match prefs
   useEffect(() => {
@@ -2102,6 +2126,7 @@ export default function App() {
         flagsCount={isAdminUser && !isImpersonating ? flagsCount : 0}
         onInfoClick={() => setInfoOpen(true)}
         onActClick={() => setActOpen(true)}
+        onAskClick={() => isImpersonating ? showToast("View-as is read-only") : setAskOpen(true)}
         onBookmarksClick={() => setBookmarksOpen(true)}
         bookmarkCount={effectiveBookmarked.size}
         onFeedbackClick={() => setFeedbackOpen(true)}
@@ -2141,6 +2166,7 @@ export default function App() {
         smacksSortBy={smacksSortBy}
         onSmacksSortChange={setSmacksSortBy}
         smacksIsAdmin={isAdminUser && !isImpersonating}
+        hasHero={activeTab === "acts"}
         heroSlot={
           effectiveApproval
             ? activeTab === "acts"

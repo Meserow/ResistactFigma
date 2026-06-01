@@ -1,3 +1,29 @@
 @import './fonts.css';
 @import './tailwind.css';
 @import './theme.css';
+
+/* Scroll-linked hero → toolbar morph.
+   --hero-collapse (0 = top/expanded, 1 = scrolled/collapsed) is set on
+   <html> by a scroll listener in App.tsx. The hero shrinks + fades as it
+   hands off to the frozen top bar's left logo. */
+.hero-collapsing {
+  transform-origin: top center;
+  transform: scale(calc(1 - 0.18 * var(--hero-collapse, 0)));
+  opacity: calc(1 - var(--hero-collapse, 0));
+  will-change: transform, opacity;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-collapsing { transform: none; }
+}
+
+/* Inverse of .hero-collapsing: fades IN as the hero collapses. Used for the
+   top-bar action cluster that takes over the hero pills' role on scroll.
+   While the hero is fully expanded (data-hero-collapsed="false" on <html>,
+   set by the scroll listener in App.tsx) the cluster is hidden from clicks
+   and the a11y/tab order; any scroll reveals it. */
+.scroll-reveal {
+  opacity: var(--hero-collapse, 1);
+}
+:root[data-hero-collapsed="false"] .scroll-reveal {
+  display: none;
+}
