@@ -106,15 +106,16 @@ const HEADERS = { "Content-Type": "application/json", Authorization: `Bearer ${p
 //
 // Also folds legacy/duplicate category names into a single canonical bucket:
 //   "Art Piece" / "ART PIECE" → "Art/Performance Art"
-//   "Call/write" / "CALL/WRITE" → "Call" (renamed from "Call/Write" — the
-//   bucket only ever contained phone-call actions; letter-writing has its
-//   own category. Old data is folded forward here so any KV records still
-//   carrying the old label render under the new one.)
+//   "Call" / "CALL" / "Call/Write" → "Phone Calling" (renamed June 2026 so
+//   the label is unambiguous in the filter row; the bucket only ever held
+//   phone-call actions — letter-writing has its own category. Old data folds
+//   forward here so any KV records carrying the old label render as the new.)
 const TITLE_CASE_STOPWORDS = new Set(["of", "to", "a", "the", "and", "or", "in", "on", "for", "at"]);
 const CATEGORY_ALIASES: Record<string, string> = {
   "art piece": "Art/Performance Art",
   "art/performance art": "Art/Performance Art",
-  "call/write": "Call",
+  "call/write": "Phone Calling",
+  "call": "Phone Calling",
   // Three category mergers (May 2026): old name on the left, surviving
   // category on the right. KV records with the old value render as the
   // new one — no migration required for display. A KV migration in the

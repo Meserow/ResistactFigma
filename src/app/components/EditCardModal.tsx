@@ -32,7 +32,6 @@ const CATEGORY_OPTIONS: { label: string; color: string }[] = [
   { label: "Art/Performance Art",  color: "#896312" },
   // Bird-Dog merged into Show Up (May 2026).
   { label: "Boycott",              color: "#23297e" },
-  { label: "Call",                 color: "#c2185b" },
   { label: "Crafting",             color: "#c34e00" },
   { label: "Email Campaign",       color: "#e44b4b" },
   { label: "Flash Mob",            color: "#ff00d5" },
@@ -49,6 +48,7 @@ const CATEGORY_OPTIONS: { label: string; color: string }[] = [
   { label: "News Story",           color: "#896312" },
   { label: "Personal Commitment",  color: "#23297e" },
   { label: "Petition",             color: "#05737f" },
+  { label: "Phone Calling",        color: "#c2185b" },
   { label: "Prayer",               color: "#8a00e6" },
   { label: "Professional Skills",  color: "#126d89" },
   { label: "Protest",              color: "#23297e" },

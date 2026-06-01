@@ -11,6 +11,14 @@
  * on the runtime fallback in MatchMeModal that sweeps any unknown
  * categories into a synthetic "Other" bucket so nothing goes missing.
  */
+import type { LucideIcon } from "lucide-react";
+import {
+  HeartHandshake, Volume2, Palette, Ban, Phone, Scissors, Mail, Users,
+  HandCoins, DoorOpen, House, Drama, UserPlus, HardHat, PenLine, Calendar,
+  Brain, Newspaper, Lightbulb, Heart, FileSignature, Sparkles, Briefcase,
+  Megaphone, Shirt, Footprints, Share2, GraduationCap, Car, Video, Eye, Tag,
+} from "lucide-react";
+
 export interface CategoryGroup {
   heading: string;
   categories: string[];
@@ -33,7 +41,7 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   },
   {
     heading: "Reach Out",
-    categories: ["Call", "Email Campaign", "Letter Writing", "Petition", "Social Media"],
+    categories: ["Email Campaign", "Letter Writing", "Petition", "Phone Calling", "Social Media"],
   },
   {
     // Renamed from "Show Up" — the heading collided with the "Show Up"
@@ -84,7 +92,6 @@ export const CATEGORY_COLORS: Record<string, string> = {
   "Amplify":             "#ed6624", // brand orange — energetic action (renamed from "Boost" June 2026)
   "Art/Performance Art": "#8b6f47", // warm sienna
   "Boycott":             "#7c2d12", // rust
-  "Call":                "#b8326b", // muted rose-magenta
   "Crafting":            "#c34e00", // warm orange
   "Email Campaign":      "#b84545", // muted brick red
   "Flash Mob":           "#d4516a", // coral-pink (replaces hot pink)
@@ -104,6 +111,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
   "Other":               "#767574", // neutral gray
   "Personal Commitment": "#23297e", // brand navy
   "Petition":            "#3a6d80", // muted teal
+  "Phone Calling":       "#b8326b", // muted rose-magenta (renamed from "Call" June 2026)
   "Prayer":              "#5a3e9e", // brand purple
   "Professional Skills": "#3a6d80", // muted teal
   "Protest":             "#23297e", // brand navy
@@ -122,4 +130,49 @@ export const CATEGORY_COLORS: Record<string, string> = {
  *  the category isn't recognised. */
 export function colorForCategory(category: string | undefined | null): string {
   return CATEGORY_COLORS[category ?? ""] ?? "#23297e";
+}
+
+/** Canonical lucide icon for each category. Mirrors CATEGORY_COLORS so the
+ *  navbar filter pills (and anywhere else that wants a glyph) stay in sync.
+ *  Keys match the Title-Case forms emitted by normaliseCategory(). When you
+ *  add a category, add its icon here too — the lookup falls back to a neutral
+ *  tag glyph for anything missing, so a gap is graceful but not pretty. */
+export const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  "Act of Kindness":     HeartHandshake,
+  "Amplify":             Volume2,        // matches the brand-orange "amplify others" idea
+  "Art/Performance Art": Palette,
+  "Boycott":             Ban,
+  "Crafting":            Scissors,
+  "Email Campaign":      Mail,
+  "Flash Mob":           Users,
+  "Funding":             HandCoins,
+  "Host":                DoorOpen,       // welcoming people in to an event
+  "Housing":             House,
+  "Irreverence":         Drama,          // theater masks — satire / street theater
+  "Join a Group":        UserPlus,
+  "Labor":               HardHat,
+  "Letter Writing":      PenLine,
+  "Meeting":             Calendar,
+  "Mental Health":       Brain,
+  "News Story":          Newspaper,
+  "Other":               Lightbulb,
+  "Personal Commitment": Heart,
+  "Petition":            FileSignature,
+  "Phone Calling":       Phone,          // renamed from "Call" June 2026
+  "Prayer":              Sparkles,
+  "Professional Skills": Briefcase,
+  "Protest":             Megaphone,
+  "Represent":           Shirt,          // wear the cause (renamed from "Purchase")
+  "Show Up":             Footprints,     // in-person presence
+  "Social Media":        Share2,
+  "Training":            GraduationCap,
+  "Transportation":      Car,
+  "Video":               Video,
+  "Witness":             Eye,
+};
+
+/** Lookup helper — returns the canonical icon for a category, falling back
+ *  to a neutral tag glyph for any unrecognised category. */
+export function iconForCategory(category: string | undefined | null): LucideIcon {
+  return CATEGORY_ICONS[category ?? ""] ?? Tag;
 }

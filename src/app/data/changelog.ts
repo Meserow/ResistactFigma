@@ -16,6 +16,34 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.45",
+    date: "2026-06-01",
+    title: "The \"Call\" category is now \"Phone Calling\"",
+    sections: [
+      {
+        heading: "Categories",
+        items: [
+          "Renamed the \"Call\" action category to \"Phone Calling\" so it's clearer at a glance what the action is — picking up the phone to call your reps, a hotline, or a peer line.",
+          "Nothing you need to do: any act already filed under \"Call\" (or the older \"Call/Write\") automatically shows up as \"Phone Calling\" now, with the same color, the same phone icon, and the same spot in the Match Me filters.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.44",
+    date: "2026-06-01",
+    title: "Every category filter now has its own icon",
+    sections: [
+      {
+        heading: "Browsing the Acts",
+        items: [
+          "Added a distinct icon to every category in the filter row — a megaphone for Protest, a phone for Phone Calling, a graduation cap for Training, and so on — so you can spot the category you want at a glance instead of reading every label.",
+          "The icons carry through to the category dropdown on phones too, tinted in each category's color.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.43",
     date: "2026-06-01",
     title: "The \"Boost\" category is now \"Amplify\"",

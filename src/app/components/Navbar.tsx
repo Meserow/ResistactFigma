@@ -7,7 +7,7 @@ import type { UserApproval } from "../lib/supabase";
 import { TierProgress } from "./TierProgress";
 import { getUserTier } from "../lib/tiers";
 import { UserAvatar } from "./UserAvatar";
-import { colorForCategory } from "../lib/categoryGroups";
+import { colorForCategory, iconForCategory } from "../lib/categoryGroups";
 
 function ResistActLogo() {
   return (
@@ -778,17 +778,19 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               {actsCats.map((option) => {
                 const selected = actsCatsSelected.includes(option);
                 const catColor = colorForCategory(option);
+                const CatIcon = iconForCategory(option);
                 return (
                   <button
                     key={option}
                     onClick={() => toggleFilterOption("Category", option)}
-                    className={`shrink-0 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
+                    className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
                       selected
                         ? "text-white"
                         : "bg-white text-gray-600 border-gray-200 hover:border-[#23297e] hover:text-[#23297e]"
                     }`}
                     style={selected ? { background: catColor, borderColor: catColor } : undefined}
                   >
+                    <CatIcon size={11} className={selected ? "text-white" : "text-gray-400"} />
                     {option}
                   </button>
                 );
@@ -888,17 +890,21 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                     Category
                   </p>
                   <div className="overflow-y-auto flex-1">
-                    {actsCats.map((option) => (
-                      <label key={option} className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={actsCatsSelected.includes(option)}
-                          onChange={() => toggleFilterOption("Category", option)}
-                          className="accent-[#23297e] w-3.5 h-3.5 rounded shrink-0"
-                        />
-                        <span className="font-['Poppins',sans-serif] text-sm text-gray-700">{option}</span>
-                      </label>
-                    ))}
+                    {actsCats.map((option) => {
+                      const CatIcon = iconForCategory(option);
+                      return (
+                        <label key={option} className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={actsCatsSelected.includes(option)}
+                            onChange={() => toggleFilterOption("Category", option)}
+                            className="accent-[#23297e] w-3.5 h-3.5 rounded shrink-0"
+                          />
+                          <CatIcon size={14} className="shrink-0" style={{ color: colorForCategory(option) }} />
+                          <span className="font-['Poppins',sans-serif] text-sm text-gray-700">{option}</span>
+                        </label>
+                      );
+                    })}
                   </div>
                   {actsCatsSelected.length > 0 && (
                     <button
@@ -1205,17 +1211,21 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                     <p className="px-4 pt-1 pb-2 font-['Poppins',sans-serif] text-[10px] uppercase tracking-widest text-gray-400 font-semibold border-b border-gray-50">
                       Category
                     </p>
-                    {actsCats.map((option) => (
-                      <label key={option} className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={actsCatsSelected.includes(option)}
-                          onChange={() => toggleFilterOption("Category", option)}
-                          className="accent-[#23297e] w-3.5 h-3.5 rounded shrink-0"
-                        />
-                        <span className="font-['Poppins',sans-serif] text-sm text-gray-700">{option}</span>
-                      </label>
-                    ))}
+                    {actsCats.map((option) => {
+                      const CatIcon = iconForCategory(option);
+                      return (
+                        <label key={option} className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={actsCatsSelected.includes(option)}
+                            onChange={() => toggleFilterOption("Category", option)}
+                            className="accent-[#23297e] w-3.5 h-3.5 rounded shrink-0"
+                          />
+                          <CatIcon size={14} className="shrink-0" style={{ color: colorForCategory(option) }} />
+                          <span className="font-['Poppins',sans-serif] text-sm text-gray-700">{option}</span>
+                        </label>
+                      );
+                    })}
                     {actsCatsSelected.length > 0 && (
                       <button
                         onClick={() => onFilterChange("Category", [])}
