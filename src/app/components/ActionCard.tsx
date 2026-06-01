@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from "react";
-import { CheckCircle2, Clock, Globe, MapPin } from "lucide-react";
+import { CheckCircle2, Clock, Globe, MapPin, Pencil } from "lucide-react";
 import { useAnimatedNumber } from "../lib/animations";
 import { ShareModal } from "./ShareModal";
 import { SpreadTheWordModal } from "./SpreadTheWordModal";
@@ -429,14 +429,27 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
             <span className="font-['Poppins',sans-serif] font-bold text-[11px] uppercase tracking-wider text-red-600">
               ⚠ Pending approval
             </span>
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onApprove?.(card.id); }}
-              className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-green-600 hover:bg-green-700 text-white font-['Poppins',sans-serif] font-bold text-[10px] uppercase tracking-wide transition-colors shrink-0"
-            >
-              <CheckCircle2 size={11} />
-              Approve
-            </button>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {onEdit && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onEdit?.(card.id); }}
+                  title="Edit this act"
+                  className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500 hover:bg-amber-600 text-white font-['Poppins',sans-serif] font-bold text-[10px] uppercase tracking-wide transition-colors"
+                >
+                  <Pencil size={11} />
+                  Edit
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onApprove?.(card.id); }}
+                className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-green-600 hover:bg-green-700 text-white font-['Poppins',sans-serif] font-bold text-[10px] uppercase tracking-wide transition-colors"
+              >
+                <CheckCircle2 size={11} />
+                Approve
+              </button>
+            </div>
           </div>
         )}
         {compact ? (

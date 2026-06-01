@@ -835,7 +835,7 @@ function StepToneAndPreview({
                       aria-pressed={isIncluded}
                       // `min-w-[64px] sm:min-w-0` — on mobile (iPhone) the
                       // pills have a small width floor so short labels
-                      // ("Call", "Boost", "Host") aren't dwarfed by long ones
+                      // ("Call", "Amplify", "Host") aren't dwarfed by long ones
                       // ("Professional Skills", "Art/Performance Art"). The
                       // 64px floor is calibrated against the actual chip-row
                       // width (~311px at iPhone 375) so 3 mid-length pills

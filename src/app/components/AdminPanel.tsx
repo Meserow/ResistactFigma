@@ -58,8 +58,8 @@ type PanelMode = "cards" | "users" | "nourl" | "noimage" | "matcher" | "online" 
 // Category labels + colors for the "Create from URL" form's dropdown. Mirrors
 // EditCardModal's CATEGORY_OPTIONS so a created card gets the right pill color.
 const NEWCARD_CATEGORIES: { label: string; color: string }[] = [
-  { label: "Act of Kindness", color: "#127f05" }, { label: "Art/Performance Art", color: "#896312" },
-  { label: "Boost", color: "#8a00e6" }, { label: "Boycott", color: "#23297e" },
+  { label: "Act of Kindness", color: "#127f05" }, { label: "Amplify", color: "#8a00e6" },
+  { label: "Art/Performance Art", color: "#896312" }, { label: "Boycott", color: "#23297e" },
   { label: "Call", color: "#c2185b" }, { label: "Crafting", color: "#c34e00" },
   { label: "Email Campaign", color: "#e44b4b" }, { label: "Flash Mob", color: "#ff00d5" },
   { label: "Funding", color: "#127f05" }, { label: "Host", color: "#b45309" },
@@ -2010,6 +2010,11 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
           onClose={() => setEditingCard(null)}
           onSaved={(updated) => {
             setPendingCards((prev) => prev.map((c) => c.id === updated.id ? { ...c, ...updated } as unknown as PendingCard : c));
+            setEditingCard(null);
+          }}
+          onApproved={(approved) => {
+            // Approved cards leave the pending queue entirely.
+            setPendingCards((prev) => prev.filter((c) => c.id !== approved.id));
             setEditingCard(null);
           }}
           onDeleted={(id) => {

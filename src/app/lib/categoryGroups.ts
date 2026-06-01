@@ -25,9 +25,11 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   {
     heading: "Make / Do",
     // "Irreverence" → creative expression (memes, satire, street theater).
-    // "Boost" → amplifying others' work is also a make/do action; lived
+    // "Amplify" → amplifying others' work is also a make/do action; lived
     // briefly in "Care" but felt out of place next to Mental Health/Prayer.
-    categories: ["Art/Performance Art", "Boost", "Boycott", "Crafting", "Flash Mob", "Irreverence", "Protest", "Video"],
+    // (Renamed from "Boost" June 2026 — the old name collided with the 🔥
+    // boost engagement action. CATEGORY_ALIASES folds old data forward.)
+    categories: ["Amplify", "Art/Performance Art", "Boycott", "Crafting", "Flash Mob", "Irreverence", "Protest", "Video"],
   },
   {
     heading: "Reach Out",
@@ -79,8 +81,8 @@ export const KNOWN_CATEGORIES: Set<string> = new Set(
  *  rose. No more #ff00d5 hot pink. */
 export const CATEGORY_COLORS: Record<string, string> = {
   "Act of Kindness":     "#4a7c59", // forest green
+  "Amplify":             "#ed6624", // brand orange — energetic action (renamed from "Boost" June 2026)
   "Art/Performance Art": "#8b6f47", // warm sienna
-  "Boost":               "#ed6624", // brand orange — energetic action
   "Boycott":             "#7c2d12", // rust
   "Call":                "#b8326b", // muted rose-magenta
   "Crafting":            "#c34e00", // warm orange

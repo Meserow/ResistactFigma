@@ -16,6 +16,80 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.43",
+    date: "2026-06-01",
+    title: "The \"Boost\" category is now \"Amplify\"",
+    sections: [
+      {
+        heading: "Categories",
+        items: [
+          "Renamed the \"Boost\" action category to \"Amplify.\" The old name clashed with the 🔥 Boost button you tap to amplify an act — same word, two different things, which got confusing. \"Amplify\" keeps the meaning (sharing and signal-boosting others' work) without the collision.",
+          "Nothing you need to do: any act already filed under \"Boost\" automatically shows up as \"Amplify\" now, with the same color and the same spot in the Match Me filters. The 🔥 Boost button itself is unchanged.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.42",
+    date: "2026-06-01",
+    title: "Behind-the-scenes: cartoon-bannered acts count as having art everywhere",
+    sections: [
+      {
+        heading: "Acts",
+        items: [
+          "Finished the fix from the last release: the server now treats a generated cartoon banner as a real image too. That means our automated housekeeping no longer mistakes a cartoon-only act for an \"imageless\" one and pulls it out of the feed — so the count stays accurate over time, not just today.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.41",
+    date: "2026-06-01",
+    title: "Missing acts are back in the feed + a Preview button when editing",
+    sections: [
+      {
+        heading: "Acts",
+        items: [
+          "Fixed a bug that was quietly hiding ~140 acts from the public feed: acts whose only artwork was a generated cartoon banner were being treated as \"imageless\" and dropped. They're now visible again — the catalog count jumps back up accordingly.",
+        ],
+      },
+      {
+        heading: "Admin tools",
+        items: [
+          "Added a Preview button to the Edit screen that opens the full card exactly as visitors see it — reflecting your unsaved edits, including a just-generated subtitle or cartoon.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.40",
+    date: "2026-06-01",
+    title: "Edit pending acts straight from the feed",
+    sections: [
+      {
+        heading: "Admin tools",
+        items: [
+          "The \"Pending approval\" banner on unapproved acts now has an Edit button right next to Approve — open the editor without digging into the card first.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.39",
+    date: "2026-06-01",
+    title: "Write subtitles and draw banners right from the Edit screen",
+    sections: [
+      {
+        heading: "Admin tools",
+        items: [
+          "The \"Edit\" screen now has the same AI helpers as \"Create from URL\": a Generate button next to the Subtitle field writes a one-line subtitle from the title and description.",
+          "A new \"Generate cartoon\" button draws a brand-style banner illustration on the spot — using the act's current image as a reference when there is one.",
+          "Added a \"Save & Approve\" button so an act can be polished and published to the live feed in a single step.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.38",
     date: "2026-06-01",
     title: "Better (still anonymous) sense of what's helping",
