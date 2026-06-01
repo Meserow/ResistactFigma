@@ -5020,7 +5020,7 @@ function looksOffTopic(title: string, description: string, category: string): bo
   // Categories that are inherently resistance-adjacent — never flag these.
   const onTopicCategories = [
     "protest", "boycott", "petition", "letter", "email campaign",
-    "phone calling", "social media", "flash mob", "funding", "training", "meeting",
+    "phone calling", "texting", "social media", "flash mob", "funding", "training", "meeting",
     "join a group", "news story", "labor", "legal", "professional skills",
     "mental health", "prayer", "amplify", "boost", "spread positivity", "crafting",
     "transportation", "housing", "other", "irreverence", "personal commitment",
@@ -5851,7 +5851,7 @@ const CURATED_CATEGORIES = [
   "Email Campaign", "Flash Mob", "Funding", "Host", "Housing", "Irreverence",
   "Join a Group", "Labor", "Letter Writing", "Meeting", "Mental Health", "News Story",
   "Personal Commitment", "Petition", "Phone Calling", "Prayer", "Professional Skills", "Protest",
-  "Represent", "Show Up", "Social Media", "Training", "Transportation", "Video",
+  "Represent", "Show Up", "Social Media", "Texting", "Training", "Transportation", "Video",
   "Witness", "Other",
 ];
 const CURATED_LOCATIONS = [
@@ -7161,10 +7161,21 @@ app.post("/make-server-9eb1ae04/receipts/:id/boost", async (c) => {
     const id = Number(c.req.param("id"));
     const { delta } = await c.req.json<{ delta: number }>();
     const receipt = (await kv.get(`receipt:${id}`)) as any;
-    if (!receipt) return c.json({ error: `Receipt ${id} not found` }, 404);
-    receipt.boosts = Math.max(0, (receipt.boosts ?? 0) + (delta ?? 1));
-    await kv.set(`receipt:${id}`, receipt);
-    return c.json({ boosts: receipt.boosts });
+    if (receipt) {
+      receipt.boosts = Math.max(0, (receipt.boosts ?? 0) + (delta ?? 1));
+      await kv.set(`receipt:${id}`, receipt);
+      return c.json({ boosts: receipt.boosts });
+    }
+    // Static smacks (id ≥ 5000) are hardcoded in the client (STATIC_SMACKS) and
+    // aren't stored in KV. Persist their boost tallies in a single aggregate so
+    // they still count toward engagement and the admin "Top Smacks" leaderboard.
+    if (id >= 5000) {
+      const tallies = ((await kv.get("smack:boosts")) ?? {}) as Record<string, number>;
+      tallies[id] = Math.max(0, (tallies[id] ?? 0) + (delta ?? 1));
+      await kv.set("smack:boosts", tallies);
+      return c.json({ boosts: tallies[id] });
+    }
+    return c.json({ error: `Receipt ${id} not found` }, 404);
   } catch (err) {
     return c.json({ error: `Boost failed: ${err}` }, 500);
   }
@@ -7194,9 +7205,41 @@ app.get("/make-server-9eb1ae04/receipts", async (c) => {
     // that admins have deleted — those aren't in KV so can't be removed server-
     // side, but we can track which ones to hide.
     const hiddenIds = ((await kv.get("smacks:hidden")) ?? []) as number[];
-    return c.json({ receipts, hiddenIds });
+    // Boost tallies for static (hardcoded) smacks, keyed by id. KV-backed
+    // receipts carry their own `boosts` field; this fills in the rest so the
+    // admin "Top Smacks" leaderboard reflects every smack.
+    const staticBoosts = ((await kv.get("smack:boosts")) ?? {}) as Record<string, number>;
+    return c.json({ receipts, hiddenIds, staticBoosts });
   } catch (err) {
     return c.json({ error: `Failed to fetch receipts: ${err}` }, 500);
+  }
+});
+
+// ─── POST /facts/:id/boost — toggle-boost a fact card (no auth required) ──────
+// Facts are static client data (FACT_CARDS); their boost tallies are persisted
+// in a single aggregate object (`fact:boosts` = { [id]: count }) so they survive
+// reloads and feed the admin "Top Facts" leaderboard. Low-traffic, so the
+// last-write-wins aggregate is an acceptable trade for simplicity.
+app.post("/make-server-9eb1ae04/facts/:id/boost", async (c) => {
+  try {
+    const id = Number(c.req.param("id"));
+    const { delta } = await c.req.json<{ delta: number }>();
+    const tallies = ((await kv.get("fact:boosts")) ?? {}) as Record<string, number>;
+    tallies[id] = Math.max(0, (tallies[id] ?? 0) + (delta ?? 1));
+    await kv.set("fact:boosts", tallies);
+    return c.json({ boosts: tallies[id] });
+  } catch (err) {
+    return c.json({ error: `Boost failed: ${err}` }, 500);
+  }
+});
+
+// ─── GET /facts/boosts — public map of fact id → boost count ─────────────────
+app.get("/make-server-9eb1ae04/facts/boosts", async (c) => {
+  try {
+    const tallies = ((await kv.get("fact:boosts")) ?? {}) as Record<string, number>;
+    return c.json({ boosts: tallies });
+  } catch (err) {
+    return c.json({ error: `Failed to fetch fact boosts: ${err}` }, 500);
   }
 });
 

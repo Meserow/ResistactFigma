@@ -17,6 +17,7 @@ import {
   HandCoins, DoorOpen, House, Drama, UserPlus, HardHat, PenLine, Calendar,
   Brain, Newspaper, Lightbulb, Heart, FileSignature, Sparkles, Briefcase,
   Megaphone, Shirt, Footprints, Share2, GraduationCap, Car, Video, Eye, Tag,
+  MessageSquare,
 } from "lucide-react";
 
 export interface CategoryGroup {
@@ -41,7 +42,7 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   },
   {
     heading: "Reach Out",
-    categories: ["Email Campaign", "Letter Writing", "Petition", "Phone Calling", "Social Media"],
+    categories: ["Email Campaign", "Letter Writing", "Petition", "Phone Calling", "Social Media", "Texting"],
   },
   {
     // Renamed from "Show Up" — the heading collided with the "Show Up"
@@ -119,6 +120,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
   "Show Up":             "#23297e", // brand navy (absorbs Bird-Dog)
   "Social Media":        "#b84545", // muted brick red
   // Spread Positivity merged into Act of Kindness (May 2026).
+  "Texting":             "#2f7d6b", // muted sea-green (SMS / text banking)
   "Training":            "#3a6d80", // muted teal (absorbs Learn)
   "Transportation":      "#3a6d80", // muted teal
   "Video":               "#b84545", // muted brick red
@@ -165,6 +167,7 @@ export const CATEGORY_ICONS: Record<string, LucideIcon> = {
   "Represent":           Shirt,          // wear the cause (renamed from "Purchase")
   "Show Up":             Footprints,     // in-person presence
   "Social Media":        Share2,
+  "Texting":             MessageSquare,  // SMS / text banking
   "Training":            GraduationCap,
   "Transportation":      Car,
   "Video":               Video,

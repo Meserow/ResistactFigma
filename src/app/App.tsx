@@ -436,7 +436,12 @@ export default function App() {
     } catch { return new Set<number>(); }
   });
   const [bookmarksOpen, setBookmarksOpen] = useState(false);
-  const [boostedFacts, setBoostedFacts] = useState<Set<number>>(new Set());
+  const [boostedFacts, setBoostedFacts] = useState<Set<number>>(() => {
+    try {
+      const stored = localStorage.getItem("resistact_boosted_facts");
+      return stored ? new Set<number>(JSON.parse(stored)) : new Set<number>();
+    } catch { return new Set<number>(); }
+  });
   const [factBoostCounts, setFactBoostCounts] = useState<Record<number, number>>({});
 
   // Stable random ordering for facts — shuffled once on mount.
@@ -455,12 +460,20 @@ export default function App() {
     setBoostedFacts((prev) => {
       const next = new Set(prev);
       alreadyBoosted ? next.delete(id) : next.add(id);
+      try { localStorage.setItem("resistact_boosted_facts", JSON.stringify([...next])); } catch {}
       return next;
     });
     setFactBoostCounts((prev) => ({
       ...prev,
       [id]: Math.max(0, (prev[id] ?? 0) + delta),
     }));
+    // Persist to KV so the tally survives reloads and feeds the admin
+    // "Top Facts" leaderboard. Non-critical — local state already updated.
+    fetch(`${API}/facts/${id}/boost`, {
+      method: "POST",
+      headers: HEADERS,
+      body: JSON.stringify({ delta }),
+    }).catch(() => { /* non-critical */ });
   };
 
   // ── Auth state ──
@@ -783,8 +796,9 @@ export default function App() {
       // Quick actions only (5–10 min wins)
       if (quickActionsOnly && !card.quickAction) return false;
 
-      // Texting/SMS only
-      if (textingOnly && !cardIsTexting(card)) return false;
+      // Texting/SMS only — catches both title-regex matches and cards an admin
+      // has explicitly filed under the "Texting" category.
+      if (textingOnly && !cardIsTexting(card) && card.category !== "Texting") return false;
 
       // Hide completed cards unless "Show Done" is checked
       if (!showDone && completedCards.has(card.id)) return false;
@@ -1593,6 +1607,24 @@ export default function App() {
         if (!cancelled) {
           setReceipts(data.receipts ?? []);
           setHiddenSmackIds(data.hiddenIds ?? []);
+        }
+      } catch { /* non-critical */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // ── Load persisted fact boost tallies on mount so counts survive reloads ──
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${API}/facts/boosts`, { headers: HEADERS });
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        if (data?.boosts && !cancelled) {
+          const parsed: Record<number, number> = {};
+          for (const [k, v] of Object.entries(data.boosts)) parsed[Number(k)] = Number(v) || 0;
+          setFactBoostCounts(parsed);
         }
       } catch { /* non-critical */ }
     })();

@@ -9,6 +9,12 @@ import { projectId } from "/utils/supabase/info";
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
 
+// Every category, flattened out of the themed CATEGORY_GROUPS into one
+// alphabetized list for the admin "Move to category" picker (no headings).
+const ALL_CATEGORIES_SORTED: string[] = Array.from(
+  new Set(CATEGORY_GROUPS.flatMap((g) => g.categories)),
+).sort((a, b) => a.localeCompare(b));
+
 interface CardDetailsModalProps {
   card: ActionCardData;
   onClose: () => void;
@@ -463,12 +469,11 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
 }
 
 // ── Admin category-picker popover ─────────────────────────────────────────
-// Floats below the category pill. Grouped by the canonical CATEGORY_GROUPS
-// (Make/Do, Reach Out, Show Up, Care, Money/Stuff, Other) so the admin
-// scans by theme rather than 26 chips in a wall. The current category is
-// highlighted with its color background; others render as quiet pills. A
-// click stops propagation so the modal's outside-click-to-close doesn't
-// dismiss the picker prematurely.
+// Floats below the category pill. One flat, alphabetized list of every
+// category (no theme groupings) so the admin can scan straight down. The
+// current category is highlighted with its color background; others render
+// as quiet pills. A click stops propagation so the modal's outside-click-to-
+// close doesn't dismiss the picker prematurely.
 function CategoryEditPopover({
   current,
   onPick,
@@ -499,35 +504,28 @@ function CategoryEditPopover({
           <X size={14} />
         </button>
       </div>
-      <div className="max-h-64 overflow-y-auto space-y-2.5 pr-1">
-        {CATEGORY_GROUPS.map((group) => (
-          <div key={group.heading}>
-            <p className="font-['Poppins',sans-serif] text-[10px] uppercase tracking-wider text-gray-300 font-semibold mb-1">
-              {group.heading}
-            </p>
-            <div className="flex flex-wrap gap-1">
-              {group.categories.map((cat) => {
-                const isCurrent = cat === current;
-                const color = CATEGORY_COLORS[cat] ?? "#23297e";
-                return (
-                  <button
-                    key={cat}
-                    onClick={() => onPick(cat)}
-                    disabled={saving}
-                    className={`px-2 py-0.5 rounded-md font-['Poppins',sans-serif] text-[11px] font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
-                      isCurrent
-                        ? "text-white"
-                        : "bg-gray-50 text-gray-600 hover:bg-gray-100"
-                    }`}
-                    style={isCurrent ? { backgroundColor: color } : undefined}
-                  >
-                    {cat}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
+      <div className="max-h-64 overflow-y-auto pr-1">
+        <div className="flex flex-wrap gap-1">
+          {ALL_CATEGORIES_SORTED.map((cat) => {
+            const isCurrent = cat === current;
+            const color = CATEGORY_COLORS[cat] ?? "#23297e";
+            return (
+              <button
+                key={cat}
+                onClick={() => onPick(cat)}
+                disabled={saving}
+                className={`px-2 py-0.5 rounded-md font-['Poppins',sans-serif] text-[11px] font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                  isCurrent
+                    ? "text-white"
+                    : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                }`}
+                style={isCurrent ? { backgroundColor: color } : undefined}
+              >
+                {cat}
+              </button>
+            );
+          })}
+        </div>
       </div>
       {error && (
         <p className="mt-2 font-['Poppins',sans-serif] text-[11px] text-red-500">{error}</p>

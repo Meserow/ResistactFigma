@@ -206,6 +206,15 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
   const actsMoreOpen = openFilter === "acts-more";
   const actsMoreSelectedCount = actsOverflow.filter((c) => actsCatsSelected.includes(c)).length;
   const actsCategoryOpen = openFilter === "Category";
+  // The "Texting" filter is a special toggle (matches by title-regex AND the
+  // real "Texting" category), surfaced in alphabetical order alongside the
+  // category pills rather than dangling after Remote / 5-Min. "Texting" is now
+  // a real category, so it may already be in actsCats — dedupe so the pill
+  // renders exactly once, then the pill map below branches on it to render the
+  // toggle (not a plain category filter).
+  const actsPillItems = onTextingChange
+    ? Array.from(new Set([...actsCats, "Texting"])).sort()
+    : actsCats;
   const locOptions = actsLocations ?? [];
   const locSelected = activeFilters["Location"] ?? [];
   const locOpen = openFilter === "Location";
@@ -775,7 +784,26 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               {/* Category pills — every category as a wrapping pill row.
                   Sits after Location so the row reads: Location → categories
                   → Prefer Online → 5 Minutes Max (matches mobile order). */}
-              {actsCats.map((option) => {
+              {actsPillItems.map((option) => {
+                // Texting sentinel — render the special SMS-only toggle in its
+                // alphabetical slot instead of a category filter pill.
+                if (option === "Texting") {
+                  return (
+                    <button
+                      key="__texting__"
+                      onClick={() => onTextingChange?.(!textingOnly)}
+                      className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
+                        textingOnly
+                          ? "bg-[#ed6624] text-white border-[#ed6624]"
+                          : "bg-white text-gray-600 border-gray-200 hover:border-[#ed6624] hover:text-[#ed6624]"
+                      }`}
+                      title="Show only texting / SMS actions"
+                    >
+                      <MessageSquare size={11} className={textingOnly ? "text-white" : "text-gray-400"} />
+                      Texting
+                    </button>
+                  );
+                }
                 const selected = actsCatsSelected.includes(option);
                 const catColor = colorForCategory(option);
                 const CatIcon = iconForCategory(option);
@@ -831,21 +859,8 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                   5 Minutes Max
                 </button>
               )}
-              {/* Texting pill — show only SMS / text-banking actions. */}
-              {onTextingChange && (
-                <button
-                  onClick={() => onTextingChange(!textingOnly)}
-                  className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
-                    textingOnly
-                      ? "bg-[#ed6624] text-white border-[#ed6624]"
-                      : "bg-white text-gray-600 border-gray-200 hover:border-[#ed6624] hover:text-[#ed6624]"
-                  }`}
-                  title="Show only texting / SMS actions"
-                >
-                  <MessageSquare size={11} className={textingOnly ? "text-white" : "text-gray-400"} />
-                  Texting
-                </button>
-              )}
+              {/* Texting pill now renders inline in its alphabetical slot among
+                  the category pills above (see the actsPillItems map). */}
               {/* Clear all — appended to the chip row so it doesn't claim
                   dedicated horizontal real estate on the right. Only shows
                   when at least one filter is active. */}

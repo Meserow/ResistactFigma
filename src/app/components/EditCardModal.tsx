@@ -56,6 +56,7 @@ const CATEGORY_OPTIONS: { label: string; color: string }[] = [
   { label: "Show Up",              color: "#23297e" },
   { label: "Social Media",         color: "#e44b4b" },
   // Spread Positivity merged into Act of Kindness (May 2026).
+  { label: "Texting",              color: "#2f7d6b" },
   { label: "Training",             color: "#126d89" },
   { label: "Transportation",       color: "#126d89" },
   { label: "Video",                color: "#e44b4b" },
