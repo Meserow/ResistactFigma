@@ -16,6 +16,105 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.38",
+    date: "2026-06-01",
+    title: "Better (still anonymous) sense of what's helping",
+    sections: [
+      {
+        heading: "Behind the scenes",
+        items: [
+          "We now get a clearer, fully anonymous picture of which Acts people open, click through, and complete — so we can surface the ones that actually move people to act.",
+          "No change to our privacy promise: still no names, no emails, no personal profiles, and we still honor your browser's Do-Not-Track setting.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.37",
+    date: "2026-06-01",
+    title: "New Texting filter",
+    sections: [
+      {
+        heading: "Filters",
+        items: [
+          "Added a \"Texting\" pill to the filter row — tap it to show only texting / SMS actions (text-banking, \"text X to a number,\" Resistbot, and the like).",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.36",
+    date: "2026-05-31",
+    title: "Find a card by its number, and consistent MoveOn credits",
+    sections: [
+      {
+        heading: "Search",
+        items: [
+          "Type a card's number into search (e.g. \"224\") to jump straight to that card. Regular text search works exactly as before.",
+        ],
+      },
+      {
+        heading: "Acts",
+        items: [
+          "The MoveOn \"No Iran War\" fundraiser was credited as an \"Independent creator\" — it now matches the other MoveOn cards (MoveOn.org Political Action).",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.35",
+    date: "2026-05-31",
+    title: "Editing an Act no longer drops its banner image",
+    sections: [
+      {
+        heading: "Acts",
+        items: [
+          "Fixed a bug where saving an edit to an Act (for example, changing its action link) could make the card's cartoon banner disappear until you reloaded the page. Edits now keep the banner intact.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.34",
+    date: "2026-05-31",
+    title: "MoveOn cards link to moveon.org",
+    sections: [
+      {
+        heading: "Acts",
+        items: [
+          "The author link on MoveOn cards now points to moveon.org. Several had been mistakenly linking to unrelated sites; they all credit and link to MoveOn now.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.33",
+    date: "2026-05-31",
+    title: "Phone fixes: the menu floats over the page, share box stays in view",
+    sections: [
+      {
+        heading: "On your phone",
+        items: [
+          "Opening the menu (☰) no longer shoves the page down — it now drops over the page with the content dimmed behind it, and tapping outside the menu closes it.",
+          "The \"Spread the Word\" share box is more compact and fits a phone screen better — tighter spacing up top leaves more room for the email fields, and the Send button now stays pinned at the bottom, always visible, even on smaller screens.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.32",
+    date: "2026-05-31",
+    title: "MoveOn petitions now credit the right organization",
+    sections: [
+      {
+        heading: "Acts",
+        items: [
+          "MoveOn petition cards were labeled with a generic \"Movement Organization\" under the name. They now credit the actual organization, MoveOn.org Political Action.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.31",
     date: "2026-05-31",
     title: "Phone fixes: less scrolling, right filters on The Smacks, no cut-off buttons",

@@ -221,10 +221,10 @@ export function SpreadTheWordModal({ onClose }: { onClose: () => void }) {
       <div
         ref={cardRef}
         onClick={e => e.stopPropagation()}
-        className="relative w-full max-w-[640px] my-auto rounded-2xl bg-white shadow-2xl overflow-hidden"
+        className="relative w-full max-w-[640px] my-auto flex flex-col max-h-[calc(100dvh-2rem)] rounded-2xl bg-white shadow-2xl overflow-hidden"
       >
         {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100">
+        <div className="shrink-0 flex items-center gap-3 px-5 py-4 border-b border-gray-100">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#ed6624] text-white">
             <Flame size={18} strokeWidth={2} />
           </div>
@@ -241,22 +241,26 @@ export function SpreadTheWordModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
+        {/* Scrollable body — header stays pinned above, the Send row stays
+            pinned below, so the primary action is always reachable even when
+            the modal is taller than a phone viewport. */}
+        <div className="flex-1 overflow-y-auto">
         {/* Intro copy */}
-        <div className="px-5 pt-4 pb-2">
-          <p className="font-['Poppins',sans-serif] text-[13px] text-gray-700 leading-relaxed">
+        <div className="px-5 pt-3 pb-1.5">
+          <p className="font-['Poppins',sans-serif] text-[12.5px] text-gray-700 leading-snug">
             <strong className="text-gray-900">Resistance grows one share at a time</strong> — but only if you actually share. Pick a friend who's been doomscrolling and send this their way. If everyone here invites two friends, ResistAct doubles by Tuesday. That's how movements actually scale — not virally, but two-by-two, through people who trust each other.
           </p>
         </div>
 
         {/* Social section header */}
-        <div className="mx-5 flex items-center gap-3 pt-3 pb-1">
+        <div className="mx-5 flex items-center gap-3 pt-2 pb-1">
           <div className="flex-1 h-px bg-gray-300" />
           <span className="font-['Poppins',sans-serif] text-[11px] font-semibold text-gray-600 whitespace-nowrap">Share through social</span>
           <div className="flex-1 h-px bg-gray-300" />
         </div>
 
         {/* Social sharing grid */}
-        <div className="px-5 pt-2 pb-3 grid grid-cols-5 gap-3">
+        <div className="px-5 pt-1.5 pb-2 grid grid-cols-5 gap-2.5">
           {platforms.map(p => (
             <button
               key={p.id}
@@ -278,7 +282,7 @@ export function SpreadTheWordModal({ onClose }: { onClose: () => void }) {
               className="flex flex-col items-center gap-1.5 group focus:outline-none"
             >
               <div
-                className="w-11 h-11 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-110 group-active:scale-95 transition-transform"
+                className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm group-hover:scale-110 group-active:scale-95 transition-transform"
                 style={{ background: p.bg, color: p.fg }}
               >
                 {p.icon}
@@ -289,14 +293,14 @@ export function SpreadTheWordModal({ onClose }: { onClose: () => void }) {
         </div>
 
         {/* Divider */}
-        <div className="mx-5 flex items-center gap-3 my-1">
+        <div className="mx-5 flex items-center gap-3 my-0.5">
           <div className="flex-1 h-px bg-gray-200" />
           <span className="font-['Poppins',sans-serif] text-[11px] font-semibold text-gray-600 whitespace-nowrap">Or email friends directly</span>
           <div className="flex-1 h-px bg-gray-200" />
         </div>
 
         {/* Email section */}
-        <div className="px-5 pb-5 pt-3 space-y-3">
+        <div className="px-5 pb-4 pt-2.5 space-y-2.5">
           {/* Tag input */}
           <div>
             <label className="font-['Poppins',sans-serif] text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">
@@ -345,13 +349,18 @@ export function SpreadTheWordModal({ onClose }: { onClose: () => void }) {
             <textarea
               value={note}
               onChange={e => setNote(e.target.value)}
-              rows={7}
+              rows={5}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 font-['Poppins',sans-serif] text-[13px] text-gray-700 leading-relaxed resize-none focus:border-[#ed6624] focus:ring-1 focus:ring-[#ed6624]/30 focus:outline-none transition-colors"
             />
           </div>
 
-          {/* Send row */}
-          <div className="flex items-center justify-between gap-3">
+        </div>{/* end email section */}
+        </div>{/* end scrollable body */}
+
+        {/* Send row — pinned footer. Always visible at the bottom of the
+            modal so the primary action never falls below the fold on a
+            phone, no matter how tall the body content gets. */}
+        <div className="shrink-0 flex items-center justify-between gap-3 border-t border-gray-100 bg-white px-5 py-3">
             {sendState === "error" && (
               <p className="flex items-center gap-1.5 font-['Poppins',sans-serif] text-[11px] text-red-500">
                 <AlertCircle size={12} /> Something went wrong — try again.
@@ -363,15 +372,16 @@ export function SpreadTheWordModal({ onClose }: { onClose: () => void }) {
               </p>
             )}
             {(sendState === "idle" || sendState === "sending") && (
-              <p className="font-['Poppins',sans-serif] text-[10px] text-gray-400 italic leading-snug">
-                Sharing helps more than you think.<br />Thanks for doing this.
+              <p className="flex-1 min-w-0 font-['Poppins',sans-serif] text-[10px] text-gray-400 italic leading-tight">
+                <span className="block whitespace-nowrap">Sharing helps more than you think.</span>
+                <span className="block whitespace-nowrap">Thanks for doing this.</span>
               </p>
             )}
 
             <button
               onClick={sendInvites}
               disabled={sendState === "sending" || sendState === "sent" || tags.length === 0}
-              className="ml-auto flex items-center gap-2 rounded-lg bg-[#ed6624] px-4 py-2 font-['Poppins',sans-serif] text-[13px] font-bold text-white transition-colors hover:bg-[#c2521b] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="ml-auto shrink-0 flex items-center gap-2 rounded-lg bg-[#ed6624] px-4 py-2 font-['Poppins',sans-serif] text-[13px] font-bold text-white transition-colors hover:bg-[#c2521b] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {sendState === "sending" ? (
                 <><Loader2 size={14} className="animate-spin" /> Sending…</>
@@ -381,7 +391,6 @@ export function SpreadTheWordModal({ onClose }: { onClose: () => void }) {
                 <><Send size={14} /> Send invites</>
               )}
             </button>
-          </div>
         </div>
 
         {/* Toast */}

@@ -17,6 +17,7 @@ import {
 } from "../lib/matcher";
 import { CATEGORY_GROUPS, KNOWN_CATEGORIES } from "../lib/categoryGroups";
 import { LOCATION_OPTIONS } from "../lib/locations";
+import { analytics } from "../lib/analytics";
 import { ActionCard, type ActionCardData } from "./ActionCard";
 import { GroupsDropdown } from "./GroupsDropdown";
 
@@ -189,6 +190,29 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJo
   const [step, setStep] = useState<Step>(initialStep);
   const [prefs, setPrefs] = useState<Preferences>(() => loadPreferences() ?? DEFAULT_PREFERENCES);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  // Match-funnel analytics: fire match_started on open. On unmount, fire
+  // match_abandoned UNLESS the user applied their preferences (which fires
+  // match_set instead, via onApply in App). `appliedRef`/`stepRef` are read
+  // in the unmount cleanup, which would otherwise close over stale values.
+  const appliedRef = useRef(false);
+  const stepRef = useRef(step);
+  useEffect(() => { stepRef.current = step; }, [step]);
+  useEffect(() => {
+    analytics.matchStarted();
+    return () => {
+      if (!appliedRef.current) analytics.matchAbandoned(stepRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Wrap the parent's apply so we can mark the funnel as converted (not
+  // abandoned) before handing off. Every "see my matches"/apply button below
+  // goes through this rather than calling onApply directly.
+  const handleApply = (p: Preferences) => {
+    appliedRef.current = true;
+    onApply(p);
+  };
 
   // Save on every change so coming back later pre-fills.
   useEffect(() => {
@@ -371,7 +395,7 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJo
               onPrefsChange={setPrefs}
               matches={matches}
               onNext={next}
-              onApply={() => onApply(prefs)}
+              onApply={() => handleApply(prefs)}
               userCtx={userCtx}
               step={step}
               totalSteps={TOTAL_STEPS}
@@ -451,7 +475,7 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJo
             <div className="flex flex-col items-end gap-2 max-w-[440px]">
               <div className="flex flex-col sm:flex-row items-stretch gap-2">
                 <button
-                  onClick={() => onApply(prefs)}
+                  onClick={() => handleApply(prefs)}
                   disabled={matches.length === 0}
                   className="inline-flex flex-col items-start rounded-2xl border border-[#23297e] bg-white px-5 py-2 font-['Poppins',sans-serif] text-left text-[#23297e] hover:bg-[#23297e]/5 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap transition-colors"
                 >
@@ -524,10 +548,7 @@ function StepToneAndPreview({
   function handleGreatMatch(card: ActionCardData) {
     if (praised.has(card.id)) return;
     setPraised((prev) => new Set(prev).add(card.id));
-    // Analytics intentionally not wired here yet — add a track() call once
-    // a GA event name is agreed on. The user just wanted a positive-signal
-    // affordance; the click is recorded in component state for now.
-    void card;
+    analytics.matchFeedback(card.id, card.category);
   }
   const [carouselPage, setCarouselPage] = useState(0);
   const PAGE_SIZE = 4;

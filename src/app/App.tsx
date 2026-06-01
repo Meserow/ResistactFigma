@@ -276,8 +276,17 @@ const PILL_FILTERS_KEY = "resistact:pill-filters:v1";
 interface PillFiltersPayload {
   activeFilters: Record<string, string[]>;
   quickActionsOnly: boolean;
+  textingOnly: boolean;
   showDone: boolean;
   sortBy: "popular" | "newest" | "az";
+}
+
+// Texting/SMS actions, identified from the card TITLE (the action verb) so we
+// don't catch cards that merely mention texting in their description. Matches
+// "Text X to <number>", SMS, text banking, Resistbot, daily texts, etc.
+const TEXTING_RE = /\bsms\b|text[ -]?bank|\bresist\s?bot\b|\btext\b.*\bto \d|daily texts|send (a |an )?text|\btext\b your|\btexting\b/i;
+function cardIsTexting(card: ActionCardData): boolean {
+  return TEXTING_RE.test(card.title ?? "");
 }
 
 function readPillFilters(): PillFiltersPayload | null {
@@ -299,6 +308,7 @@ function readPillFilters(): PillFiltersPayload | null {
     return {
       activeFilters,
       quickActionsOnly: parsed.quickActionsOnly === true,
+      textingOnly: parsed.textingOnly === true,
       showDone: parsed.showDone === true,
       sortBy: parsed.sortBy === "newest" || parsed.sortBy === "az" ? parsed.sortBy : "popular",
     };
@@ -646,6 +656,9 @@ export default function App() {
   const [quickActionsOnly, setQuickActionsOnly] = useState(
     () => readPillFilters()?.quickActionsOnly ?? false,
   );
+  const [textingOnly, setTextingOnly] = useState(
+    () => readPillFilters()?.textingOnly ?? false,
+  );
   const [showDone, setShowDone] = useState(
     () => readPillFilters()?.showDone ?? false,
   );
@@ -695,7 +708,14 @@ export default function App() {
     // never wonders why they can't find a card they know exists. The
     // chips stay lit in the UI but they don't apply while q is non-empty.
     if (q) {
+      // Card-ID lookup: a purely-numeric query matches the card with that
+      // exact id (handy for admins jumping to a known card, e.g. "224"). It's
+      // just an integer compare per card — cheaper than the text scan below,
+      // so no measurable slowdown. Text matches still apply too (so a number
+      // appearing in a title/description isn't lost).
+      const numericId = /^\d+$/.test(q) ? Number(q) : null;
       return allCards.filter((card) => {
+        if (numericId !== null && card.id === numericId) return true;
         const haystack = [
           card.title,
           card.description,
@@ -757,6 +777,9 @@ export default function App() {
 
       // Quick actions only (5–10 min wins)
       if (quickActionsOnly && !card.quickAction) return false;
+
+      // Texting/SMS only
+      if (textingOnly && !cardIsTexting(card)) return false;
 
       // Hide completed cards unless "Show Done" is checked
       if (!showDone && completedCards.has(card.id)) return false;
@@ -1183,7 +1206,7 @@ export default function App() {
   // deferredSearchQuery (not searchQuery) means this memo is bypassed
   // entirely during keystrokes — React renders the stale list instantly,
   // then re-runs the memo only after the deferred value settles.
-  }, [cards, deferredSearchQuery, activeFilters, quickActionsOnly, showDone,
+  }, [cards, deferredSearchQuery, activeFilters, quickActionsOnly, textingOnly, showDone,
       completedCards, matchPrefs, isAdminUser, todayISO, boostedCards,
       sortBy, demoteHyperLocal,
       // Impersonation override — recompute when entering / exiting view-as,
@@ -1195,6 +1218,7 @@ export default function App() {
   const hasActiveFilters =
     searchQuery.trim().length > 0 ||
     quickActionsOnly ||
+    textingOnly ||
     matchPrefs !== null ||
     Object.values(activeFilters).some((arr) => (arr ?? []).length > 0);
 
@@ -1446,8 +1470,8 @@ export default function App() {
   //    Same-device persistence so a user's category / location / Remote /
   //    quick-actions / show-done / sort pick survives page reloads. ──
   useEffect(() => {
-    writePillFilters({ activeFilters, quickActionsOnly, showDone, sortBy });
-  }, [activeFilters, quickActionsOnly, showDone, sortBy]);
+    writePillFilters({ activeFilters, quickActionsOnly, textingOnly, showDone, sortBy });
+  }, [activeFilters, quickActionsOnly, textingOnly, showDone, sortBy]);
 
   // ── Cross-device sync for the Location pill (signed-in users only) ──
   //    The Match Me preferences blob is the only thing we sync to the
@@ -1653,7 +1677,7 @@ export default function App() {
   // from the top rather than showing a truncated filtered list.
   useEffect(() => {
     setDisplayLimit(getDisplayPage());
-  }, [hasActiveFilters, searchQuery, activeFilters, quickActionsOnly]);
+  }, [hasActiveFilters, searchQuery, activeFilters, quickActionsOnly, textingOnly]);
 
   // ── Infinite scroll (desktop only) ──
   // A sentinel <div> at the bottom of the card grid; when it enters the
@@ -1798,6 +1822,7 @@ export default function App() {
     if (blockWriteIfImpersonating()) return;
     const alreadyActed = boostedCards.has(id);
     const delta = alreadyActed ? -1 : 1;
+    analytics.boostToggled(id, !alreadyActed);
 
     setActedCards((prev) => {
       const next = new Set(prev);
@@ -1840,7 +1865,9 @@ export default function App() {
     if (blockWriteIfImpersonating()) return;
     setBookmarkedCards((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      const adding = !next.has(id);
+      adding ? next.add(id) : next.delete(id);
+      analytics.bookmarkToggled(id, adding);
       try { localStorage.setItem("resistact_bookmarks", JSON.stringify([...next])); } catch {}
       if (accessToken) {
         fetch(`${API}/me/bookmarks`, {
@@ -1880,6 +1907,7 @@ export default function App() {
   // Handler when a new user-created card arrives from AskFlowModal
   function handleNewCard(raw: any) {
     const newCard = resolveCard(raw);
+    analytics.actSubmitted(newCard.category);
     setCards((prev) => prev.some((c) => c.id === newCard.id) ? prev : [...prev, newCard]);
     setServerTotal((prev) => prev + 1);
     setServerOffset((prev) => prev + 1);
@@ -1942,8 +1970,17 @@ export default function App() {
 
   // ── Handle card update from EditCardModal ──
   function handleCardSaved(updated: ActionCardData) {
+    // Re-run the raw server card through resolveCard() — the same resolver the
+    // initial feed load uses — instead of merging the raw row straight in.
+    // The raw KV row can still carry derived/stale values (e.g. an old local
+    // `cartoonImageUrl: /cartoon-banners/card-N.webp` left by the pending-card
+    // backfill) that 404 now that cartoons live on the CDN. resolveCard()
+    // re-derives cartoonImageUrl from the manifest (cartoonUrlFor → CDN),
+    // topImage, synopsis and category, so an edit can't visually drop the
+    // cartoon. Without this, saving any field re-introduced the stale path.
+    const resolved = resolveCard(updated as unknown as ServerCard);
     setCards((prev) =>
-      prev.map((c) => c.id === updated.id ? { ...c, ...updated } : c)
+      prev.map((c) => c.id === resolved.id ? { ...c, ...resolved } : c)
     );
     showToast("Changes saved");
   }
@@ -2042,6 +2079,8 @@ export default function App() {
         onTabChange={handleTabChange}
         quickActionsOnly={quickActionsOnly}
         onQuickActionsChange={setQuickActionsOnly}
+        textingOnly={textingOnly}
+        onTextingChange={setTextingOnly}
         showDone={showDone}
         onShowDoneChange={setShowDone}
         completedCount={completedCards.size}

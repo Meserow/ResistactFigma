@@ -170,4 +170,105 @@ export const analytics = {
       ...(contentId != null ? { item_id: String(contentId) } : {}),
     });
   },
+
+  // ─── Funnel: browse → click-through → done ─────────────────────────────────
+
+  /**
+   * A user opened a card's detail modal. The top of the engagement funnel —
+   * the denominator for click-through and completion rates.
+   */
+  cardOpened(cardId: number, category: string | undefined): void {
+    track("card_opened", {
+      card_id: cardId,
+      category: (category ?? "OTHER").toUpperCase(),
+    });
+  },
+
+  /**
+   * THE primary conversion: a user clicked the "I want to ResistAct!" link-out
+   * to actually go do the civic action. `surface` notes where the click came
+   * from (currently "card_detail"). Mark this as a Key Event in GA4.
+   */
+  actionLinkClicked(cardId: number, category: string | undefined, surface = "card_detail"): void {
+    track("action_link_clicked", {
+      card_id: cardId,
+      category: (category ?? "OTHER").toUpperCase(),
+      link_surface: surface,
+    });
+  },
+
+  /**
+   * A user clicked a supporting resource link (e.g. the ACLU know-your-rights
+   * guide on PROTEST/FLASH MOB cards). `resource` is a stable slug, never a URL
+   * with query params, to keep the dimension clean.
+   */
+  resourceLinkClicked(resource: string, cardId?: number): void {
+    track("resource_link_clicked", {
+      resource,
+      ...(cardId != null ? { card_id: cardId } : {}),
+    });
+  },
+
+  // ─── Engagement signals ────────────────────────────────────────────────────
+
+  /** A user boosted (or un-boosted) a card. `active` = the resulting state. */
+  boostToggled(cardId: number, active: boolean): void {
+    track("boost", { card_id: cardId, active });
+  },
+
+  /** A user bookmarked (or un-bookmarked) a card. `active` = resulting state. */
+  bookmarkToggled(cardId: number, active: boolean): void {
+    track("bookmark", { card_id: cardId, active });
+  },
+
+  /**
+   * A user flagged a card. (Replaces the earlier raw track("card_flagged", …)
+   * call so the param names stay snake_case and consistent with the rest.)
+   */
+  cardFlagged(cardId: number, reason: string): void {
+    track("card_flagged", { card_id: cardId, reason });
+  },
+
+  // ─── Match wizard funnel ───────────────────────────────────────────────────
+
+  /** The Match wizard was opened. Pairs with match_set / match_abandoned. */
+  matchStarted(): void {
+    track("match_started", {});
+  },
+
+  /** The Match wizard was closed WITHOUT applying. `step` = how far they got. */
+  matchAbandoned(step: number): void {
+    track("match_abandoned", { step });
+  },
+
+  /** A user gave a "great match" thumbs-up on a result in the wizard. */
+  matchFeedback(cardId: number, category: string | undefined): void {
+    track("match_feedback", {
+      card_id: cardId,
+      category: (category ?? "OTHER").toUpperCase(),
+      sentiment: "positive",
+    });
+  },
+
+  // ─── Growth: accounts & supply ─────────────────────────────────────────────
+
+  /**
+   * Account created. Uses GA4's recommended `sign_up` event name + `method`
+   * param ("email" | "google"). Mark as a Key Event. No PII is sent.
+   */
+  signUp(method: string): void {
+    track("sign_up", { method });
+  },
+
+  /** A returning user signed in. GA4 recommended `login` event + `method`. */
+  login(method: string): void {
+    track("login", { method });
+  },
+
+  /** A user submitted a new Act (user-generated supply). Category only — no PII. */
+  actSubmitted(category: string | undefined): void {
+    track("act_submitted", {
+      category: (category ?? "OTHER").toUpperCase(),
+    });
+  },
 };
