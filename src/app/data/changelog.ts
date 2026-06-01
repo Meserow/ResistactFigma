@@ -16,6 +16,176 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.48",
+    date: "2026-06-01",
+    title: "Texting is now its own category, plus icons on the match pills",
+    sections: [
+      {
+        heading: "Categories",
+        items: [
+          "Added \"Texting\" as a real category you can assign to an act — it now shows up everywhere categories do: the Refine Your Matches picker, the on-card \"Move to category\" menu, and the act editor.",
+          "Tapping the Texting filter at the top of the feed still works as before, and now also surfaces any act an admin has explicitly filed under the Texting category — not just ones the title pattern catches.",
+        ],
+      },
+      {
+        heading: "Refine Your Matches",
+        items: [
+          "Each category pill now has a little icon next to its name, so the grid is faster to scan (a phone for Phone Calling, an envelope for Email Campaign, a speech bubble for Texting, and so on).",
+        ],
+      },
+      {
+        heading: "Editing acts",
+        items: [
+          "The on-card \"Move to category\" menu is now a single clean A-to-Z list instead of being split into themed groups — easier to find the category you want.",
+        ],
+      },
+      {
+        heading: "For admins",
+        items: [
+          "The Admin Panel's \"Top Acts\" view now hides acts with zero completions, so the leaderboard only shows what people are actually doing.",
+          "Redesigned the Admin Panel's view switcher with a clean, consistently-sized icon next to every option (and a tidy count badge), replacing the mismatched emoji.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.47",
+    date: "2026-06-01",
+    title: "Boosts now count for Facts and Smacks too",
+    sections: [
+      {
+        heading: "Facts & Smacks",
+        items: [
+          "Boosting a fact card now sticks — your boost is saved and the count carries over the next time you (or anyone) opens the site, instead of resetting on reload.",
+          "Boosts on the built-in Smacks are now saved too, so every smack keeps a running tally just like the ones the community submits.",
+        ],
+      },
+      {
+        heading: "For admins",
+        items: [
+          "Added a \"Top Facts\" view to the Admin Panel — every fact ranked by how many boosts it's gotten, most boosted first.",
+          "Added a \"Top Smacks\" view that ranks all smacks (community-submitted and built-in) by boosts, with badges marking which are built-in or still pending review.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.46",
+    date: "2026-06-01",
+    title: "Admin: a \"Top Acts\" leaderboard",
+    sections: [
+      {
+        heading: "For admins",
+        items: [
+          "Added a \"Top Acts\" view to the Admin Panel that lists every act ranked by how many times people have marked it done (completions), highest first — with each act's boost count alongside it.",
+          "The header tallies totals at a glance: number of acts, total completions, total boosts, and how many acts have at least one completion. Pending (not-yet-approved) acts are shown too, badged so they're easy to spot.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.45",
+    date: "2026-06-01",
+    title: "The \"Call\" category is now \"Phone Calling\"",
+    sections: [
+      {
+        heading: "Categories",
+        items: [
+          "Renamed the \"Call\" action category to \"Phone Calling\" so it's clearer at a glance what the action is — picking up the phone to call your reps, a hotline, or a peer line.",
+          "Nothing you need to do: any act already filed under \"Call\" (or the older \"Call/Write\") automatically shows up as \"Phone Calling\" now, with the same color, the same phone icon, and the same spot in the Match Me filters.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.44",
+    date: "2026-06-01",
+    title: "Every category filter now has its own icon",
+    sections: [
+      {
+        heading: "Browsing the Acts",
+        items: [
+          "Added a distinct icon to every category in the filter row — a megaphone for Protest, a phone for Phone Calling, a graduation cap for Training, and so on — so you can spot the category you want at a glance instead of reading every label.",
+          "The icons carry through to the category dropdown on phones too, tinted in each category's color.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.43",
+    date: "2026-06-01",
+    title: "The \"Boost\" category is now \"Amplify\"",
+    sections: [
+      {
+        heading: "Categories",
+        items: [
+          "Renamed the \"Boost\" action category to \"Amplify.\" The old name clashed with the 🔥 Boost button you tap to amplify an act — same word, two different things, which got confusing. \"Amplify\" keeps the meaning (sharing and signal-boosting others' work) without the collision.",
+          "Nothing you need to do: any act already filed under \"Boost\" automatically shows up as \"Amplify\" now, with the same color and the same spot in the Match Me filters. The 🔥 Boost button itself is unchanged.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.42",
+    date: "2026-06-01",
+    title: "Behind-the-scenes: cartoon-bannered acts count as having art everywhere",
+    sections: [
+      {
+        heading: "Acts",
+        items: [
+          "Finished the fix from the last release: the server now treats a generated cartoon banner as a real image too. That means our automated housekeeping no longer mistakes a cartoon-only act for an \"imageless\" one and pulls it out of the feed — so the count stays accurate over time, not just today.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.41",
+    date: "2026-06-01",
+    title: "Missing acts are back in the feed + a Preview button when editing",
+    sections: [
+      {
+        heading: "Acts",
+        items: [
+          "Fixed a bug that was quietly hiding ~140 acts from the public feed: acts whose only artwork was a generated cartoon banner were being treated as \"imageless\" and dropped. They're now visible again — the catalog count jumps back up accordingly.",
+        ],
+      },
+      {
+        heading: "Admin tools",
+        items: [
+          "Added a Preview button to the Edit screen that opens the full card exactly as visitors see it — reflecting your unsaved edits, including a just-generated subtitle or cartoon.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.40",
+    date: "2026-06-01",
+    title: "Edit pending acts straight from the feed",
+    sections: [
+      {
+        heading: "Admin tools",
+        items: [
+          "The \"Pending approval\" banner on unapproved acts now has an Edit button right next to Approve — open the editor without digging into the card first.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.39",
+    date: "2026-06-01",
+    title: "Write subtitles and draw banners right from the Edit screen",
+    sections: [
+      {
+        heading: "Admin tools",
+        items: [
+          "The \"Edit\" screen now has the same AI helpers as \"Create from URL\": a Generate button next to the Subtitle field writes a one-line subtitle from the title and description.",
+          "A new \"Generate cartoon\" button draws a brand-style banner illustration on the spot — using the act's current image as a reference when there is one.",
+          "Added a \"Save & Approve\" button so an act can be polished and published to the live feed in a single step.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.38",
     date: "2026-06-01",
     title: "Better (still anonymous) sense of what's helping",

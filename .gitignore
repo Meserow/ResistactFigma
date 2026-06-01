@@ -12,6 +12,12 @@ supabase/.temp/
 .env
 .env.local
 .env.*.local
+# Machine-local secrets for deploy/automation tooling (Supabase PAT, OpenAI
+# key, admin import token). The .txt variant dodged the patterns above and
+# got committed once — block every form so it can never happen again.
+.env.txt
+*.env.txt
+tools/automation/.env*
 # Cartoon banner webps — served from Supabase Storage CDN, not git.
 # Generate locally with: node scripts/generate-card-art.mjs
 # Upload to CDN with:    node scripts/upload-cartoon-banners.mjs

@@ -75,8 +75,8 @@ const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`
 // ─── Category data ─────────────────────────────────────────────────────────────
 const CATEGORIES: { name: string; icon: LucideIcon; color: string }[] = [
   { name: "Act of Kindness",            icon: Handshake,      color: "#127f05" },
+  { name: "Amplify",                    icon: Volume2,        color: "#8a00e6" },
   { name: "Art/Performance Art",        icon: Palette,        color: "#896312" },
-  { name: "Boost",                      icon: Volume2,        color: "#8a00e6" },
   { name: "Boycott",                    icon: Ban,            color: "#23297e" },
   { name: "Crafting",                   icon: Hammer,         color: "#c34e00" },
   { name: "Email Campaign",             icon: Mail,           color: "#e44b4b" },

@@ -142,7 +142,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
 // Key rules enforced here:
 //   • High-energy categories (PROTEST, FLASH MOB, IRREVERENCE) get hope=0 so
 //     raising the hope slider actually surfaces petitions/prayers over them.
-//   • Low-effort categories (PETITION, EMAIL, PRAYER, BOOST) get energy=0 so
+//   • Low-effort categories (PETITION, EMAIL, PRAYER, AMPLIFY) get energy=0 so
 //     lowering the energy slider lifts them above protests and flash mobs.
 //   • PETITION/EMAIL/LETTER anger is 1, not 2 — they shouldn't score high
 //     when the user wants to channel pure rage (use PROTEST/BOYCOTT for that).
@@ -159,7 +159,7 @@ export const DEFAULT_CATEGORY_TONE: Record<string, Tone> = {
   "EMAIL CAMPAIGN":       { anger: 1, comedy: 0, subversion: 0, care: 1, hope: 3, energy: 0 },
   "LETTER TO EDITOR":     { anger: 1, comedy: 0, subversion: 0, care: 1, hope: 3, energy: 0 },
   "SOCIAL MEDIA":         { anger: 1, comedy: 2, subversion: 1, care: 1, hope: 1, energy: 2 },
-  "BOOST":                { anger: 0, comedy: 0, subversion: 0, care: 2, hope: 2, energy: 0 },
+  "AMPLIFY":              { anger: 0, comedy: 0, subversion: 0, care: 2, hope: 2, energy: 0 },
   "ACT OF KINDNESS":      { anger: 0, comedy: 0, subversion: 0, care: 3, hope: 2, energy: 1 },
   "SPREAD POSITIVITY":    { anger: 0, comedy: 1, subversion: 0, care: 3, hope: 3, energy: 1 },
   "PRAYER":               { anger: 0, comedy: 0, subversion: 0, care: 3, hope: 3, energy: 0 },
@@ -248,7 +248,7 @@ const CATEGORY_DEFAULT_BUCKET: Partial<Record<string, TimeBucket>> = {
   "BOYCOTT":            "5min",
   "MENTAL HEALTH":      "5min",
   "FUNDING":            "5min",
-  "BOOST":              "5min",
+  "AMPLIFY":            "5min",
   // 30 minutes — find, read, sign or write
   "PETITION":           "30min",
   "EMAIL CAMPAIGN":     "30min",
@@ -334,7 +334,7 @@ const SURFACES_VOICE_FOR: Partial<Record<VulnerableGroup, Set<string>>> = {
   repro:      new Set(["PETITION", "EMAIL CAMPAIGN", "LETTER TO EDITOR", "MEETING", "SOCIAL MEDIA", "NEWS STORY", "TRANSPORTATION"]),
   disabled:   new Set(["PETITION", "EMAIL CAMPAIGN", "LETTER TO EDITOR", "MEETING", "SOCIAL MEDIA", "PROFESSIONAL SKILLS"]),
   fedWorker:  new Set(["NEWS STORY", "EMAIL CAMPAIGN", "PROFESSIONAL SKILLS", "TRAINING"]),
-  journalist: new Set(["NEWS STORY", "BOOST", "PROFESSIONAL SKILLS", "LETTER TO EDITOR"]),
+  journalist: new Set(["NEWS STORY", "AMPLIFY", "PROFESSIONAL SKILLS", "LETTER TO EDITOR"]),
   black:      new Set(["PETITION", "EMAIL CAMPAIGN", "LETTER TO EDITOR", "NEWS STORY", "SOCIAL MEDIA", "MEETING"]),
   latino:     new Set(["PETITION", "EMAIL CAMPAIGN", "LETTER TO EDITOR", "NEWS STORY", "SOCIAL MEDIA", "MEETING"]),
   indigenous: new Set(["PETITION", "EMAIL CAMPAIGN", "LETTER TO EDITOR", "NEWS STORY", "SOCIAL MEDIA", "MEETING"]),

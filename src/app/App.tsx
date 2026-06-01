@@ -106,15 +106,16 @@ const HEADERS = { "Content-Type": "application/json", Authorization: `Bearer ${p
 //
 // Also folds legacy/duplicate category names into a single canonical bucket:
 //   "Art Piece" / "ART PIECE" → "Art/Performance Art"
-//   "Call/write" / "CALL/WRITE" → "Call" (renamed from "Call/Write" — the
-//   bucket only ever contained phone-call actions; letter-writing has its
-//   own category. Old data is folded forward here so any KV records still
-//   carrying the old label render under the new one.)
+//   "Call" / "CALL" / "Call/Write" → "Phone Calling" (renamed June 2026 so
+//   the label is unambiguous in the filter row; the bucket only ever held
+//   phone-call actions — letter-writing has its own category. Old data folds
+//   forward here so any KV records carrying the old label render as the new.)
 const TITLE_CASE_STOPWORDS = new Set(["of", "to", "a", "the", "and", "or", "in", "on", "for", "at"]);
 const CATEGORY_ALIASES: Record<string, string> = {
   "art piece": "Art/Performance Art",
   "art/performance art": "Art/Performance Art",
-  "call/write": "Call",
+  "call/write": "Phone Calling",
+  "call": "Phone Calling",
   // Three category mergers (May 2026): old name on the left, surviving
   // category on the right. KV records with the old value render as the
   // new one — no migration required for display. A KV migration in the
@@ -124,6 +125,10 @@ const CATEGORY_ALIASES: Record<string, string> = {
   "bird-dog": "Show Up",
   "spread positivity": "Act of Kindness",
   "purchase": "Represent",
+  // "Boost" → "Amplify" (June 2026). The category name collided with the
+  // 🔥 boost engagement action, so it was renamed. Old "Boost"/"BOOST" KV
+  // values fold forward to "Amplify" at render time — no migration needed.
+  "boost": "Amplify",
 };
 function normaliseCategory(s: string | undefined | null): string {
   const trimmed = (s ?? "").trim();
@@ -431,7 +436,12 @@ export default function App() {
     } catch { return new Set<number>(); }
   });
   const [bookmarksOpen, setBookmarksOpen] = useState(false);
-  const [boostedFacts, setBoostedFacts] = useState<Set<number>>(new Set());
+  const [boostedFacts, setBoostedFacts] = useState<Set<number>>(() => {
+    try {
+      const stored = localStorage.getItem("resistact_boosted_facts");
+      return stored ? new Set<number>(JSON.parse(stored)) : new Set<number>();
+    } catch { return new Set<number>(); }
+  });
   const [factBoostCounts, setFactBoostCounts] = useState<Record<number, number>>({});
 
   // Stable random ordering for facts — shuffled once on mount.
@@ -450,12 +460,20 @@ export default function App() {
     setBoostedFacts((prev) => {
       const next = new Set(prev);
       alreadyBoosted ? next.delete(id) : next.add(id);
+      try { localStorage.setItem("resistact_boosted_facts", JSON.stringify([...next])); } catch {}
       return next;
     });
     setFactBoostCounts((prev) => ({
       ...prev,
       [id]: Math.max(0, (prev[id] ?? 0) + delta),
     }));
+    // Persist to KV so the tally survives reloads and feeds the admin
+    // "Top Facts" leaderboard. Non-critical — local state already updated.
+    fetch(`${API}/facts/${id}/boost`, {
+      method: "POST",
+      headers: HEADERS,
+      body: JSON.stringify({ delta }),
+    }).catch(() => { /* non-critical */ });
   };
 
   // ── Auth state ──
@@ -778,8 +796,9 @@ export default function App() {
       // Quick actions only (5–10 min wins)
       if (quickActionsOnly && !card.quickAction) return false;
 
-      // Texting/SMS only
-      if (textingOnly && !cardIsTexting(card)) return false;
+      // Texting/SMS only — catches both title-regex matches and cards an admin
+      // has explicitly filed under the "Texting" category.
+      if (textingOnly && !cardIsTexting(card) && card.category !== "Texting") return false;
 
       // Hide completed cards unless "Show Done" is checked
       if (!showDone && completedCards.has(card.id)) return false;
@@ -949,7 +968,16 @@ export default function App() {
         const url = (card as any).topImageUrl as string | undefined;
         const isLikelyExpired = typeof url === "string" && /(?:tiktokcdn|cdninstagram)/i.test(url);
         const hasUsableUrl = Boolean(url) && !isLikelyExpired;
-        const hasImage = hasUsableUrl || Boolean((card as any).topImageKey) || Boolean((card as any).topImage);
+        // A cartoon banner counts as an image — it's literally what the card
+        // renders in the feed (ActionCard draws `cartoonImageUrl ?? topImage`).
+        // Without this, ~140 approved cards whose only art is a generated
+        // cartoon (topImageUrl cleared/never set) were wrongly hidden from the
+        // public, silently shrinking the feed as more cards got cartoonized.
+        const hasImage =
+          hasUsableUrl ||
+          Boolean((card as any).topImageKey) ||
+          Boolean((card as any).topImage) ||
+          Boolean((card as any).cartoonImageUrl);
         if (!hasImage) return false;
       }
       // Completed cards stay in the feed but get sorted to the bottom (see
@@ -1240,9 +1268,9 @@ export default function App() {
     // resolveCard already does this when cards enter state, but writing the
     // dedupe at the chip-render layer is cheap insurance against any code
     // path that creates an ActionCardData without going through resolveCard
-    // (or against stale module / HMR glitches that leave a raw "BOOST"
-    // alongside a normalized "Boost"). Without this, the navbar's category
-    // pill row would render both "BOOST" and "Boost" as separate chips.
+    // (or against stale module / HMR glitches that leave a raw "CRAFTING"
+    // alongside a normalized "Crafting"). Without this, the navbar's category
+    // pill row would render both "CRAFTING" and "Crafting" as separate chips.
     const set = new Set<string>();
     for (const c of approvedCards) {
       const cat = normaliseCategory(c.category);
@@ -1579,6 +1607,24 @@ export default function App() {
         if (!cancelled) {
           setReceipts(data.receipts ?? []);
           setHiddenSmackIds(data.hiddenIds ?? []);
+        }
+      } catch { /* non-critical */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // ── Load persisted fact boost tallies on mount so counts survive reloads ──
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${API}/facts/boosts`, { headers: HEADERS });
+        if (!res.ok || cancelled) return;
+        const data = await res.json();
+        if (data?.boosts && !cancelled) {
+          const parsed: Record<number, number> = {};
+          for (const [k, v] of Object.entries(data.boosts)) parsed[Number(k)] = Number(v) || 0;
+          setFactBoostCounts(parsed);
         }
       } catch { /* non-critical */ }
     })();
@@ -1969,7 +2015,7 @@ export default function App() {
   }
 
   // ── Handle card update from EditCardModal ──
-  function handleCardSaved(updated: ActionCardData) {
+  function handleCardSaved(updated: ActionCardData, toast = "Changes saved") {
     // Re-run the raw server card through resolveCard() — the same resolver the
     // initial feed load uses — instead of merging the raw row straight in.
     // The raw KV row can still carry derived/stale values (e.g. an old local
@@ -1982,7 +2028,7 @@ export default function App() {
     setCards((prev) =>
       prev.map((c) => c.id === resolved.id ? { ...c, ...resolved } : c)
     );
-    showToast("Changes saved");
+    showToast(toast);
   }
 
   // ── Remove a deleted card from the local feed (admin only) ──
@@ -2902,6 +2948,7 @@ export default function App() {
             isAdmin={approval?.isAdmin === true}
             onClose={() => setEditCardId(null)}
             onSaved={(updated) => { handleCardSaved(updated); }}
+            onApproved={(updated) => { handleCardSaved(updated, "Saved & approved"); }}
             onDeleted={(id) => { handleCardDeleted(id); }}
           />
         ) : null;

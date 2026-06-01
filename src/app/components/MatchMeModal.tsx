@@ -15,7 +15,7 @@ import {
   type UserContext,
   type VulnerableGroup,
 } from "../lib/matcher";
-import { CATEGORY_GROUPS, KNOWN_CATEGORIES } from "../lib/categoryGroups";
+import { CATEGORY_GROUPS, KNOWN_CATEGORIES, iconForCategory } from "../lib/categoryGroups";
 import { LOCATION_OPTIONS } from "../lib/locations";
 import { analytics } from "../lib/analytics";
 import { ActionCard, type ActionCardData } from "./ActionCard";
@@ -827,6 +827,7 @@ function StepToneAndPreview({
               <div className="flex flex-wrap gap-1.5">
                 {group.categories.map((cat) => {
                   const isIncluded = includedSet.has(cat);
+                  const CatIcon = iconForCategory(cat);
                   return (
                     <button
                       key={"inc-" + cat}
@@ -835,7 +836,7 @@ function StepToneAndPreview({
                       aria-pressed={isIncluded}
                       // `min-w-[64px] sm:min-w-0` — on mobile (iPhone) the
                       // pills have a small width floor so short labels
-                      // ("Call", "Boost", "Host") aren't dwarfed by long ones
+                      // ("Call", "Amplify", "Host") aren't dwarfed by long ones
                       // ("Professional Skills", "Art/Performance Art"). The
                       // 64px floor is calibrated against the actual chip-row
                       // width (~311px at iPhone 375) so 3 mid-length pills
@@ -843,12 +844,13 @@ function StepToneAndPreview({
                       // can sit on one line without wrapping. Pills hug their
                       // natural width past the floor — no stretching to fill
                       // the row. On sm+ viewports the floor goes away.
-                      className={`min-w-[64px] sm:min-w-0 px-2.5 py-1 rounded-full text-[11px] font-['Poppins',sans-serif] font-medium transition-all border ${
+                      className={`min-w-[64px] sm:min-w-0 inline-flex items-center justify-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-['Poppins',sans-serif] font-medium transition-all border ${
                         isIncluded
                           ? "bg-[#23297e] text-white border-[#23297e]"
                           : "bg-white text-gray-700 border-gray-300 hover:border-[#23297e] hover:text-[#23297e]"
                       }`}
                     >
+                      <CatIcon size={11} strokeWidth={2} className="shrink-0" />
                       {cat}
                     </button>
                   );

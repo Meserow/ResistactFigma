@@ -1,8 +1,9 @@
 import { useRef, useState } from "react";
-import { X, Loader2, Pencil, Trash2, Upload, Clock, Flame, Laugh, VenetianMask, Sunrise, Zap, ZoomIn } from "lucide-react";
+import { X, Loader2, Pencil, Trash2, Upload, Clock, Flame, Laugh, VenetianMask, Sunrise, Zap, ZoomIn, Sparkles, CheckCircle2, Eye } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
 import type { ActionCardData } from "./ActionCard";
+import { CardDetailsModal } from "./CardDetailsModal";
 import { LOCATION_OPTIONS, locationToState } from "../lib/locations";
 import { ToneRangeSlider } from "./ToneSlider";
 import { InvolvementPicker, involvementLevelFor } from "./InvolvementPicker";
@@ -26,11 +27,11 @@ const SELECT_CLS = (val: string | null | undefined) =>
 // Art/Performance Art via normaliseCategory in App.tsx.
 const CATEGORY_OPTIONS: { label: string; color: string }[] = [
   { label: "Act of Kindness",      color: "#127f05" },
+  // Renamed from "Boost" June 2026 — collided with the 🔥 boost action.
+  { label: "Amplify",              color: "#8a00e6" },
   { label: "Art/Performance Art",  color: "#896312" },
   // Bird-Dog merged into Show Up (May 2026).
-  { label: "Boost",                color: "#8a00e6" },
   { label: "Boycott",              color: "#23297e" },
-  { label: "Call",                 color: "#c2185b" },
   { label: "Crafting",             color: "#c34e00" },
   { label: "Email Campaign",       color: "#e44b4b" },
   { label: "Flash Mob",            color: "#ff00d5" },
@@ -47,6 +48,7 @@ const CATEGORY_OPTIONS: { label: string; color: string }[] = [
   { label: "News Story",           color: "#896312" },
   { label: "Personal Commitment",  color: "#23297e" },
   { label: "Petition",             color: "#05737f" },
+  { label: "Phone Calling",        color: "#c2185b" },
   { label: "Prayer",               color: "#8a00e6" },
   { label: "Professional Skills",  color: "#126d89" },
   { label: "Protest",              color: "#23297e" },
@@ -54,6 +56,7 @@ const CATEGORY_OPTIONS: { label: string; color: string }[] = [
   { label: "Show Up",              color: "#23297e" },
   { label: "Social Media",         color: "#e44b4b" },
   // Spread Positivity merged into Act of Kindness (May 2026).
+  { label: "Texting",              color: "#2f7d6b" },
   { label: "Training",             color: "#126d89" },
   { label: "Transportation",       color: "#126d89" },
   { label: "Video",                color: "#e44b4b" },
@@ -105,6 +108,10 @@ interface EditCardModalProps {
   onSaved: (updated: ActionCardData) => void;
   isAdmin?: boolean;
   onDeleted?: (id: number) => void;
+  // Fired after a successful Save & Approve (admin only). Parents that keep a
+  // separate "pending" list (the admin panel) use this to drop the card out of
+  // the pending queue; if omitted, the modal falls back to onSaved.
+  onApproved?: (updated: ActionCardData) => void;
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -118,7 +125,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, onDeleted }: EditCardModalProps) {
+export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, onDeleted, onApproved }: EditCardModalProps) {
   const [title,          setTitle]          = useState(card.title);
   const [synopsis,       setSynopsis]       = useState(card.synopsis ?? ""); // one-line subtitle shown below the title on the card
   const [description,    setDescription]    = useState(card.description);
@@ -163,13 +170,26 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
   const [toneEnergy,     setToneEnergy]     = useState<number | null>((card.toneOverride?.energy     ?? null) as number | null);
 
   const [lightboxOpen,  setLightboxOpen]  = useState(false);
+  const [previewOpen,   setPreviewOpen]   = useState(false);
   const [loading,       setLoading]       = useState(false);
   const [error,         setError]         = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting,      setDeleting]      = useState(false);
   const [uploading,     setUploading]     = useState(false);
   const [uploadError,   setUploadError]   = useState<string | null>(null);
+  // AI assist (admin) — generate the subtitle text and the cartoon banner.
+  const [genSub,        setGenSub]        = useState(false);
+  const [subError,      setSubError]      = useState<string | null>(null);
+  const [genCartoon,    setGenCartoon]    = useState(false);
+  const [cartoonError,  setCartoonError]  = useState<string | null>(null);
+  const [approving,     setApproving]     = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // The card's *original* source image, captured once at mount. Used as the
+  // visual reference for "Generate cartoon" so regenerating keeps referencing
+  // the source art rather than the last cartoon we produced (which would drift).
+  const originalRefImage = useRef<string>(
+    ((card as any).topImageUrl as string) || card.topImage || card.cartoonImageUrl || ""
+  );
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -204,6 +224,59 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
     if (found) setCategoryColor(found.color);
   }
 
+  // ── AI: draft a one-line subtitle from the current title + description ──
+  async function handleGenerateSubtitle() {
+    if (!title.trim() && !description.trim()) {
+      setSubError("Add a title or description first.");
+      return;
+    }
+    setSubError(null);
+    setGenSub(true);
+    try {
+      const res = await fetch(`${API}/admin/cards/generate-subtitle`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ title: title.trim(), description: description.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setSubError(data.error ?? `Generate failed (${res.status}).`); return; }
+      if (data.synopsis) setSynopsis(data.synopsis);
+    } catch (err) {
+      console.error("Generate subtitle error:", err);
+      setSubError("Network error — please try again.");
+    } finally {
+      setGenSub(false);
+    }
+  }
+
+  // ── AI: draw a brand cartoon banner from the title/description ──
+  // Reuses the original source image as a visual reference (image-to-image)
+  // when one exists; otherwise the model paints a fresh scene from the text.
+  async function handleGenerateCartoon() {
+    if (!title.trim()) {
+      setCartoonError("Add a title first — the banner is drawn from it.");
+      return;
+    }
+    setCartoonError(null);
+    setGenCartoon(true);
+    try {
+      const refImageUrl = originalRefImage.current?.trim() || topImageUrl.trim() || undefined;
+      const res = await fetch(`${API}/admin/cards/generate-image`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ title: title.trim(), description: description.trim(), refImageUrl }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setCartoonError(data.error ?? `Image generation failed (${res.status}).`); return; }
+      if (data.url) setTopImageUrl(data.url);
+    } catch (err) {
+      console.error("Generate cartoon error:", err);
+      setCartoonError("Network error — please try again.");
+    } finally {
+      setGenCartoon(false);
+    }
+  }
+
   async function handleDelete() {
     setError(null);
     setDeleting(true);
@@ -228,17 +301,19 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
     }
   }
 
-  async function handleSave() {
-    if (!title.trim() || !description.trim()) { setError("Title and description are required."); return; }
+  // Core save — validates, PUTs the card, and returns the saved record (or null
+  // on failure, with `error` already set). Does NOT close the modal or fire any
+  // callback, so it can be composed by both Save and Save & Approve.
+  async function saveCard(): Promise<ActionCardData | null> {
+    if (!title.trim() || !description.trim()) { setError("Title and description are required."); return null; }
     // Any image satisfies the requirement — a pasted/uploaded URL, a static
     // image key, or the act's cartoon (cartoonImageUrl/topImage). The cartoon
     // is what the feed actually renders, so a card with a cartoon is never
     // "missing" a header image.
     const hasImage =
       topImageUrl.trim() || (card as any).topImageKey || card.cartoonImageUrl || card.topImage;
-    if (!hasImage) { setError("A header image is required."); return; }
+    if (!hasImage) { setError("A header image is required."); return null; }
     setError(null);
-    setLoading(true);
     try {
       const toneOverride =
         toneAnger != null || toneComedy != null || toneSubversion != null || toneHope != null || toneEnergy != null
@@ -280,14 +355,44 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error ?? "Failed to save changes."); return; }
-      onSaved(data.card as ActionCardData);
-      onClose();
+      if (!res.ok) { setError(data.error ?? "Failed to save changes."); return null; }
+      return data.card as ActionCardData;
     } catch (err) {
       console.error("Edit card error:", err);
       setError("Network error — please try again.");
+      return null;
+    }
+  }
+
+  async function handleSave() {
+    setLoading(true);
+    const saved = await saveCard();
+    setLoading(false);
+    if (saved) { onSaved(saved); onClose(); }
+  }
+
+  // Save the edits, then flip the card to approved in one click. Approval is a
+  // separate endpoint (PUT /actions strips adminApproved on purpose), and it
+  // hard-requires an image — which saveCard() has already enforced.
+  async function handleSaveAndApprove() {
+    setApproving(true);
+    const saved = await saveCard();
+    if (!saved) { setApproving(false); return; }
+    try {
+      const res = await fetch(`${API}/admin/approve-action/${card.id}`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setError(data.error ?? `Approval failed (${res.status}).`); return; }
+      const approved = { ...saved, ...(data.card ?? {}) } as ActionCardData;
+      (onApproved ?? onSaved)(approved);
+      onClose();
+    } catch (err) {
+      console.error("Approve card error:", err);
+      setError("Network error during approval.");
     } finally {
-      setLoading(false);
+      setApproving(false);
     }
   }
 
@@ -310,6 +415,15 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
             <h2 className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-[18px] leading-tight">Edit Action</h2>
             <p className="font-['Poppins',sans-serif] text-gray-400 text-xs truncate">{card.title}</p>
           </div>
+          <button
+            type="button"
+            onClick={() => setPreviewOpen(true)}
+            title="Preview how this act looks to users"
+            className="flex items-center gap-1.5 h-9 px-3 rounded-full border border-[#23297e]/20 bg-[#23297e]/5 text-[#23297e] hover:bg-[#23297e]/10 font-['Poppins',sans-serif] font-semibold text-xs transition-colors shrink-0"
+          >
+            <Eye size={14} />
+            Preview
+          </button>
           <button
             onClick={onClose}
             className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 shrink-0"
@@ -346,12 +460,29 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
           </Field>
 
           <Field label="Subtitle">
-            <input
-              type="text" value={synopsis} maxLength={100}
-              onChange={(e) => setSynopsis(e.target.value)}
-              placeholder="One line in plainer language — shows under the title on the card"
-              className={INPUT_CLS}
-            />
+            <div className="flex items-start gap-2">
+              <input
+                type="text" value={synopsis} maxLength={100}
+                onChange={(e) => setSynopsis(e.target.value)}
+                placeholder="One line in plainer language — shows under the title on the card"
+                className={INPUT_CLS}
+              />
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={handleGenerateSubtitle}
+                  disabled={genSub || loading || approving}
+                  title="Write a subtitle from the title & description"
+                  className="shrink-0 flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-[#23297e]/20 bg-[#23297e]/5 text-[#23297e] hover:bg-[#23297e]/10 disabled:opacity-60 font-['Poppins',sans-serif] font-semibold text-xs transition-colors"
+                >
+                  {genSub ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+                  {genSub ? "Writing…" : "Generate"}
+                </button>
+              )}
+            </div>
+            {subError && (
+              <p className="mt-1.5 font-['Poppins',sans-serif] text-[11px] text-red-500">{subError}</p>
+            )}
           </Field>
 
           <Field label="Description *">
@@ -489,6 +620,18 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
                 {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
                 {uploading ? "Uploading…" : "Upload from computer"}
               </button>
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={handleGenerateCartoon}
+                  disabled={genCartoon || loading || approving}
+                  title="Draw a brand cartoon banner from the title (uses the current image as a reference)"
+                  className="flex items-center gap-1.5 px-3 py-2 border border-[#23297e]/20 bg-[#23297e]/5 hover:bg-[#23297e]/10 disabled:opacity-60 text-[#23297e] font-['Poppins',sans-serif] font-semibold text-xs rounded-lg transition-colors"
+                >
+                  {genCartoon ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+                  {genCartoon ? "Drawing…" : "Generate cartoon"}
+                </button>
+              )}
               <span className="font-['Poppins',sans-serif] text-[11px] text-gray-400">or paste a URL ↓</span>
               <label className="ml-auto flex items-center gap-1.5 cursor-pointer select-none">
                 <input
@@ -523,6 +666,14 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
             )}
             {uploadError && (
               <p className="mt-1.5 font-['Poppins',sans-serif] text-[11px] text-red-500">{uploadError}</p>
+            )}
+            {cartoonError && (
+              <p className="mt-1.5 font-['Poppins',sans-serif] text-[11px] text-red-500">{cartoonError}</p>
+            )}
+            {genCartoon && (
+              <p className="mt-1.5 font-['Poppins',sans-serif] text-[11px] text-[#23297e]">
+                Drawing your cartoon banner… this can take 15–30 seconds.
+              </p>
             )}
           </Field>
 
@@ -606,15 +757,57 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
           </button>
           <button
             onClick={handleSave}
-            disabled={loading || deleting}
+            disabled={loading || approving || deleting}
             className="flex-1 py-2.5 bg-[#23297e] hover:bg-[#1a2060] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-bold text-sm rounded-xl transition-colors flex items-center justify-center gap-2"
           >
             {loading ? <Loader2 size={16} className="animate-spin" /> : <Pencil size={15} />}
             Save Changes
           </button>
+          {isAdmin && !(card as any).adminApproved && (
+            <button
+              onClick={handleSaveAndApprove}
+              disabled={loading || approving || deleting}
+              title="Save these edits and publish the act to the live feed"
+              className="flex-1 py-2.5 bg-[#127f05] hover:bg-[#0f6804] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-bold text-sm rounded-xl transition-colors flex items-center justify-center gap-2"
+            >
+              {approving ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={15} />}
+              Save &amp; Approve
+            </button>
+          )}
         </div>
       </div>
     </div>
+
+    {/* ── Live preview — the full CardDetailsModal users see, built from the
+         current (unsaved) edits so admins can sanity-check before saving. ── */}
+    {previewOpen && (
+      <CardDetailsModal
+        card={{
+          ...card,
+          title:          title.trim() || card.title,
+          synopsis:       synopsis.trim() || undefined,
+          description:    description.trim() || card.description,
+          category,
+          categoryColor,
+          timeCommitment: TIME_COMMITMENT_MAP[involvement],
+          quickAction:    involvement === "5min",
+          isOnline,
+          location:       location || card.location,
+          authorName,
+          authorRole,
+          authorLink:     authorLink.trim() || undefined,
+          targetUrl:      targetUrl.trim() || (card as any).targetUrl,
+          imageContain,
+          eventDate:      eventDate.trim() || undefined,
+          // CardDetailsModal renders `cartoonImageUrl ?? topImage`; mirror the
+          // edited header URL into both so the preview reflects unsaved image
+          // changes (including a freshly generated cartoon sitting in topImageUrl).
+          cartoonImageUrl: topImageUrl.trim() || card.cartoonImageUrl || card.topImage,
+          topImage:        topImageUrl.trim() || card.cartoonImageUrl || card.topImage,
+        } as ActionCardData}
+        onClose={() => setPreviewOpen(false)}
+      />
+    )}
 
     {/* ── Lightbox ── */}
     {lightboxOpen && (

@@ -211,14 +211,23 @@ export const analytics = {
 
   // ─── Engagement signals ────────────────────────────────────────────────────
 
-  /** A user boosted (or un-boosted) a card. `active` = the resulting state. */
+  /**
+   * A user boosted a card. Fires on ADD only — un-boosting is intentionally
+   * not tracked (it's a correction, not a positive signal). `active` is the
+   * resulting state; when false this is a no-op.
+   */
   boostToggled(cardId: number, active: boolean): void {
-    track("boost", { card_id: cardId, active });
+    if (!active) return;
+    track("boost", { card_id: cardId });
   },
 
-  /** A user bookmarked (or un-bookmarked) a card. `active` = resulting state. */
+  /**
+   * A user bookmarked a card. Fires on ADD only — un-bookmarking is not
+   * tracked. `active` is the resulting state; when false this is a no-op.
+   */
   bookmarkToggled(cardId: number, active: boolean): void {
-    track("bookmark", { card_id: cardId, active });
+    if (!active) return;
+    track("bookmark", { card_id: cardId });
   },
 
   /**

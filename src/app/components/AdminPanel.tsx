@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { X, CheckCircle2, XCircle, Clock, Users, ShieldCheck, Loader2, RefreshCw, FileText, Trash2, Calendar, ExternalLink, ImageIcon, Upload, ZoomIn, AlertTriangle, Sliders, RotateCcw, Save, Eye, Flame, Laugh, VenetianMask, Heart, Sunrise, Zap, Link2, Pencil } from "lucide-react";
+import { X, CheckCircle2, XCircle, Clock, Users, ShieldCheck, Loader2, RefreshCw, FileText, Trash2, Calendar, ExternalLink, ImageIcon, Upload, ZoomIn, AlertTriangle, Sliders, RotateCcw, Save, Eye, Flame, Laugh, VenetianMask, Heart, Sunrise, Zap, Link2, Pencil, BarChart3, Lightbulb, MessageSquare, Plus, Activity, Wrench, ChevronDown } from "lucide-react";
 import { CardDetailsModal } from "./CardDetailsModal";
 import { EditCardModal } from "./EditCardModal";
 import { AdminUserDetail } from "./AdminUserDetail";
 import { UserAvatar } from "./UserAvatar";
+import { FACT_CARDS } from "../data/factCards";
+import { STATIC_SMACKS } from "./SmacksPage";
 import type { ActionCardData } from "./ActionCard";
 import type { LucideIcon } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
@@ -53,24 +55,26 @@ interface AdminPanelProps {
 }
 
 type TabFilter = "active" | "pending" | "approved" | "rejected" | "all";
-type PanelMode = "cards" | "users" | "nourl" | "noimage" | "matcher" | "online" | "bigimages" | "brokenimages" | "sameurl" | "newcard" | "siteupdate";
+type PanelMode = "cards" | "users" | "nourl" | "noimage" | "matcher" | "online" | "bigimages" | "brokenimages" | "sameurl" | "newcard" | "siteupdate" | "topacts" | "topfacts" | "topsmacks";
 
 // Category labels + colors for the "Create from URL" form's dropdown. Mirrors
 // EditCardModal's CATEGORY_OPTIONS so a created card gets the right pill color.
 const NEWCARD_CATEGORIES: { label: string; color: string }[] = [
-  { label: "Act of Kindness", color: "#127f05" }, { label: "Art/Performance Art", color: "#896312" },
-  { label: "Boost", color: "#8a00e6" }, { label: "Boycott", color: "#23297e" },
-  { label: "Call", color: "#c2185b" }, { label: "Crafting", color: "#c34e00" },
-  { label: "Email Campaign", color: "#e44b4b" }, { label: "Flash Mob", color: "#ff00d5" },
+  { label: "Act of Kindness", color: "#127f05" }, { label: "Amplify", color: "#8a00e6" },
+  { label: "Art/Performance Art", color: "#896312" }, { label: "Boycott", color: "#23297e" },
+  { label: "Crafting", color: "#c34e00" }, { label: "Email Campaign", color: "#e44b4b" },
+  { label: "Flash Mob", color: "#ff00d5" },
   { label: "Funding", color: "#127f05" }, { label: "Host", color: "#b45309" },
   { label: "Housing", color: "#896312" }, { label: "Irreverence", color: "#ff00d5" },
   { label: "Join a Group", color: "#0891b2" }, { label: "Labor", color: "#127f05" },
   { label: "Letter Writing", color: "#c34e00" }, { label: "Meeting", color: "#23297e" },
   { label: "Mental Health", color: "#ff00d5" }, { label: "News Story", color: "#896312" },
   { label: "Personal Commitment", color: "#23297e" }, { label: "Petition", color: "#05737f" },
-  { label: "Prayer", color: "#8a00e6" }, { label: "Professional Skills", color: "#126d89" },
+  { label: "Phone Calling", color: "#c2185b" }, { label: "Prayer", color: "#8a00e6" },
+  { label: "Professional Skills", color: "#126d89" },
   { label: "Protest", color: "#23297e" }, { label: "Represent", color: "#b45309" },
   { label: "Show Up", color: "#23297e" }, { label: "Social Media", color: "#e44b4b" },
+  { label: "Texting", color: "#2f7d6b" },
   { label: "Training", color: "#126d89" }, { label: "Transportation", color: "#126d89" },
   { label: "Video", color: "#e44b4b" }, { label: "Witness", color: "#767574" },
   { label: "Other", color: "#767574" },
@@ -155,6 +159,48 @@ interface AnonEvent {
   title?: string;
   /** Action category at the time of the event. */
   category?: string;
+}
+
+/** A single row in the "Top Acts" leaderboard — the lightweight slice of an
+ *  action we need to rank by engagement. Populated from GET /actions, which
+ *  returns the whole catalog (approved + pending) with its live counters. */
+interface TopAct {
+  id: number;
+  title: string;
+  category: string;
+  categoryColor?: string;
+  /** "I did this!" count — the DB `completions` counter. Primary sort key. */
+  completions: number;
+  /** 🔥 boost count — secondary engagement signal. */
+  boosts: number;
+  /** false = still in the admin review queue (hidden from the public feed). */
+  adminApproved?: boolean;
+}
+
+/** A row in the "Top Facts" leaderboard. Facts are static client data
+ *  (FACT_CARDS); their boost tallies come from GET /facts/boosts. */
+interface TopFact {
+  id: number;
+  /** The myth being countered — the fact card's `claim` text. */
+  claim: string;
+  category: string;
+  /** 🔥 boost count from the `fact:boosts` aggregate. Sort key. */
+  boosts: number;
+}
+
+/** A row in the "Top Smacks" leaderboard. Merges KV-backed receipts (own
+ *  `boosts` field) with static smacks (boosts from the `smack:boosts`
+ *  aggregate returned alongside GET /receipts). */
+interface TopSmack {
+  id: number;
+  title: string;
+  tags: string[];
+  /** 🔥 boost count. Sort key. */
+  boosts: number;
+  /** true for hardcoded STATIC_SMACKS (id ≥ 5000), false for KV receipts. */
+  isStatic: boolean;
+  /** false = still in the admin review queue (KV receipts only). */
+  adminApproved?: boolean;
 }
 
 const TONE_DIMS: { key: keyof Tone; label: string; Icon: LucideIcon; stops: { label: string; desc: string }[] }[] = [
@@ -342,6 +388,20 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
   // Default to "online" — quickest read on engagement when an admin opens
   // the panel. Other modes (cards, users, …) are one dropdown click away.
   const [mode, setMode] = useState<PanelMode>("online");
+  // Custom mode-switcher dropdown (replaces a native <select> so each mode can
+  // carry a consistent lucide icon — native <option> can't render SVGs).
+  const [modeMenuOpen, setModeMenuOpen] = useState(false);
+  const modeMenuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!modeMenuOpen) return;
+    function onDocClick(e: MouseEvent) {
+      if (modeMenuRef.current && !modeMenuRef.current.contains(e.target as Node)) {
+        setModeMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [modeMenuOpen]);
 
   // ── Users state ──────────────────────────────────────────────────────────────
   const [users, setUsers] = useState<UserApproval[]>([]);
@@ -418,6 +478,21 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
   const [sameUrlCards, setSameUrlCards] = useState<SameUrlCard[]>([]);
   const [sameUrlLoading, setSameUrlLoading] = useState(false);
   const [sameUrlError, setSameUrlError] = useState<string | null>(null);
+
+  // ── Top-Acts leaderboard state (acts ranked by completions desc) ─────────────
+  const [topActs, setTopActs] = useState<TopAct[]>([]);
+  const [topActsLoading, setTopActsLoading] = useState(false);
+  const [topActsError, setTopActsError] = useState<string | null>(null);
+
+  // ── Top-Facts leaderboard state (facts ranked by boosts desc) ────────────────
+  const [topFacts, setTopFacts] = useState<TopFact[]>([]);
+  const [topFactsLoading, setTopFactsLoading] = useState(false);
+  const [topFactsError, setTopFactsError] = useState<string | null>(null);
+
+  // ── Top-Smacks leaderboard state (smacks ranked by boosts desc) ──────────────
+  const [topSmacks, setTopSmacks] = useState<TopSmack[]>([]);
+  const [topSmacksLoading, setTopSmacksLoading] = useState(false);
+  const [topSmacksError, setTopSmacksError] = useState<string | null>(null);
 
   const authHeaders = {
     "Content-Type": "application/json",
@@ -794,6 +869,109 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
   }
   useEffect(() => { if (mode === "sameurl" && sameUrlCards.length === 0 && !sameUrlLoading) fetchSameUrlCards(); }, [mode]);
 
+  // Top-Acts leaderboard: pulls the whole catalog (GET /actions returns
+  // approved + pending with live counters) and ranks it by `completions`
+  // descending, with `boosts` then id as tiebreakers. limit=2000 is the
+  // server's hard cap and comfortably exceeds the ~600-card catalog.
+  async function fetchTopActs() {
+    setTopActsLoading(true);
+    setTopActsError(null);
+    try {
+      const res = await fetch(`${API}/actions?limit=2000`, { headers: authHeaders });
+      const data = await res.json();
+      if (!res.ok) { setTopActsError(data.error ?? "Failed to load acts."); return; }
+      const ranked: TopAct[] = (data.cards ?? [])
+        .map((c: any) => ({
+          id: c.id,
+          title: c.title ?? `Action #${c.id}`,
+          category: c.category ?? "Other",
+          categoryColor: c.categoryColor,
+          completions: typeof c.completions === "number" ? c.completions : 0,
+          boosts: typeof c.boosts === "number" ? c.boosts : 0,
+          adminApproved: c.adminApproved,
+        }))
+        // Only acts people have actually completed — zero-completion acts are
+        // hidden so the leaderboard stays focused on what's getting done.
+        .filter((a: TopAct) => a.completions > 0)
+        .sort((a: TopAct, b: TopAct) =>
+          b.completions - a.completions || b.boosts - a.boosts || a.id - b.id,
+        );
+      setTopActs(ranked);
+    } catch {
+      setTopActsError("Network error loading acts.");
+    } finally {
+      setTopActsLoading(false);
+    }
+  }
+  useEffect(() => { if (mode === "topacts" && topActs.length === 0 && !topActsLoading) fetchTopActs(); }, [mode]);
+
+  // Top Facts: facts are static (FACT_CARDS); GET /facts/boosts returns the
+  // KV-persisted boost tallies keyed by id. Join the two and rank by boosts.
+  async function fetchTopFacts() {
+    setTopFactsLoading(true);
+    setTopFactsError(null);
+    try {
+      const res = await fetch(`${API}/facts/boosts`, { headers: authHeaders });
+      const data = await res.json();
+      if (!res.ok) { setTopFactsError(data.error ?? "Failed to load facts."); return; }
+      const tallies = (data.boosts ?? {}) as Record<string, number>;
+      const ranked: TopFact[] = FACT_CARDS
+        .map((f) => ({
+          id: f.id,
+          claim: f.claim ?? `Fact #${f.id}`,
+          category: f.category ?? "Other",
+          boosts: Number(tallies[f.id]) || 0,
+        }))
+        .sort((a, b) => b.boosts - a.boosts || a.id - b.id);
+      setTopFacts(ranked);
+    } catch {
+      setTopFactsError("Network error loading facts.");
+    } finally {
+      setTopFactsLoading(false);
+    }
+  }
+  useEffect(() => { if (mode === "topfacts" && topFacts.length === 0 && !topFactsLoading) fetchTopFacts(); }, [mode]);
+
+  // Top Smacks: GET /receipts returns KV receipts (each with its own `boosts`)
+  // plus a `staticBoosts` map for the hardcoded STATIC_SMACKS. Merge both and
+  // rank by boosts. Admin token means /receipts returns pending receipts too.
+  async function fetchTopSmacks() {
+    setTopSmacksLoading(true);
+    setTopSmacksError(null);
+    try {
+      const res = await fetch(`${API}/receipts`, { headers: authHeaders });
+      const data = await res.json();
+      if (!res.ok) { setTopSmacksError(data.error ?? "Failed to load smacks."); return; }
+      const staticBoosts = (data.staticBoosts ?? {}) as Record<string, number>;
+      const kvRows: TopSmack[] = (data.receipts ?? []).map((r: any) => ({
+        id: r.id,
+        title: r.title || r.caption || `Smack #${r.id}`,
+        tags: Array.isArray(r.tags) ? r.tags : [],
+        boosts: Number(r.boosts) || 0,
+        isStatic: false,
+        adminApproved: r.adminApproved,
+      }));
+      const kvIds = new Set(kvRows.map((r) => r.id));
+      const staticRows: TopSmack[] = STATIC_SMACKS
+        .filter((s) => !kvIds.has(s.id))
+        .map((s) => ({
+          id: s.id,
+          title: s.title || s.caption || `Smack #${s.id}`,
+          tags: Array.isArray(s.tags) ? s.tags : [],
+          boosts: Number(staticBoosts[s.id]) || 0,
+          isStatic: true,
+          adminApproved: true,
+        }));
+      const ranked = [...kvRows, ...staticRows].sort((a, b) => b.boosts - a.boosts || a.id - b.id);
+      setTopSmacks(ranked);
+    } catch {
+      setTopSmacksError("Network error loading smacks.");
+    } finally {
+      setTopSmacksLoading(false);
+    }
+  }
+  useEffect(() => { if (mode === "topsmacks" && topSmacks.length === 0 && !topSmacksLoading) fetchTopSmacks(); }, [mode]);
+
   async function handleApprove(userId: string) {
     setActionLoading(userId + ":approve");
     try {
@@ -895,17 +1073,17 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
               <div>
                 <p className="font-['Poppins',sans-serif] font-bold text-gray-900 text-base leading-tight">Admin Panel</p>
                 <p className="font-['Poppins',sans-serif] text-gray-400 text-xs">
-                  {mode === "users" ? "Manage user approvals" : mode === "newcard" ? "Build an Act from a URL with AI" : mode === "siteupdate" ? "Global 'site updating' banner" : mode === "nourl" ? "Approved cards with no action link" : mode === "noimage" ? "Approved cards with no image" : mode === "online" ? "Users active in the last 7 days" : mode === "bigimages" ? "Stored images over 500 KB — optimize to shrink" : mode === "brokenimages" ? "Cards whose topImageUrl 404s — needs re-upload" : mode === "sameurl" ? "Cards where action URL = author link — bulk-import default" : "Review submitted actions"}
+                  {mode === "users" ? "Manage user approvals" : mode === "newcard" ? "Build an Act from a URL with AI" : mode === "siteupdate" ? "Global 'site updating' banner" : mode === "nourl" ? "Approved cards with no action link" : mode === "noimage" ? "Approved cards with no image" : mode === "online" ? "Users active in the last 7 days" : mode === "bigimages" ? "Stored images over 500 KB — optimize to shrink" : mode === "brokenimages" ? "Cards whose topImageUrl 404s — needs re-upload" : mode === "sameurl" ? "Cards where action URL = author link — bulk-import default" : mode === "topacts" ? "Acts ranked by completions (most done first)" : mode === "topfacts" ? "Facts ranked by boosts (most boosted first)" : mode === "topsmacks" ? "Smacks ranked by boosts (most boosted first)" : "Review submitted actions"}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={mode === "users" ? fetchUsers : mode === "nourl" ? fetchNoUrlCards : mode === "noimage" ? fetchNoImageCards : mode === "online" ? fetchOnlineUsers : mode === "bigimages" ? fetchBigImages : mode === "brokenimages" ? fetchBrokenImages : mode === "sameurl" ? fetchSameUrlCards : fetchPendingCards}
-                disabled={mode === "users" ? loading : mode === "nourl" ? noUrlLoading : mode === "noimage" ? noImageLoading : mode === "online" ? onlineLoading : mode === "bigimages" ? bigImagesLoading : mode === "brokenimages" ? brokenLoading : mode === "sameurl" ? sameUrlLoading : cardsLoading}
+                onClick={mode === "users" ? fetchUsers : mode === "nourl" ? fetchNoUrlCards : mode === "noimage" ? fetchNoImageCards : mode === "online" ? fetchOnlineUsers : mode === "bigimages" ? fetchBigImages : mode === "brokenimages" ? fetchBrokenImages : mode === "sameurl" ? fetchSameUrlCards : mode === "topacts" ? fetchTopActs : mode === "topfacts" ? fetchTopFacts : mode === "topsmacks" ? fetchTopSmacks : fetchPendingCards}
+                disabled={mode === "users" ? loading : mode === "nourl" ? noUrlLoading : mode === "noimage" ? noImageLoading : mode === "online" ? onlineLoading : mode === "bigimages" ? bigImagesLoading : mode === "brokenimages" ? brokenLoading : mode === "sameurl" ? sameUrlLoading : mode === "topacts" ? topActsLoading : mode === "topfacts" ? topFactsLoading : mode === "topsmacks" ? topSmacksLoading : cardsLoading}
                 className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40"
               >
-                <RefreshCw size={15} className={(mode === "users" ? loading : mode === "nourl" ? noUrlLoading : mode === "noimage" ? noImageLoading : mode === "online" ? onlineLoading : mode === "bigimages" ? bigImagesLoading : mode === "brokenimages" ? brokenLoading : mode === "sameurl" ? sameUrlLoading : cardsLoading) ? "animate-spin" : ""} />
+                <RefreshCw size={15} className={(mode === "users" ? loading : mode === "nourl" ? noUrlLoading : mode === "noimage" ? noImageLoading : mode === "online" ? onlineLoading : mode === "bigimages" ? bigImagesLoading : mode === "brokenimages" ? brokenLoading : mode === "sameurl" ? sameUrlLoading : mode === "topacts" ? topActsLoading : mode === "topfacts" ? topFactsLoading : mode === "topsmacks" ? topSmacksLoading : cardsLoading) ? "animate-spin" : ""} />
               </button>
               <button
                 onClick={onClose}
@@ -916,26 +1094,73 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
             </div>
           </div>
 
-          {/* Mode switcher — dropdown */}
-          <div className="px-5 py-2.5 border-b border-gray-100 shrink-0">
-            <select
-              value={mode}
-              onChange={(e) => setMode(e.target.value as PanelMode)}
-              className="w-full font-['Poppins',sans-serif] text-sm font-semibold text-[#23297e] bg-[#23297e]/5 border border-[#23297e]/20 rounded-lg px-3 py-1.5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#23297e]/30"
-            >
-              <option value="newcard">➕ Create from URL</option>
-              <option value="users">Users</option>
-              <option value="cards">{`Cards${!cardsLoading && pendingCardsCount > 0 ? ` (${pendingCardsCount})` : ""}`}</option>
-              <option value="nourl">{`Missing URL${noUrlCards.length > 0 ? ` (${noUrlCards.length})` : ""}`}</option>
-              <option value="noimage">{`Missing Image${noImageCards.length > 0 ? ` (${noImageCards.length})` : ""}`}</option>
-              <option value="online">{`Online${onlineUsers.length > 0 ? ` (${onlineUsers.length})` : ""}`}</option>
-              <option value="bigimages">{`Big images${bigImages.length > 0 ? ` (${bigImages.length})` : ""}`}</option>
-              <option value="brokenimages">{`Broken images${brokenImages.length > 0 ? ` (${brokenImages.length})` : ""}`}</option>
-              <option value="sameurl">{`URL = Author link${sameUrlCards.length > 0 ? ` (${sameUrlCards.length})` : ""}`}</option>
-              <option value="matcher">Matcher</option>
-              {onToggleSiteUpdating && <option value="siteupdate">{`🔧 Site-updating banner${siteUpdating ? " (ON)" : ""}`}</option>}
-            </select>
-          </div>
+          {/* Mode switcher — custom dropdown (icon + label per mode) */}
+          {(() => {
+            const modeOptions: { value: PanelMode; label: string; Icon: LucideIcon; badge?: string; show?: boolean }[] = [
+              { value: "newcard",      label: "Create from URL",  Icon: Plus },
+              { value: "users",        label: "Users",            Icon: Users },
+              { value: "cards",        label: "Cards",            Icon: FileText,      badge: !cardsLoading && pendingCardsCount > 0 ? String(pendingCardsCount) : undefined },
+              { value: "nourl",        label: "Missing URL",      Icon: Link2,         badge: noUrlCards.length > 0 ? String(noUrlCards.length) : undefined },
+              { value: "noimage",      label: "Missing Image",    Icon: ImageIcon,     badge: noImageCards.length > 0 ? String(noImageCards.length) : undefined },
+              { value: "online",       label: "Online",           Icon: Activity,      badge: onlineUsers.length > 0 ? String(onlineUsers.length) : undefined },
+              { value: "topacts",      label: "Top Acts",         Icon: BarChart3 },
+              { value: "topfacts",     label: "Top Facts",        Icon: Lightbulb },
+              { value: "topsmacks",    label: "Top Smacks",       Icon: MessageSquare },
+              { value: "bigimages",    label: "Big images",       Icon: ZoomIn,        badge: bigImages.length > 0 ? String(bigImages.length) : undefined },
+              { value: "brokenimages", label: "Broken images",    Icon: AlertTriangle, badge: brokenImages.length > 0 ? String(brokenImages.length) : undefined },
+              { value: "sameurl",      label: "URL = Author link", Icon: ExternalLink,  badge: sameUrlCards.length > 0 ? String(sameUrlCards.length) : undefined },
+              { value: "matcher",      label: "Matcher",          Icon: Sliders },
+              ...(onToggleSiteUpdating ? [{ value: "siteupdate" as PanelMode, label: "Site-updating banner", Icon: Wrench, badge: siteUpdating ? "ON" : undefined }] : []),
+            ];
+            const current = modeOptions.find((o) => o.value === mode) ?? modeOptions[0];
+            const CurrentIcon = current.Icon;
+            return (
+              <div className="px-5 py-2.5 border-b border-gray-100 shrink-0 relative" ref={modeMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setModeMenuOpen((v) => !v)}
+                  aria-haspopup="listbox"
+                  aria-expanded={modeMenuOpen}
+                  className="w-full flex items-center gap-2 font-['Poppins',sans-serif] text-sm font-semibold text-[#23297e] bg-[#23297e]/5 border border-[#23297e]/20 rounded-lg px-3 py-1.5 cursor-pointer transition-colors hover:bg-[#23297e]/10 focus:outline-none focus:ring-2 focus:ring-[#23297e]/30"
+                >
+                  <CurrentIcon size={16} strokeWidth={2} className="shrink-0 text-[#23297e]" />
+                  <span className="flex-1 text-left truncate">{current.label}</span>
+                  {current.badge && (
+                    <span className={`shrink-0 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold ${current.badge === "ON" ? "bg-green-100 text-green-700" : "bg-[#ed6624] text-white"}`}>
+                      {current.badge}
+                    </span>
+                  )}
+                  <ChevronDown size={16} className={`shrink-0 text-[#23297e]/60 transition-transform ${modeMenuOpen ? "rotate-180" : ""}`} />
+                </button>
+                {modeMenuOpen && (
+                  <div role="listbox" className="absolute left-5 right-5 top-full mt-1 z-40 max-h-80 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-xl py-1">
+                    {modeOptions.map((o) => {
+                      const active = o.value === mode;
+                      const OptIcon = o.Icon;
+                      return (
+                        <button
+                          key={o.value}
+                          type="button"
+                          role="option"
+                          aria-selected={active}
+                          onClick={() => { setMode(o.value); setModeMenuOpen(false); }}
+                          className={`w-full flex items-center gap-2.5 px-3 py-2 text-left font-['Poppins',sans-serif] text-sm transition-colors ${active ? "bg-[#23297e]/10 text-[#23297e] font-semibold" : "text-gray-700 hover:bg-gray-50"}`}
+                        >
+                          <OptIcon size={16} strokeWidth={2} className={`shrink-0 ${active ? "text-[#23297e]" : "text-gray-400"}`} />
+                          <span className="flex-1 truncate">{o.label}</span>
+                          {o.badge && (
+                            <span className={`shrink-0 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-bold ${o.badge === "ON" ? "bg-green-100 text-green-700" : "bg-[#ed6624] text-white"}`}>
+                              {o.badge}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* ── SITE-UPDATING BANNER mode ──────────────────────────────────────────── */}
           {mode === "siteupdate" && onToggleSiteUpdating && (
@@ -1969,6 +2194,243 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
               </div>
             </>
           )}
+
+          {/* ── TOP ACTS mode — leaderboard ranked by completions ──────────────────── */}
+          {mode === "topacts" && (() => {
+            const totalCompletions = topActs.reduce((s, a) => s + a.completions, 0);
+            const totalBoosts = topActs.reduce((s, a) => s + a.boosts, 0);
+            return (
+            <>
+              <div className="px-5 py-3 border-b border-gray-100 shrink-0">
+                <p className="font-['Poppins',sans-serif] text-xs text-gray-500">
+                  {topActsLoading && topActs.length === 0
+                    ? "Loading…"
+                    : topActs.length === 0
+                      ? "No completed acts yet."
+                      : `${topActs.length} completed act${topActs.length !== 1 ? "s" : ""} · ${totalCompletions.toLocaleString()} completion${totalCompletions !== 1 ? "s" : ""} · ${totalBoosts.toLocaleString()} boost${totalBoosts !== 1 ? "s" : ""}`}
+                </p>
+              </div>
+
+              <div className="flex-1 overflow-y-auto">
+                {topActsError ? (
+                  <div className="p-5 text-center">
+                    <p className="font-['Poppins',sans-serif] text-sm text-red-500">{topActsError}</p>
+                    <button onClick={fetchTopActs} className="mt-3 text-xs text-[#23297e] underline font-['Poppins',sans-serif]">Retry</button>
+                  </div>
+                ) : topActs.length === 0 && !topActsLoading ? (
+                  <div className="flex flex-col items-center justify-center h-40 gap-2">
+                    <BarChart3 size={28} className="text-gray-200" />
+                    <p className="font-['Poppins',sans-serif] text-sm text-gray-400">No completed acts yet.</p>
+                  </div>
+                ) : (
+                  <ol className="divide-y divide-gray-50">
+                    {topActs.map((a, i) => {
+                      // Top 3 get a colored rank badge; everyone else a muted one.
+                      const rankStyle = i === 0
+                        ? "bg-[#ed6624] text-white"
+                        : i === 1
+                          ? "bg-[#23297e] text-white"
+                          : i === 2
+                            ? "bg-[#5a3e9e] text-white"
+                            : "bg-gray-100 text-gray-500";
+                      return (
+                      <li key={a.id} className="px-5 py-3 flex items-center gap-3">
+                        <span className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center font-['Poppins',sans-serif] font-bold text-xs ${rankStyle}`}>
+                          {i + 1}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-['Poppins',sans-serif] font-semibold text-sm text-gray-800 truncate">
+                            <span className="text-gray-400 font-normal">#{a.id}</span> {a.title}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span
+                              className="inline-flex items-center rounded px-1.5 py-0.5 font-['Poppins',sans-serif] text-[10px] font-semibold text-white"
+                              style={{ backgroundColor: a.categoryColor ?? "#23297e" }}
+                            >
+                              {a.category}
+                            </span>
+                            {a.adminApproved === false && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-semibold uppercase tracking-wide">Pending</span>
+                            )}
+                          </div>
+                        </div>
+                        {/* Completions — the primary ranked count. */}
+                        <span
+                          className={`shrink-0 inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-['Poppins',sans-serif] text-[11px] font-bold ${
+                            a.completions > 0 ? "bg-[#ed6624]/10 text-[#ed6624]" : "bg-gray-50 text-gray-400"
+                          }`}
+                          title={`${a.completions.toLocaleString()} completion${a.completions !== 1 ? "s" : ""}`}
+                        >
+                          <CheckCircle2 size={11} />
+                          {a.completions.toLocaleString()}
+                        </span>
+                        {/* Boosts — secondary engagement signal. */}
+                        <span
+                          className={`shrink-0 inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-['Poppins',sans-serif] text-[11px] font-semibold ${
+                            a.boosts > 0 ? "bg-amber-50 text-amber-600" : "bg-gray-50 text-gray-300"
+                          }`}
+                          title={`${a.boosts.toLocaleString()} boost${a.boosts !== 1 ? "s" : ""}`}
+                        >
+                          <Flame size={11} />
+                          {a.boosts.toLocaleString()}
+                        </span>
+                      </li>
+                      );
+                    })}
+                  </ol>
+                )}
+              </div>
+            </>
+            );
+          })()}
+
+          {mode === "topfacts" && (() => {
+            const totalBoosts = topFacts.reduce((s, f) => s + f.boosts, 0);
+            const withBoosts = topFacts.filter((f) => f.boosts > 0).length;
+            return (
+            <>
+              <div className="px-5 py-3 border-b border-gray-100 shrink-0">
+                <p className="font-['Poppins',sans-serif] text-xs text-gray-500">
+                  {topFactsLoading && topFacts.length === 0
+                    ? "Loading…"
+                    : topFacts.length === 0
+                      ? "No facts found."
+                      : `${topFacts.length} fact${topFacts.length !== 1 ? "s" : ""} · ${totalBoosts.toLocaleString()} boost${totalBoosts !== 1 ? "s" : ""} · ${withBoosts} with at least one boost`}
+                </p>
+              </div>
+
+              <div className="flex-1 overflow-y-auto">
+                {topFactsError ? (
+                  <div className="p-5 text-center">
+                    <p className="font-['Poppins',sans-serif] text-sm text-red-500">{topFactsError}</p>
+                    <button onClick={fetchTopFacts} className="mt-3 text-xs text-[#23297e] underline font-['Poppins',sans-serif]">Retry</button>
+                  </div>
+                ) : topFacts.length === 0 && !topFactsLoading ? (
+                  <div className="flex flex-col items-center justify-center h-40 gap-2">
+                    <Lightbulb size={28} className="text-gray-200" />
+                    <p className="font-['Poppins',sans-serif] text-sm text-gray-400">No facts to rank yet.</p>
+                  </div>
+                ) : (
+                  <ol className="divide-y divide-gray-50">
+                    {topFacts.map((f, i) => {
+                      const rankStyle = i === 0
+                        ? "bg-[#127f05] text-white"
+                        : i === 1
+                          ? "bg-[#23297e] text-white"
+                          : i === 2
+                            ? "bg-[#5a3e9e] text-white"
+                            : "bg-gray-100 text-gray-500";
+                      return (
+                      <li key={f.id} className="px-5 py-3 flex items-center gap-3">
+                        <span className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center font-['Poppins',sans-serif] font-bold text-xs ${rankStyle}`}>
+                          {i + 1}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-['Poppins',sans-serif] font-semibold text-sm text-gray-800 line-clamp-2">
+                            <span className="text-gray-400 font-normal">#{f.id}</span> {f.claim}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="inline-flex items-center rounded px-1.5 py-0.5 font-['Poppins',sans-serif] text-[10px] font-semibold text-white bg-[#127f05]">
+                              {f.category}
+                            </span>
+                          </div>
+                        </div>
+                        <span
+                          className={`shrink-0 inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-['Poppins',sans-serif] text-[11px] font-bold ${
+                            f.boosts > 0 ? "bg-amber-50 text-amber-600" : "bg-gray-50 text-gray-400"
+                          }`}
+                          title={`${f.boosts.toLocaleString()} boost${f.boosts !== 1 ? "s" : ""}`}
+                        >
+                          <Flame size={11} />
+                          {f.boosts.toLocaleString()}
+                        </span>
+                      </li>
+                      );
+                    })}
+                  </ol>
+                )}
+              </div>
+            </>
+            );
+          })()}
+
+          {mode === "topsmacks" && (() => {
+            const totalBoosts = topSmacks.reduce((s, r) => s + r.boosts, 0);
+            const withBoosts = topSmacks.filter((r) => r.boosts > 0).length;
+            return (
+            <>
+              <div className="px-5 py-3 border-b border-gray-100 shrink-0">
+                <p className="font-['Poppins',sans-serif] text-xs text-gray-500">
+                  {topSmacksLoading && topSmacks.length === 0
+                    ? "Loading…"
+                    : topSmacks.length === 0
+                      ? "No smacks found."
+                      : `${topSmacks.length} smack${topSmacks.length !== 1 ? "s" : ""} · ${totalBoosts.toLocaleString()} boost${totalBoosts !== 1 ? "s" : ""} · ${withBoosts} with at least one boost`}
+                </p>
+              </div>
+
+              <div className="flex-1 overflow-y-auto">
+                {topSmacksError ? (
+                  <div className="p-5 text-center">
+                    <p className="font-['Poppins',sans-serif] text-sm text-red-500">{topSmacksError}</p>
+                    <button onClick={fetchTopSmacks} className="mt-3 text-xs text-[#23297e] underline font-['Poppins',sans-serif]">Retry</button>
+                  </div>
+                ) : topSmacks.length === 0 && !topSmacksLoading ? (
+                  <div className="flex flex-col items-center justify-center h-40 gap-2">
+                    <MessageSquare size={28} className="text-gray-200" />
+                    <p className="font-['Poppins',sans-serif] text-sm text-gray-400">No smacks to rank yet.</p>
+                  </div>
+                ) : (
+                  <ol className="divide-y divide-gray-50">
+                    {topSmacks.map((r, i) => {
+                      const rankStyle = i === 0
+                        ? "bg-[#c2185b] text-white"
+                        : i === 1
+                          ? "bg-[#23297e] text-white"
+                          : i === 2
+                            ? "bg-[#5a3e9e] text-white"
+                            : "bg-gray-100 text-gray-500";
+                      return (
+                      <li key={r.id} className="px-5 py-3 flex items-center gap-3">
+                        <span className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center font-['Poppins',sans-serif] font-bold text-xs ${rankStyle}`}>
+                          {i + 1}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-['Poppins',sans-serif] font-semibold text-sm text-gray-800 truncate">
+                            <span className="text-gray-400 font-normal">#{r.id}</span> {r.title}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            {r.tags.slice(0, 2).map((t) => (
+                              <span key={t} className="inline-flex items-center rounded px-1.5 py-0.5 font-['Poppins',sans-serif] text-[10px] font-semibold text-white bg-[#c2185b]">
+                                {t}
+                              </span>
+                            ))}
+                            {r.isStatic && (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 text-[10px] font-semibold uppercase tracking-wide">Built-in</span>
+                            )}
+                            {r.adminApproved === false && (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-semibold uppercase tracking-wide">Pending</span>
+                            )}
+                          </div>
+                        </div>
+                        <span
+                          className={`shrink-0 inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-['Poppins',sans-serif] text-[11px] font-bold ${
+                            r.boosts > 0 ? "bg-amber-50 text-amber-600" : "bg-gray-50 text-gray-400"
+                          }`}
+                          title={`${r.boosts.toLocaleString()} boost${r.boosts !== 1 ? "s" : ""}`}
+                        >
+                          <Flame size={11} />
+                          {r.boosts.toLocaleString()}
+                        </span>
+                      </li>
+                      );
+                    })}
+                  </ol>
+                )}
+              </div>
+            </>
+            );
+          })()}
         </div>
       </div>
 
@@ -2010,6 +2472,11 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
           onClose={() => setEditingCard(null)}
           onSaved={(updated) => {
             setPendingCards((prev) => prev.map((c) => c.id === updated.id ? { ...c, ...updated } as unknown as PendingCard : c));
+            setEditingCard(null);
+          }}
+          onApproved={(approved) => {
+            // Approved cards leave the pending queue entirely.
+            setPendingCards((prev) => prev.filter((c) => c.id !== approved.id));
             setEditingCard(null);
           }}
           onDeleted={(id) => {

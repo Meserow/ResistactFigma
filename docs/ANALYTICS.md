@@ -38,8 +38,8 @@ match_started  →  match_set ★        (converted)
 | `action_completed` ★ | `actionCompleted` | `card_id`, `category` | User marks an Act done (fresh only, not un-do) |
 | `share` ★ | `shareClicked` | `method`, `content_type`, `item_id?` | A share destination is clicked |
 | `resource_link_clicked` | `resourceLinkClicked` | `resource`, `card_id?` | ACLU know-your-rights (or similar) clicked |
-| `boost` | `boostToggled` | `card_id`, `active` | Boost toggled (`active` = resulting state) |
-| `bookmark` | `bookmarkToggled` | `card_id`, `active` | Bookmark toggled |
+| `boost` | `boostToggled` | `card_id` | A card is boosted (add only — un-boost not tracked) |
+| `bookmark` | `bookmarkToggled` | `card_id` | A card is bookmarked (add only — un-bookmark not tracked) |
 | `card_flagged` | `cardFlagged` | `card_id`, `reason` | A card is flagged |
 | `match_started` | `matchStarted` | — | Match wizard opens |
 | `match_set` ★ | `matchSet` | `time_bucket`, `tone_*` | Wizard preferences applied |
