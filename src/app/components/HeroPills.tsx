@@ -47,7 +47,7 @@ export function HeroPills({ onMatchClick, onAskClick, onHowClick, hasMatchPrefs 
         >
           <Zap size={14} strokeWidth={2.5} className="text-gray-600 group-hover:text-[#ed6624]" />
           <span className="flex flex-col items-start text-left leading-tight whitespace-nowrap">
-            <span className="text-[13px] font-bold text-gray-600 group-hover:text-[#ed6624]">How This Works</span>
+            <span className="text-[13px] font-bold text-gray-600 group-hover:text-[#ed6624]">About</span>
             <span className="text-[10.5px] font-normal text-gray-400 italic group-hover:text-[#ed6624]/70">What is this site about?</span>
           </span>
         </button>
@@ -87,7 +87,7 @@ export function HeroPills({ onMatchClick, onAskClick, onHowClick, hasMatchPrefs 
       </div>
 
       {openModal === "how" && (
-        <HeroModal onClose={closeAndRestore} title="How This Works" titleId="hero-modal-how" accentColor="#23297e" icon={<Zap size={20} strokeWidth={2} />}>
+        <HeroModal onClose={closeAndRestore} title="About" titleId="hero-modal-how" accentColor="#23297e" icon={<Zap size={20} strokeWidth={2} />}>
           <p>
             If you've been doomscrolling, rage-texting friends, or lying awake wondering how we got here —{" "}
             <em>you're not alone.</em> Tired of being told you can only vote, donate, or wait for the next No Kings protest? <em>You're really not alone.</em>

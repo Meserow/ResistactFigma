@@ -501,7 +501,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
                 onChange={(e) => handleCategoryChange(e.target.value)}
                 className={SELECT_CLS(category)}
               >
-                {CATEGORY_OPTIONS.map((o) => (
+                {[...CATEGORY_OPTIONS].sort((a, b) => a.label.localeCompare(b.label)).map((o) => (
                   <option key={o.label} value={o.label}>{o.label}</option>
                 ))}
                 {!CATEGORY_OPTIONS.find((o) => o.label === category) && (

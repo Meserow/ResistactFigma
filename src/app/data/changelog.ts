@@ -16,6 +16,72 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.54",
+    date: "2026-06-01",
+    title: "Tidier category list when editing an Act",
+    sections: [
+      {
+        heading: "Editing Acts",
+        items: [
+          "The category dropdown in the Act editor is now fully alphabetical — \"Other\" no longer sits off on its own at the bottom.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.53",
+    date: "2026-06-01",
+    title: "The Remote filter is now labeled \"Remote Only\" with its own color",
+    sections: [
+      {
+        heading: "Filtering the feed",
+        items: [
+          "Renamed the \"Remote\" button to \"Remote Only\" to make it clear that flipping it on hides every in-person action.",
+          "Gave the front filter buttons distinct colors when they're on — navy \"Location\", orange \"Remote Only\", purple \"5 Minutes Max\" — so neighboring buttons never share the same highlight.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.50",
+    date: "2026-06-01",
+    title: "The Remote filter now stands on its own, separate from Location",
+    sections: [
+      {
+        heading: "Filtering the feed",
+        items: [
+          "The \"Remote\" button is now fully independent of the \"Location\" button. Turning on Remote no longer makes the Location button light up as if you'd picked a place.",
+          "The Location button only highlights when you've actually chosen a state or region, and its \"Clear\" link now clears just your location picks — leaving Remote on if you had it on.",
+          "Remote is now a strict filter: flip it on and every in-person action drops away, leaving only the things you can do from anywhere — even if you've also picked a state.",
+          "We moved the buttons so the order reads Location, then Remote, then 5 Minutes Max, putting the where-and-how filters right up front.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.49",
+    date: "2026-06-01",
+    title: "The ResistAct logo now headlines the page and tucks into the toolbar as you scroll",
+    sections: [
+      {
+        heading: "Top of the page",
+        items: [
+          "The big ResistAct logo now sits front-and-center at the top of the feed for everyone — whether you're signed in or just visiting.",
+          "As you scroll down, the welcome panel gracefully shrinks and hands off to a compact toolbar that stays frozen at the top, with the logo settling into its usual spot on the left.",
+          "Signed-in members now get the same animated intro and centered logo above their personalized welcome and streak, matching what first-time visitors see.",
+        ],
+      },
+      {
+        heading: "Quick actions follow you down",
+        items: [
+          "\"About\", \"Refine Your Matches\", and \"Add an Act\" now live in the frozen toolbar too — they fade in as you scroll so the welcome panel's buttons are always within reach, no scrolling back to the top.",
+          "The search box stretches full-width across the top bar until you scroll, giving you more room to type before the toolbar buttons slide in.",
+          "The \"Join The Resistance\" button is now ResistAct navy with a gentle shimmer sweep, so the sign-up call catches your eye.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.48",
     date: "2026-06-01",
     title: "Texting is now its own category, plus icons on the match pills",

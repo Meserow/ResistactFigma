@@ -20,11 +20,11 @@ ResistAct (resistact.org) is an anti-Trump / MAGA-resistance action-matching pla
 ## Local secrets / tokens (where to find them)
 
 Local credentials for deploys, scripts, and the "Create from URL" tooling live in a
-**gitignored, machine-local** file OUTSIDE the repo:
+**gitignored, machine-local** file inside the repo:
 
-- **Path:** `/Users/ellenescarcega/GitHub/ResistAct/tools/automation/.env`
-  (the repo root is `ResistactFigma/`; `tools/` is its parent, so this file is not
-  tracked by git and can't be committed here).
+- **Path:** `/Users/ellenescarcega/GitHub/ResistactFigma/tools/automation/.env.txt`
+  (gitignored via `tools/automation/.env*` in `.gitignore`, so it's untracked and
+  can't be committed even though it lives under the repo root).
 - **Keys it contains:** `SUPABASE_ACCESS_TOKEN` (Supabase personal access token, `sbp_…` —
   used to authenticate `npx supabase functions deploy`) and `OPENAI_API_KEY` (`sk-…` —
   used by the art-gen / "Create from URL" tooling).
