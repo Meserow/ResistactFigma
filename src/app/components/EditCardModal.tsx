@@ -60,6 +60,7 @@ const CATEGORY_OPTIONS: { label: string; color: string }[] = [
   { label: "Training",             color: "#126d89" },
   { label: "Transportation",       color: "#126d89" },
   { label: "Video",                color: "#e44b4b" },
+  { label: "Volunteer",            color: "#4a7c59" },
   { label: "Witness",              color: "#767574" },
   { label: "Other",                color: "#767574" },
 ];

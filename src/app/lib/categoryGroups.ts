@@ -17,7 +17,7 @@ import {
   HandCoins, DoorOpen, House, Drama, UserPlus, HardHat, PenLine, Calendar,
   Brain, Newspaper, Lightbulb, Heart, FileSignature, Sparkles, Briefcase,
   Megaphone, Shirt, Footprints, Share2, GraduationCap, Car, Video, Eye, Tag,
-  MessageSquare,
+  MessageSquare, HandHelping,
 } from "lucide-react";
 
 export interface CategoryGroup {
@@ -53,7 +53,7 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
     // "Host" → hosting an event is showing up from the organizer side.
     // "Transportation" → giving people rides to actions / canvasses /
     // hearings is showing up by enabling others' presence.
-    categories: ["Host", "Join a Group", "Labor", "Meeting", "Professional Skills", "Show Up", "Training", "Transportation", "Witness"],
+    categories: ["Host", "Join a Group", "Labor", "Meeting", "Professional Skills", "Show Up", "Training", "Transportation", "Volunteer", "Witness"],
   },
   {
     heading: "Care",
@@ -124,6 +124,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
   "Training":            "#3a6d80", // muted teal (absorbs Learn)
   "Transportation":      "#3a6d80", // muted teal
   "Video":               "#b84545", // muted brick red
+  "Volunteer":           "#4a7c59", // forest green — hands-on community help
   "Witness":             "#767574", // neutral gray
 };
 
@@ -171,6 +172,7 @@ export const CATEGORY_ICONS: Record<string, LucideIcon> = {
   "Training":            GraduationCap,
   "Transportation":      Car,
   "Video":               Video,
+  "Volunteer":           HandHelping,    // offering hands-on help
   "Witness":             Eye,
 };
 

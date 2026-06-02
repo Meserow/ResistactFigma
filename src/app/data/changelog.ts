@@ -16,6 +16,20 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.57",
+    date: "2026-06-01",
+    title: "New \"Volunteer\" category",
+    sections: [
+      {
+        heading: "Browse & submit",
+        items: [
+          "Added a new Volunteer category for hands-on, direct-service ways to pitch in. It shows up in the Acts filters, the Quick Match tool, and when you submit your own Act.",
+          "Moved 21 existing Acts into Volunteer — things like joining a rapid-response network, cooking for a mutual-aid kitchen, or signing up as a march marshal — so they're easier to find.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.56",
     date: "2026-06-01",
     title: "Swipe is the default way to browse on phones",
