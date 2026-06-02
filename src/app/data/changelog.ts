@@ -28,6 +28,7 @@ export const CHANGELOG: ChangelogEntry[] = [
           "Swipe badges are clearer: a right swipe now stamps \"♥ Save\" (was \"Yes\") and a left swipe stamps \"✕ Pass\".",
           "The Pass / Undo / Save buttons under the swipe deck are now solid colored circles (red / gray / green) with white icons, so they read at a glance.",
           "Swipe mode now picks up where you left off — acts you've already swiped (saved or passed) no longer reappear, so reopening doesn't restart you at the top. Saved acts still go to My Matches, and the deck respects whatever filters you have on.",
+          "Fixed a bug where swiping by gesture could stop working after a few cards — the pointer-capture call could fail and silently kill the swipe. It's now resilient, so you can keep swiping as long as you like.",
           "Added the ResistAct logo to the top of swipe mode in a full-width white header bar.",
           "Clearer swipe guidance: solid \"← Swipe LEFT to pass\" (teal) and \"Swipe RIGHT to save →\" (orange) labels up top, plus two-line buttons below — Pass / Not for Me, Undo / Changed My Mind, and Save / Will Do This! Teal and orange (instead of red/green) stay distinguishable for red-green color blindness, with Save in the brand orange.",
           "Swipe cards now match the latest card layout — the category pill sits in the lower-left and the time estimate is a pill on the banner.",

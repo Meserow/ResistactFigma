@@ -183,9 +183,14 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckPro
   // leave the next card unresponsive (the "only works once" bug).
   const onPointerDown = (e: React.PointerEvent) => {
     if (flyingRef.current || done) return;
-    topCardRef.current?.setPointerCapture?.(e.pointerId);
+    // Track the drag FIRST, then try to capture the pointer. setPointerCapture
+    // can throw ("No active pointer with the given id") on some browsers/states
+    // — if it does, we must NOT abort the handler, or startRef never gets set
+    // and the card goes dead. Capture is only a nicety (keeps move events coming
+    // if the finger leaves the card); the swipe works fine without it.
     startRef.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
     dragXRef.current = 0;
+    try { topCardRef.current?.setPointerCapture?.(e.pointerId); } catch { /* best-effort */ }
     paint(0, 0, false);
   };
   const onPointerMove = (e: React.PointerEvent) => {
@@ -198,7 +203,7 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckPro
   const onPointerUp = () => {
     const start = startRef.current;
     if (!start) return;
-    topCardRef.current?.releasePointerCapture?.(start.id);
+    try { topCardRef.current?.releasePointerCapture?.(start.id); } catch { /* best-effort */ }
     startRef.current = null;
     const x = dragXRef.current;
     if (Math.abs(x) > COMMIT_PX) {
