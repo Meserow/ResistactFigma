@@ -170,6 +170,7 @@ export const DEFAULT_CATEGORY_TONE: Record<string, Tone> = {
   "PERSONAL COMMITMENT":  { anger: 0, comedy: 0, subversion: 0, care: 2, hope: 3, energy: 0 },
   "PROFESSIONAL SKILLS":  { anger: 0, comedy: 0, subversion: 0, care: 2, hope: 2, energy: 2 },
   "TRANSPORTATION":       { anger: 0, comedy: 0, subversion: 0, care: 3, hope: 2, energy: 2 },
+  "VOLUNTEER":            { anger: 0, comedy: 0, subversion: 0, care: 3, hope: 2, energy: 2 },
   "HOUSING":              { anger: 0, comedy: 0, subversion: 0, care: 3, hope: 2, energy: 2 },
   "LABOR":                { anger: 2, comedy: 0, subversion: 1, care: 2, hope: 2, energy: 2 },
   "CRAFTING":             { anger: 0, comedy: 1, subversion: 0, care: 2, hope: 2, energy: 2 },

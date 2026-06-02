@@ -332,6 +332,7 @@ const KNOWN_MIGRATION_FLAG_KEYS: readonly string[] = [
   "cleanup:purge-fake-seeds:v2",
   "cleanup:reapprove-beanie:v1",
   "cleanup:recategorize-call-cards:v1",
+  "cleanup:recategorize-volunteer:v1",
   "cleanup:cw-redistribute:v1",
   "cleanup:boost-color-merge:v1",
   "cleanup:personal-commitment-color:v1",
@@ -2414,6 +2415,35 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       }
       await setMigrationFlag("migration:petitions-10min:v1");
       console.log(`Petitions 10-min migration: updated ${updated} cards.`);
+    }
+
+    // One-time: move a curated set of direct-service volunteering Acts into
+    // the new "Volunteer" category (June 2026). These were misfiled under
+    // Training / Join a Group / Host / Housing / Act of Kindness / Petition /
+    // Show Up / Transportation / Professional Skills, where the act is really
+    // "give your time to an org doing direct service" — not "learn how" or
+    // "become a member". Skilled volunteering (attorney/tech/linguist) stays
+    // in Professional Skills; text banks stay in Texting; court-watching stays
+    // in Witness — those more-specific categories describe the activity better.
+    const volunteerRecatDone = await getMigrationFlag("cleanup:recategorize-volunteer:v1");
+    if (!volunteerRecatDone) {
+      const VOLUNTEER_IDS = new Set([
+        46, 237, 289, 291, 292, 300, 321, 322,        // mislabeled Training / Join a Group
+        1084, 1094, 1162, 1181, 1331,                  // Join a Group / Housing / Act of Kindness / Transportation
+        2030, 2032, 2064, 2091, 2290, 2307, 2314, 136, // Join a Group / Pro Skills / Show Up / Host / Petition
+      ]);
+      let updated = 0;
+      for (const prefix of ["action:", "user-action:"]) {
+        for (const c of (await kv.getByPrefix(prefix)) as any[]) {
+          if (!c || typeof c !== "object" || typeof c.id !== "number") continue;
+          if (!VOLUNTEER_IDS.has(c.id)) continue;
+          // categoryColor mirrors CATEGORY_COLORS["Volunteer"] on the client.
+          await kv.set(`${prefix}${c.id}`, { ...c, category: "Volunteer", categoryColor: "#4a7c59" });
+          updated++;
+        }
+      }
+      await setMigrationFlag("cleanup:recategorize-volunteer:v1");
+      console.log(`Volunteer recategorize migration: updated ${updated} cards.`);
     }
 
     // One-time: canonicalize free-form `location` strings to the standard

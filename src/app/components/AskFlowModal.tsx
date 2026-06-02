@@ -5,7 +5,7 @@ import {
   Ban, DollarSign, Bike, Newspaper, Calendar, Share2, Hammer, PenLine, Users,
   HandHeart, Home, HardHat, Sparkles, Briefcase, Heart, Mail, GraduationCap,
   Smile, Volume2, Palette, Handshake, Send, Brain, Lightbulb,
-  Flame, Laugh, VenetianMask, Sunrise, Zap, ShoppingCart,
+  Flame, Laugh, VenetianMask, Sunrise, Zap, ShoppingCart, HandHelping,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
@@ -99,6 +99,7 @@ const CATEGORIES: { name: string; icon: LucideIcon; color: string }[] = [
   { name: "Spread Positivity",          icon: Smile,          color: "#8a00e6" },
   { name: "Training",                   icon: GraduationCap,  color: "#126d89" },
   { name: "Transportation",             icon: Bike,           color: "#126d89" },
+  { name: "Volunteer",                  icon: HandHelping,    color: "#4a7c59" },
   { name: "Other",                      icon: Lightbulb,      color: "#767574" },
 ];
 
