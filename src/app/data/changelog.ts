@@ -16,6 +16,20 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.55",
+    date: "2026-06-01",
+    title: "Smoother swipe-to-discover on phones",
+    sections: [
+      {
+        heading: "Swipe to discover",
+        items: [
+          "Swiping cards now stays smooth on phones instead of stuttering — the card follows your finger fluidly.",
+          "Fixed a bug where the swipe gesture only worked on the first card; you can now swipe through the whole stack one after another.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.54",
     date: "2026-06-01",
     title: "Tidier category list when editing an Act",

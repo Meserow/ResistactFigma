@@ -28,6 +28,7 @@ import { HomeHero } from "./components/HomeHero";
 import { LoggedInHero } from "./components/LoggedInHero";
 import { MatchMeModal } from "./components/MatchMeModal";
 import { SwipeDeck } from "./components/SwipeDeck";
+import { useIsMobile } from "./components/ui/use-mobile";
 // Lazy-loaded: the changelog data (~68 KB gzipped) is admin-only and rarely
 // opened, so it's code-split into its own chunk instead of riding in the main
 // bundle every visitor downloads.
@@ -501,7 +502,13 @@ export default function App() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [adminPanelOpen, setAdminPanelOpen] = useState(false);
   // Swipe "Discover" mode — presents the current ranked feed one card at a time.
+  // On phones this is the DEFAULT way to browse Acts (see the auto-open effect
+  // below); desktop keeps the classic card grid and can opt in via the button.
   const [swipeOpen, setSwipeOpen] = useState(false);
+  // Once the user taps "Done" out of the deck we stop auto-reopening it for the
+  // rest of the session, so the list view (with tabs/filters) stays reachable.
+  const [swipeDismissed, setSwipeDismissed] = useState(false);
+  const isMobile = useIsMobile();
   // App-level card detail modal. Opened from surfaces that aren't an ActionCard
   // (e.g. My Matches) so clicking a saved act pops the full modal first,
   // instead of jumping straight out to the act's external link.
