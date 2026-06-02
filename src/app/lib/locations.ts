@@ -2,9 +2,15 @@
 // strings produced too much noise in the filter dropdown — see live data
 // audit. New writes pick from this list; legacy values stay until manually
 // re-saved.
+//
+// LOCATION IS GEOGRAPHY ONLY. Whether an act can be done remotely / from home /
+// online is a SEPARATE concept, tracked by the card's `isOnline` flag — NOT a
+// location value. That's why "Remote"/"At Home"/"Online" are deliberately
+// absent here: a card can be tied to a state AND be doable remotely at the same
+// time. Legacy cards that stored "Remote" etc. in `location` are folded into
+// `isOnline` at read time by normalizeCardLocation().
 
 export const LOCATION_OPTIONS = [
-  "Remote",
   "National",
   "Multi-State",
   "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado",
@@ -18,17 +24,39 @@ export const LOCATION_OPTIONS = [
   "Washington", "Washington DC", "West Virginia", "Wisconsin", "Wyoming",
 ] as const;
 
-// Legacy location strings that existed before the canonical rename. Mapped
-// to their new equivalents so existing cards and filter chips stay consistent.
-// "Remote" is now the single canonical value for ALL location-agnostic acts —
-// "Online", "From Home", and "At Home" all fold into it (product decision:
-// one "do it from anywhere" concept, not three).
+// Legacy GEOGRAPHIC location strings mapped to their canonical equivalents.
+// The old "do it from anywhere" strings ("Remote"/"Online"/"From Home"/
+// "At Home") are intentionally NOT here — they are no longer location values.
+// They fold into the `isOnline` flag instead (see REMOTE_LOCATION_STRINGS and
+// normalizeCardLocation below).
 const LEGACY_MAP: Record<string, string> = {
-  "Online":      "Remote",
-  "From Home":   "Remote",
-  "At Home":     "Remote",
   "Multi-state": "Multi-State",
 };
+
+// Legacy location strings that actually meant "doable from anywhere". When a
+// card stored one of these in `location`, it really meant `isOnline: true`.
+// normalizeCardLocation() folds them into the flag and clears the location.
+export const REMOTE_LOCATION_STRINGS = new Set([
+  "Remote", "At Home", "From Home", "Online",
+]);
+
+// Split a card's stored fields into the disambiguated model:
+//   isOnline  — single canonical "remote / online / at-home" flag
+//   location  — geography only (state / National / Multi-State / undefined)
+// Folds the legacy `atHome` boolean and the legacy remote location strings
+// into `isOnline`, and strips those strings out of `location`. A geographic
+// location (a state, "National", "Multi-State", or a free-form "City, ST")
+// passes through untouched, so a card can be BOTH state-tied AND remote.
+export function normalizeCardLocation(
+  card: { isOnline?: boolean; atHome?: boolean; location?: string | null },
+): { isOnline: boolean; location: string | undefined } {
+  const raw = (card.location ?? "").trim();
+  const locIsRemote = REMOTE_LOCATION_STRINGS.has(raw);
+  return {
+    isOnline: !!card.isOnline || !!card.atHome || locIsRemote,
+    location: raw === "" || locIsRemote ? undefined : raw,
+  };
+}
 
 // USPS 2-letter codes → full state name. Used to normalize legacy
 // "City, ST" location strings down to a state for the filter dropdown.
@@ -50,15 +78,15 @@ const STATE_BY_CODE: Record<string, string> = {
 
 const STATE_NAMES = new Set<string>(LOCATION_OPTIONS as readonly string[]);
 
-// Normalize any free-form location string down to a single canonical
-// dropdown value (a state, "Remote", "At Home", "National", "Multi-State",
-// or null).
+// Normalize any free-form location string down to a single canonical GEOGRAPHIC
+// dropdown value (a state, "National", "Multi-State", or null). Remote/online/
+// at-home strings are NOT geography and resolve to null — remote-ness lives on
+// the `isOnline` flag (see normalizeCardLocation).
 //   "Odenton, MD"      -> "Maryland"
 //   "Beaver County, PA" -> "Pennsylvania"
 //   "California"       -> "California"
-//   "Online"           -> "Remote"   (legacy)
-//   "From Home"        -> "At Home"  (legacy)
 //   "Multi-state"      -> "Multi-State" (legacy)
+//   "Online" / "Remote" / "At Home" -> null  (these are isOnline, not a place)
 //   "Earth"            -> null
 export function locationToState(raw: string | null | undefined): string | null {
   if (!raw) return null;

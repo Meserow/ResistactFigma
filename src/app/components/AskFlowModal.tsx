@@ -127,6 +127,7 @@ export function AskFlowModal({
   const [formAuthorName,   setFormAuthorName]   = useState(""); // submitter-supplied author
   const [formAuthorRole,   setFormAuthorRole]   = useState(""); // role / org name
   const [formLocation,     setFormLocation]     = useState("");
+  const [formIsOnline,     setFormIsOnline]     = useState(false);
   const [formSponsor,      setFormSponsor]      = useState("");
   const [formVettingInfo,  setFormVettingInfo]  = useState("");
   const [formEventDate,    setFormEventDate]    = useState("");
@@ -221,7 +222,7 @@ export function AskFlowModal({
       if (!formDesc.trim())     m.push("Description");
       if (!formLink.trim())     m.push("Action URL");
     } else if (s === 1) {
-      if (!formLocation)        m.push("Location");
+      if (!formLocation && !formIsOnline) m.push("Location (or mark it remote)");
     } else if (s === imageStep) {
       if (!formImageUrl.trim()) m.push("Header image");
     }
@@ -243,18 +244,16 @@ export function AskFlowModal({
     if (!formTitle.trim() || !formDesc.trim() || !formLink.trim() || !formImageUrl.trim()) {
       setFormError("Title, description, action URL, and header image are required."); return;
     }
-    if (!formLocation) { setFormError("Location is required."); return; }
+    if (!formLocation && !formIsOnline) {
+      setFormError("Pick a location, or mark it as doable remotely / from home."); return;
+    }
     submittingRef.current = true;
     setFormError(null);
     setCreateLoading(true);
     try {
-      // "Remote" is the single canonical location-agnostic value. A Remote
-      // act carries BOTH location:"Remote" AND isOnline:true so every filter
-      // path (location dropdown, Remote pill, isLocationAgnostic) agrees.
-      // (Previously this compared against "Online" — which was never a form
-      // option — so isOnline was always false and Remote acts came in with
-      // location:"Remote", isOnline:false, breaking the state filter.)
-      const isOnline = formLocation === "Remote";
+      // Remote-ness and geography are independent axes now: location holds the
+      // state (or nothing), isOnline says whether it can be done from home.
+      const isOnline = formIsOnline;
       let res: Response;
       try {
         res = await fetch(`${API}/actions/create`, {
@@ -420,7 +419,7 @@ export function AskFlowModal({
                 title="Details & Vibe"
                 hint="Where, how much time, and what energy — helps us match this to the right people."
               >
-                <Field label="Location" required>
+                <Field label="Location">
                   <select
                     value={formLocation}
                     onChange={(e) => setFormLocation(e.target.value)}
@@ -428,11 +427,23 @@ export function AskFlowModal({
                   >
                     <option value="">— select —</option>
                     {LOCATION_OPTIONS.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt === "From Home" ? "From Home (not online)" : opt}
-                      </option>
+                      <option key={opt} value={opt}>{opt}</option>
                     ))}
                   </select>
+                  {/* Remote-ness is separate from the state above — an act can
+                      be tied to a place AND doable from home. Either a location
+                      or this box is required. */}
+                  <label className="mt-2 flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={formIsOnline}
+                      onChange={(e) => setFormIsOnline(e.target.checked)}
+                      className="h-4 w-4 accent-[#23297e]"
+                    />
+                    <span className="font-['Poppins',sans-serif] text-[13px] text-gray-700">
+                      Can be done remotely / from home
+                    </span>
+                  </label>
                 </Field>
 
                 {/* Tone & Time — unified section */}

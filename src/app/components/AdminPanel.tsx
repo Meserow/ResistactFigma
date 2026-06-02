@@ -5,7 +5,10 @@ import { EditCardModal } from "./EditCardModal";
 import { AdminUserDetail } from "./AdminUserDetail";
 import { UserAvatar } from "./UserAvatar";
 import { FACT_CARDS } from "../data/factCards";
+import type { FactCard } from "../data/factCards";
 import { STATIC_SMACKS } from "./SmacksPage";
+import type { ReceiptCard } from "./SmacksPage";
+import { FactDetailModal, SmackDetailModal } from "./LeaderboardDetailModals";
 import type { ActionCardData } from "./ActionCard";
 import type { LucideIcon } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
@@ -483,16 +486,25 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
   const [topActs, setTopActs] = useState<TopAct[]>([]);
   const [topActsLoading, setTopActsLoading] = useState(false);
   const [topActsError, setTopActsError] = useState<string | null>(null);
+  // Full card objects keyed by id, so clicking a Top-Acts row can open the
+  // same CardDetailsModal users see — the TopAct row itself is a lean slice.
+  const [topActsRaw, setTopActsRaw] = useState<Record<number, PendingCard>>({});
 
   // ── Top-Facts leaderboard state (facts ranked by boosts desc) ────────────────
   const [topFacts, setTopFacts] = useState<TopFact[]>([]);
   const [topFactsLoading, setTopFactsLoading] = useState(false);
   const [topFactsError, setTopFactsError] = useState<string | null>(null);
+  /** Fact whose full detail modal is open (clicked from the leaderboard). */
+  const [factDetail, setFactDetail] = useState<FactCard | null>(null);
 
   // ── Top-Smacks leaderboard state (smacks ranked by boosts desc) ──────────────
   const [topSmacks, setTopSmacks] = useState<TopSmack[]>([]);
   const [topSmacksLoading, setTopSmacksLoading] = useState(false);
   const [topSmacksError, setTopSmacksError] = useState<string | null>(null);
+  // Full smack/receipt objects keyed by id, for the click-through detail modal.
+  const [topSmacksRaw, setTopSmacksRaw] = useState<Record<number, ReceiptCard>>({});
+  /** Smack whose full detail modal is open (clicked from the leaderboard). */
+  const [smackDetail, setSmackDetail] = useState<ReceiptCard | null>(null);
 
   const authHeaders = {
     "Content-Type": "application/json",
@@ -880,22 +892,44 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
       const res = await fetch(`${API}/actions?limit=2000`, { headers: authHeaders });
       const data = await res.json();
       if (!res.ok) { setTopActsError(data.error ?? "Failed to load acts."); return; }
+
+      // Admin team's own completions / act-boosts, keyed by action id. We
+      // subtract these so the leaderboard reflects real-user activity rather
+      // than internal QA/testing. Best-effort: if it fails we show raw counts.
+      let adminCompletions: Record<string, number> = {};
+      let adminBoosts: Record<string, number> = {};
+      try {
+        const tRes = await fetch(`${API}/admin/leaderboard/admin-tallies`, { headers: authHeaders });
+        if (tRes.ok) {
+          const t = await tRes.json();
+          adminCompletions = t.completionsByAction ?? {};
+          adminBoosts = t.boostsByAction ?? {};
+        }
+      } catch { /* non-critical — fall back to unadjusted counts */ }
+
+      const rawMap: Record<number, PendingCard> = {};
       const ranked: TopAct[] = (data.cards ?? [])
-        .map((c: any) => ({
-          id: c.id,
-          title: c.title ?? `Action #${c.id}`,
-          category: c.category ?? "Other",
-          categoryColor: c.categoryColor,
-          completions: typeof c.completions === "number" ? c.completions : 0,
-          boosts: typeof c.boosts === "number" ? c.boosts : 0,
-          adminApproved: c.adminApproved,
-        }))
+        .map((c: any) => {
+          rawMap[c.id] = c as PendingCard;
+          const rawCompletions = typeof c.completions === "number" ? c.completions : 0;
+          const rawBoosts = typeof c.boosts === "number" ? c.boosts : 0;
+          return {
+            id: c.id,
+            title: c.title ?? `Action #${c.id}`,
+            category: c.category ?? "Other",
+            categoryColor: c.categoryColor,
+            completions: Math.max(0, rawCompletions - (adminCompletions[c.id] ?? 0)),
+            boosts: Math.max(0, rawBoosts - (adminBoosts[c.id] ?? 0)),
+            adminApproved: c.adminApproved,
+          };
+        })
         // Only acts people have actually completed — zero-completion acts are
         // hidden so the leaderboard stays focused on what's getting done.
         .filter((a: TopAct) => a.completions > 0)
         .sort((a: TopAct, b: TopAct) =>
           b.completions - a.completions || b.boosts - a.boosts || a.id - b.id,
         );
+      setTopActsRaw(rawMap);
       setTopActs(ranked);
     } catch {
       setTopActsError("Network error loading acts.");
@@ -943,26 +977,35 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
       const data = await res.json();
       if (!res.ok) { setTopSmacksError(data.error ?? "Failed to load smacks."); return; }
       const staticBoosts = (data.staticBoosts ?? {}) as Record<string, number>;
-      const kvRows: TopSmack[] = (data.receipts ?? []).map((r: any) => ({
-        id: r.id,
-        title: r.title || r.caption || `Smack #${r.id}`,
-        tags: Array.isArray(r.tags) ? r.tags : [],
-        boosts: Number(r.boosts) || 0,
-        isStatic: false,
-        adminApproved: r.adminApproved,
-      }));
+      // Keep the full objects around so a click can open the detail modal.
+      const rawMap: Record<number, ReceiptCard> = {};
+      const kvRows: TopSmack[] = (data.receipts ?? []).map((r: any) => {
+        rawMap[r.id] = { ...r, boosts: Number(r.boosts) || 0 } as ReceiptCard;
+        return {
+          id: r.id,
+          title: r.title || r.caption || `Smack #${r.id}`,
+          tags: Array.isArray(r.tags) ? r.tags : [],
+          boosts: Number(r.boosts) || 0,
+          isStatic: false,
+          adminApproved: r.adminApproved,
+        };
+      });
       const kvIds = new Set(kvRows.map((r) => r.id));
       const staticRows: TopSmack[] = STATIC_SMACKS
         .filter((s) => !kvIds.has(s.id))
-        .map((s) => ({
-          id: s.id,
-          title: s.title || s.caption || `Smack #${s.id}`,
-          tags: Array.isArray(s.tags) ? s.tags : [],
-          boosts: Number(staticBoosts[s.id]) || 0,
-          isStatic: true,
-          adminApproved: true,
-        }));
+        .map((s) => {
+          rawMap[s.id] = { ...s, boosts: Number(staticBoosts[s.id]) || 0 };
+          return {
+            id: s.id,
+            title: s.title || s.caption || `Smack #${s.id}`,
+            tags: Array.isArray(s.tags) ? s.tags : [],
+            boosts: Number(staticBoosts[s.id]) || 0,
+            isStatic: true,
+            adminApproved: true,
+          };
+        });
       const ranked = [...kvRows, ...staticRows].sort((a, b) => b.boosts - a.boosts || a.id - b.id);
+      setTopSmacksRaw(rawMap);
       setTopSmacks(ranked);
     } catch {
       setTopSmacksError("Network error loading smacks.");
@@ -1245,10 +1288,21 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
                   </div>
                   <div>
                     <label className={NC_LABEL}>Location</label>
-                    <select value={nc.location} onChange={(e) => setNc((p) => ({ ...p, location: e.target.value, isOnline: e.target.value === "Remote" }))} className={NC_INPUT}>
+                    <select value={nc.location} onChange={(e) => setNc((p) => ({ ...p, location: e.target.value }))} className={NC_INPUT}>
                       <option value="">— select —</option>
                       {LOCATION_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
                     </select>
+                    {/* Remote-ness is a separate axis from the state above —
+                        an act can be tied to a place AND doable from home. */}
+                    <label className="mt-2 flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={nc.isOnline}
+                        onChange={(e) => setNc((p) => ({ ...p, isOnline: e.target.checked }))}
+                        className="h-4 w-4 accent-[#23297e]"
+                      />
+                      <span className="font-['Poppins',sans-serif] text-[12px] text-gray-700">Can be done remotely / from home</span>
+                    </label>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -2234,7 +2288,12 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
                             ? "bg-[#5a3e9e] text-white"
                             : "bg-gray-100 text-gray-500";
                       return (
-                      <li key={a.id} className="px-5 py-3 flex items-center gap-3">
+                      <li
+                        key={a.id}
+                        onClick={() => { const raw = topActsRaw[a.id]; if (raw) setPreviewCard(raw); }}
+                        className="px-5 py-3 flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition-colors"
+                        title="View this act"
+                      >
                         <span className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center font-['Poppins',sans-serif] font-bold text-xs ${rankStyle}`}>
                           {i + 1}
                         </span>
@@ -2321,7 +2380,12 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
                             ? "bg-[#5a3e9e] text-white"
                             : "bg-gray-100 text-gray-500";
                       return (
-                      <li key={f.id} className="px-5 py-3 flex items-center gap-3">
+                      <li
+                        key={f.id}
+                        onClick={() => { const full = FACT_CARDS.find((x) => x.id === f.id); if (full) setFactDetail(full); }}
+                        className="px-5 py-3 flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition-colors"
+                        title="View this fact"
+                      >
                         <span className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center font-['Poppins',sans-serif] font-bold text-xs ${rankStyle}`}>
                           {i + 1}
                         </span>
@@ -2391,7 +2455,12 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
                             ? "bg-[#5a3e9e] text-white"
                             : "bg-gray-100 text-gray-500";
                       return (
-                      <li key={r.id} className="px-5 py-3 flex items-center gap-3">
+                      <li
+                        key={r.id}
+                        onClick={() => { const raw = topSmacksRaw[r.id]; if (raw) setSmackDetail(raw); }}
+                        className="px-5 py-3 flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition-colors"
+                        title="View this smack"
+                      >
                         <span className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center font-['Poppins',sans-serif] font-bold text-xs ${rankStyle}`}>
                           {i + 1}
                         </span>
@@ -2453,12 +2522,27 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
         <CardDetailsModal
           card={{
             ...(previewCard as unknown as ActionCardData),
-            // PendingCard stores the raw URL in `topImageUrl`; CardDetailsModal
-            // renders from `topImage`, so map it explicitly.
-            topImage: previewCard.topImageUrl ?? undefined,
+            // PendingCard / catalog cards store the image as `topImageUrl` or a
+            // storage `topImageKey`; CardDetailsModal renders from `topImage`,
+            // so resolve it explicitly (URL beats key lookup).
+            topImage: resolveImage(previewCard, imageMap) ?? undefined,
           }}
           onClose={() => setPreviewCard(null)}
         />
+      )}
+
+      {/* Fact detail — opened by clicking a Top Facts leaderboard row. */}
+      {factDetail && (
+        <FactDetailModal
+          fact={factDetail}
+          boosts={topFacts.find((f) => f.id === factDetail.id)?.boosts}
+          onClose={() => setFactDetail(null)}
+        />
+      )}
+
+      {/* Smack detail — opened by clicking a Top Smacks leaderboard row. */}
+      {smackDetail && (
+        <SmackDetailModal smack={smackDetail} onClose={() => setSmackDetail(null)} />
       )}
 
       {editingCard && (

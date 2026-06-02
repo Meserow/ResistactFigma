@@ -37,7 +37,9 @@ export function HeroPills({ onMatchClick, onAskClick, onHowClick, hasMatchPrefs 
 
   return (
     <>
-      <div className="flex flex-wrap lg:flex-nowrap justify-center gap-2">
+      {/* Phones get these actions in the hamburger menu instead (see Navbar);
+          hidden here below md so the hero stays compact on small screens. */}
+      <div className="hidden md:flex flex-wrap lg:flex-nowrap justify-center gap-2">
         <button
           ref={(el) => { triggerRefs.current.how = el; }}
           onClick={() => onHowClick ? onHowClick() : setOpenModal("how")}

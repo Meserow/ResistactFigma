@@ -1181,6 +1181,60 @@ app.get("/make-server-9eb1ae04/admin/users", async (c) => {
   }
 });
 
+// ─── ADMIN: GET /admin/leaderboard/admin-tallies ──────────────────────────────
+// Per-action tallies of completions and act-boosts attributable to ADMIN
+// accounts. The admin "Top Acts" leaderboard subtracts these so the board
+// reflects what real users are doing, not the team's own QA/testing clicks.
+// (Facts & Smacks boosts are anonymous — no per-user record exists — so they
+// can't be filtered this way and are left untouched.)
+app.get("/make-server-9eb1ae04/admin/leaderboard/admin-tallies", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    const admin = await requireAdmin(token);
+    if (!admin) return c.json({ error: "Forbidden" }, 403);
+
+    // Admin user IDs — email is the source of truth (matches requireAdmin),
+    // with the stored isAdmin flag as a fallback.
+    const approvals = (await kv.getByPrefix("user:approval:")) as any[];
+    const adminIds = new Set<string>();
+    for (const a of approvals ?? []) {
+      if (!a || !a.userId) continue;
+      if (isAdminEmail(a.email) || a.isAdmin === true) adminIds.add(String(a.userId));
+    }
+
+    const completionsByAction: Record<string, number> = {};
+    const boostsByAction: Record<string, number> = {};
+    if (adminIds.size > 0) {
+      const sb = adminClient();
+      // One scan each over the attributed-activity prefixes. Keys are
+      // `complete:{userId}:{actionId}` and `boost:{userId}:{actionId}`; a key's
+      // existence means the user currently has that act completed/boosted
+      // (untick deletes the key), so counting keys is the live tally.
+      const tally = (rows: { key: string }[] | null | undefined, out: Record<string, number>) => {
+        for (const row of rows ?? []) {
+          const parts = String(row.key).split(":");
+          if (parts.length < 3) continue;
+          const uid = parts[1];
+          const actionId = parts[2];
+          if (!adminIds.has(uid)) continue;
+          out[actionId] = (out[actionId] ?? 0) + 1;
+        }
+      };
+      const { data: completeRows } = await sb
+        .from("kv_store_9eb1ae04").select("key").like("key", "complete:%");
+      const { data: boostRows } = await sb
+        .from("kv_store_9eb1ae04").select("key").like("key", "boost:%");
+      tally(completeRows as any[], completionsByAction);
+      tally(boostRows as any[], boostsByAction);
+    }
+
+    return c.json({ completionsByAction, boostsByAction });
+  } catch (err) {
+    console.log("admin-tallies error:", err);
+    return c.json({ error: `Failed to compute admin tallies: ${err}` }, 500);
+  }
+});
+
 // ─── ADMIN: Who's online right now ────────────────────────────────────────────
 // Reads `user:last-seen:*` (written by `getUser` on every authenticated
 // request) and joins with `user:approval:{userId}` for display fields.

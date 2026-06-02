@@ -16,6 +16,98 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.62",
+    date: "2026-06-02",
+    title: "Swipe mode is now your choice on phones",
+    sections: [
+      {
+        heading: "Swipe to discover",
+        items: [
+          "Phones no longer drop you straight into the swipe deck when the page loads — you land on the normal feed first and start swiping whenever you're ready.",
+          "A new Scroll / Swipe toggle sits right under the filters on phones, so you can switch between the scrolling list and the swipe deck whenever you want.",
+          "Swipe badges are clearer: a right swipe now stamps \"♥ Save\" (was \"Yes\") and a left swipe stamps \"✕ Pass\".",
+          "The Pass / Undo / Save buttons under the swipe deck are now solid colored circles (red / gray / green) with white icons, so they read at a glance.",
+          "Swipe mode now picks up where you left off — acts you've already swiped (saved or passed) no longer reappear, so reopening doesn't restart you at the top. Saved acts still go to My Matches, and the deck respects whatever filters you have on.",
+          "Added the ResistAct logo to the top of swipe mode in a full-width white header bar.",
+          "Clearer swipe guidance: solid \"← Swipe LEFT to pass\" (teal) and \"Swipe RIGHT to save →\" (orange) labels up top, plus two-line buttons below — Pass / Not for Me, Undo / Changed My Mind, and Save / Will Do This! Teal and orange (instead of red/green) stay distinguishable for red-green color blindness, with Save in the brand orange.",
+          "Swipe cards now match the latest card layout — the category pill sits in the lower-left and the time estimate is a pill on the banner.",
+        ],
+      },
+      {
+        heading: "Cleaner phone feed",
+        items: [
+          "Tidied up the phone feed by hiding the \"N actions match your filters\" / sort bar — it's still there on larger screens.",
+          "On phones, the About, Refine Your Matches, and Add an Act! buttons now live in the menu (tap the ☰ icon) instead of stacking up top — so you get to the Acts faster. They're unchanged on larger screens.",
+          "On phones, the \"Texting\" filter now lives inside the Category dropdown (as \"Texting / SMS only\"), in its alphabetical spot in the list, instead of as its own pill — one less thing crowding the filter row.",
+          "On phones, \"Remote Only\" moved into the Location dropdown (as \"Remote only\" at the top) instead of being its own pill, shortening the filter row further.",
+          "On phones, when Remote only is on, the closed Location button now says \"Remote\" (with a count badge if you also picked states) so it's clear you're filtered to remote — your state picks stay selected.",
+          "The phone filter row now wraps onto a second line instead of scrolling sideways, so the Category button is always visible — no more hidden controls off the right edge.",
+          "On The Smacks, the topic filters now live in a tidy \"Category\" dropdown on phones instead of a sideways-scrolling row — so every topic is reachable in one tap.",
+          "Dropped the big centered logo from the top of the phone screen — the logo in the header already covers it, so the Acts start higher up.",
+          "Centered the filter pills on phones so the row looks balanced.",
+          "On phones, the \"Come back tomorrow.\" line in the bottom banner now drops to its own line so it reads cleanly instead of wrapping mid-phrase.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.61",
+    date: "2026-06-02",
+    title: "Readable YES / PASS stamps when swiping",
+    sections: [
+      {
+        heading: "Swipe to discover",
+        items: [
+          "The YES and PASS stamps are now solid (filled green and red) instead of see-through, so they stay readable over the card artwork while you swipe.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.60",
+    date: "2026-06-02",
+    title: "Click into top Acts/Facts/Smacks, and admin activity no longer skews the leaderboard",
+    sections: [
+      {
+        heading: "Admin dashboard — leaderboards",
+        items: [
+          "Click any row in Top Acts, Top Facts, or Top Smacks to open that item's full details in a popup — no more hunting it down elsewhere to see what it is.",
+          "Top Acts no longer counts the admin team's own completions and boosts, so the rankings reflect what real visitors are actually doing rather than internal testing.",
+          "Fact and Smack boosts are anonymous (we never recorded who clicked), so those boost counts are left as-is.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.59",
+    date: "2026-06-02",
+    title: "Fixed swipe freezing after a few cards",
+    sections: [
+      {
+        heading: "Swipe to discover",
+        items: [
+          "Fixed a bug where swiping would lock up after a few cards and the card would stop moving — you can now swipe through the whole stack without it getting stuck.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.58",
+    date: "2026-06-02",
+    title: "Tag an Act with a state even when it's doable from home",
+    sections: [
+      {
+        heading: "Locations & remote Acts",
+        items: [
+          "\"Remote\" / \"from home\" is now separate from where an Act is based. An Act can be tied to a state (say, California) AND still be marked as doable remotely — before, picking one wiped the other.",
+          "The submit and edit forms now have a simple \"Can be done remotely / from home\" checkbox that's independent of the location dropdown.",
+          "Acts that are tied to a place but also doable remotely show their state plus a small globe icon, so you can tell at a glance.",
+          "Filtering is unchanged in spirit: the Remote filter shows every remotely-doable Act, and picking a state still surfaces that state's Acts (including the ones you can also do from home).",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.57",
     date: "2026-06-01",
     title: "New \"Volunteer\" category",

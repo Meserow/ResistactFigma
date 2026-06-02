@@ -9,7 +9,10 @@ interface HomeHeroProps {
 
 export function HomeHero({ onMatchClick, onAskClick, onHowClick }: HomeHeroProps) {
   return (
-    <div className="hero-collapsing bg-white relative overflow-hidden border-b border-[#f0e8de]">
+    // Hidden on phones: the top bar already shows the ResistAct logo, so this
+    // centered hero logo is redundant there (its only phone content). Desktop
+    // keeps the full animated reveal + pills.
+    <div className="hero-collapsing bg-white relative overflow-hidden border-b border-[#f0e8de] hidden md:block">
       <div className="relative z-10 max-w-[880px] mx-auto px-5 pt-1 pb-2 text-center">
         <HeroLogoReveal />
 

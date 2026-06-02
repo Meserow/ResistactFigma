@@ -509,9 +509,13 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
                 banner. */}
             {(card.isOnline || card.location) && (
               <div className="absolute bottom-2 right-3 max-w-[55%] flex items-center gap-1 bg-white/95 backdrop-blur-sm rounded-md px-2 py-0.5 shadow-sm">
-                {card.isOnline
-                  ? <><Globe size={11} className="text-gray-700 shrink-0" /><span className="font-['Poppins',sans-serif] text-[11px] text-gray-700 truncate">Online</span></>
-                  : <><MapPin size={11} className="text-gray-700 shrink-0" /><span className="font-['Poppins',sans-serif] text-[11px] text-gray-700 truncate">{card.location}</span></>
+                {card.location
+                  ? <>
+                      <MapPin size={11} className="text-gray-700 shrink-0" />
+                      <span className="font-['Poppins',sans-serif] text-[11px] text-gray-700 truncate">{card.location}</span>
+                      {card.isOnline && <Globe size={11} className="text-gray-700 shrink-0" aria-label="also doable remotely" />}
+                    </>
+                  : <><Globe size={11} className="text-gray-700 shrink-0" /><span className="font-['Poppins',sans-serif] text-[11px] text-gray-700 truncate">Online</span></>
                 }
               </div>
             )}
