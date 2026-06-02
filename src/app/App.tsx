@@ -2942,6 +2942,10 @@ export default function App() {
               markSwiped(card.id);
             }}
             onPass={(card) => markSwiped(card.id)}
+            onCompleted={(card) => {
+              if (!completedCards.has(card.id)) handleComplete(card.id);
+              markSwiped(card.id);
+            }}
           />
         </ErrorBoundary>
       )}
