@@ -16,6 +16,41 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.62",
+    date: "2026-06-02",
+    title: "Swipe mode is now your choice on phones",
+    sections: [
+      {
+        heading: "Swipe to discover",
+        items: [
+          "Phones no longer drop you straight into the swipe deck when the page loads — you land on the normal feed first and start swiping whenever you're ready.",
+          "A new Scroll / Swipe toggle sits right under the filters on phones, so you can switch between the scrolling list and the swipe deck whenever you want.",
+          "Swipe badges are clearer: a right swipe now stamps \"♥ Save\" (was \"Yes\") and a left swipe stamps \"✕ Pass\".",
+          "The Pass / Undo / Save buttons under the swipe deck are now solid colored circles (red / gray / green) with white icons, so they read at a glance.",
+          "Swipe mode now picks up where you left off — acts you've already swiped (saved or passed) no longer reappear, so reopening doesn't restart you at the top. Saved acts still go to My Matches, and the deck respects whatever filters you have on.",
+          "Added the ResistAct logo to the top of swipe mode in a full-width white header bar.",
+          "Clearer swipe guidance: solid \"← Swipe LEFT to pass\" (teal) and \"Swipe RIGHT to save →\" (orange) labels up top, plus two-line buttons below — Pass / Not for Me, Undo / Changed My Mind, and Save / Will Do This! Teal and orange (instead of red/green) stay distinguishable for red-green color blindness, with Save in the brand orange.",
+          "Swipe cards now match the latest card layout — the category pill sits in the lower-left and the time estimate is a pill on the banner.",
+        ],
+      },
+      {
+        heading: "Cleaner phone feed",
+        items: [
+          "Tidied up the phone feed by hiding the \"N actions match your filters\" / sort bar — it's still there on larger screens.",
+          "On phones, the About, Refine Your Matches, and Add an Act! buttons now live in the menu (tap the ☰ icon) instead of stacking up top — so you get to the Acts faster. They're unchanged on larger screens.",
+          "On phones, the \"Texting\" filter now lives inside the Category dropdown (as \"Texting / SMS only\"), in its alphabetical spot in the list, instead of as its own pill — one less thing crowding the filter row.",
+          "On phones, \"Remote Only\" moved into the Location dropdown (as \"Remote only\" at the top) instead of being its own pill, shortening the filter row further.",
+          "On phones, when Remote only is on, the closed Location button now says \"Remote\" (with a count badge if you also picked states) so it's clear you're filtered to remote — your state picks stay selected.",
+          "The phone filter row now wraps onto a second line instead of scrolling sideways, so the Category button is always visible — no more hidden controls off the right edge.",
+          "On The Smacks, the topic filters now live in a tidy \"Category\" dropdown on phones instead of a sideways-scrolling row — so every topic is reachable in one tap.",
+          "Dropped the big centered logo from the top of the phone screen — the logo in the header already covers it, so the Acts start higher up.",
+          "Centered the filter pills on phones so the row looks balanced.",
+          "On phones, the \"Come back tomorrow.\" line in the bottom banner now drops to its own line so it reads cleanly instead of wrapping mid-phrase.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.61",
     date: "2026-06-02",
     title: "Readable YES / PASS stamps when swiping",

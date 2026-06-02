@@ -1024,32 +1024,59 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               prior code fell through to the Acts branch here, surfacing
               Location/Category/Remote filters that don't apply to Smacks. ── */
           <div className="px-4 pb-2">
-            <div className="flex gap-1.5 overflow-x-auto items-center" style={{ scrollbarWidth: "none" }}>
-              {(smacksAvailableTags ?? []).map((tag) => {
-                const selected = smacksActiveTags?.includes(tag);
-                return (
+            {/* Topics live in a "Category" dropdown on phones (they used to be a
+                horizontally-scrollable chip strip, which pushed most topics off
+                the right edge). Mirrors the Acts / Facts mobile Category pattern. */}
+            {(() => {
+              const isOpen = openFilter === "smacks-cat-mobile";
+              const selectedCount = smacksActiveTags?.length ?? 0;
+              return (
+                <div className="relative w-fit">
                   <button
-                    key={tag}
-                    onClick={() => onSmacksTagToggle?.(tag)}
-                    className={`shrink-0 px-3 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
-                      selected
+                    onClick={() => setOpenFilter(isOpen ? null : "smacks-cat-mobile")}
+                    className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
+                      selectedCount > 0
                         ? "bg-[#23297e] text-white border-[#23297e]"
                         : "bg-white text-gray-600 border-gray-200"
                     }`}
                   >
-                    {tag}
+                    Category
+                    {selectedCount > 0 && (
+                      <span className="w-4 h-4 rounded-full bg-[#ed6624] text-white text-[9px] flex items-center justify-center font-bold shrink-0">
+                        {selectedCount}
+                      </span>
+                    )}
+                    <ChevronDown size={11} className={isOpen ? "rotate-180" : ""} />
                   </button>
-                );
-              })}
-              {smacksActiveTags && smacksActiveTags.length > 0 && (
-                <button
-                  onClick={onSmacksTagsClear}
-                  className="shrink-0 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] text-gray-500 border border-dashed border-gray-300 whitespace-nowrap"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
+                  {isOpen && (
+                    <div className="absolute top-full left-0 mt-1.5 w-64 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50 max-h-80 overflow-y-auto">
+                      <p className="px-4 pt-1 pb-2 font-['Poppins',sans-serif] text-[10px] uppercase tracking-widest text-gray-400 font-semibold border-b border-gray-50">
+                        Category
+                      </p>
+                      {(smacksAvailableTags ?? []).map((tag) => (
+                        <label key={tag} className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={smacksActiveTags?.includes(tag) ?? false}
+                            onChange={() => onSmacksTagToggle?.(tag)}
+                            className="accent-[#23297e] w-3.5 h-3.5 rounded shrink-0"
+                          />
+                          <span className="font-['Poppins',sans-serif] text-sm text-gray-700">{tag}</span>
+                        </label>
+                      ))}
+                      {selectedCount > 0 && (
+                        <button
+                          onClick={onSmacksTagsClear}
+                          className="w-full text-center text-xs text-red-400 hover:text-red-600 py-2 border-t border-gray-50 mt-1 font-['Poppins',sans-serif] font-medium transition-colors"
+                        >
+                          Clear filter
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
             <div className="flex items-center gap-1 mt-2 p-1 rounded-xl bg-gray-100 w-fit">
               <button
                 onClick={() => onSmacksSortChange?.("top")}
@@ -1155,19 +1182,27 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
             const catMobileOpen = openFilter === "acts-cat-mobile";
             return (
               <div className="px-4 pb-2">
-                <div className="flex gap-1.5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+                {/* Wrap to a second row instead of scrolling sideways if the
+                    pills don't fit on one line. "Remote Only" now lives inside
+                    the Location dropdown (below), keeping this row short.
+                    Centered on phones. */}
+                <div className="flex flex-wrap justify-center gap-1.5">
                   {/* Location button */}
                   <button
                     onClick={() => setOpenFilter(locMobileOpen ? null : "acts-loc-mobile")}
                     className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
-                      locStates.length > 0
+                      locSelected.length > 0
                         ? "bg-[#23297e] text-white border-[#23297e]"
                         : "bg-white text-gray-600 border-gray-200"
                     }`}
                   >
-                    <MapPin size={11} />
-                    {locLabel}
-                    {locStates.length > 1 && (
+                    {/* "Remote only" takes over the label whenever it's on — the
+                        user cares more about knowing they're on Remote than which
+                        state they picked. The state stays selected; if any states
+                        are also chosen we still show their count as a badge. */}
+                    {locSelected.includes("Remote") ? <Globe size={11} /> : <MapPin size={11} />}
+                    {locSelected.includes("Remote") ? "Remote" : locLabel}
+                    {locStates.length > (locSelected.includes("Remote") ? 0 : 1) && (
                       <span className="w-4 h-4 rounded-full bg-[#ed6624] text-white text-[9px] flex items-center justify-center font-bold shrink-0">
                         {locStates.length}
                       </span>
@@ -1175,20 +1210,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                     <ChevronDown size={11} className={locMobileOpen ? "rotate-180" : ""} />
                   </button>
 
-                  {/* Remote toggle (2nd) */}
-                  <button
-                    onClick={() => toggleFilterOption("Location", "Remote")}
-                    className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
-                      locSelected.includes("Remote")
-                        ? "bg-[#ed6624] text-white border-[#ed6624]"
-                        : "bg-white text-gray-600 border-gray-200"
-                    }`}
-                  >
-                    <Globe size={11} />
-                    Remote Only
-                  </button>
-
-                  {/* 5 Minutes Max toggle (3rd) */}
+                  {/* 5 Minutes Max toggle */}
                   {onQuickActionsChange && (
                     <button
                       onClick={() => onQuickActionsChange(!quickActionsOnly)}
@@ -1219,27 +1241,31 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                       </span>
                     )}
                     <ChevronDown size={11} className={catMobileOpen ? "rotate-180" : ""} />
+                    {/* "Texting" lives inside this dropdown on phones (see the
+                        Category drawer below) to save horizontal room — show a
+                        dot on the button when it's the active filter. */}
+                    {textingOnly && actsCatsSelected.length === 0 && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#ed6624] shrink-0" />
+                    )}
                   </button>
-
-                  {/* Texting toggle */}
-                  {onTextingChange && (
-                    <button
-                      onClick={() => onTextingChange(!textingOnly)}
-                      className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
-                        textingOnly
-                          ? "bg-[#ed6624] text-white border-[#ed6624]"
-                          : "bg-white text-gray-600 border-gray-200"
-                      }`}
-                    >
-                      <MessageSquare size={11} />
-                      Texting
-                    </button>
-                  )}
                 </div>
 
                 {/* Location drawer */}
                 {locMobileOpen && (
                   <div className="mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 max-h-80 overflow-y-auto">
+                    {/* "Remote only" — moved in here from its own pill on phones
+                        to keep the filter row short. It's the "doable from
+                        anywhere" cut, so it leads, separated from the place list. */}
+                    <label className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100">
+                      <input
+                        type="checkbox"
+                        checked={locSelected.includes("Remote")}
+                        onChange={() => toggleFilterOption("Location", "Remote")}
+                        className="accent-[#ed6624] w-3.5 h-3.5 rounded shrink-0"
+                      />
+                      <Globe size={14} className="shrink-0 text-[#ed6624]" />
+                      <span className="font-['Poppins',sans-serif] text-sm text-gray-700">Remote only</span>
+                    </label>
                     {locOptionsOrdered.map((option) => (
                       <label key={option} className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
                         <input
@@ -1251,9 +1277,9 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                         <span className="font-['Poppins',sans-serif] text-sm text-gray-700">{option}</span>
                       </label>
                     ))}
-                    {locStates.length > 0 && (
+                    {locSelected.length > 0 && (
                       <button
-                        onClick={() => onFilterChange("Location", locSelected.filter((l) => l === "Remote"))}
+                        onClick={() => onFilterChange("Location", [])}
                         className="w-full text-center text-xs text-red-400 hover:text-red-600 py-2 border-t border-gray-50 mt-1 font-['Poppins',sans-serif] font-medium transition-colors"
                       >
                         Clear
@@ -1268,7 +1294,25 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                     <p className="px-4 pt-1 pb-2 font-['Poppins',sans-serif] text-[10px] uppercase tracking-widest text-gray-400 font-semibold border-b border-gray-50">
                       Category
                     </p>
-                    {actsCats.map((option) => {
+                    {/* actsPillItems = categories + the "Texting" sentinel, deduped
+                        and alpha-sorted (same list the desktop pills use), so the
+                        Texting/SMS toggle lands in its alphabetical slot rather
+                        than pinned at the top. */}
+                    {actsPillItems.map((option) => {
+                      if (option === "Texting") {
+                        return (
+                          <label key="__texting__" className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={textingOnly}
+                              onChange={() => onTextingChange?.(!textingOnly)}
+                              className="accent-[#ed6624] w-3.5 h-3.5 rounded shrink-0"
+                            />
+                            <MessageSquare size={14} className="shrink-0 text-[#ed6624]" />
+                            <span className="font-['Poppins',sans-serif] text-sm text-gray-700">Texting / SMS only</span>
+                          </label>
+                        );
+                      }
                       const CatIcon = iconForCategory(option);
                       return (
                         <label key={option} className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
@@ -1332,6 +1376,25 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
             <Info size={16} />
             How does ResistAct work?
           </button>
+          {/* Hero CTAs live here on phones (hidden in the hero below md). */}
+          {onMatchClick && (
+            <button
+              onClick={() => { setMobileMenuOpen(false); onMatchClick(); }}
+              className="w-full flex items-center gap-2 py-2.5 px-4 bg-[#ed6624] text-white rounded-xl font-['Poppins',sans-serif] font-semibold text-sm"
+            >
+              <Sparkles size={16} strokeWidth={2.5} />
+              {matchActive ? "Edit My Match Settings" : "Refine Your Matches"}
+            </button>
+          )}
+          {onAskClick && (
+            <button
+              onClick={() => { setMobileMenuOpen(false); onAskClick(); }}
+              className="w-full flex items-center gap-2 py-2.5 px-4 bg-white border border-[#23297e] text-[#23297e] rounded-xl font-['Poppins',sans-serif] font-semibold text-sm"
+            >
+              <Megaphone size={16} strokeWidth={2.5} />
+              Add an Act!
+            </button>
+          )}
           {isLoggedIn ? (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -1374,15 +1437,6 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               <span className="text-[10.5px] font-normal italic text-white/85 leading-tight mt-0.5">
                 Sign in or Create an Account...
               </span>
-            </button>
-          )}
-          {isLoggedIn && (
-            <button
-              onClick={() => { setMobileMenuOpen(false); onMatchClick?.(); }}
-              className="w-full flex items-center gap-2 py-2.5 px-4 bg-gray-50 text-gray-700 rounded-xl font-['Poppins',sans-serif] font-semibold text-sm"
-            >
-              <SlidersHorizontal size={16} />
-              My Match Settings
             </button>
           )}
           {isLoggedIn && isAdmin && (

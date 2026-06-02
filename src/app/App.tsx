@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo, useRef, useDeferredValue, lazy, Suspense } from "react";
-import { Wrench, Clock, Flame, Smile, VenetianMask, Sun, Zap, MapPin, Users, DollarSign, EyeOff, Loader2, Eye, X } from "lucide-react";
+import { useState, useEffect, useMemo, useRef, useDeferredValue, lazy, Suspense, Fragment } from "react";
+import { Wrench, Clock, Flame, Smile, VenetianMask, Sun, Zap, MapPin, Users, DollarSign, EyeOff, Loader2, Eye, X, LayoutList, Layers } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { initAnalytics, analytics } from "./lib/analytics";
 import { GAMIFICATION_KEYFRAMES } from "./lib/animations";
@@ -443,6 +443,16 @@ export default function App() {
       return stored ? new Set<number>(JSON.parse(stored)) : new Set<number>();
     } catch { return new Set<number>(); }
   });
+  // Cards the user has already swiped in the deck (either direction). Persisted
+  // so the deck doesn't restart at the top each time it opens — swiped cards are
+  // filtered out of the deck on the next open. Saved (right-swipe) cards are
+  // also bookmarked separately; this set is purely "I've seen this in swipe".
+  const [swipedCardIds, setSwipedCardIds] = useState<Set<number>>(() => {
+    try {
+      const stored = localStorage.getItem("resistact_swiped");
+      return stored ? new Set<number>(JSON.parse(stored)) : new Set<number>();
+    } catch { return new Set<number>(); }
+  });
   const [bookmarksOpen, setBookmarksOpen] = useState(false);
   const [boostedFacts, setBoostedFacts] = useState<Set<number>>(() => {
     try {
@@ -512,9 +522,6 @@ export default function App() {
   // On phones this is the DEFAULT way to browse Acts (see the auto-open effect
   // below); desktop keeps the classic card grid and can opt in via the button.
   const [swipeOpen, setSwipeOpen] = useState(false);
-  // Once the user taps "Done" out of the deck we stop auto-reopening it for the
-  // rest of the session, so the list view (with tabs/filters) stays reachable.
-  const [swipeDismissed, setSwipeDismissed] = useState(false);
   const isMobile = useIsMobile();
   // App-level card detail modal. Opened from surfaces that aren't an ActionCard
   // (e.g. My Matches) so clicking a saved act pops the full modal first,
@@ -1259,24 +1266,12 @@ export default function App() {
     matchPrefs !== null ||
     Object.values(activeFilters).some((arr) => (arr ?? []).length > 0);
 
-  // ── Swipe-first on phones ───────────────────────────────────────────────────
-  // On a phone, the swipe deck is the default way to browse Acts: auto-open it
-  // when the feed is ready. Desktop keeps the classic card grid. We only
-  // auto-open once per session — after the user taps "Done" (swipeDismissed) we
-  // leave the list view alone so tabs/filters/search stay reachable, and the
-  // floating 🃏 button lets them jump back into swipe mode whenever they want.
-  useEffect(() => {
-    if (
-      isMobile &&
-      activeTab === "acts" &&
-      synced &&
-      !swipeOpen &&
-      !swipeDismissed &&
-      displayedCards.length > 0
-    ) {
-      setSwipeOpen(true);
-    }
-  }, [isMobile, activeTab, synced, swipeOpen, swipeDismissed, displayedCards.length]);
+  // ── Swipe mode is opt-in on phones ──────────────────────────────────────────
+  // Phones used to drop straight into the swipe deck on load. That hijacked the
+  // first impression, so swipe is now something the user *initiates*: a "Swipe
+  // to discover" button sits right under the Spread the Word card in the feed
+  // (phones only), and the floating 🃏 button is always there as a second way
+  // in. Desktop keeps the classic card grid and opts in via the same buttons.
 
   // Distinct categories from currently-loaded cards, sorted alphabetically.
   // Approved, non-expired cards — used to drive filter pills so only
@@ -1977,6 +1972,19 @@ export default function App() {
     });
   };
 
+  // Mark a card as swiped (either direction) so the deck won't show it again on
+  // the next open. Local-only persistence (no server endpoint yet) — enough to
+  // keep a phone's deck progressing across opens/sessions on that device.
+  const markSwiped = (id: number) => {
+    setSwipedCardIds((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      try { localStorage.setItem("resistact_swiped", JSON.stringify([...next])); } catch {}
+      return next;
+    });
+  };
+
   async function fetchMyBookmarks(token: string) {
     try {
       const res = await fetch(`${API}/me/bookmarks`, { headers: { Authorization: `Bearer ${token}` } });
@@ -2327,10 +2335,41 @@ export default function App() {
               : displayedCards;
             return (
           <>
+            {/* Phone-only browse-mode toggle — sits just under the filter pills
+                and switches between the scrolling list and the swipe deck. It
+                replaces the old "Swipe to discover" buttons: tapping "Swipe"
+                opens the deck, and the deck's "Done" (or this toggle) returns
+                to the list. Desktop keeps the floating 🃏 button instead. */}
+            {isMobile && (
+              <div className="mb-4 flex items-center gap-1 p-1 rounded-xl bg-gray-100 font-['Poppins',sans-serif]">
+                <button
+                  onClick={() => setSwipeOpen(false)}
+                  aria-pressed={!swipeOpen}
+                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold transition-all ${
+                    !swipeOpen ? "bg-white text-[#23297e] shadow-sm" : "text-gray-500"
+                  }`}
+                >
+                  <LayoutList size={15} strokeWidth={2.5} />
+                  Scroll
+                </button>
+                <button
+                  onClick={() => setSwipeOpen(true)}
+                  aria-pressed={swipeOpen}
+                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold transition-all ${
+                    swipeOpen ? "bg-white text-[#ed6624] shadow-sm" : "text-gray-500"
+                  }`}
+                >
+                  <Layers size={15} strokeWidth={2.5} />
+                  Swipe
+                </button>
+              </div>
+            )}
+
             {/* Unfiltered banner — nudges users to try the match tool.
                 Also carries the Sort dropdown so the sort control lives
-                next to the live result count. */}
-            {!matchPrefs && !hasActiveFilters && activeTab === "acts" && synced && (
+                next to the live result count. Hidden on phones, where the
+                feed leads with the cards (and swipe) rather than this chrome. */}
+            {!matchPrefs && !hasActiveFilters && activeTab === "acts" && synced && !isMobile && (
               <div className="mb-4 flex flex-col items-start gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                 <p className="font-['Poppins',sans-serif] text-sm text-gray-600">
                   Showing all <strong className="text-[#23297e]">{displayedCards.length}</strong> actions — unfiltered.
@@ -2355,8 +2394,9 @@ export default function App() {
 
             {/* Filtered banner — shown when categories / search / location /
                 quick-actions filters are active (but no Match preferences).
-                Mirrors the unfiltered banner style; carries the Sort control. */}
-            {!matchPrefs && hasActiveFilters && activeTab === "acts" && synced && !showPendingActsOnly && (
+                Mirrors the unfiltered banner style; carries the Sort control.
+                Hidden on phones to match the unfiltered banner above. */}
+            {!matchPrefs && hasActiveFilters && activeTab === "acts" && synced && !showPendingActsOnly && !isMobile && (
               <div className="mb-4 flex flex-col items-start gap-2 rounded-lg border border-[#23297e]/30 bg-[#23297e]/5 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                 <p className="font-['Poppins',sans-serif] text-sm text-gray-700">
                   <strong className="text-[#23297e]">{displayedCards.length}</strong> {displayedCards.length === 1 ? "action" : "actions"} match your filters.
@@ -2585,8 +2625,8 @@ export default function App() {
             <>
             <div className={`grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-6 transition-opacity duration-150 ${searchQuery !== deferredSearchQuery ? "opacity-50" : "opacity-100"}`}>
               {(hasActiveFilters || showPendingActsOnly ? visibleActsCards : visibleActsCards.slice(0, displayLimit)).map((card, idx) => (
+                <Fragment key={idx < 12 ? `${card.id}-${staggerKey}` : card.id}>
                 <div
-                  key={idx < 12 ? `${card.id}-${staggerKey}` : card.id}
                   id={`card-${card.id}`}
                   className={idx < 12 ? "resistact-anim-stagger" : undefined}
                   style={idx < 12 ? { animationDelay: `${idx * 40}ms` } : undefined}
@@ -2609,6 +2649,7 @@ export default function App() {
                   onCardUpdated={handleCardSaved}
                 />
                 </div>
+                </Fragment>
               ))}
             </div>
             </>
@@ -2701,6 +2742,8 @@ export default function App() {
             <strong className="font-bold text-[#23297e]">
               Pick one. <span className="text-[#ed6624]">Do it.</span> Share it.
             </strong>{" "}
+            {/* Break onto its own line on phones; stays inline on desktop. */}
+            <br className="md:hidden" aria-hidden />
             <em className="italic font-bold text-[#ed6624]">Come back tomorrow.</em>
           </p>
           {/* Right: facts + smacks counts — each is a button that jumps to
@@ -2874,7 +2917,7 @@ export default function App() {
       {/* Admin-only floating entry to the Swipe "Discover" preview. Persistent
           (not tied to a banner) so it's reachable on the Acts tab regardless of
           search / filter / match state. Hidden while the deck itself is open. */}
-      {activeTab === "acts" && !swipeOpen && (
+      {activeTab === "acts" && !swipeOpen && !isMobile && (
         <button
           onClick={() => setSwipeOpen(true)}
           title="Swipe to discover Acts"
@@ -2885,17 +2928,20 @@ export default function App() {
       )}
 
       {/* Swipe "Discover" mode — full-screen overlay over the current feed.
-          Right swipe ("interested") adds the card to bookmarks; left swipe
-          ("pass") is recorded but not yet fed back into the matcher. The
-          learning loop (a swipeAffinity term in matcher.ts) is the next step. */}
+          The deck honors the active filters/match (it's fed from displayedCards)
+          and excludes cards already swiped, so reopening continues where the
+          user left off instead of restarting at the top. Right swipe saves
+          (bookmarks); both directions mark the card swiped so it won't return. */}
       {swipeOpen && (
         <ErrorBoundary>
           <SwipeDeck
-            cards={displayedCards.filter((c) => !c.pinToTop)}
-            onClose={() => { setSwipeOpen(false); setSwipeDismissed(true); }}
+            cards={displayedCards.filter((c) => !c.pinToTop && !swipedCardIds.has(c.id))}
+            onClose={() => setSwipeOpen(false)}
             onInterested={(card) => {
               if (!bookmarkedCards.has(card.id)) handleBookmark(card.id);
+              markSwiped(card.id);
             }}
+            onPass={(card) => markSwiped(card.id)}
           />
         </ErrorBoundary>
       )}

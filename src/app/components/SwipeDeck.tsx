@@ -16,7 +16,8 @@
 // keys mirror the gesture so it's usable on desktop too.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Heart, RotateCcw, X, MapPin, Globe, Clock } from "lucide-react";
+import { Heart, RotateCcw, X, MapPin, Globe, Clock, ArrowLeft, ArrowRight } from "lucide-react";
+import logoImg from "../../assets/resistact-logo-horizontal.webp";
 import type { ActionCardData } from "./ActionCard";
 import { colorForCategory } from "../lib/categoryGroups";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
@@ -45,7 +46,13 @@ function prefersReducedMotion(): boolean {
 }
 
 export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckProps) {
-  // Pointer into `cards` for the current top card.
+  // Snapshot the incoming cards once, at mount. The parent removes a card from
+  // its list the moment it's swiped (so it won't come back next time the deck
+  // opens) — but if we read that shrinking list live, advancing `index` while
+  // the array shrinks would skip cards. Freezing the deck for this session
+  // keeps the gesture correct; the next open re-snapshots the (smaller) list.
+  const [deck] = useState(() => cards);
+  // Pointer into `deck` for the current top card.
   const [index, setIndex] = useState(0);
   // Stack of past verdicts so a single level of Undo is possible.
   const [history, setHistory] = useState<{ index: number; dir: Dir }[]>([]);
@@ -55,9 +62,9 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckPro
   const [flying, setFlying] = useState<Dir | null>(null);
 
   const interestedCount = history.filter((h) => h.dir === "right").length;
-  const remaining = cards.length - index;
+  const remaining = deck.length - index;
   const reduced = useMemo(prefersReducedMotion, []);
-  const done = index >= cards.length;
+  const done = index >= deck.length;
 
   // ── Imperative drag (no per-move React state) ───────────────────────────────
   // Re-rendering the whole deck on every pointermove made the gesture jagged on
@@ -100,8 +107,8 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckPro
 
   const commit = useCallback(
     (dir: Dir) => {
-      if (flyingRef.current || index >= cards.length) return;
-      const card = cards[index];
+      if (flyingRef.current || index >= deck.length) return;
+      const card = deck[index];
       flyingRef.current = dir;
 
       // Advance the deck + fire the verdict. Runs EXACTLY once — whichever of
@@ -148,7 +155,7 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckPro
       // interrupted, tab backgrounded, no layout box, etc.).
       window.setTimeout(finish, 380);
     },
-    [cards, index, onInterested, onPass, reduced],
+    [deck, index, onInterested, onPass, reduced],
   );
 
   const undo = useCallback(() => {
@@ -204,26 +211,40 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckPro
 
   return (
     <div className="hero-modal-overlay fixed inset-0 z-[100] flex flex-col bg-[#0d1b2a]/80 backdrop-blur-sm">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-3 px-4 py-3 text-white">
+      {/* Header — a full-width white bar so the (dark-artwork) ResistAct logo
+          reads big and clear above the dark deck. Done + count sit on the white
+          bar in brand navy; the swipe hint moves just below on the dark area. */}
+      <div className="relative flex items-center justify-center bg-white px-4 py-3 shadow-md">
         <button
           onClick={onClose}
-          className="font-['Poppins',sans-serif] text-sm font-semibold inline-flex items-center gap-1 rounded-full px-3 py-1.5 hover:bg-white/10 transition-colors shrink-0"
+          className="absolute left-3 font-['Poppins',sans-serif] text-sm font-semibold inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[#23297e] hover:bg-[#23297e]/10 transition-colors"
         >
           <X size={16} /> Done
         </button>
-        <div className="min-w-0 text-center">
-          <p className="font-['Poppins',sans-serif] text-sm leading-tight">
-            <span className="resistact-anim-twinkle" aria-hidden>✨</span>{" "}
-            <strong>Swipe to discover</strong>
-          </p>
-          <p className="font-['Poppins',sans-serif] text-[11px] text-white/70 leading-tight mt-0.5">
-            Swipe right to save it · left to pass
-          </p>
-        </div>
-        <span className="font-['Poppins',sans-serif] text-xs text-white/80 tabular-nums w-16 text-right shrink-0">
+        <img src={logoImg} alt="ResistAct" className="h-9 w-auto block" />
+        <span className="absolute right-3 font-['Poppins',sans-serif] text-xs font-semibold text-gray-500 tabular-nums">
           {done ? "—" : `${remaining} to go`}
         </span>
+      </div>
+      {/* Plain-language, arrow-led instructions. "Pass" is teal, "Save" is the
+          brand orange — orange vs teal differ on the blue-yellow axis, so they
+          stay distinguishable for red-green color blindness; the words/arrows/
+          icons also convey it without relying on hue. */}
+      <div className="flex items-stretch justify-between gap-3 px-4 pt-5 pb-3 font-['Poppins',sans-serif]">
+        <div className="flex items-center gap-2 rounded-xl bg-teal-500/85 px-3.5 py-2 text-white shadow-md">
+          <ArrowLeft size={22} strokeWidth={3} className="shrink-0" />
+          <span className="flex flex-col leading-tight">
+            <span className="text-[14px] font-extrabold">Swipe LEFT</span>
+            <span className="inline-flex items-center gap-1 text-[12px] text-white/90"><X size={12} strokeWidth={3} /> to pass</span>
+          </span>
+        </div>
+        <div className="flex items-center gap-2 rounded-xl bg-[#ed6624]/90 px-3.5 py-2 text-white shadow-md">
+          <span className="flex flex-col items-end leading-tight">
+            <span className="text-[14px] font-extrabold">Swipe RIGHT</span>
+            <span className="inline-flex items-center gap-1 text-[12px] text-white/90"><Heart size={12} fill="currentColor" /> to save</span>
+          </span>
+          <ArrowRight size={22} strokeWidth={3} className="shrink-0" />
+        </div>
       </div>
 
       {/* Deck */}
@@ -255,7 +276,7 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckPro
           </div>
         ) : (
           // Render up to 3 cards: the top (interactive) + 2 peeking behind.
-          cards.slice(index, index + 3).map((card, i) => {
+          deck.slice(index, index + 3).map((card, i) => {
             const isTop = i === 0;
             // The top card's transform/transition are driven imperatively (see
             // paint()/commit()), so they're deliberately omitted here — React
@@ -288,8 +309,9 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckPro
                       className="pointer-events-none absolute left-5 top-6 -rotate-12"
                       style={{ opacity: 0, transition: "opacity 0.1s" }}
                     >
-                      <span className="rounded-lg border-4 border-white bg-green-500 px-3 py-1 font-['Poppins',sans-serif] text-2xl font-extrabold uppercase text-white shadow-lg">
-                        Yes
+                      <span className="inline-flex items-center gap-1.5 rounded-lg border-4 border-white bg-[#ed6624] px-3 py-1 font-['Poppins',sans-serif] text-2xl font-extrabold uppercase text-white shadow-lg">
+                        <Heart size={22} strokeWidth={2.75} fill="currentColor" />
+                        Save
                       </span>
                     </span>
                     <span
@@ -297,7 +319,8 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckPro
                       className="pointer-events-none absolute right-5 top-6 rotate-12"
                       style={{ opacity: 0, transition: "opacity 0.1s" }}
                     >
-                      <span className="rounded-lg border-4 border-white bg-red-500 px-3 py-1 font-['Poppins',sans-serif] text-2xl font-extrabold uppercase text-white shadow-lg">
+                      <span className="inline-flex items-center gap-1.5 rounded-lg border-4 border-white bg-teal-500 px-3 py-1 font-['Poppins',sans-serif] text-2xl font-extrabold uppercase text-white shadow-lg">
+                        <X size={22} strokeWidth={3} />
                         Pass
                       </span>
                     </span>
@@ -309,33 +332,29 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckPro
         )}
       </div>
 
-      {/* Action bar + always-visible help so the gesture is never a guess. */}
+      {/* Action bar — each button carries a two-line label (what it does +
+          plain-language meaning), so no separate instruction text is needed. */}
       {!done && (
         <div className="flex flex-col items-center gap-2.5 py-5">
-          <div className="flex items-center justify-center gap-2 font-['Poppins',sans-serif] text-[11px] text-white/80">
-            <span className="inline-flex items-center gap-1"><X size={12} className="text-red-400" /> Left = not for me</span>
-            <span className="text-white/30">•</span>
-            <span className="inline-flex items-center gap-1"><Heart size={12} className="text-green-400" /> Right = save as a possibility</span>
-          </div>
           <div className="flex items-start justify-center gap-7">
-            <ActionButton label="Pass" caption="Pass">
-              <DeckButton label="Pass" onClick={() => commit("left")} className="border-red-400 text-red-500 hover:bg-red-50">
-                <X size={26} />
+            <ActionButton label="Pass" caption="Pass" sub="Not for Me">
+              <DeckButton label="Pass" onClick={() => commit("left")} className="border-teal-500 bg-teal-500 text-white hover:bg-teal-600">
+                <X size={26} strokeWidth={2.75} />
               </DeckButton>
             </ActionButton>
-            <ActionButton label="Undo" caption="Undo">
+            <ActionButton label="Undo" caption="Undo" sub="Changed My Mind">
               <DeckButton
                 label="Undo"
                 onClick={undo}
                 disabled={history.length === 0}
-                className="h-12 w-12 border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
+                className="h-12 w-12 border-gray-400 bg-gray-400 text-white hover:bg-gray-500 disabled:opacity-30"
               >
-                <RotateCcw size={18} />
+                <RotateCcw size={18} strokeWidth={2.75} />
               </DeckButton>
             </ActionButton>
-            <ActionButton label="Save" caption="Save">
-              <DeckButton label="Interested" onClick={() => commit("right")} className="border-green-400 text-green-500 hover:bg-green-50">
-                <Heart size={24} />
+            <ActionButton label="Save" caption="Save" sub="Will Do This!">
+              <DeckButton label="Interested" onClick={() => commit("right")} className="border-[#ed6624] bg-[#ed6624] text-white hover:bg-[#d35a1d]">
+                <Heart size={24} fill="currentColor" />
               </DeckButton>
             </ActionButton>
           </div>
@@ -362,12 +381,12 @@ function SwipeCardFace({ card }: { card: ActionCardData }) {
           className={`h-full w-full ${card.imageContain ? "object-contain p-3" : "object-cover"}`}
           draggable={false}
         />
-        <span
-          className="absolute left-3 top-3 rounded-md px-2.5 py-1 font-['Poppins',sans-serif] text-[12px] font-bold tracking-wide text-white shadow-sm"
-          style={{ backgroundColor: catColor }}
-        >
-          {card.category}
-        </span>
+        {/* Time commitment — a pill on the banner (top-right), like the cards. */}
+        {card.timeCommitment && (
+          <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-md bg-black/55 px-2.5 py-1 font-['Poppins',sans-serif] text-[12px] font-semibold text-white shadow-sm backdrop-blur-sm">
+            <Clock size={12} /> {card.timeCommitment}
+          </span>
+        )}
         {(card.isOnline || card.location) && (
           <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-md bg-white/95 px-2.5 py-1 shadow-sm backdrop-blur-sm">
             {card.location ? (
@@ -391,15 +410,18 @@ function SwipeCardFace({ card }: { card: ActionCardData }) {
             {card.synopsis}
           </p>
         )}
+        {/* Category badge — below the subtitle, off the banner (keeps the
+            colorful banner clean). */}
+        <span
+          className="mt-2.5 inline-flex items-center rounded-md px-2.5 py-1 font-['Poppins',sans-serif] text-[12px] font-bold tracking-wide text-white"
+          style={{ backgroundColor: catColor }}
+        >
+          {card.category}
+        </span>
         {card.description && (
           <p className="mt-2.5 font-['Poppins',sans-serif] text-[15px] leading-relaxed text-gray-700 line-clamp-6">
             {card.description}
           </p>
-        )}
-        {card.timeCommitment && (
-          <div className="mt-3 inline-flex items-center gap-1 font-['Poppins',sans-serif] text-[12px] text-gray-500">
-            <Clock size={13} /> {card.timeCommitment}
-          </div>
         )}
       </div>
     </div>
@@ -407,11 +429,14 @@ function SwipeCardFace({ card }: { card: ActionCardData }) {
 }
 
 // Round action button with a caption underneath (so the icons are labelled).
-function ActionButton({ children, caption }: { children: React.ReactNode; caption: string; label: string }) {
+function ActionButton({ children, caption, sub }: { children: React.ReactNode; caption: string; sub?: string; label: string }) {
   return (
     <div className="flex flex-col items-center gap-1.5">
       {children}
-      <span className="font-['Poppins',sans-serif] text-[11px] font-semibold text-white/80">{caption}</span>
+      <span className="flex flex-col items-center text-center leading-tight">
+        <span className="font-['Poppins',sans-serif] text-[13px] font-bold text-white">{caption}</span>
+        {sub && <span className="font-['Poppins',sans-serif] text-[11px] font-medium text-white/70">{sub}</span>}
+      </span>
     </div>
   );
 }
@@ -426,7 +451,7 @@ function DeckButton({
       disabled={disabled}
       aria-label={label}
       title={label}
-      className={`flex h-16 w-16 items-center justify-center rounded-full border-2 bg-white transition-colors disabled:cursor-not-allowed ${className}`}
+      className={`flex h-16 w-16 items-center justify-center rounded-full border-2 shadow-md transition-colors disabled:cursor-not-allowed ${className}`}
     >
       {children}
     </button>
