@@ -16,7 +16,7 @@
 // keys mirror the gesture so it's usable on desktop too.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Heart, RotateCcw, X, MapPin, Globe, Clock, ArrowLeft, ArrowRight } from "lucide-react";
+import { Heart, RotateCcw, X, MapPin, Globe, Clock, ArrowLeft, ArrowRight, Check } from "lucide-react";
 import logoImg from "../../assets/resistact-logo-horizontal.webp";
 import type { ActionCardData } from "./ActionCard";
 import { colorForCategory } from "../lib/categoryGroups";
@@ -33,6 +33,8 @@ interface SwipeDeckProps {
   onInterested?: (card: ActionCardData) => void;
   /** Left swipe — "not for me". App records the pass + (later) learns. */
   onPass?: (card: ActionCardData) => void;
+  /** "I did this!" — the user completed the act. App marks it done. */
+  onCompleted?: (card: ActionCardData) => void;
 }
 
 // Past this horizontal drag distance (px), releasing commits the swipe.
@@ -45,7 +47,7 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckProps) {
+export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted }: SwipeDeckProps) {
   // Snapshot the incoming cards once, at mount. The parent removes a card from
   // its list the moment it's swiped (so it won't come back next time the deck
   // opens) — but if we read that shrinking list live, advancing `index` while
@@ -164,6 +166,39 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckPro
     setHistory((h) => h.slice(0, -1));
     setIndex(last.index);
   }, [history]);
+
+  // "I did this!" — mark the current act completed and advance. Flies the card
+  // UP (a distinct motion from the left/right pass/save) and reuses the same
+  // finish-once guard as commit() so the deck never gets stuck mid-animation.
+  const completeCurrent = useCallback(() => {
+    if (flyingRef.current || index >= deck.length) return;
+    const card = deck[index];
+    flyingRef.current = "right";
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      flyingRef.current = null;
+      setFlying(null);
+      setHistory((h) => [...h, { index, dir: "right" }]);
+      setIndex((i) => i + 1);
+      try { onCompleted?.(card); } catch (err) { console.error("SwipeDeck complete callback threw:", err); }
+    };
+    if (reduced) { finish(); return; }
+    setFlying("right");
+    const el = topCardRef.current;
+    if (el) {
+      el.style.transition = "transform 0.3s ease-out";
+      el.style.transform = `translate3d(0, -${FLY_PX}px, 0) rotate(-4deg)`;
+      const onEnd = (ev: TransitionEvent) => {
+        if (ev.propertyName !== "transform") return;
+        el.removeEventListener("transitionend", onEnd);
+        finish();
+      };
+      el.addEventListener("transitionend", onEnd);
+    }
+    window.setTimeout(finish, 380);
+  }, [deck, index, onCompleted, reduced]);
 
   // Keyboard: ←/→ swipe, ⌫ undo, Esc close.
   useEffect(() => {
@@ -337,14 +372,14 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckPro
         )}
       </div>
 
-      {/* Action bar — each button carries a two-line label (what it does +
-          plain-language meaning), so no separate instruction text is needed. */}
+      {/* Action bar — four circle buttons in an even row, each with a two-line
+          plain-language label. "Did It!" (green ✓) marks the act completed. */}
       {!done && (
-        <div className="flex flex-col items-center gap-2.5 py-5">
-          <div className="flex items-start justify-center gap-7">
+        <div className="py-4">
+          <div className="mx-auto grid w-full max-w-[440px] grid-cols-4 gap-1 px-2">
             <ActionButton label="Pass" caption="Pass" sub="Not for Me">
-              <DeckButton label="Pass" onClick={() => commit("left")} className="border-teal-500 bg-teal-500 text-white hover:bg-teal-600">
-                <X size={26} strokeWidth={2.75} />
+              <DeckButton label="Pass" onClick={() => commit("left")} className="h-14 w-14 border-teal-500 bg-teal-500 text-white hover:bg-teal-600">
+                <X size={24} strokeWidth={2.75} />
               </DeckButton>
             </ActionButton>
             <ActionButton label="Undo" caption="Undo" sub="Changed My Mind">
@@ -352,14 +387,19 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckPro
                 label="Undo"
                 onClick={undo}
                 disabled={history.length === 0}
-                className="h-12 w-12 border-gray-400 bg-gray-400 text-white hover:bg-gray-500 disabled:opacity-30"
+                className="h-11 w-11 border-gray-400 bg-gray-400 text-white hover:bg-gray-500 disabled:opacity-30"
               >
-                <RotateCcw size={18} strokeWidth={2.75} />
+                <RotateCcw size={17} strokeWidth={2.75} />
+              </DeckButton>
+            </ActionButton>
+            <ActionButton label="I did this!" caption="Did It!" sub="Already Behind Me">
+              <DeckButton label="I did this!" onClick={completeCurrent} className="h-14 w-14 border-green-800 bg-green-800 text-white hover:bg-green-900">
+                <Check size={24} strokeWidth={3} />
               </DeckButton>
             </ActionButton>
             <ActionButton label="Save" caption="Save" sub="Will Do This!">
-              <DeckButton label="Interested" onClick={() => commit("right")} className="border-[#ed6624] bg-[#ed6624] text-white hover:bg-[#d35a1d]">
-                <Heart size={24} fill="currentColor" />
+              <DeckButton label="Interested" onClick={() => commit("right")} className="h-14 w-14 border-[#ed6624] bg-[#ed6624] text-white hover:bg-[#d35a1d]">
+                <Heart size={22} fill="currentColor" />
               </DeckButton>
             </ActionButton>
           </div>
@@ -415,18 +455,28 @@ function SwipeCardFace({ card }: { card: ActionCardData }) {
             {card.synopsis}
           </p>
         )}
-        {/* Category badge — below the subtitle, off the banner (keeps the
-            colorful banner clean). */}
-        <span
-          className="mt-2.5 inline-flex items-center rounded-md px-2.5 py-1 font-['Poppins',sans-serif] text-[12px] font-bold tracking-wide text-white"
-          style={{ backgroundColor: catColor }}
-        >
-          {card.category}
-        </span>
         {card.description && (
           <p className="mt-2.5 font-['Poppins',sans-serif] text-[15px] leading-relaxed text-gray-700 line-clamp-6">
             {card.description}
           </p>
+        )}
+      </div>
+      {/* Footer row — category pill (left) + author (right), matching the main
+          feed card so the category sits in the same place across card types. */}
+      <div className="shrink-0 flex items-center justify-between gap-3 border-t border-gray-100 px-5 py-3">
+        <span
+          className="inline-flex items-center rounded-md px-2 py-0.5 font-['Poppins',sans-serif] text-[11px] font-bold tracking-wide text-white shrink-0"
+          style={{ backgroundColor: catColor }}
+        >
+          {card.category}
+        </span>
+        {card.authorName && (
+          <div className="min-w-0 text-right">
+            <p className="font-['Poppins',sans-serif] font-semibold text-[12px] text-gray-800 truncate leading-tight">{card.authorName}</p>
+            {card.authorRole && (
+              <p className="font-['Poppins',sans-serif] text-[11px] text-gray-400 truncate leading-tight">{card.authorRole}</p>
+            )}
+          </div>
         )}
       </div>
     </div>

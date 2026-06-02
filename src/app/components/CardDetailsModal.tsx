@@ -249,73 +249,8 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
                 <Pencil size={15} />
               </button>
             )}
-            {/* Category pill — top-left of the banner, matches the on-card
-                placement so the modal feels like a zoomed-in card. Admins
-                get a pencil affordance + click-to-edit dropdown so wrongly
-                categorised cards can be fixed without the full edit modal. */}
-            {showCategoryPill && (
-              <div className="absolute top-3 left-3 z-10">
-                {canEditCategory ? (
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setCatEditOpen((v) => !v); setCatError(null); }}
-                    title="Change category (admin)"
-                    className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 shadow-sm transition-opacity hover:opacity-90"
-                    style={{ backgroundColor: categoryColor }}
-                  >
-                    <span className="font-['Poppins',sans-serif] font-bold tracking-wide text-[12px] text-white">
-                      {card.category}
-                    </span>
-                    {catSaving ? <Loader2 size={11} className="text-white animate-spin" /> : <Pencil size={10} className="text-white/85" />}
-                  </button>
-                ) : (
-                  <div
-                    className="inline-flex items-center rounded-md px-2.5 py-1 shadow-sm"
-                    style={{ backgroundColor: categoryColor }}
-                  >
-                    <span className="font-['Poppins',sans-serif] font-bold tracking-wide text-[12px] text-white">
-                      {card.category}
-                    </span>
-                  </div>
-                )}
-                {canEditCategory && catEditOpen && (
-                  <CategoryEditPopover
-                    current={card.category}
-                    onPick={saveCategory}
-                    onClose={() => setCatEditOpen(false)}
-                    error={catError}
-                    saving={catSaving}
-                  />
-                )}
-              </div>
-            )}
-          </div>
-        )}
-        {/* Banner-less fallback: when there's no header image, the pill
-            above never renders. Surface an admin-only category editor in
-            the content area so re-categorisation still works on those
-            cards. Non-admins (or cards without a category) see nothing. */}
-        {!card.cartoonImageUrl && !card.topImage && showCategoryPill && canEditCategory && (
-          <div className="px-5 sm:px-7 pt-5 relative">
-            <button
-              onClick={(e) => { e.stopPropagation(); setCatEditOpen((v) => !v); setCatError(null); }}
-              title="Change category (admin)"
-              className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 shadow-sm transition-opacity hover:opacity-90"
-              style={{ backgroundColor: categoryColor }}
-            >
-              <span className="font-['Poppins',sans-serif] font-bold tracking-wide text-[12px] text-white">
-                {card.category}
-              </span>
-              {catSaving ? <Loader2 size={11} className="text-white animate-spin" /> : <Pencil size={10} className="text-white/85" />}
-            </button>
-            {catEditOpen && (
-              <CategoryEditPopover
-                current={card.category}
-                onPick={saveCategory}
-                onClose={() => setCatEditOpen(false)}
-                error={catError}
-                saving={catSaving}
-              />
-            )}
+            {/* Category pill moved to a footer row (bottom of the modal) so it
+                sits in the same place as on the feed card and swipe card. */}
           </div>
         )}
 
@@ -465,6 +400,42 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
               </a>
             ) : null}
           </div>
+
+          {/* Category — footer row, same placement as the feed & swipe cards.
+              Admins can click to recategorize (popover opens upward here so it
+              isn't clipped at the bottom of the modal). */}
+          {showCategoryPill && (
+            <div className="mt-6 pt-4 border-t border-gray-100 relative">
+              {canEditCategory ? (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setCatEditOpen((v) => !v); setCatError(null); }}
+                  title="Change category (admin)"
+                  className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 shadow-sm transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: categoryColor }}
+                >
+                  <span className="font-['Poppins',sans-serif] font-bold tracking-wide text-[12px] text-white">{card.category}</span>
+                  {catSaving ? <Loader2 size={11} className="text-white animate-spin" /> : <Pencil size={10} className="text-white/85" />}
+                </button>
+              ) : (
+                <span
+                  className="inline-flex items-center rounded-md px-2.5 py-1 shadow-sm font-['Poppins',sans-serif] font-bold tracking-wide text-[12px] text-white"
+                  style={{ backgroundColor: categoryColor }}
+                >
+                  {card.category}
+                </span>
+              )}
+              {canEditCategory && catEditOpen && (
+                <CategoryEditPopover
+                  current={card.category}
+                  onPick={saveCategory}
+                  onClose={() => setCatEditOpen(false)}
+                  error={catError}
+                  saving={catSaving}
+                  openUp
+                />
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>,
@@ -484,17 +455,19 @@ function CategoryEditPopover({
   onClose,
   error,
   saving,
+  openUp = false,
 }: {
   current: string;
   onPick: (next: string) => void;
   onClose: () => void;
   error: string | null;
   saving: boolean;
+  openUp?: boolean;
 }) {
   return (
     <div
       onClick={(e) => e.stopPropagation()}
-      className="absolute top-full left-0 mt-1.5 w-72 max-w-[calc(100vw-2rem)] bg-white border border-gray-200 rounded-xl shadow-2xl p-3 z-30"
+      className={`absolute left-0 w-72 max-w-[calc(100vw-2rem)] bg-white border border-gray-200 rounded-xl shadow-2xl p-3 z-30 ${openUp ? "bottom-full mb-1.5" : "top-full mt-1.5"}`}
     >
       <div className="flex items-center justify-between mb-2">
         <p className="font-['Poppins',sans-serif] text-[11px] uppercase tracking-widest text-gray-400 font-semibold">

@@ -1395,6 +1395,22 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               Add an Act!
             </button>
           )}
+          {/* My Matches (saved Acts, incl. swipe-right saves) — only here in the
+              desktop avatar dropdown before, so phone users couldn't reach it. */}
+          {onBookmarksClick && (
+            <button
+              onClick={() => { setMobileMenuOpen(false); onBookmarksClick(); }}
+              className="w-full flex items-center gap-2 py-2.5 px-4 bg-gray-50 text-gray-700 rounded-xl font-['Poppins',sans-serif] font-semibold text-sm"
+            >
+              <Heart size={16} strokeWidth={2} />
+              My Matches
+              {bookmarkCount != null && bookmarkCount > 0 && (
+                <span className="ml-auto bg-[#ed6624] text-white text-[10px] font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center">
+                  {bookmarkCount > 99 ? "99+" : bookmarkCount}
+                </span>
+              )}
+            </button>
+          )}
           {isLoggedIn ? (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
