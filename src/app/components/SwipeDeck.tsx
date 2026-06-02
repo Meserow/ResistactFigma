@@ -49,32 +49,74 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckPro
   const [index, setIndex] = useState(0);
   // Stack of past verdicts so a single level of Undo is possible.
   const [history, setHistory] = useState<{ index: number; dir: Dir }[]>([]);
-  // Live drag offset for the top card. dragging=false means "resting".
-  const [drag, setDrag] = useState({ x: 0, y: 0, dragging: false });
-  // When set, the top card is mid-fling (off-screen animation in flight).
+  // When set, the top card is mid-fling (off-screen animation in flight). This
+  // is the ONLY swipe state that lives in React — the live drag is driven
+  // imperatively (see below) so dragging never triggers a re-render.
   const [flying, setFlying] = useState<Dir | null>(null);
 
-  const startRef = useRef<{ x: number; y: number } | null>(null);
   const interestedCount = history.filter((h) => h.dir === "right").length;
   const remaining = cards.length - index;
   const reduced = useMemo(prefersReducedMotion, []);
+  const done = index >= cards.length;
+
+  // ── Imperative drag (no per-move React state) ───────────────────────────────
+  // Re-rendering the whole deck on every pointermove made the gesture jagged on
+  // phones (touchscreens fire 120+ move events/sec, each re-rendering 3 image
+  // cards). Instead we mutate the top card's transform directly via a ref, so a
+  // drag costs zero React renders and stays buttery on mobile. React only runs
+  // once per *committed* swipe (to advance the index).
+  const startRef = useRef<{ x: number; y: number; id: number } | null>(null);
+  const dragXRef = useRef(0);
+  const topCardRef = useRef<HTMLDivElement | null>(null);
+  const likeRef = useRef<HTMLSpanElement | null>(null);
+  const nopeRef = useRef<HTMLSpanElement | null>(null);
+
+  const SPRING = "transform 0.32s cubic-bezier(.2,.8,.2,1)";
+
+  // Paint the top card + LIKE/PASS badges at a given drag offset.
+  const paint = useCallback((x: number, y: number, animate: boolean) => {
+    const el = topCardRef.current;
+    if (el) {
+      el.style.transition = animate && !reduced ? SPRING : "none";
+      el.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${x / 22}deg)`;
+    }
+    const strength = Math.min(1, Math.abs(x) / COMMIT_PX);
+    if (likeRef.current) likeRef.current.style.opacity = x > 40 ? String(strength) : "0";
+    if (nopeRef.current) nopeRef.current.style.opacity = x < -40 ? String(strength) : "0";
+  }, [reduced]);
+
+  // Whenever a new card becomes the top card (index change / undo), reset its
+  // transform to resting. Runs after render, so topCardRef points at the new
+  // top node. The transition gives the next card a gentle settle-in.
+  useEffect(() => {
+    dragXRef.current = 0;
+    paint(0, 0, true);
+  }, [index, paint]);
 
   const commit = useCallback(
     (dir: Dir) => {
       if (flying || index >= cards.length) return;
       const card = cards[index];
-      const finish = () => {
+      const advance = () => {
         if (dir === "right") onInterested?.(card);
         else onPass?.(card);
         setHistory((h) => [...h, { index, dir }]);
         setIndex((i) => i + 1);
-        setDrag({ x: 0, y: 0, dragging: false });
         setFlying(null);
       };
-      if (reduced) { finish(); return; }
+      if (reduced) { advance(); return; }
       setFlying(dir);
-      // Let the fling transition play, then advance.
-      window.setTimeout(finish, 300);
+      // Fling the current top card off-screen from wherever it is right now
+      // (drag position for a gesture, centre for a button), then advance.
+      const el = topCardRef.current;
+      if (el) {
+        el.style.transition = "transform 0.3s ease-out";
+        const fx = dir === "right" ? FLY_PX : -FLY_PX;
+        el.style.transform = `translate3d(${fx}px, -60px, 0) rotate(${dir === "right" ? 22 : -22}deg)`;
+      }
+      if (dir === "right" && likeRef.current) likeRef.current.style.opacity = "1";
+      if (dir === "left" && nopeRef.current) nopeRef.current.style.opacity = "1";
+      window.setTimeout(advance, 300);
     },
     [cards, index, flying, onInterested, onPass, reduced],
   );
@@ -84,7 +126,6 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckPro
     const last = history[history.length - 1];
     setHistory((h) => h.slice(0, -1));
     setIndex(last.index);
-    setDrag({ x: 0, y: 0, dragging: false });
   }, [flying, history]);
 
   // Keyboard: ←/→ swipe, ⌫ undo, Esc close.
@@ -100,38 +141,36 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckPro
   }, [commit, undo, onClose]);
 
   // ── Pointer drag on the top card ───────────────────────────────────────────
+  // Capture on the card element itself (topCardRef) — NOT e.target, which is a
+  // child (image/heading) that unmounts when the card flies, which used to
+  // leave the next card unresponsive (the "only works once" bug).
   const onPointerDown = (e: React.PointerEvent) => {
-    if (flying) return;
-    (e.target as Element).setPointerCapture?.(e.pointerId);
-    startRef.current = { x: e.clientX, y: e.clientY };
-    setDrag({ x: 0, y: 0, dragging: true });
+    if (flying || done) return;
+    topCardRef.current?.setPointerCapture?.(e.pointerId);
+    startRef.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
+    dragXRef.current = 0;
+    paint(0, 0, false);
   };
   const onPointerMove = (e: React.PointerEvent) => {
     if (!startRef.current) return;
-    setDrag({ x: e.clientX - startRef.current.x, y: e.clientY - startRef.current.y, dragging: true });
+    const x = e.clientX - startRef.current.x;
+    const y = e.clientY - startRef.current.y;
+    dragXRef.current = x;
+    paint(x, y, false);
   };
   const onPointerUp = () => {
-    if (!startRef.current) return;
+    const start = startRef.current;
+    if (!start) return;
+    topCardRef.current?.releasePointerCapture?.(start.id);
     startRef.current = null;
-    if (Math.abs(drag.x) > COMMIT_PX) commit(drag.x > 0 ? "right" : "left");
-    else setDrag({ x: 0, y: 0, dragging: false }); // snap back
-  };
-
-  // Verdict intent from the live drag, for the LIKE / NOPE overlay badges.
-  const intent: Dir | null = drag.x > 40 ? "right" : drag.x < -40 ? "left" : null;
-  const intentStrength = Math.min(1, Math.abs(drag.x) / COMMIT_PX);
-
-  // Top card transform — follows the finger while dragging, flies off on commit.
-  const topTransform = (() => {
-    if (flying) {
-      const x = flying === "right" ? FLY_PX : -FLY_PX;
-      return `translate(${x}px, -60px) rotate(${flying === "right" ? 22 : -22}deg)`;
+    const x = dragXRef.current;
+    if (Math.abs(x) > COMMIT_PX) {
+      commit(x > 0 ? "right" : "left");
+    } else {
+      dragXRef.current = 0;
+      paint(0, 0, true); // snap back
     }
-    return `translate(${drag.x}px, ${drag.y}px) rotate(${drag.x / 22}deg)`;
-  })();
-  const topTransition = drag.dragging ? "none" : "transform 0.3s cubic-bezier(.2,.8,.2,1)";
-
-  const done = index >= cards.length;
+  };
 
   return (
     <div className="hero-modal-overlay fixed inset-0 z-[100] flex flex-col bg-[#0d1b2a]/80 backdrop-blur-sm">
@@ -188,8 +227,11 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckPro
           // Render up to 3 cards: the top (interactive) + 2 peeking behind.
           cards.slice(index, index + 3).map((card, i) => {
             const isTop = i === 0;
+            // The top card's transform/transition are driven imperatively (see
+            // paint()/commit()), so they're deliberately omitted here — React
+            // must not own them or it would clobber the live drag on re-render.
             const style: React.CSSProperties = isTop
-              ? { transform: topTransform, transition: topTransition, touchAction: "none", zIndex: 30, cursor: flying ? "default" : "grab" }
+              ? { touchAction: "none", zIndex: 30, cursor: flying ? "default" : "grab", willChange: "transform" }
               : {
                   transform: `translateY(${i * 10}px) scale(${1 - i * 0.04})`,
                   transition: "transform 0.3s ease",
@@ -199,6 +241,7 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckPro
             return (
               <div
                 key={card.id}
+                ref={isTop ? topCardRef : undefined}
                 className="absolute w-[min(92vw,500px)]"
                 style={style}
                 onPointerDown={isTop ? onPointerDown : undefined}
@@ -207,11 +250,27 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckPro
                 onPointerCancel={isTop ? onPointerUp : undefined}
               >
                 <SwipeCardFace card={card} />
-                {/* LIKE / NOPE badges, driven by the live drag on the top card. */}
-                {isTop && intent && (
+                {/* LIKE / PASS badges — opacity driven imperatively by paint(). */}
+                {isTop && (
                   <>
-                    <Badge kind="right" show={intent === "right"} strength={intentStrength} />
-                    <Badge kind="left" show={intent === "left"} strength={intentStrength} />
+                    <span
+                      ref={likeRef}
+                      className="pointer-events-none absolute left-5 top-6 -rotate-12"
+                      style={{ opacity: 0, transition: "opacity 0.1s" }}
+                    >
+                      <span className="rounded-lg border-4 border-green-500 px-3 py-1 font-['Poppins',sans-serif] text-2xl font-extrabold uppercase text-green-500">
+                        Yes
+                      </span>
+                    </span>
+                    <span
+                      ref={nopeRef}
+                      className="pointer-events-none absolute right-5 top-6 rotate-12"
+                      style={{ opacity: 0, transition: "opacity 0.1s" }}
+                    >
+                      <span className="rounded-lg border-4 border-red-500 px-3 py-1 font-['Poppins',sans-serif] text-2xl font-extrabold uppercase text-red-500">
+                        Pass
+                      </span>
+                    </span>
                   </>
                 )}
               </div>
@@ -319,24 +378,6 @@ function ActionButton({ children, caption }: { children: React.ReactNode; captio
     <div className="flex flex-col items-center gap-1.5">
       {children}
       <span className="font-['Poppins',sans-serif] text-[11px] font-semibold text-white/80">{caption}</span>
-    </div>
-  );
-}
-
-function Badge({ kind, show, strength }: { kind: Dir; show: boolean; strength: number }) {
-  const isRight = kind === "right";
-  return (
-    <div
-      className={`pointer-events-none absolute top-6 ${isRight ? "left-5 -rotate-12" : "right-5 rotate-12"}`}
-      style={{ opacity: show ? strength : 0, transition: "opacity 0.1s" }}
-    >
-      <span
-        className={`rounded-lg border-4 px-3 py-1 font-['Poppins',sans-serif] text-2xl font-extrabold uppercase ${
-          isRight ? "border-green-500 text-green-500" : "border-red-500 text-red-500"
-        }`}
-      >
-        {isRight ? "Yes" : "Pass"}
-      </span>
     </div>
   );
 }

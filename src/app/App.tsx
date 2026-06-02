@@ -28,6 +28,7 @@ import { HomeHero } from "./components/HomeHero";
 import { LoggedInHero } from "./components/LoggedInHero";
 import { MatchMeModal } from "./components/MatchMeModal";
 import { SwipeDeck } from "./components/SwipeDeck";
+import { useIsMobile } from "./components/ui/use-mobile";
 // Lazy-loaded: the changelog data (~68 KB gzipped) is admin-only and rarely
 // opened, so it's code-split into its own chunk instead of riding in the main
 // bundle every visitor downloads.
@@ -501,7 +502,13 @@ export default function App() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [adminPanelOpen, setAdminPanelOpen] = useState(false);
   // Swipe "Discover" mode — presents the current ranked feed one card at a time.
+  // On phones this is the DEFAULT way to browse Acts (see the auto-open effect
+  // below); desktop keeps the classic card grid and can opt in via the button.
   const [swipeOpen, setSwipeOpen] = useState(false);
+  // Once the user taps "Done" out of the deck we stop auto-reopening it for the
+  // rest of the session, so the list view (with tabs/filters) stays reachable.
+  const [swipeDismissed, setSwipeDismissed] = useState(false);
+  const isMobile = useIsMobile();
   // App-level card detail modal. Opened from surfaces that aren't an ActionCard
   // (e.g. My Matches) so clicking a saved act pops the full modal first,
   // instead of jumping straight out to the act's external link.
@@ -1250,6 +1257,25 @@ export default function App() {
     textingOnly ||
     matchPrefs !== null ||
     Object.values(activeFilters).some((arr) => (arr ?? []).length > 0);
+
+  // ── Swipe-first on phones ───────────────────────────────────────────────────
+  // On a phone, the swipe deck is the default way to browse Acts: auto-open it
+  // when the feed is ready. Desktop keeps the classic card grid. We only
+  // auto-open once per session — after the user taps "Done" (swipeDismissed) we
+  // leave the list view alone so tabs/filters/search stay reachable, and the
+  // floating 🃏 button lets them jump back into swipe mode whenever they want.
+  useEffect(() => {
+    if (
+      isMobile &&
+      activeTab === "acts" &&
+      synced &&
+      !swipeOpen &&
+      !swipeDismissed &&
+      displayedCards.length > 0
+    ) {
+      setSwipeOpen(true);
+    }
+  }, [isMobile, activeTab, synced, swipeOpen, swipeDismissed, displayedCards.length]);
 
   // Distinct categories from currently-loaded cards, sorted alphabetically.
   // Approved, non-expired cards — used to drive filter pills so only
@@ -2847,10 +2873,10 @@ export default function App() {
       {/* Admin-only floating entry to the Swipe "Discover" preview. Persistent
           (not tied to a banner) so it's reachable on the Acts tab regardless of
           search / filter / match state. Hidden while the deck itself is open. */}
-      {isAdminUser && activeTab === "acts" && !swipeOpen && (
+      {activeTab === "acts" && !swipeOpen && (
         <button
           onClick={() => setSwipeOpen(true)}
-          title="Swipe to discover Acts (admin preview)"
+          title="Swipe to discover Acts"
           className="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full bg-[#23297e] px-4 py-3 text-white shadow-lg hover:bg-[#ed6624] transition-colors font-['Poppins',sans-serif] text-sm font-bold"
         >
           🃏 <span className="hidden sm:inline">Swipe</span>
@@ -2861,11 +2887,11 @@ export default function App() {
           Right swipe ("interested") adds the card to bookmarks; left swipe
           ("pass") is recorded but not yet fed back into the matcher. The
           learning loop (a swipeAffinity term in matcher.ts) is the next step. */}
-      {swipeOpen && isAdminUser && (
+      {swipeOpen && (
         <ErrorBoundary>
           <SwipeDeck
             cards={displayedCards.filter((c) => !c.pinToTop)}
-            onClose={() => setSwipeOpen(false)}
+            onClose={() => { setSwipeOpen(false); setSwipeDismissed(true); }}
             onInterested={(card) => {
               if (!bookmarkedCards.has(card.id)) handleBookmark(card.id);
             }}
