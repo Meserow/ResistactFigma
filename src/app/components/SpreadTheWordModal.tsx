@@ -124,7 +124,7 @@ function buildPlatforms(siteUrl: string) {
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export function SpreadTheWordModal({ onClose }: { onClose: () => void }) {
+export function SpreadTheWordModal({ onClose, onShared }: { onClose: () => void; onShared?: () => void }) {
   const siteUrl = window.location.origin;
   const platforms = buildPlatforms(siteUrl);
 
@@ -199,11 +199,13 @@ export function SpreadTheWordModal({ onClose }: { onClose: () => void }) {
           `mailto:${allTags.join(",")}?subject=${enc("Actions you can take today — ResistAct")}&body=${enc(note)}`,
           "_blank"
         );
+        onShared?.();
         setSendState("idle");
         return;
       }
 
       if (!res.ok) throw new Error("Send failed");
+      onShared?.();
       setSendState("sent");
     } catch {
       setSendState("error");
@@ -269,6 +271,9 @@ export function SpreadTheWordModal({ onClose }: { onClose: () => void }) {
                 // (some platforms copy text to clipboard, some open a tab) so
                 // every share button is counted uniformly by platform `method`.
                 analytics.shareClicked(p.id, "spread_the_word");
+                // Any genuine share action counts as "spread the word" — let the
+                // parent record it (and hide the pinned card for logged-in users).
+                onShared?.();
                 if ("copyText" in p && p.copyText) {
                   navigator.clipboard.writeText(p.copyText).catch(() => {});
                   showToast((p as { copyNote: string }).copyNote);

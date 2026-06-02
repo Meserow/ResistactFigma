@@ -12,9 +12,12 @@ interface LoggedInHeroProps {
   onAskClick?: () => void;
   onHowClick?: () => void;
   hasMatchPrefs?: boolean;
+  onBookmarksClick?: () => void;
+  bookmarkCount?: number;
+  onSwipeClick?: () => void;
 }
 
-export function LoggedInHero({ name, streak, onMatchClick, onAskClick, onHowClick, hasMatchPrefs }: LoggedInHeroProps) {
+export function LoggedInHero({ name, streak, onMatchClick, onAskClick, onHowClick, hasMatchPrefs, onBookmarksClick, bookmarkCount, onSwipeClick }: LoggedInHeroProps) {
   const firstName = name.split(/\s+/)[0] || name;
   const greeting = streak <= 1 ? "Welcome to the resistance" : "Welcome back to the resistance";
   // The "N new actions today" line moved to the persistent footer (next to
@@ -51,7 +54,7 @@ export function LoggedInHero({ name, streak, onMatchClick, onAskClick, onHowClic
             top margin) would just leave an empty gap under the greeting — hide
             it below md. */}
         <div className="mt-4 hidden md:block">
-          <HeroPills onMatchClick={onMatchClick} onAskClick={onAskClick} onHowClick={onHowClick} hasMatchPrefs={hasMatchPrefs} />
+          <HeroPills onMatchClick={onMatchClick} onAskClick={onAskClick} onHowClick={onHowClick} hasMatchPrefs={hasMatchPrefs} onBookmarksClick={onBookmarksClick} bookmarkCount={bookmarkCount} onSwipeClick={onSwipeClick} />
         </div>
       </div>
     </div>

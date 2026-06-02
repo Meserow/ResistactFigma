@@ -144,9 +144,13 @@ interface ActionCardProps {
    * to update its source-of-truth `cards` state so the grid pill and
    * filters reflect the change immediately. */
   onCardUpdated?: (updated: ActionCardData) => void;
+  /** Called when the user takes any genuine share action inside the pinned
+   * "Spread the Word" modal. The parent records it (server-side for logged-in
+   * users) and hides the pinned card from people who've already shared. */
+  onSpreadShared?: () => void;
 }
 
-function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdit, onApprove, onInfoClick, isBoosted, isCompleted, isBookmarked, canEdit, isPending, compact = false, accessToken, onCardUpdated }: ActionCardProps) {
+function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdit, onApprove, onInfoClick, isBoosted, isCompleted, isBookmarked, canEdit, isPending, compact = false, accessToken, onCardUpdated, onSpreadShared }: ActionCardProps) {
   const [shareOpen, setShareOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
@@ -374,7 +378,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
         </div>
         {shareOpen && (
           card.pinToTop
-            ? <SpreadTheWordModal onClose={() => setShareOpen(false)} />
+            ? <SpreadTheWordModal onClose={() => setShareOpen(false)} onShared={onSpreadShared} />
             : <ShareModal cardId={card.id} title={card.title} description={card.description} onClose={() => setShareOpen(false)} />
         )}
         {detailsOpen && (

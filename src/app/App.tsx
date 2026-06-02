@@ -26,6 +26,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { locationToState, LOCATION_OPTIONS, normalizeCardLocation } from "./lib/locations";
 import { HomeHero } from "./components/HomeHero";
 import { LoggedInHero } from "./components/LoggedInHero";
+import { SignupBanner } from "./components/AccountPromos";
 import { MatchMeModal } from "./components/MatchMeModal";
 import { SwipeDeck } from "./components/SwipeDeck";
 import { useIsMobile } from "./components/ui/use-mobile";
@@ -443,6 +444,14 @@ export default function App() {
       return stored ? new Set<number>(JSON.parse(stored)) : new Set<number>();
     } catch { return new Set<number>(); }
   });
+  // Has the user spread the word about ResistAct? Once they have, the pinned
+  // "Spread the Word" card is hidden from them. For logged-in users this is
+  // tracked server-side (cross-device, via /me/spread-shared); the localStorage
+  // mirror keeps it instant and persists the choice on this device.
+  const [hasSharedSpread, setHasSharedSpread] = useState<boolean>(() => {
+    try { return localStorage.getItem("resistact_spread_shared") === "1"; }
+    catch { return false; }
+  });
   // Cards the user has already swiped in the deck (either direction). Persisted
   // so the deck doesn't restart at the top each time it opens — swiped cards are
   // filtered out of the deck on the next open. Saved (right-swipe) cards are
@@ -517,6 +526,9 @@ export default function App() {
     return { total: ids.length, byCategory, completedIds: ids };
   }, [completedCards, cards]);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  // Sticky "create an account" banner for logged-out users — dismissible for
+  // the session so it nudges without nagging forever.
+  const [signupBannerDismissed, setSignupBannerDismissed] = useState(false);
   const [adminPanelOpen, setAdminPanelOpen] = useState(false);
   // Swipe "Discover" mode — presents the current ranked feed one card at a time.
   // On phones this is the DEFAULT way to browse Acts (see the auto-open effect
@@ -1008,7 +1020,9 @@ export default function App() {
     // of them should be able to push it down or hide it. Pull pinToTop cards
     // OUT of the working set before any filtering / ranking happens, then
     // prepend them to whatever the rest of the pipeline produces.
-    const pinnedAlwaysShow = gated.filter((c) => c.pinToTop);
+    // Once the user has spread the word, drop the pinned "Spread the Word"
+    // card entirely — there's nothing left for them to do on it.
+    const pinnedAlwaysShow = hasSharedSpread ? [] : gated.filter((c) => c.pinToTop);
     const unpinnedGated = gated.filter((c) => !c.pinToTop);
 
     const filtered = applyFilters(unpinnedGated);
@@ -1252,7 +1266,7 @@ export default function App() {
   // then re-runs the memo only after the deferred value settles.
   }, [cards, deferredSearchQuery, activeFilters, quickActionsOnly, textingOnly, showDone,
       completedCards, matchPrefs, isAdminUser, todayISO, boostedCards,
-      sortBy, demoteHyperLocal,
+      sortBy, demoteHyperLocal, hasSharedSpread,
       // Impersonation override — recompute when entering / exiting view-as,
       // and when any of the impersonated slots change underneath us.
       isImpersonating, effectiveMatchPrefs, effectiveCompleted, effectiveBoosted, approval]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1386,6 +1400,7 @@ export default function App() {
         fetchMyCompletions(session.access_token);
         fetchMyBoosts(session.access_token);
         fetchMyBookmarks(session.access_token);
+        fetchMySpreadShared(session.access_token);
         syncMatchPreferencesOnLogin(session.access_token);
       } else {
         setAccessToken(null);
@@ -1485,6 +1500,39 @@ export default function App() {
       console.error("Could not fetch boosts:", err);
     }
   }
+
+  // ── Fetch whether the signed-in user has already spread the word ──
+  // Runs on login so the pinned "Spread the Word" card stays hidden across
+  // devices for people who've shared before. Best-effort; never throws.
+  async function fetchMySpreadShared(token: string) {
+    try {
+      const res = await fetch(`${API}/me/spread-shared`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.shared) {
+        setHasSharedSpread(true);
+        try { localStorage.setItem("resistact_spread_shared", "1"); } catch {}
+      }
+    } catch (err) {
+      console.error("Could not fetch share status:", err);
+    }
+  }
+
+  // ── User spread the word (any share action in the Spread the Word modal) ──
+  // Hide the pinned card immediately, remember it on this device, and — when
+  // signed in — record it server-side so the card stays hidden everywhere.
+  const handleSpreadShared = () => {
+    setHasSharedSpread(true);
+    try { localStorage.setItem("resistact_spread_shared", "1"); } catch {}
+    if (accessToken) {
+      fetch(`${API}/me/spread-shared`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }).catch(() => { /* non-critical — local flag already hides it */ });
+    }
+  };
 
   async function fetchApprovalStatus(token: string, user?: any) {
     try {
@@ -2214,6 +2262,9 @@ export default function App() {
                     onAskClick={() => isImpersonating ? showToast("View-as is read-only") : setAskOpen(true)}
                     onHowClick={() => setInfoOpen(true)}
                     hasMatchPrefs={effectiveMatchPrefs !== null}
+                    onBookmarksClick={() => setBookmarksOpen(true)}
+                    bookmarkCount={effectiveBookmarked.size}
+                    onSwipeClick={() => setSwipeOpen(true)}
                   />
                 )
               : null
@@ -2223,6 +2274,9 @@ export default function App() {
                     onMatchClick={() => setMatchOpen(true)}
                     onAskClick={() => setAskOpen(true)}
                     onHowClick={() => setInfoOpen(true)}
+                    onBookmarksClick={() => setBookmarksOpen(true)}
+                    bookmarkCount={effectiveBookmarked.size}
+                    onSwipeClick={() => setSwipeOpen(true)}
                   />
                 )
               : null
@@ -2647,6 +2701,7 @@ export default function App() {
                   onApprove={!isImpersonating && isAdminUser ? handleApproveCard : undefined}
                   accessToken={accessToken}
                   onCardUpdated={handleCardSaved}
+                  onSpreadShared={handleSpreadShared}
                 />
                 </div>
                 </Fragment>
@@ -2702,7 +2757,7 @@ export default function App() {
           size always appears alongside the message. On narrow screens the
           word labels (acts/facts/smacks) drop to just the colored numbers
           so the center tag stays on one line. */}
-      <div className="fixed bottom-0 inset-x-0 z-30 bg-white border-t border-gray-200 shadow-[0_-1px_3px_rgba(0,0,0,0.08)]">
+      <div className={`fixed bottom-0 inset-x-0 z-30 bg-white border-t border-gray-200 shadow-[0_-1px_3px_rgba(0,0,0,0.08)] ${(!approval && !isImpersonating && !signupBannerDismissed) ? "hidden" : ""}`}>
         <div className="flex items-center justify-between gap-2 md:gap-5 py-4 px-3 md:px-6">
           {/* Left: acts count, with a "(N new today)" parenthetical when any
               acts were created today. The "acts" word is hidden on mobile to
@@ -2776,6 +2831,15 @@ export default function App() {
         </div>
       </div>
 
+      {/* Sticky "create an account" banner for logged-out users — sits just
+          above the tagline footer (desktop-only via the component). */}
+      {!approval && !isImpersonating && !signupBannerDismissed && (
+        <SignupBanner
+          onLoginClick={() => setAuthModalOpen(true)}
+          onDismiss={() => setSignupBannerDismissed(true)}
+        />
+      )}
+
       {/* Scroll nudge — lower-right orange toast after scrolling past ~8 cards.
           Auto-expires after 30s (see useEffect above). Sits well clear of the
           always-on tagline footer so it doesn't cover it. */}
@@ -2786,14 +2850,14 @@ export default function App() {
               Finding it hard to choose?
             </p>
             <p className="font-['Poppins',sans-serif] text-[13px] md:text-[14px] text-white/90 leading-snug mb-3">
-              Let us match you in 30 seconds.
+              Set your act preferences and we'll match you in 30 seconds.
             </p>
             <div className="flex justify-end">
               <button
                 onClick={() => { setScrollNudgeVisible(false); setMatchOpen(true); }}
                 className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-white hover:bg-gray-50 text-[#fd8e33] font-['Poppins',sans-serif] font-extrabold text-[15px] rounded-xl shadow-sm transition-colors whitespace-nowrap"
               >
-                ✨ Refine My Matches →
+                ✨ Set Act Preferences →
               </button>
             </div>
           </div>
@@ -2914,18 +2978,8 @@ export default function App() {
       {/* Match Me wizard — suppressed during impersonation so admin can't
           accidentally save Match Me changes to their own account while
           they're trying to see the impersonated user's view. */}
-      {/* Admin-only floating entry to the Swipe "Discover" preview. Persistent
-          (not tied to a banner) so it's reachable on the Acts tab regardless of
-          search / filter / match state. Hidden while the deck itself is open. */}
-      {activeTab === "acts" && !swipeOpen && !isMobile && (
-        <button
-          onClick={() => setSwipeOpen(true)}
-          title="Swipe to discover Acts"
-          className="fixed bottom-6 right-6 z-40 flex items-center gap-2 rounded-full bg-[#23297e] px-4 py-3 text-white shadow-lg hover:bg-[#ed6624] transition-colors font-['Poppins',sans-serif] text-sm font-bold"
-        >
-          🃏 <span className="hidden sm:inline">Swipe</span>
-        </button>
-      )}
+      {/* Swipe mode is reached from the "Swipe to Discover" pill in the hero on
+          desktop (and the Scroll/Swipe toggle on phones) — no floating button. */}
 
       {/* Swipe "Discover" mode — full-screen overlay over the current feed.
           The deck honors the active filters/match (it's fed from displayedCards)

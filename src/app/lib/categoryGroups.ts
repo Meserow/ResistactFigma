@@ -90,7 +90,7 @@ export const KNOWN_CATEGORIES: Set<string> = new Set(
  *  rose. No more #ff00d5 hot pink. */
 export const CATEGORY_COLORS: Record<string, string> = {
   "Act of Kindness":     "#4a7c59", // forest green
-  "Amplify":             "#ed6624", // brand orange — energetic action (renamed from "Boost" June 2026)
+  "Amplify":             "#5a3e9e", // brand purple — distinct from the brand-orange CTA color (was #ed6624)
   "Art/Performance Art": "#8b6f47", // warm sienna
   "Boycott":             "#7c2d12", // rust
   "Crafting":            "#c34e00", // warm orange
@@ -120,7 +120,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
   "Show Up":             "#23297e", // brand navy (absorbs Bird-Dog)
   "Social Media":        "#b84545", // muted brick red
   // Spread Positivity merged into Act of Kindness (May 2026).
-  "Texting":             "#2f7d6b", // muted sea-green (SMS / text banking)
+  "Texting":             "#2f6fa8", // muted blue — out of the green/teal family so it doesn't read like "done" (was #2f7d6b)
   "Training":            "#3a6d80", // muted teal (absorbs Learn)
   "Transportation":      "#3a6d80", // muted teal
   "Video":               "#b84545", // muted brick red

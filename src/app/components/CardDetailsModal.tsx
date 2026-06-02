@@ -290,6 +290,40 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
             {card.description}
           </p>
 
+          {/* Category — sits directly under the description. Admins can click
+              to recategorize (popover opens downward here). */}
+          {showCategoryPill && (
+            <div className="mt-4 relative">
+              {canEditCategory ? (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setCatEditOpen((v) => !v); setCatError(null); }}
+                  title="Change category (admin)"
+                  className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 shadow-sm transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: categoryColor }}
+                >
+                  <span className="font-['Poppins',sans-serif] font-bold tracking-wide text-[12px] text-white">{card.category}</span>
+                  {catSaving ? <Loader2 size={11} className="text-white animate-spin" /> : <Pencil size={10} className="text-white/85" />}
+                </button>
+              ) : (
+                <span
+                  className="inline-flex items-center rounded-md px-2.5 py-1 shadow-sm font-['Poppins',sans-serif] font-bold tracking-wide text-[12px] text-white"
+                  style={{ backgroundColor: categoryColor }}
+                >
+                  {card.category}
+                </span>
+              )}
+              {canEditCategory && catEditOpen && (
+                <CategoryEditPopover
+                  current={card.category}
+                  onPick={saveCategory}
+                  onClose={() => setCatEditOpen(false)}
+                  error={catError}
+                  saving={catSaving}
+                />
+              )}
+            </div>
+          )}
+
           {/* Know-Your-Rights chip — surfaces a safety reminder right
               before the user takes action on a PROTEST or FLASH MOB
               card. Lived on the grid card itself in older builds; moved
@@ -316,8 +350,8 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
               on the left, primary link-out ("I want to ResistAct!") anchors
               on the right so the eye lands on the primary CTA last. Wraps
               to a single column on narrow viewports. */}
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-2">
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="mt-6 flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-2">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 w-full sm:w-auto">
               {/* "I did this!" toggle — same color identity as the on-card pill
                   (teal when complete, light teal when idle). Shows the running
                   done count so users see the social proof + their own click. */}
@@ -327,7 +361,7 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
                 return (
                   <button
                     onClick={() => onComplete(card.id)}
-                    className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 font-['Poppins',sans-serif] text-[13px] font-bold transition-colors ${
+                    className={`inline-flex w-full sm:w-auto justify-center items-center gap-1 rounded-full px-3 py-2 sm:py-1.5 font-['Poppins',sans-serif] text-[13px] font-bold transition-colors ${
                       isCompleted
                         ? "bg-[#0d8c6e] text-white hover:bg-[#0a7159]"
                         : "bg-[#0d8c6e]/10 text-[#0d8c6e] hover:bg-[#0d8c6e]/20"
@@ -344,7 +378,7 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
               {onBoost && (
                 <button
                   onClick={() => onBoost(card.id)}
-                  className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 font-['Poppins',sans-serif] text-sm font-bold transition-colors ${
+                  className={`inline-flex w-full sm:w-auto justify-center items-center gap-1.5 rounded-full px-4 py-2 font-['Poppins',sans-serif] text-sm font-bold transition-colors ${
                     isBoosted
                       ? "bg-[#ed6624]/80 text-white hover:bg-[#ed6624]"
                       : "bg-[#ed6624]/10 text-[#ed6624] hover:bg-[#ed6624]/20"
@@ -374,14 +408,14 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
             {card.pinToTop && onShare ? (
               <button
                 onClick={() => { onClose(); onShare(); }}
-                className="inline-flex items-center gap-1.5 rounded-full bg-[#ed6624] px-5 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#c2521b]"
+                className="inline-flex w-full sm:w-auto justify-center items-center gap-1.5 rounded-full bg-[#ed6624] px-5 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#c2521b]"
               >
                 <Flame size={14} /> Spread the Word!
               </button>
             ) : showDonePrompt && onComplete ? (
               <button
                 onClick={() => { onComplete(card.id); setShowDonePrompt(false); }}
-                className="inline-flex items-center gap-1.5 rounded-full bg-[#0d8c6e] px-5 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#0a7159]"
+                className="inline-flex w-full sm:w-auto justify-center items-center gap-1.5 rounded-full bg-[#0d8c6e] px-5 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#0a7159]"
               >
                 <CheckCircle2 size={14} /> Mark this action: I did this!
               </button>
@@ -394,48 +428,13 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
                   clickedLinkRef.current = true;
                   analytics.actionLinkClicked(card.id, card.category);
                 }}
-                className="inline-flex items-center gap-1.5 rounded-full bg-[#ed6624] px-5 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#c2521b]"
+                className="inline-flex w-full sm:w-auto justify-center items-center gap-1.5 rounded-full bg-[#ed6624] px-5 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#c2521b]"
               >
-                I want to ResistAct! <ExternalLink size={14} />
+                I want to Act! <ExternalLink size={14} />
               </a>
             ) : null}
           </div>
 
-          {/* Category — footer row, same placement as the feed & swipe cards.
-              Admins can click to recategorize (popover opens upward here so it
-              isn't clipped at the bottom of the modal). */}
-          {showCategoryPill && (
-            <div className="mt-6 pt-4 border-t border-gray-100 relative">
-              {canEditCategory ? (
-                <button
-                  onClick={(e) => { e.stopPropagation(); setCatEditOpen((v) => !v); setCatError(null); }}
-                  title="Change category (admin)"
-                  className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 shadow-sm transition-opacity hover:opacity-90"
-                  style={{ backgroundColor: categoryColor }}
-                >
-                  <span className="font-['Poppins',sans-serif] font-bold tracking-wide text-[12px] text-white">{card.category}</span>
-                  {catSaving ? <Loader2 size={11} className="text-white animate-spin" /> : <Pencil size={10} className="text-white/85" />}
-                </button>
-              ) : (
-                <span
-                  className="inline-flex items-center rounded-md px-2.5 py-1 shadow-sm font-['Poppins',sans-serif] font-bold tracking-wide text-[12px] text-white"
-                  style={{ backgroundColor: categoryColor }}
-                >
-                  {card.category}
-                </span>
-              )}
-              {canEditCategory && catEditOpen && (
-                <CategoryEditPopover
-                  current={card.category}
-                  onPick={saveCategory}
-                  onClose={() => setCatEditOpen(false)}
-                  error={catError}
-                  saving={catSaving}
-                  openUp
-                />
-              )}
-            </div>
-          )}
         </div>
       </div>
     </div>,

@@ -4991,6 +4991,39 @@ app.put("/make-server-9eb1ae04/me/bookmarks", async (c) => {
   }
 });
 
+// ─── GET /me/spread-shared — has this user spread the word about ResistAct? ───
+// Backs the rule "once a logged-in user has shared, hide the pinned Spread the
+// Word card from them." A record at `share:spread:{user.id}` means yes.
+app.get("/make-server-9eb1ae04/me/spread-shared", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    if (!token) return c.json({ error: "Unauthorized" }, 401);
+    const user = await getUser(token);
+    if (!user) return c.json({ error: "Invalid token" }, 401);
+    const record = await kv.get(`share:spread:${user.id}`);
+    return c.json({ shared: !!record });
+  } catch (err) {
+    return c.json({ error: `Failed to load share status: ${err}` }, 500);
+  }
+});
+
+// ─── POST /me/spread-shared — record that this user spread the word ───────────
+// Idempotent: writing again just refreshes the timestamp. Any genuine share
+// action in the Spread the Word modal (social tap, copy link, email invite)
+// hits this once for a logged-in user.
+app.post("/make-server-9eb1ae04/me/spread-shared", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    if (!token) return c.json({ error: "Unauthorized" }, 401);
+    const user = await getUser(token);
+    if (!user) return c.json({ error: "Invalid token" }, 401);
+    await kv.set(`share:spread:${user.id}`, { sharedAt: new Date().toISOString() });
+    return c.json({ ok: true });
+  } catch (err) {
+    return c.json({ error: `Failed to save share status: ${err}` }, 500);
+  }
+});
+
 // ─── POST /share-invite — send email invites to friends ──────────────────────
 app.post("/make-server-9eb1ae04/share-invite", async (c) => {
   const resendKey = Deno.env.get("RESEND_API_KEY");

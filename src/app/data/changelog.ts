@@ -16,6 +16,299 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.81",
+    date: "2026-06-02",
+    title: "Clearer Join window + phone sign-up bar",
+    sections: [
+      {
+        heading: "Joining the resistance",
+        items: [
+          "Rewrote the Join window to be much clearer: it's now titled \"Join The Resistance\" (matching the button), explains you can create an account or sign in with the same button, lists what you get, and reassures you up front — no tracking, no donation asks.",
+          "On phones, logged-out visitors now get the same navy \"create a free account\" bar at the bottom that desktop has.",
+        ],
+      },
+      {
+        heading: "Getting around",
+        items: [
+          "Renamed the contact button to \"Contact Us\" and simplified it to a plain orange icon and label.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.80",
+    date: "2026-06-02",
+    title: "Contact button + tidier swipe entry",
+    sections: [
+      {
+        heading: "Getting around",
+        items: [
+          "Renamed the \"Feedback\" button to \"Contact.\"",
+          "Removed the floating swipe button in the corner — you can still start swiping from the \"Swipe to Discover\" button up top (or the Scroll/Swipe toggle on phones).",
+        ],
+      },
+      {
+        heading: "Joining the resistance",
+        items: [
+          "Spelled out what a free account gets you right in the Join window: track every act, build a daily streak, climb the tiers, and keep your saved matches on every device.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.79",
+    date: "2026-06-02",
+    title: "Cleaner sign-up nudge at the bottom",
+    sections: [
+      {
+        heading: "Joining the resistance",
+        items: [
+          "Removed the repeating sign-up card from the middle of the feed.",
+          "For logged-out visitors on desktop, the bottom bar now carries the join pitch (\"create a free account… stay anonymous if you like — no tracking, no spam\"); signed-in members keep the usual acts/facts/smacks footer.",
+        ],
+      },
+      {
+        heading: "Getting around",
+        items: [
+          "Evened out the top buttons so \"Set Act Preferences\" is the same size as the rest, and lifted the floating Swipe button so it no longer overlaps the bottom bar.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.78",
+    date: "2026-06-02",
+    title: "Tidier hero + a better case for joining",
+    sections: [
+      {
+        heading: "Getting around",
+        items: [
+          "Moved \"Swipe to Discover\" into the main row of buttons at the top, so swiping sits right alongside your other options.",
+          "Slimmed the feedback button so it takes up less room.",
+        ],
+      },
+      {
+        heading: "Joining the resistance",
+        items: [
+          "Removed the extra benefits banner from the top of the page and moved that list (track your impact, earn tiers, sync your saves) into the Join The Resistance window, where it makes the case right when you're deciding to sign up.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.77",
+    date: "2026-06-02",
+    title: "Clearer feedback button + small polish",
+    sections: [
+      {
+        heading: "Getting around",
+        items: [
+          "The feedback button at the top is now a clearly labeled \"Feedback\" button so you know what it does.",
+          "Tidied up a couple of colors and the wording on the \"let us match you\" prompt to match the renamed Set Act Preferences tool.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.76",
+    date: "2026-06-02",
+    title: "Easier to find Swipe mode + join up",
+    sections: [
+      {
+        heading: "Getting around",
+        items: [
+          "Added a \"Swipe to Discover\" callout to the top of the desktop view — a quick, inviting way to flip through acts one at a time (the swipe button in the corner is still there too).",
+        ],
+      },
+      {
+        heading: "Joining the resistance",
+        items: [
+          "Made it much clearer how (and why) to create a free account: a benefits pitch at the top, a friendly reminder card woven into the feed as you scroll, and a dismissible bar at the bottom — all explaining that an account lets you track your impact, earn tiers, and sync your saves across devices.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.75",
+    date: "2026-06-02",
+    title: "My Matches gets thumbnails",
+    sections: [
+      {
+        heading: "My Matches",
+        items: [
+          "The My Matches panel now shows each saved act as a card with its artwork and a color-coded category tag — matching the recap you see after swiping, so it's easier to recognize your saves at a glance.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.74",
+    date: "2026-06-02",
+    title: "Phone menu wording tweaks",
+    sections: [
+      {
+        heading: "Getting around",
+        items: [
+          "In the phone menu, Share Feedback now sits above About, \"About\" is now \"About ResistAct\", and \"My Preferences\" is now \"My Act Preferences\".",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.73",
+    date: "2026-06-02",
+    title: "Reordered the desktop hero buttons",
+    sections: [
+      {
+        heading: "Getting around",
+        items: [
+          "Reordered the buttons at the top of the desktop view: Add an Act, My Saved Matches, Set Act Preferences, About.",
+          "Renamed \"Refine Your Matches\" to \"Set Act Preferences\" to match the phone menu.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.72",
+    date: "2026-06-02",
+    title: "Tidied up the phone menu order",
+    sections: [
+      {
+        heading: "Getting around",
+        items: [
+          "Reordered the phone menu so the most-used actions come first: Join The Resistance, Add an Act, My Saved Matches, My Preferences, About, Share Feedback.",
+          "Renamed a couple of items for clarity — \"Refine Your Matches\" is now \"My Preferences\" and \"How does ResistAct work?\" is now \"About\".",
+          "\"My Saved Matches\" only shows up once you've actually saved something.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.71",
+    date: "2026-06-02",
+    title: "Quick link to your saved matches",
+    sections: [
+      {
+        heading: "Getting around",
+        items: [
+          "On desktop, once you've saved some acts, a \"My Saved Matches\" button now appears up top in the hero alongside the other actions — showing how many you've saved and jumping straight to them.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.70",
+    date: "2026-06-02",
+    title: "Simpler phone menu",
+    sections: [
+      {
+        heading: "Getting around",
+        items: [
+          "Cleaned up the phone menu: it now has a clear \"Menu\" header and dims the page behind it, so it's obvious you've opened a menu.",
+          "\"Join The Resistance\" is the one highlighted button — everything else is now a simple text list that's easier to scan.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.69",
+    date: "2026-06-02",
+    title: "See what you saved when you finish swiping",
+    sections: [
+      {
+        heading: "Swipe to discover",
+        items: [
+          "When you tap Done (or reach the end of the stack), you now get a quick recap of the acts you saved this session — so you leave knowing exactly what's waiting for you in My Matches.",
+          "The top of the swipe view now shows a running count of how many you've saved, right next to how many are left to go.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.68",
+    date: "2026-06-02",
+    title: "Clearer category colors",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Gave the Amplify and Texting categories their own distinct colors (purple and blue) so they no longer blend in with the orange action buttons or the green 'done' markers.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.67",
+    date: "2026-06-02",
+    title: "Cleaner action details on phones",
+    sections: [
+      {
+        heading: "Acting on an Act",
+        items: [
+          "Renamed the main button on an act to \"I want to Act!\".",
+          "Moved the category label up so it sits right under the description, where it's easier to spot.",
+          "On phones, the \"I did this!\" and \"Boost\" buttons now stack neatly one above the other instead of crowding side by side.",
+          "Gave the 'done' celebration a touch more time on screen before it closes itself.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.66",
+    date: "2026-06-02",
+    title: "Simpler 'done' celebration",
+    sections: [
+      {
+        heading: "Marking actions done",
+        items: [
+          "Streamlined the celebration that pops when you mark an action done — now it's just a quick 'nice work' with your running total, and it closes on its own after a moment so you can get right back to it.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.65",
+    date: "2026-06-02",
+    title: "Spread the Word disappears once you've shared",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Once you've shared ResistAct from the \"Spread the Word\" card — by any method, social, copy link, or email invite — that card disappears from your feed. No need to keep scrolling past it after you've done your part.",
+          "If you're signed in, this is remembered on your account, so the card stays gone on every device you use.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.64",
+    date: "2026-06-02",
+    title: "Tidier filters on phones",
+    sections: [
+      {
+        heading: "Filtering The Acts",
+        items: [
+          "On phones, \"5 Min Max\" moved out of its own chip and now sits at the top of the Category dropdown, with a line below it separating it from the category list — the same way \"Remote only\" leads the Location dropdown. This keeps the filter row short and easy to scan.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.63",
+    date: "2026-06-02",
+    title: "Cleaner swipe buttons",
+    sections: [
+      {
+        heading: "Swipe to discover",
+        items: [
+          "Simplified the swipe deck's action row to three equal circles — Pass, Undo, and Save — so the main choices are clear and easy to tap.",
+          "Marking something you've already done is now a small text link tucked just below the buttons — out of the way, but still easy to tap with a finger.",
+          "Swipe cards now size themselves to fit above the buttons, so the category and author info at the bottom of each card are always fully visible instead of getting cut off.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.62",
     date: "2026-06-02",
     title: "Swipe mode is now your choice on phones",
