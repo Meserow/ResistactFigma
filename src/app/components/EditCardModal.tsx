@@ -4,7 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
 import type { ActionCardData } from "./ActionCard";
 import { CardDetailsModal } from "./CardDetailsModal";
-import { LOCATION_OPTIONS, locationToState } from "../lib/locations";
+import { LOCATION_OPTIONS, locationToState, normalizeCardLocation } from "../lib/locations";
 import { ToneRangeSlider } from "./ToneSlider";
 import { InvolvementPicker, involvementLevelFor } from "./InvolvementPicker";
 import type { TimeBucket } from "../lib/matcher";
@@ -135,26 +135,25 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
   const [involvement,    setInvolvement]    = useState<TimeBucket>(() =>
     timeBucketFromCard(card.timeCommitment, (card as any).quickAction)
   );
-  // "Remote" is the single canonical location-agnostic value. Legacy
-  // online/at-home cards (isOnline:true, or location "Online"/"At Home"/
-  // "From Home") all normalize to "Remote" so the dropdown — which now
-  // only offers "Remote" — reflects them correctly.
-  const LEGACY_REMOTE = new Set(["Online", "At Home", "From Home", "Remote"]);
-  // Resolve the stored location to a canonical dropdown value. locationToState
-  // maps "City, ST" → state ("Beverly, MA" → "Massachusetts"), passes through
-  // canonical values, folds legacy online strings → "Remote", and returns null
-  // for free-form venue/setting strings it can't place. This means editing a
-  // legacy card pre-selects the right state instead of forcing a manual re-pick
-  // (and avoids the silent-wipe footgun where saving cleared the location).
-  const normalizedLocation = locationToState(card.location);
-  const initialLocation = (card.isOnline || LEGACY_REMOTE.has(card.location ?? ""))
-    ? "Remote"
-    : (normalizedLocation && (LOCATION_OPTIONS as readonly string[]).includes(normalizedLocation))
+  // Remote-ness ("doable from home / online") is a SEPARATE axis from geography.
+  // normalizeCardLocation folds the legacy `atHome` flag and the old
+  // "Remote"/"At Home"/"Online"/"From Home" location strings into `isOnline`
+  // and strips them from `location`, so the geography dropdown only ever shows
+  // a real place — and a card can be state-tied AND remote at the same time.
+  const normalized = normalizeCardLocation(card);
+  // Resolve the (geography-only) stored location to a canonical dropdown value.
+  // locationToState maps "City, ST" → state ("Beverly, MA" → "Massachusetts"),
+  // passes through canonical values, and returns null for free-form venue
+  // strings it can't place — so editing a legacy card pre-selects the right
+  // state instead of forcing a manual re-pick.
+  const normalizedLocation = locationToState(normalized.location);
+  const initialLocation =
+    (normalizedLocation && (LOCATION_OPTIONS as readonly string[]).includes(normalizedLocation))
       ? normalizedLocation
       : "";
   const [location,           setLocation]           = useState(initialLocation);
-  const isOnline = location === "Remote";
-  const isLegacyLocation = !card.isOnline && !!card.location && !initialLocation;
+  const [isOnline,           setIsOnline]           = useState(normalized.isOnline);
+  const isLegacyLocation = !!normalized.location && !initialLocation;
   const [authorName,         setAuthorName]         = useState(card.authorName);
   const [authorRole,         setAuthorRole]         = useState(card.authorRole);
   const [authorLink,         setAuthorLink]         = useState(card.authorLink ?? "");
@@ -333,9 +332,8 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
         categoryColor,
         timeCommitment: TIME_COMMITMENT_MAP[involvement],
         quickAction:    involvement === "5min",
+        // Independent axes: isOnline (remote/from-home) + geographic location.
         isOnline,
-        // Keep location:"Remote" on the record (not undefined) so the string
-        // and the isOnline flag stay in lock-step — both say "remote".
         location:       location || undefined,
         spotsTotal:     "Unlimited",
         authorName:     authorName.trim(),
@@ -526,6 +524,19 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
                   Previous: <span className="font-semibold">{card.location}</span>
                 </p>
               )}
+              {/* Remote-ness is independent of the state above: an act can be
+                  tied to a place AND still be doable from home. */}
+              <label className="mt-2 flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={isOnline}
+                  onChange={(e) => setIsOnline(e.target.checked)}
+                  className="h-4 w-4 accent-[#23297e]"
+                />
+                <span className="font-['Poppins',sans-serif] text-[12px] text-gray-700">
+                  Can be done remotely / from home
+                </span>
+              </label>
             </Field>
           </div>
 

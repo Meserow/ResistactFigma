@@ -16,6 +16,63 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.61",
+    date: "2026-06-02",
+    title: "Readable YES / PASS stamps when swiping",
+    sections: [
+      {
+        heading: "Swipe to discover",
+        items: [
+          "The YES and PASS stamps are now solid (filled green and red) instead of see-through, so they stay readable over the card artwork while you swipe.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.60",
+    date: "2026-06-02",
+    title: "Click into top Acts/Facts/Smacks, and admin activity no longer skews the leaderboard",
+    sections: [
+      {
+        heading: "Admin dashboard — leaderboards",
+        items: [
+          "Click any row in Top Acts, Top Facts, or Top Smacks to open that item's full details in a popup — no more hunting it down elsewhere to see what it is.",
+          "Top Acts no longer counts the admin team's own completions and boosts, so the rankings reflect what real visitors are actually doing rather than internal testing.",
+          "Fact and Smack boosts are anonymous (we never recorded who clicked), so those boost counts are left as-is.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.59",
+    date: "2026-06-02",
+    title: "Fixed swipe freezing after a few cards",
+    sections: [
+      {
+        heading: "Swipe to discover",
+        items: [
+          "Fixed a bug where swiping would lock up after a few cards and the card would stop moving — you can now swipe through the whole stack without it getting stuck.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.58",
+    date: "2026-06-02",
+    title: "Tag an Act with a state even when it's doable from home",
+    sections: [
+      {
+        heading: "Locations & remote Acts",
+        items: [
+          "\"Remote\" / \"from home\" is now separate from where an Act is based. An Act can be tied to a state (say, California) AND still be marked as doable remotely — before, picking one wiped the other.",
+          "The submit and edit forms now have a simple \"Can be done remotely / from home\" checkbox that's independent of the location dropdown.",
+          "Acts that are tied to a place but also doable remotely show their state plus a small globe icon, so you can tell at a glance.",
+          "Filtering is unchanged in spirit: the Remote filter shows every remotely-doable Act, and picking a state still surfaces that state's Acts (including the ones you can also do from home).",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.57",
     date: "2026-06-01",
     title: "New \"Volunteer\" category",

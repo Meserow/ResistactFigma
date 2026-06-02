@@ -23,7 +23,7 @@ import { EditCardModal } from "./components/EditCardModal";
 import { CardDetailsModal } from "./components/CardDetailsModal";
 import { BookmarksPanel } from "./components/BookmarksPanel";
 import { ErrorBoundary } from "./components/ErrorBoundary";
-import { locationToState, LOCATION_OPTIONS } from "./lib/locations";
+import { locationToState, LOCATION_OPTIONS, normalizeCardLocation } from "./lib/locations";
 import { HomeHero } from "./components/HomeHero";
 import { LoggedInHero } from "./components/LoggedInHero";
 import { MatchMeModal } from "./components/MatchMeModal";
@@ -235,6 +235,13 @@ function resolveCard(raw: ServerCard): ActionCardData {
     authorAvatar: raw.authorAvatarKey ? IMAGE_MAP[raw.authorAvatarKey] : (raw.authorAvatarUrl ?? undefined),
     // Override description for the pinToTop card so it's always current.
     description:  raw.pinToTop ? SPREAD_THE_WORD_DESCRIPTION : raw.description,
+    // Disambiguate remote-ness from geography. Folds the legacy `atHome`
+    // boolean and legacy "Remote"/"At Home"/"Online" location strings into a
+    // single canonical `isOnline` flag, and strips them out of `location` so
+    // it holds geography only. Every card path flows through resolveCard, so
+    // all downstream filters/sort/matcher/display see the clean model — and a
+    // card can now be state-tied AND remote at once.
+    ...normalizeCardLocation(raw),
   };
 }
 
@@ -707,18 +714,14 @@ export default function App() {
   // A card is "location-agnostic" — doable from anywhere, so it must NEVER be
   // hidden by a state filter (it sorts below local results instead). Single
   // source of truth shared by the Location filter chip AND the Match Me
-  // state filter so the two paths can't disagree. Critically this includes
-  // the canonical "Remote"/"At Home" location strings: a card can carry
-  // location:"Remote" while isOnline is false (the create/edit form doesn't
-  // always set both), and locationToState("Remote") returns "Remote" (not
-  // null), so without these explicit cases such a card would wrongly fail
-  // both the isOnline check and the cardState===null check and get dropped.
+  // state filter so the two paths can't disagree. resolveCard has already
+  // folded remote-ness into `isOnline` and reduced `location` to geography,
+  // so we only check the clean fields here.
   function isLocationAgnostic(card: ActionCardData): boolean {
     if (card.isOnline) return true;
-    if ((card as any).atHome === true) return true;
     const loc = (card.location ?? "").trim();
-    if (loc === "" || loc === "Remote" || loc === "At Home" ||
-        loc === "National" || loc === "Multi-state" || loc === "Multi-State") return true;
+    if (loc === "" || loc === "National" ||
+        loc === "Multi-state" || loc === "Multi-State") return true;
     // Unrecognized freeform location that doesn't resolve to a known state →
     // treat as agnostic so it's never hidden by a state filter.
     return locationToState(loc) === null;
@@ -763,9 +766,9 @@ export default function App() {
       const cats = activeFilters["Category"] ?? [];
       if (cats.length > 0 && !cats.includes(card.category)) return false;
 
-      // Location — match by canonical state (or "Remote"/"National"/etc).
-      // Legacy "City, ST" values and old names ("Online"/"From Home"/"Multi-state")
-      // get normalized via locationToState.
+      // Location — match by canonical state. Legacy "City, ST" values and the
+      // "Multi-state" alias get normalized via locationToState. Remote-ness is
+      // a separate axis (card.isOnline), not a location value.
       //
       // Design intent: selecting a state (e.g. "Washington") sorts state-matching
       // cards to the top but does NOT eliminate online/national/multi-state acts —
@@ -773,7 +776,8 @@ export default function App() {
       // local results. Only cards that are location-specific AND belong to a
       // different state are hard-filtered out.
       // "Remote" works differently: it IS a hard filter — it shows only
-      // online/at-home acts and nothing else.
+      // remote-doable acts and nothing else (regardless of which state they're
+      // also tied to).
       const locs = activeFilters["Location"] ?? [];
       if (locs.length > 0) {
         const cardState = locationToState(card.location);
@@ -782,16 +786,13 @@ export default function App() {
         const wantsRemote = locs.includes("Remote");
         const matchesState = cardState !== null && stateFilters.includes(cardState);
 
-        // "Remote" pill: show only online/at-home acts. Accept both the
-        // isOnline/atHome booleans AND the canonical "Remote"/"At Home"
-        // location strings, since the create/edit form doesn't always set
-        // both (a card can be location:"Remote" with isOnline:false).
-        const remoteLoc = (card.location ?? "").trim();
-        const matchesRemote = card.isOnline || (card as any).atHome === true ||
-          remoteLoc === "Remote" || remoteLoc === "At Home";
+        // "Remote" pill: show only remote-doable acts. resolveCard has already
+        // folded the legacy atHome flag and "Remote"/"At Home" location strings
+        // into card.isOnline, so the single flag is authoritative here.
+        const matchesRemote = !!card.isOnline;
 
         if (wantsRemote) {
-          // Remote is a hard filter: ONLY online/at-home acts survive, so every
+          // Remote is a hard filter: ONLY remote-doable acts survive, so every
           // in-person card disappears — even when a state is also selected.
           if (!matchesRemote) return false;
         } else if (hasStateFilter) {

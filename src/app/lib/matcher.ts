@@ -365,10 +365,11 @@ export function assessAmplification(card: ActionCardData, groups: VulnerableGrou
 
 // ─── Online / at-home helper ───────────────────────────────────────────────────
 
-/** True for cards that can be done from a couch — online, the legacy `atHome`
- * boolean, or the canonical `location === "From Home"` string. */
+/** True for cards that can be done from a couch. resolveCard has already
+ * folded the legacy `atHome` flag and "Remote"/"At Home"/"Online" location
+ * strings into `isOnline`, so the single flag is authoritative. */
 export function cardIsAtHome(card: ActionCardData): boolean {
-  return !!card.isOnline || !!card.atHome || card.location === "From Home" || card.location === "At Home";
+  return !!card.isOnline || !!card.atHome;
 }
 
 // ─── Location / state filter ──────────────────────────────────────────────────
@@ -664,10 +665,14 @@ export function explainMatch(card: ActionCardData, prefs: Preferences, ctx?: Use
     reasons.push(TIME_LABEL[prefs.time]);
   }
 
-  // State match — call out a local card when the user picked a state.
+  // State match — call out a local card when the user picked a state. A card
+  // tied to a state still reads as "local" even if it's ALSO doable remotely,
+  // so the isOnline flag no longer suppresses this (location is geography-only
+  // now). Cards reaching here already passed stateMatches, so a specific,
+  // non-National/Multi-state location means it's tied to the user's state.
   if (prefs.state) {
     const cardLoc = (card.location ?? "").trim();
-    if (cardLoc && cardLoc !== "National" && cardLoc !== "Multi-state" && !card.isOnline) {
+    if (cardLoc && cardLoc !== "National" && cardLoc !== "Multi-state") {
       reasons.push(`local to ${prefs.state}`);
     }
   }

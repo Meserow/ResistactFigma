@@ -70,6 +70,11 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckPro
   const topCardRef = useRef<HTMLDivElement | null>(null);
   const likeRef = useRef<HTMLSpanElement | null>(null);
   const nopeRef = useRef<HTMLSpanElement | null>(null);
+  // Source of truth for "a card is mid-fling". A ref (read synchronously by the
+  // gesture handlers) so it can never get stuck out of sync with the `flying`
+  // state + a pending timer — that desync is what froze the deck after a few
+  // swipes.
+  const flyingRef = useRef<Dir | null>(null);
 
   const SPRING = "transform 0.32s cubic-bezier(.2,.8,.2,1)";
 
@@ -95,38 +100,63 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckPro
 
   const commit = useCallback(
     (dir: Dir) => {
-      if (flying || index >= cards.length) return;
+      if (flyingRef.current || index >= cards.length) return;
       const card = cards[index];
-      const advance = () => {
-        if (dir === "right") onInterested?.(card);
-        else onPass?.(card);
+      flyingRef.current = dir;
+
+      // Advance the deck + fire the verdict. Runs EXACTLY once — whichever of
+      // the transitionend event or the safety timeout gets here first wins, the
+      // other no-ops. Clears the flying flag FIRST so neither a thrown verdict
+      // callback nor a dropped timer can ever leave the deck frozen.
+      let finished = false;
+      const finish = () => {
+        if (finished) return;
+        finished = true;
+        flyingRef.current = null;
+        setFlying(null);
         setHistory((h) => [...h, { index, dir }]);
         setIndex((i) => i + 1);
-        setFlying(null);
+        try {
+          if (dir === "right") onInterested?.(card);
+          else onPass?.(card);
+        } catch (err) {
+          console.error("SwipeDeck verdict callback threw:", err);
+        }
       };
-      if (reduced) { advance(); return; }
+
+      if (reduced) { finish(); return; }
       setFlying(dir);
+
       // Fling the current top card off-screen from wherever it is right now
-      // (drag position for a gesture, centre for a button), then advance.
+      // (drag position for a gesture, centre for a button).
       const el = topCardRef.current;
       if (el) {
         el.style.transition = "transform 0.3s ease-out";
         const fx = dir === "right" ? FLY_PX : -FLY_PX;
         el.style.transform = `translate3d(${fx}px, -60px, 0) rotate(${dir === "right" ? 22 : -22}deg)`;
+        // Advance when the fling actually finishes…
+        const onEnd = (ev: TransitionEvent) => {
+          if (ev.propertyName !== "transform") return;
+          el.removeEventListener("transitionend", onEnd);
+          finish();
+        };
+        el.addEventListener("transitionend", onEnd);
       }
       if (dir === "right" && likeRef.current) likeRef.current.style.opacity = "1";
       if (dir === "left" && nopeRef.current) nopeRef.current.style.opacity = "1";
-      window.setTimeout(advance, 300);
+      // …with a safety net in case transitionend never fires (animation
+      // interrupted, tab backgrounded, no layout box, etc.).
+      window.setTimeout(finish, 380);
     },
-    [cards, index, flying, onInterested, onPass, reduced],
+    [cards, index, onInterested, onPass, reduced],
   );
 
   const undo = useCallback(() => {
-    if (flying || history.length === 0) return;
+    if (flyingRef.current || history.length === 0) return;
     const last = history[history.length - 1];
     setHistory((h) => h.slice(0, -1));
     setIndex(last.index);
-  }, [flying, history]);
+  }, [history]);
 
   // Keyboard: ←/→ swipe, ⌫ undo, Esc close.
   useEffect(() => {
@@ -145,7 +175,7 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckPro
   // child (image/heading) that unmounts when the card flies, which used to
   // leave the next card unresponsive (the "only works once" bug).
   const onPointerDown = (e: React.PointerEvent) => {
-    if (flying || done) return;
+    if (flyingRef.current || done) return;
     topCardRef.current?.setPointerCapture?.(e.pointerId);
     startRef.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
     dragXRef.current = 0;
@@ -258,7 +288,7 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckPro
                       className="pointer-events-none absolute left-5 top-6 -rotate-12"
                       style={{ opacity: 0, transition: "opacity 0.1s" }}
                     >
-                      <span className="rounded-lg border-4 border-green-500 px-3 py-1 font-['Poppins',sans-serif] text-2xl font-extrabold uppercase text-green-500">
+                      <span className="rounded-lg border-4 border-white bg-green-500 px-3 py-1 font-['Poppins',sans-serif] text-2xl font-extrabold uppercase text-white shadow-lg">
                         Yes
                       </span>
                     </span>
@@ -267,7 +297,7 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass }: SwipeDeckPro
                       className="pointer-events-none absolute right-5 top-6 rotate-12"
                       style={{ opacity: 0, transition: "opacity 0.1s" }}
                     >
-                      <span className="rounded-lg border-4 border-red-500 px-3 py-1 font-['Poppins',sans-serif] text-2xl font-extrabold uppercase text-red-500">
+                      <span className="rounded-lg border-4 border-white bg-red-500 px-3 py-1 font-['Poppins',sans-serif] text-2xl font-extrabold uppercase text-white shadow-lg">
                         Pass
                       </span>
                     </span>
@@ -340,10 +370,14 @@ function SwipeCardFace({ card }: { card: ActionCardData }) {
         </span>
         {(card.isOnline || card.location) && (
           <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-md bg-white/95 px-2.5 py-1 shadow-sm backdrop-blur-sm">
-            {card.isOnline ? (
-              <><Globe size={12} className="text-gray-700" /><span className="font-['Poppins',sans-serif] text-[12px] text-gray-700">Online</span></>
+            {card.location ? (
+              <>
+                <MapPin size={12} className="text-gray-700" />
+                <span className="font-['Poppins',sans-serif] text-[12px] text-gray-700">{card.location}</span>
+                {card.isOnline && <Globe size={12} className="text-gray-700" aria-label="also doable remotely" />}
+              </>
             ) : (
-              <><MapPin size={12} className="text-gray-700" /><span className="font-['Poppins',sans-serif] text-[12px] text-gray-700">{card.location}</span></>
+              <><Globe size={12} className="text-gray-700" /><span className="font-['Poppins',sans-serif] text-[12px] text-gray-700">Online</span></>
             )}
           </div>
         )}

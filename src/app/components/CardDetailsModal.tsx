@@ -226,9 +226,13 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
             />
             {(card.isOnline || card.location) && (
               <div className="absolute bottom-3 right-3 flex items-center gap-1 bg-white/95 backdrop-blur-sm rounded-md px-2.5 py-1 shadow-sm">
-                {card.isOnline
-                  ? <><Globe size={12} className="text-gray-700" /><span className="font-['Poppins',sans-serif] text-[12px] text-gray-700">Online</span></>
-                  : <><MapPin size={12} className="text-gray-700" /><span className="font-['Poppins',sans-serif] text-[12px] text-gray-700">{card.location}</span></>
+                {card.location
+                  ? <>
+                      <MapPin size={12} className="text-gray-700" />
+                      <span className="font-['Poppins',sans-serif] text-[12px] text-gray-700">{card.location}</span>
+                      {card.isOnline && <Globe size={12} className="text-gray-700" aria-label="also doable remotely" />}
+                    </>
+                  : <><Globe size={12} className="text-gray-700" /><span className="font-['Poppins',sans-serif] text-[12px] text-gray-700">Online</span></>
                 }
               </div>
             )}
