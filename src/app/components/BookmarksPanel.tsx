@@ -1,6 +1,9 @@
 import { createPortal } from "react-dom";
 import { X, Heart, ChevronRight } from "lucide-react";
 import type { ActionCardData } from "./ActionCard";
+import { colorForCategory } from "../lib/categoryGroups";
+import { ImageWithFallback } from "./figma/ImageWithFallback";
+import cardFallbackImg from "../../assets/resistact-card-fallback.webp";
 
 interface BookmarksPanelProps {
   cards: ActionCardData[];
@@ -82,7 +85,7 @@ export function BookmarksPanel({ cards, bookmarkedIds, onBookmark, onClose, isLo
               </div>
             </div>
           ) : (
-            <ul className="divide-y divide-gray-100">
+            <ul className="flex flex-col gap-2 p-3">
               {bookmarked.map((card) => (
                 <BookmarkRow key={card.id} card={card} onUnbookmark={() => onBookmark(card.id)} onOpen={() => onOpenCard(card)} />
               ))}
@@ -96,36 +99,38 @@ export function BookmarksPanel({ cards, bookmarkedIds, onBookmark, onClose, isLo
 }
 
 function BookmarkRow({ card, onUnbookmark, onOpen }: { card: ActionCardData; onUnbookmark: () => void; onOpen: () => void }) {
+  const banner = card.cartoonImageUrl || card.topImage || cardFallbackImg;
   return (
-    // Clicking anywhere on the row opens the full card modal (the act's
-    // external link lives inside the modal). The heart stops propagation so
+    // Card row mirroring the swipe deck's "Saved for later" recap: thumbnail +
+    // title + solid category pill. Clicking anywhere opens the full card modal
+    // (the act's external link lives inside). The heart stops propagation so
     // un-saving doesn't also open the modal.
     <li
       onClick={onOpen}
-      className="group px-4 py-3.5 hover:bg-gray-50 transition-colors flex items-start gap-3 cursor-pointer"
+      className="group flex items-center gap-3 rounded-xl bg-gray-50 hover:bg-gray-100 p-2.5 transition-colors cursor-pointer"
     >
-      <div className="flex-1 min-w-0">
-        {/* Category chip */}
-        <span
-          className="inline-block text-[10px] font-bold font-['Poppins',sans-serif] uppercase tracking-wide rounded-full px-2 py-0.5 mb-1.5"
-          style={{ background: `${card.categoryColor}18`, color: card.categoryColor }}
-        >
-          {card.category}
-        </span>
+      <ImageWithFallback
+        src={banner}
+        alt=""
+        className="h-14 w-14 shrink-0 rounded-lg object-cover"
+        draggable={false}
+      />
 
-        {/* Title */}
-        <p className="font-['Poppins',sans-serif] font-semibold text-[13px] text-gray-800 group-hover:text-[#23297e] leading-snug transition-colors">
+      <div className="min-w-0 flex-1">
+        <p className="font-['Poppins',sans-serif] font-semibold text-[14px] text-gray-800 group-hover:text-[#23297e] leading-snug line-clamp-2 transition-colors">
           {card.title}
         </p>
-
-        {/* Author */}
-        <p className="font-['Poppins',sans-serif] text-[11px] text-gray-400 mt-0.5">
-          {card.authorName}
-          {card.authorRole && <span className="text-gray-300"> · {card.authorRole}</span>}
-        </p>
+        {card.category && (
+          <span
+            className="mt-1 inline-flex items-center rounded px-1.5 py-0.5 font-['Poppins',sans-serif] text-[10px] font-bold tracking-wide text-white"
+            style={{ backgroundColor: colorForCategory(card.category) }}
+          >
+            {card.category}
+          </span>
+        )}
       </div>
 
-      <div className="flex items-center gap-0.5 shrink-0 mt-0.5">
+      <div className="flex items-center gap-0.5 shrink-0">
         {/* Unbookmark */}
         <button
           onClick={(e) => { e.stopPropagation(); onUnbookmark(); }}

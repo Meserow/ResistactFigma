@@ -590,11 +590,12 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
           {onFeedbackClick && (
             <button
               onClick={onFeedbackClick}
-              aria-label="Share feedback"
-              title="Share feedback"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-[#23297e] text-white hover:bg-[#1a1f5e] transition-colors shrink-0"
+              aria-label="Contact us"
+              title="Contact us — questions, feedback, or report a problem"
+              className="inline-flex flex-col items-center justify-center gap-0.5 px-1.5 py-1 font-['Poppins',sans-serif] text-[#ed6624] hover:text-[#c2521b] transition-colors shrink-0"
             >
-              <MessageCircle size={18} fill="currentColor" strokeWidth={0} />
+              <MessageCircle size={17} fill="currentColor" strokeWidth={0} />
+              <span className="text-[10px] font-bold leading-none">Contact Us</span>
             </button>
           )}
         </div>
@@ -872,8 +873,8 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                       onClick={() => onTextingChange?.(!textingOnly)}
                       className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
                         textingOnly
-                          ? "bg-[#ed6624] text-white border-[#ed6624]"
-                          : "bg-white text-gray-600 border-gray-200 hover:border-[#ed6624] hover:text-[#ed6624]"
+                          ? "bg-[#2f6fa8] text-white border-[#2f6fa8]"
+                          : "bg-white text-gray-600 border-gray-200 hover:border-[#2f6fa8] hover:text-[#2f6fa8]"
                       }`}
                       title="Show only texting / SMS actions"
                     >
@@ -1210,22 +1211,9 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                     <ChevronDown size={11} className={locMobileOpen ? "rotate-180" : ""} />
                   </button>
 
-                  {/* 5 Minutes Max toggle */}
-                  {onQuickActionsChange && (
-                    <button
-                      onClick={() => onQuickActionsChange(!quickActionsOnly)}
-                      className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
-                        quickActionsOnly
-                          ? "bg-[#5a3e9e] text-white border-[#5a3e9e]"
-                          : "bg-white text-gray-600 border-gray-200"
-                      }`}
-                    >
-                      <Zap size={11} fill={quickActionsOnly ? "#ffffff" : "none"} />
-                      5 Min Max
-                    </button>
-                  )}
-
-                  {/* Category button */}
+                  {/* Category button — "5 Min Max" now lives inside this
+                      dropdown on phones (see the Category drawer below) to
+                      keep the filter row short. */}
                   <button
                     onClick={() => setOpenFilter(catMobileOpen ? null : "acts-cat-mobile")}
                     className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
@@ -1241,10 +1229,11 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                       </span>
                     )}
                     <ChevronDown size={11} className={catMobileOpen ? "rotate-180" : ""} />
-                    {/* "Texting" lives inside this dropdown on phones (see the
-                        Category drawer below) to save horizontal room — show a
-                        dot on the button when it's the active filter. */}
-                    {textingOnly && actsCatsSelected.length === 0 && (
+                    {/* "Texting" and "5 Min Max" live inside this dropdown on
+                        phones (see the Category drawer below) to save horizontal
+                        room — show a dot on the button when either is the active
+                        filter and no categories are chosen. */}
+                    {(textingOnly || quickActionsOnly) && actsCatsSelected.length === 0 && (
                       <span className="w-1.5 h-1.5 rounded-full bg-[#ed6624] shrink-0" />
                     )}
                   </button>
@@ -1291,6 +1280,22 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                 {/* Category drawer */}
                 {catMobileOpen && (
                   <div className="mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 max-h-80 overflow-y-auto">
+                    {/* "5 Min Max" — moved in here from its own pill on phones
+                        to keep the filter row short. It's a quick cross-cutting
+                        cut (not a category), so it leads, separated from the
+                        category list — mirroring "Remote only" in Location. */}
+                    {onQuickActionsChange && (
+                      <label className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100">
+                        <input
+                          type="checkbox"
+                          checked={quickActionsOnly}
+                          onChange={() => onQuickActionsChange(!quickActionsOnly)}
+                          className="accent-[#5a3e9e] w-3.5 h-3.5 rounded shrink-0"
+                        />
+                        <Zap size={14} className="shrink-0 text-[#5a3e9e]" fill={quickActionsOnly ? "#5a3e9e" : "none"} />
+                        <span className="font-['Poppins',sans-serif] text-sm text-gray-700">5 Min Max</span>
+                      </label>
+                    )}
                     <p className="px-4 pt-1 pb-2 font-['Poppins',sans-serif] text-[10px] uppercase tracking-widest text-gray-400 font-semibold border-b border-gray-50">
                       Category
                     </p>
@@ -1306,9 +1311,9 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                               type="checkbox"
                               checked={textingOnly}
                               onChange={() => onTextingChange?.(!textingOnly)}
-                              className="accent-[#ed6624] w-3.5 h-3.5 rounded shrink-0"
+                              className="accent-[#2f6fa8] w-3.5 h-3.5 rounded shrink-0"
                             />
-                            <MessageSquare size={14} className="shrink-0 text-[#ed6624]" />
+                            <MessageSquare size={14} className="shrink-0 text-[#2f6fa8]" />
                             <span className="font-['Poppins',sans-serif] text-sm text-gray-700">Texting / SMS only</span>
                           </label>
                         );
@@ -1351,75 +1356,35 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
       {mobileMenuOpen && (
         <>
         <div
-          className="md:hidden fixed inset-0 z-40 bg-black/30"
+          className="md:hidden fixed inset-0 z-40 bg-black/50"
           style={{ top: topBarHeight }}
           onClick={() => setMobileMenuOpen(false)}
           aria-hidden="true"
         />
         <div
-          className="md:hidden fixed inset-x-0 z-50 px-5 py-4 border-b border-gray-100 bg-white space-y-3 shadow-lg overflow-y-auto"
+          className="md:hidden fixed inset-x-0 z-50 bg-white rounded-b-2xl shadow-2xl overflow-y-auto"
           style={{ top: topBarHeight, maxHeight: `calc(100dvh - ${topBarHeight}px)` }}
         >
-          {onFeedbackClick && (
+          {/* Header — a clear "Menu" label + close so it's obvious you've opened
+              a menu, not just more page chrome. */}
+          <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200">
+            <span className="font-['Poppins',sans-serif] text-[12px] font-bold uppercase tracking-[0.18em] text-gray-400">
+              Menu
+            </span>
             <button
-              onClick={() => { setMobileMenuOpen(false); onFeedbackClick(); }}
-              className="w-full flex items-center gap-2 py-2.5 px-4 bg-[#23297e]/5 text-[#23297e] rounded-xl font-['Poppins',sans-serif] font-semibold text-sm"
+              onClick={() => setMobileMenuOpen(false)}
+              aria-label="Close menu"
+              className="-mr-1 p-1 text-gray-400 hover:text-gray-700 transition-colors"
             >
-              <MessageCircle size={16} strokeWidth={2} />
-              Share Feedback
+              <X size={18} />
             </button>
-          )}
-          <button
-            onClick={() => { setMobileMenuOpen(false); onInfoClick(); }}
-            className="w-full flex items-center gap-2 py-2.5 px-4 bg-gray-50 text-gray-700 rounded-xl font-['Poppins',sans-serif] font-semibold text-sm"
-          >
-            <Info size={16} />
-            How does ResistAct work?
-          </button>
-          {/* Hero CTAs live here on phones (hidden in the hero below md). */}
-          {onMatchClick && (
-            <button
-              onClick={() => { setMobileMenuOpen(false); onMatchClick(); }}
-              className="w-full flex items-center gap-2 py-2.5 px-4 bg-[#ed6624] text-white rounded-xl font-['Poppins',sans-serif] font-semibold text-sm"
-            >
-              <Sparkles size={16} strokeWidth={2.5} />
-              {matchActive ? "Edit My Match Settings" : "Refine Your Matches"}
-            </button>
-          )}
-          {onAskClick && (
-            <button
-              onClick={() => { setMobileMenuOpen(false); onAskClick(); }}
-              className="w-full flex items-center gap-2 py-2.5 px-4 bg-white border border-[#23297e] text-[#23297e] rounded-xl font-['Poppins',sans-serif] font-semibold text-sm"
-            >
-              <Megaphone size={16} strokeWidth={2.5} />
-              Add an Act!
-            </button>
-          )}
-          {/* My Matches (saved Acts, incl. swipe-right saves) — only here in the
-              desktop avatar dropdown before, so phone users couldn't reach it. */}
-          {onBookmarksClick && (
-            <button
-              onClick={() => { setMobileMenuOpen(false); onBookmarksClick(); }}
-              className="w-full flex items-center gap-2 py-2.5 px-4 bg-gray-50 text-gray-700 rounded-xl font-['Poppins',sans-serif] font-semibold text-sm"
-            >
-              <Heart size={16} strokeWidth={2} />
-              My Matches
-              {bookmarkCount != null && bookmarkCount > 0 && (
-                <span className="ml-auto bg-[#ed6624] text-white text-[10px] font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center">
-                  {bookmarkCount > 99 ? "99+" : bookmarkCount}
-                </span>
-              )}
-            </button>
-          )}
+          </div>
+
+          {/* Identity row — signed-in user, or the one highlighted "Join" badge. */}
           {isLoggedIn ? (
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <div className="flex items-center gap-3">
                 {(() => {
-                  // XP ring around the mobile-menu avatar. Tier-colored arc
-                  // fills clockwise to show progress to the next tier — visible
-                  // every time the user opens the menu. Top tier (no next)
-                  // gets a full-ring "100%" feel as the tier definition
-                  // returns progressPct=100.
                   const ti = myCompletions ? getUserTier(myCompletions.total) : null;
                   return (
                     <UserAvatar
@@ -1432,43 +1397,97 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                     />
                   );
                 })()}
-                <div>
-                  <p className="font-['Poppins',sans-serif] font-semibold text-base">{approval?.name}</p>
-                  <p className="font-['Poppins',sans-serif] text-gray-400 text-sm">{approval?.email}</p>
+                <div className="min-w-0">
+                  <p className="font-['Poppins',sans-serif] font-semibold text-base truncate">{approval?.name}</p>
+                  <p className="font-['Poppins',sans-serif] text-gray-400 text-sm truncate">{approval?.email}</p>
                 </div>
               </div>
-              <button onClick={onLogout} className="text-gray-400 hover:text-red-500 transition-colors">
+              <button onClick={onLogout} aria-label="Sign out" className="text-gray-400 hover:text-red-500 transition-colors shrink-0">
                 <LogOut size={18} />
               </button>
             </div>
           ) : (
-            <button
-              onClick={() => { setMobileMenuOpen(false); onLoginClick(); }}
-              className="resistact-anim-shimmer w-full flex flex-col items-center py-2 rounded-2xl bg-[#23297e] text-white font-['Poppins',sans-serif] hover:bg-[#1a1f63] transition-colors"
-            >
-              <span className="inline-flex items-center gap-1.5 text-sm font-semibold leading-tight">
-                <Flame size={14} strokeWidth={2.25} />
-                Join The Resistance
-              </span>
-              <span className="text-[10.5px] font-normal italic text-white/85 leading-tight mt-0.5">
-                Sign in or Create an Account...
-              </span>
-            </button>
-          )}
-          {isLoggedIn && isAdmin && (
-            <button
-              onClick={() => { setMobileMenuOpen(false); onAdminClick(); }}
-              className="w-full flex items-center gap-2 py-2.5 px-4 bg-[#23297e]/5 text-[#23297e] rounded-xl font-['Poppins',sans-serif] font-semibold text-sm"
-            >
-              <ShieldCheck size={16} />
-              Admin Panel
-              {pendingUsersCount > 0 && (
-                <span className="ml-auto text-[10px] font-bold bg-amber-500 text-white rounded-full px-1.5 py-0.5 leading-none">
-                  {pendingUsersCount}
+            <div className="px-5 py-4 border-b border-gray-100">
+              <button
+                onClick={() => { setMobileMenuOpen(false); onLoginClick(); }}
+                className="resistact-anim-shimmer w-full flex flex-col items-center py-2.5 rounded-2xl bg-[#23297e] text-white font-['Poppins',sans-serif] hover:bg-[#1a1f63] transition-colors"
+              >
+                <span className="inline-flex items-center gap-1.5 text-sm font-bold leading-tight">
+                  <Flame size={14} strokeWidth={2.25} />
+                  Join The Resistance
                 </span>
-              )}
-            </button>
+                <span className="text-[10.5px] font-normal italic text-white/85 leading-tight mt-0.5">
+                  Sign in or Create an Account...
+                </span>
+              </button>
+            </div>
           )}
+
+          {/* Everything else — plain text rows, separated by hairlines so the
+              menu reads as a list, not a stack of buttons. */}
+          <div className="divide-y divide-gray-100 py-1">
+            {onAskClick && (
+              <button
+                onClick={() => { setMobileMenuOpen(false); onAskClick(); }}
+                className="w-full flex items-center gap-3 px-5 py-3 text-left font-['Poppins',sans-serif] text-[15px] text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <Megaphone size={18} className="shrink-0 text-gray-400" />
+                Add an Act!
+              </button>
+            )}
+            {/* My Saved Matches — only when there are saves. */}
+            {onBookmarksClick && bookmarkCount != null && bookmarkCount > 0 && (
+              <button
+                onClick={() => { setMobileMenuOpen(false); onBookmarksClick(); }}
+                className="w-full flex items-center gap-3 px-5 py-3 text-left font-['Poppins',sans-serif] text-[15px] text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <Heart size={18} className="shrink-0 text-gray-400" />
+                My Saved Matches
+                <span className="ml-auto bg-[#ed6624] text-white text-[10px] font-bold rounded-full min-w-5 h-5 px-1 flex items-center justify-center">
+                  {bookmarkCount > 99 ? "99+" : bookmarkCount}
+                </span>
+              </button>
+            )}
+            {onMatchClick && (
+              <button
+                onClick={() => { setMobileMenuOpen(false); onMatchClick(); }}
+                className="w-full flex items-center gap-3 px-5 py-3 text-left font-['Poppins',sans-serif] text-[15px] text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <Sparkles size={18} className="shrink-0 text-gray-400" />
+                My Act Preferences
+              </button>
+            )}
+            {onFeedbackClick && (
+              <button
+                onClick={() => { setMobileMenuOpen(false); onFeedbackClick(); }}
+                className="w-full flex items-center gap-3 px-5 py-3 text-left font-['Poppins',sans-serif] text-[15px] text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <MessageCircle size={18} className="shrink-0 text-gray-400" />
+                Share Feedback
+              </button>
+            )}
+            <button
+              onClick={() => { setMobileMenuOpen(false); onInfoClick(); }}
+              className="w-full flex items-center gap-3 px-5 py-3 text-left font-['Poppins',sans-serif] text-[15px] text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              <Info size={18} className="shrink-0 text-gray-400" />
+              About ResistAct
+            </button>
+            {isLoggedIn && isAdmin && (
+              <button
+                onClick={() => { setMobileMenuOpen(false); onAdminClick(); }}
+                className="w-full flex items-center gap-3 px-5 py-3 text-left font-['Poppins',sans-serif] text-[15px] text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                <ShieldCheck size={18} className="shrink-0 text-gray-400" />
+                Admin Panel
+                {pendingUsersCount > 0 && (
+                  <span className="ml-auto text-[10px] font-bold bg-amber-500 text-white rounded-full px-1.5 py-0.5 leading-none">
+                    {pendingUsersCount}
+                  </span>
+                )}
+              </button>
+            )}
+          </div>
         </div>
         </>
       )}

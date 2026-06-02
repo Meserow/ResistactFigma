@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabase";
 import { analytics } from "../lib/analytics";
 import { projectId } from "/utils/supabase/info";
 import type { UserApproval } from "../lib/supabase";
+import { AccountBenefits } from "./AccountPromos";
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
 
@@ -260,16 +261,24 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
     return (
       <Backdrop onClose={onClose}>
         {/* Header */}
-        <div className="mb-5">
+        <div className="mb-4">
           <div className="flex items-center gap-2 mb-1">
-            <Flame size={20} className="text-[#ed6624]" strokeWidth={2.5} />
-            <h2 className="font-['Poppins',sans-serif] font-bold text-gray-900 text-[17px] leading-tight">
-              Apply for founding access
+            <Flame size={22} className="text-[#ed6624]" strokeWidth={2.5} />
+            <h2 className="font-['Poppins',sans-serif] font-bold text-gray-900 text-[22px] leading-tight">
+              Join The Resistance
             </h2>
           </div>
-          <p className="font-['Poppins',sans-serif] text-gray-400 text-[13px] leading-snug">
-            We're building this with a founding cohort. No tracking, no donation asks, no list you can't escape.
+          <p className="font-['Poppins',sans-serif] text-gray-500 text-[13px] leading-snug">
+            Create a free account, or sign in if you already have one. It's free and takes seconds.
           </p>
+        </div>
+
+        {/* What an account gets you */}
+        <div className="mb-5 rounded-2xl bg-gray-50 px-4 py-3.5">
+          <p className="mb-3 font-['Poppins',sans-serif] text-[12.5px] font-semibold uppercase tracking-wide text-gray-400">
+            What you get
+          </p>
+          <AccountBenefits />
         </div>
 
         {/* Google */}
@@ -316,9 +325,10 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
           </button>
         </form>
 
-        <p className="mt-4 text-center font-['Poppins',sans-serif] text-[13px] text-gray-400">
-          Already with us? Click Google or enter your email and{" "}
-          <span className="font-bold text-gray-600">we'll recognize you.</span>
+        <p className="mt-4 text-center font-['Poppins',sans-serif] text-[13px] text-gray-500 leading-snug">
+          <span className="font-semibold text-gray-700">New here?</span> We'll create your account.{" "}
+          <span className="font-semibold text-gray-700">Already a member?</span> We'll sign you in — same button either way.
+          <span className="mt-1.5 block text-[12px] text-gray-400">No tracking · no donation asks · no list you can't escape.</span>
         </p>
       </Backdrop>
     );

@@ -15,7 +15,6 @@
  * a "DONE!" does not retrigger fireworks.
  */
 import { useEffect, useMemo, useState } from "react";
-import { X, ArrowRight } from "lucide-react";
 import { getUserTier } from "../lib/tiers";
 import { TierIcon } from "./TierBadge";
 
@@ -23,7 +22,9 @@ interface CelebrationModalProps {
   prevCount: number;
   newCount: number;
   onClose: () => void;
-  onFindMore: () => void;
+  /** Optional — no longer used by the simplified modal, kept so existing
+   * call sites still type-check. */
+  onFindMore?: () => void;
 }
 
 // ─── Copy ────────────────────────────────────────────────────────────────────
@@ -176,39 +177,24 @@ function ExplosiveFireworks({
       tierColor,
     ];
 
-    // Regular burst origins — 6 origins scattered across the viewport.
+    // Regular burst — a single gentle pop near center.
     const regularOrigins = [
-      { left: "50%", top: "44%", delay: 0,   color: tierColor,  count: 80 },
-      { left: "20%", top: "28%", delay: 180, color: palette[0], count: 64 },
-      { left: "80%", top: "28%", delay: 320, color: palette[3], count: 64 },
-      { left: "12%", top: "58%", delay: 480, color: palette[2], count: 52 },
-      { left: "88%", top: "58%", delay: 620, color: palette[5], count: 52 },
-      { left: "50%", top: "14%", delay: 780, color: palette[1], count: 48 },
+      { left: "50%", top: "42%", delay: 0,   color: tierColor,  count: 26 },
+      { left: "28%", top: "34%", delay: 140, color: palette[0], count: 18 },
+      { left: "72%", top: "34%", delay: 260, color: palette[5], count: 18 },
     ];
 
-    // Tier-up burst origins — 14 origins across 3 waves.
+    // Tier-up burst — slightly fuller, still one calm wave (no storm).
     const tierUpOrigins = [
-      // wave 1 (0–740ms)
-      { left:"50%", top:"45%", delay:0,    color:tierColor,  count:80 },
-      { left:"18%", top:"28%", delay:200,  color:palette[0], count:52 },
-      { left:"82%", top:"28%", delay:380,  color:palette[3], count:52 },
-      { left:"12%", top:"68%", delay:560,  color:palette[2], count:44 },
-      { left:"88%", top:"68%", delay:740,  color:palette[5], count:44 },
-      // wave 2 (1700–2500ms)
-      { left:"32%", top:"18%", delay:1700, color:palette[6], count:64 },
-      { left:"68%", top:"18%", delay:1900, color:palette[7], count:64 },
-      { left:"50%", top:"75%", delay:2100, color:palette[8], count:56 },
-      { left:"8%",  top:"48%", delay:2300, color:palette[9], count:48 },
-      { left:"92%", top:"48%", delay:2500, color:palette[1], count:48 },
-      // wave 3 — grand finale (3300–3950ms)
-      { left:"50%", top:"42%", delay:3300, color:tierColor,   count:96 },
-      { left:"25%", top:"50%", delay:3550, color:palette[0],  count:68 },
-      { left:"75%", top:"50%", delay:3750, color:palette[3],  count:68 },
-      { left:"50%", top:"12%", delay:3950, color:palette[10], count:60 },
+      { left: "50%", top: "42%", delay: 0,   color: tierColor,  count: 38 },
+      { left: "24%", top: "30%", delay: 150, color: palette[0], count: 26 },
+      { left: "76%", top: "30%", delay: 280, color: palette[3], count: 26 },
+      { left: "36%", top: "58%", delay: 420, color: palette[2], count: 20 },
+      { left: "64%", top: "58%", delay: 540, color: palette[5], count: 20 },
     ];
 
     const burstOrigins = justLeveledUp ? tierUpOrigins : regularOrigins;
-    const maxDist = justLeveledUp ? 860 : 520;
+    const maxDist = justLeveledUp ? 460 : 340;
 
     const bursts = burstOrigins.map((o, bi) => ({
       ...o,
@@ -237,16 +223,16 @@ function ExplosiveFireworks({
 
     // Confetti rain — falls from above the viewport, drifts sideways. More
     // pieces (and longer fall) on tier-up.
-    const confettiCount = justLeveledUp ? 450 : 80;
+    const confettiCount = justLeveledUp ? 80 : 34;
     const shapes = justLeveledUp
-      ? ["circle","square","bar","star","star","star","circle","square"]
+      ? ["circle","square","star","circle","square"]
       : ["circle","square","bar"];
     const confetti = Array.from({ length: confettiCount }, (_, i) => {
       const left  = rand(0, 100);              // viewport %
-      const drift = rand(-260, 260);           // horizontal drift in px
-      const dur   = rand(justLeveledUp ? 2800 : 2200, justLeveledUp ? 6500 : 3800);
-      const delay = rand(0, justLeveledUp ? 4500 : 1200);
-      const size  = rand(justLeveledUp ? 24 : 6, justLeveledUp ? 54 : 12);
+      const drift = rand(-150, 150);           // horizontal drift in px
+      const dur   = rand(justLeveledUp ? 2600 : 2200, justLeveledUp ? 4200 : 3400);
+      const delay = rand(0, justLeveledUp ? 1300 : 800);
+      const size  = rand(justLeveledUp ? 9 : 6, justLeveledUp ? 18 : 12);
       const color = palette[Math.floor(Math.random() * palette.length)];
       const spin  = (Math.random() < 0.5 ? -1 : 1) * rand(360, 1080);
       const shape = shapes[Math.floor(Math.random() * shapes.length)];
@@ -256,25 +242,11 @@ function ExplosiveFireworks({
     return { bursts, confetti };
   }, [tierColor, justLeveledUp]);
 
-  // Shockwave delays — 9 rings for tier-up, 3 for regular.
-  const shockwaveDelays = justLeveledUp
-    ? [0, 160, 320, 480, 1750, 1920, 2090, 3380, 3560]
-    : [0, 200, 400];
+  // Shockwave delays — kept minimal so the moment stays calm.
+  const shockwaveDelays = justLeveledUp ? [0, 220] : [0];
 
   return (
     <div className="fixed inset-0 z-[125] pointer-events-none overflow-hidden">
-      {/* Tier-up only: THREE rapid color pulses */}
-      {justLeveledUp && [0, 320, 640].map((d, i) => (
-        <div
-          key={i}
-          className="absolute inset-0 celebration-screenflash"
-          style={{
-            background: `radial-gradient(circle at center, ${tierColor}70 0%, ${tierColor}00 60%)`,
-            animationDelay: `${d}ms`,
-          }}
-        />
-      ))}
-
       {/* Shockwave rings — concentric pulses centered on the main burst. */}
       <div className="absolute" style={{ left: "50%", top: "44%" }}>
         {shockwaveDelays.map((delay, idx) => (
@@ -493,187 +465,100 @@ function ExplosiveFireworks({
 
 // ─── Modal ───────────────────────────────────────────────────────────────────
 
-export function CelebrationModal({ prevCount, newCount, onClose, onFindMore }: CelebrationModalProps) {
+export function CelebrationModal({ prevCount, newCount, onClose }: CelebrationModalProps) {
   const copy = useMemo(() => celebrationCopy(prevCount, newCount), [prevCount, newCount]);
   const displayedCount = useCountUp(newCount, copy.justLeveledUp ? 1100 : 650);
 
-  // Auto-dismiss after 8s so a tab left open doesn't trap the UI behind a
-  // celebration. User can always click "Find another" or X earlier.
+  // Self-dismissing: a brief beat to register the win, then it closes on its
+  // own. Tier-ups linger a little longer so the bigger celebration can play.
+  // Tap-outside and Esc still close it sooner.
   useEffect(() => {
-    const t = window.setTimeout(onClose, 8000);
+    const t = window.setTimeout(onClose, copy.justLeveledUp ? 3200 : 2000);
     return () => window.clearTimeout(t);
-  }, [onClose]);
+  }, [onClose, copy.justLeveledUp]);
 
-  // Esc closes.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const { tier, nextTier, actionsToNext, justLeveledUp } = copy;
-
-  // Progress within the current tier.
-  const tierMin   = tier.min;
-  const tierRange = (nextTier ? nextTier.min : tierMin + 1) - tierMin;
-  const filled    = Math.max(0, Math.min(1, (newCount - tierMin) / tierRange));
-
-  // Pull bold spans out of the nextLine markup-lite (we use **x**).
-  const nextLineParts = copy.nextLine.split(/(\*\*[^*]+\*\*)/g).map((chunk, i) =>
-    chunk.startsWith("**") ? (
-      <strong key={i} className="font-bold text-[#23297e]">{chunk.replace(/\*\*/g, "")}</strong>
-    ) : (
-      <span key={i}>{chunk}</span>
-    )
-  );
+  const { tier, justLeveledUp } = copy;
 
   return (
     <>
       {/* Viewport-wide explosion — rendered as a sibling so particles + confetti
-          bleed past the modal edges. z-[115] sits between the modal backdrop
-          (z-[120]) and the page (z < 100) so the modal itself stays clickable. */}
+          bleed past the modal edges. */}
       <ExplosiveFireworks
         tierColor={tier.color}
         glowColor={tier.glowColor}
         justLeveledUp={justLeveledUp}
       />
 
+      {/* No white card — the badge, headline and count float on a softly
+          dimmed backdrop so it reads as a graceful "moment" over the page,
+          not a second modal stacked on the card behind it. */}
       <div
-        className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/65"
+        className="fixed inset-0 z-[120] flex flex-col items-center justify-center p-6 text-center bg-black/75"
         onClick={onClose}
         role="dialog"
         aria-modal="true"
         aria-label="Action complete"
       >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="relative z-[130] rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
-        style={{
-          // Solid white base so the modal is fully opaque — the shorthand
-          // `background:` previously overrode the bg-white class and left
-          // the center see-through. Now we set color and image separately.
-          backgroundColor: "#ffffff",
-          backgroundImage: `radial-gradient(circle at center top, ${tier.color}22, transparent 70%)`,
-        }}
-      >
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          aria-label="Close"
-          className="absolute top-3 right-3 z-10 p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
-        >
-          <X size={16} strokeWidth={2.5} />
-        </button>
-
-        {/* Hero — tier badge with the compact burst right behind it */}
-        <div className="relative h-[200px] flex items-center justify-center">
-          <HeroBurst tierColor={tier.color} glowColor={tier.glowColor} />
-          <div className="relative z-[1]">
+        <div onClick={(e) => e.stopPropagation()} className="relative z-[130] flex flex-col items-center">
+          {/* Tier badge with the compact burst right behind it */}
+          <div className="relative flex items-center justify-center mb-5">
+            <HeroBurst tierColor={tier.color} glowColor={tier.glowColor} />
             <div
-              className={`flex items-center justify-center w-24 h-24 rounded-full shadow-2xl ${
+              className={`relative z-[1] flex items-center justify-center w-20 h-20 rounded-full ${
                 justLeveledUp ? "celebration-pulse" : "celebration-pop"
               }`}
               style={{
                 background: tier.color,
-                boxShadow: `0 0 0 6px white, 0 12px 36px ${tier.glowColor}99`,
+                boxShadow: `0 0 0 4px rgba(255,255,255,0.14), 0 14px 44px ${tier.glowColor}66`,
               }}
             >
-              <TierIcon tier={tier} size={48} />
+              <TierIcon tier={tier} size={40} />
             </div>
+            <style>{`
+              @keyframes celebration-pop {
+                0%   { transform: scale(0.4); opacity: 0; }
+                60%  { transform: scale(1.12); opacity: 1; }
+                100% { transform: scale(1); }
+              }
+              @keyframes celebration-pulse {
+                0%   { transform: scale(0.3); opacity: 0; }
+                45%  { transform: scale(1.2);  opacity: 1; }
+                60%  { transform: scale(0.95); }
+                75%  { transform: scale(1.08); }
+                100% { transform: scale(1); }
+              }
+              .celebration-pop   { animation: celebration-pop   750ms cubic-bezier(0.22,1,0.36,1) forwards; }
+              .celebration-pulse { animation: celebration-pulse 1200ms cubic-bezier(0.22,1,0.36,1) forwards; }
+            `}</style>
           </div>
-          <style>{`
-            @keyframes celebration-pop {
-              0%   { transform: scale(0.4); opacity: 0; }
-              60%  { transform: scale(1.12); opacity: 1; }
-              100% { transform: scale(1); }
-            }
-            @keyframes celebration-pulse {
-              0%   { transform: scale(0.3); opacity: 0; }
-              45%  { transform: scale(1.2);  opacity: 1; }
-              60%  { transform: scale(0.95); }
-              75%  { transform: scale(1.08); }
-              100% { transform: scale(1); }
-            }
-            .celebration-pop   { animation: celebration-pop   750ms cubic-bezier(0.22,1,0.36,1) forwards; }
-            .celebration-pulse { animation: celebration-pulse 1200ms cubic-bezier(0.22,1,0.36,1) forwards; }
-          `}</style>
-        </div>
 
-        {/* Headline + count */}
-        <div className="px-6 pb-1 text-center">
+          {/* Headline + count — light type for legibility on the dark backdrop. */}
           {justLeveledUp && (
             <p
-              className="font-['Poppins',sans-serif] font-extrabold text-[11px] uppercase tracking-[0.18em] mb-1"
-              style={{ color: tier.color }}
+              className="font-['Poppins',sans-serif] font-extrabold text-[11px] uppercase tracking-[0.18em] mb-1.5"
+              style={{ color: tier.glowColor }}
             >
               ✨ Level up ✨
             </p>
           )}
-          <h2 className="font-['Poppins',sans-serif] font-extrabold text-[#23297e] text-xl leading-tight">
+          <h2 className="font-['Poppins',sans-serif] font-extrabold text-white text-2xl leading-tight drop-shadow">
             {copy.headline}
           </h2>
-          {copy.kicker && (
-            <p className="font-['Poppins',sans-serif] text-sm text-gray-600 mt-1 italic">
-              {copy.kicker}
-            </p>
-          )}
-
-          {/* Big number — the new total */}
           <div className="mt-3 flex items-baseline justify-center gap-2">
-            <span className="font-['Poppins',sans-serif] font-extrabold text-5xl tabular-nums" style={{ color: tier.color }}>
+            <span className="font-['Poppins',sans-serif] font-extrabold text-5xl tabular-nums" style={{ color: tier.glowColor }}>
               {displayedCount}
             </span>
-            <span className="font-['Poppins',sans-serif] text-sm text-gray-500">
+            <span className="font-['Poppins',sans-serif] text-sm text-white/70">
               {displayedCount === 1 ? "action total" : "actions total"}
             </span>
           </div>
         </div>
-
-        {/* Progress to next tier */}
-        <div className="px-6 mt-4">
-          <div className="flex items-center justify-between text-[10.5px] font-['Poppins',sans-serif] uppercase tracking-wider font-semibold mb-1.5">
-            <span style={{ color: tier.color }}>{tier.name}</span>
-            {nextTier ? (
-              <span className="text-gray-400">{nextTier.name}</span>
-            ) : (
-              <span className="text-gray-400">Top tier</span>
-            )}
-          </div>
-          <div className="relative h-2.5 rounded-full bg-gray-100 overflow-hidden">
-            <div
-              className="absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out"
-              style={{
-                width: `${filled * 100}%`,
-                background: `linear-gradient(90deg, ${tier.color}, ${nextTier?.color ?? tier.color})`,
-              }}
-            />
-          </div>
-
-          <p className="mt-3 font-['Poppins',sans-serif] text-sm text-gray-700 text-center leading-snug">
-            {nextLineParts}
-          </p>
-        </div>
-
-        {/* CTAs */}
-        <div className="px-6 pt-4 pb-5 flex items-center gap-2">
-          <button
-            onClick={onClose}
-            className="flex-1 px-3 py-2.5 rounded-xl font-['Poppins',sans-serif] font-semibold text-sm text-gray-600 hover:bg-gray-100 transition-colors"
-          >
-            Close
-          </button>
-          <button
-            onClick={() => { onFindMore(); onClose(); }}
-            className="flex-[1.6] flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-['Poppins',sans-serif] font-bold text-sm text-white shadow-md hover:shadow-lg transition-all"
-            style={{ background: "#ed6624" }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "#e07a28")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "#ed6624")}
-          >
-            {actionsToNext === 1 ? "One more →" : "Find another act"}
-            <ArrowRight size={14} strokeWidth={2.5} />
-          </button>
-        </div>
-      </div>
       </div>
     </>
   );

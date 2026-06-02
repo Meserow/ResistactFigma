@@ -1,15 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { X, Zap, Sparkles, Megaphone } from "lucide-react";
+import { X, Zap, Sparkles, Megaphone, Heart } from "lucide-react";
+import { SwipeCallout } from "./SwipeCallout";
 
 interface HeroPillsProps {
   onMatchClick?: () => void;
   onAskClick?: () => void;
   onHowClick?: () => void;
   hasMatchPrefs?: boolean;
+  /** Opens My Matches. The "My Saved Matches" badge only renders when the
+   *  user actually has saves (bookmarkCount > 0). */
+  onBookmarksClick?: () => void;
+  bookmarkCount?: number;
+  onSwipeClick?: () => void;
 }
 
-export function HeroPills({ onMatchClick, onAskClick, onHowClick, hasMatchPrefs }: HeroPillsProps) {
+export function HeroPills({ onMatchClick, onAskClick, onHowClick, hasMatchPrefs, onBookmarksClick, bookmarkCount, onSwipeClick }: HeroPillsProps) {
   const [openModal, setOpenModal] = useState<"how" | null>(null);
   const triggerRefs = useRef<Record<"how", HTMLButtonElement | null>>({
     how: null,
@@ -40,40 +46,6 @@ export function HeroPills({ onMatchClick, onAskClick, onHowClick, hasMatchPrefs 
       {/* Phones get these actions in the hamburger menu instead (see Navbar);
           hidden here below md so the hero stays compact on small screens. */}
       <div className="hidden md:flex flex-wrap lg:flex-nowrap justify-center gap-2">
-        <button
-          ref={(el) => { triggerRefs.current.how = el; }}
-          onClick={() => onHowClick ? onHowClick() : setOpenModal("how")}
-          aria-haspopup="dialog"
-          aria-expanded={openModal === "how"}
-          className="shrink-0 inline-flex items-center gap-2 rounded-full border border-gray-400 px-4 py-1.5 font-['Poppins',sans-serif] transition-colors hover:border-[#ed6624] hover:bg-[#ed6624]/5 hover:text-[#ed6624] group"
-        >
-          <Zap size={14} strokeWidth={2.5} className="text-gray-600 group-hover:text-[#ed6624]" />
-          <span className="flex flex-col items-start text-left leading-tight whitespace-nowrap">
-            <span className="text-[13px] font-bold text-gray-600 group-hover:text-[#ed6624]">About</span>
-            <span className="text-[10.5px] font-normal text-gray-400 italic group-hover:text-[#ed6624]/70">What is this site about?</span>
-          </span>
-        </button>
-        {onMatchClick && (
-          <button
-            onClick={onMatchClick}
-            className="shrink-0 inline-flex items-center gap-2.5 rounded-full bg-[#ed6624] px-5 py-2 font-['Poppins',sans-serif] shadow-md ring-1 ring-[#ed6624] transition-all hover:bg-[#d35a1d] hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#ed6624]/40 focus:ring-offset-2"
-          >
-            <Sparkles size={16} strokeWidth={2.75} className="text-white" />
-            <span className="flex flex-col items-start text-left leading-tight whitespace-nowrap">
-              {hasMatchPrefs ? (
-                <>
-                  <span className="text-[14px] font-extrabold text-white tracking-tight">Edit My Match Settings</span>
-                  <span className="text-[11px] font-medium text-white/90 italic">Update your preferences.</span>
-                </>
-              ) : (
-                <>
-                  <span className="text-[14px] font-extrabold text-white tracking-tight">Refine Your Matches</span>
-                  <span className="text-[11px] font-medium text-white/90 italic">Your preferences stay saved</span>
-                </>
-              )}
-            </span>
-          </button>
-        )}
         {onAskClick && (
           <button
             onClick={onAskClick}
@@ -86,6 +58,48 @@ export function HeroPills({ onMatchClick, onAskClick, onHowClick, hasMatchPrefs 
             </span>
           </button>
         )}
+        {/* My Saved Matches — only appears once the user has saved acts, so it
+            never shows an empty "0 saved" state. */}
+        {onBookmarksClick && (bookmarkCount ?? 0) > 0 && (
+          <button
+            onClick={onBookmarksClick}
+            className="shrink-0 inline-flex items-center gap-2 rounded-full border border-[#ed6624] bg-[#ed6624]/5 px-4 py-1.5 font-['Poppins',sans-serif] transition-colors hover:bg-[#ed6624]/10"
+          >
+            <Heart size={14} strokeWidth={2.5} fill="#ed6624" className="text-[#ed6624]" />
+            <span className="flex flex-col items-start text-left leading-tight whitespace-nowrap">
+              <span className="text-[13px] font-bold text-[#ed6624]">My Saved Matches</span>
+              <span className="text-[10.5px] font-normal text-[#ed6624]/70 italic">{bookmarkCount} act{bookmarkCount === 1 ? "" : "s"} saved</span>
+            </span>
+          </button>
+        )}
+        <SwipeCallout onSwipeClick={onSwipeClick} />
+        {onMatchClick && (
+          <button
+            onClick={onMatchClick}
+            className="shrink-0 inline-flex items-center gap-2 rounded-full bg-[#ed6624] px-4 py-1.5 font-['Poppins',sans-serif] shadow-md transition-all hover:bg-[#d35a1d] hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#ed6624]/40 focus:ring-offset-2"
+          >
+            <Sparkles size={14} strokeWidth={2.5} className="text-white" />
+            <span className="flex flex-col items-start text-left leading-tight whitespace-nowrap">
+              <span className="text-[13px] font-bold text-white">Set Act Preferences</span>
+              <span className="text-[10.5px] font-normal text-white/90 italic">
+                {hasMatchPrefs ? "Update your preferences." : "Your preferences stay saved"}
+              </span>
+            </span>
+          </button>
+        )}
+        <button
+          ref={(el) => { triggerRefs.current.how = el; }}
+          onClick={() => onHowClick ? onHowClick() : setOpenModal("how")}
+          aria-haspopup="dialog"
+          aria-expanded={openModal === "how"}
+          className="shrink-0 inline-flex items-center gap-2 rounded-full border border-gray-400 px-4 py-1.5 font-['Poppins',sans-serif] transition-colors hover:border-[#23297e] hover:bg-[#23297e]/5 hover:text-[#23297e] group"
+        >
+          <Zap size={14} strokeWidth={2.5} className="text-gray-600 group-hover:text-[#23297e]" />
+          <span className="flex flex-col items-start text-left leading-tight whitespace-nowrap">
+            <span className="text-[13px] font-bold text-gray-600 group-hover:text-[#23297e]">About ResistAct</span>
+            <span className="text-[10.5px] font-normal text-gray-400 italic group-hover:text-[#23297e]/70">What is this site about?</span>
+          </span>
+        </button>
       </div>
 
       {openModal === "how" && (
