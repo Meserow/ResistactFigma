@@ -27,6 +27,7 @@ import { locationToState, LOCATION_OPTIONS, normalizeCardLocation } from "./lib/
 import { HomeHero } from "./components/HomeHero";
 import { LoggedInHero } from "./components/LoggedInHero";
 import { SignupBanner } from "./components/AccountPromos";
+import fistIconImg from "../assets/resistact-fist.png";
 import { MatchMeModal } from "./components/MatchMeModal";
 import { SwipeDeck } from "./components/SwipeDeck";
 import { useIsMobile } from "./components/ui/use-mobile";
@@ -1410,6 +1411,21 @@ export default function App() {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  // ── Remember this person across sign-outs ──
+  // A lightweight name/email hint so the auth modal can recognize a returning
+  // visitor and treat it as a sign-in (not a fresh account). Intentionally NOT
+  // cleared on logout — only overwritten by the next person who signs in here.
+  useEffect(() => {
+    if (approval?.email) {
+      try {
+        localStorage.setItem(
+          "resistact_known_user",
+          JSON.stringify({ name: approval.name ?? "", email: approval.email }),
+        );
+      } catch { /* storage disabled — non-critical */ }
+    }
+  }, [approval]);
 
   // ── Sync match-me prefs on sign-in ──
   // Server wins if it has prefs (so prefs follow the account across devices).
@@ -2845,6 +2861,7 @@ export default function App() {
           always-on tagline footer so it doesn't cover it. */}
       {scrollNudgeVisible && !scrollNudgeDismissed && (
         <div className="toast-pop-in fixed bottom-16 right-4 md:bottom-24 md:right-8 z-40 w-[min(92vw,480px)] flex items-start gap-3 bg-[#fd8e33] rounded-2xl shadow-2xl px-5 py-4 ring-2 ring-white/20">
+          <img src={fistIconImg} alt="" className="h-12 w-auto block shrink-0" draggable={false} />
           <div className="min-w-0 flex-1">
             <p className="font-['Poppins',sans-serif] font-black text-[18px] md:text-[20px] text-white leading-snug mb-2">
               Finding it hard to choose?
