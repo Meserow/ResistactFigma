@@ -225,9 +225,15 @@ function resolveCard(raw: ServerCard): ActionCardData {
     // resized ~50 KB) but egress is cheap and within plan; the overage was not.
     // ActionCard still does the final object-cover. (If banner egress ever
     // matters, slim the stored webps to ~800px once at rest, not per-view.)
+    // A freshly admin-set / regenerated banner is stored in KV as a full https
+    // URL — prefer it over the static manifest so edits actually show. The
+    // manifest still wins for the common case and for old stale LOCAL KV paths
+    // (/cartoon-banners/…) that would 404, since those aren't https.
     cartoonImageUrl: raw.pinToTop
       ? undefined
-      : (cartoonUrlFor(raw.id) ?? raw.cartoonImageUrl ?? undefined),
+      : ((typeof raw.cartoonImageUrl === "string" && /^https:\/\//.test(raw.cartoonImageUrl))
+          ? raw.cartoonImageUrl
+          : (cartoonUrlFor(raw.id) ?? raw.cartoonImageUrl ?? undefined)),
     // Synopsis (card subtitle): server value wins, then local manifest
     // fallback so we can ship subtitle copy without an Edge Function
     // deploy. Applies to Spread the Word too now — its synopsis lives
@@ -535,6 +541,15 @@ export default function App() {
   // On phones this is the DEFAULT way to browse Acts (see the auto-open effect
   // below); desktop keeps the classic card grid and can opt in via the button.
   const [swipeOpen, setSwipeOpen] = useState(false);
+  // While the full-screen swipe deck is open, lock the page body so the feed
+  // behind the overlay can't scroll (which read as a confusing ghost layer) and
+  // mobile can't rubber-band the background under the modal. Restored on close.
+  useEffect(() => {
+    if (!swipeOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [swipeOpen]);
   const isMobile = useIsMobile();
   // App-level card detail modal. Opened from surfaces that aren't an ActionCard
   // (e.g. My Matches) so clicking a saved act pops the full modal first,
@@ -2017,6 +2032,27 @@ export default function App() {
     }
   };
 
+  // Server-side bookmark sync is debounced: rapid toggles (e.g. swiping right
+  // through a stack of acts) used to fire one full-list PUT *per* save, which
+  // piled up requests and added load right as the user was mid-gesture. We now
+  // coalesce them — the latest full set is stashed and flushed once the user
+  // pauses. localStorage is still written synchronously on every toggle, and a
+  // dropped flush self-heals on next login (fetchMyBookmarks merges + pushes
+  // back), so the local set stays the source of truth either way.
+  const bookmarkSyncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingBookmarkIds = useRef<number[] | null>(null);
+  const flushBookmarkSync = () => {
+    if (bookmarkSyncTimer.current) { clearTimeout(bookmarkSyncTimer.current); bookmarkSyncTimer.current = null; }
+    const ids = pendingBookmarkIds.current;
+    pendingBookmarkIds.current = null;
+    if (!ids || !accessToken) return;
+    fetch(`${API}/me/bookmarks`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ ids }),
+    }).catch(() => {});
+  };
+
   const handleBookmark = (id: number) => {
     if (blockWriteIfImpersonating()) return;
     setBookmarkedCards((prev) => {
@@ -2026,11 +2062,9 @@ export default function App() {
       analytics.bookmarkToggled(id, adding);
       try { localStorage.setItem("resistact_bookmarks", JSON.stringify([...next])); } catch {}
       if (accessToken) {
-        fetch(`${API}/me/bookmarks`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
-          body: JSON.stringify({ ids: [...next] }),
-        }).catch(() => {});
+        pendingBookmarkIds.current = [...next];
+        if (bookmarkSyncTimer.current) clearTimeout(bookmarkSyncTimer.current);
+        bookmarkSyncTimer.current = setTimeout(flushBookmarkSync, 800);
       }
       return next;
     });
@@ -2173,6 +2207,40 @@ export default function App() {
       setServerPendingActsCount((n) => Math.max(0, n - 1));
     }
   }
+
+  // ── Stable card callbacks ──────────────────────────────────────────────────
+  // The feed renders hundreds of <ActionCard>s, each wrapped in React.memo — but
+  // memo only bails out of re-rendering when its props keep a stable identity.
+  // The handlers above (handleBookmark, handleComplete, …) are redefined every
+  // render, so passing them straight through handed every card fresh callback
+  // props each time and defeated the memo: any App-level setState re-rendered
+  // the entire mounted feed. With the swipe overlay open (feed still mounted
+  // behind it), a single swipe's setState then re-rendered ~hundreds of cards —
+  // a multi-hundred-ms main-thread stall (≈1s on a phone) that made the deck
+  // feel like it fought back as you swiped. The latest-ref pattern fixes it: the
+  // wrappers below keep a constant identity (memoised with [] deps) yet always
+  // call the freshest handler via the ref, so memo holds with no stale-closure
+  // risk. Now a swipe only re-renders the one card whose bookmarked state flips.
+  const cardHandlersRef = useRef({
+    handleBoost, handleComplete, handleShare, handleBookmark,
+    handleEdit: (id: number) => setEditCardId(id),
+    handleApproveCard, handleCardSaved, handleSpreadShared,
+  });
+  cardHandlersRef.current = {
+    handleBoost, handleComplete, handleShare, handleBookmark,
+    handleEdit: (id: number) => setEditCardId(id),
+    handleApproveCard, handleCardSaved, handleSpreadShared,
+  };
+  const cardCb = useMemo(() => ({
+    onBoost: (id: number) => cardHandlersRef.current.handleBoost(id),
+    onComplete: (id: number) => cardHandlersRef.current.handleComplete(id),
+    onShare: (id: number) => cardHandlersRef.current.handleShare(id),
+    onBookmark: (id: number) => cardHandlersRef.current.handleBookmark(id),
+    onEdit: (id: number) => cardHandlersRef.current.handleEdit(id),
+    onApprove: (id: number) => cardHandlersRef.current.handleApproveCard(id),
+    onCardUpdated: (updated: ActionCardData, toast?: string) => cardHandlersRef.current.handleCardSaved(updated, toast),
+    onSpreadShared: () => cardHandlersRef.current.handleSpreadShared(),
+  }), []);
 
   return (
     <div className="min-h-screen bg-gray-50 font-['Poppins',sans-serif]">
@@ -2694,7 +2762,12 @@ export default function App() {
             ) : (
             <>
             <div className={`grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-6 transition-opacity duration-150 ${searchQuery !== deferredSearchQuery ? "opacity-50" : "opacity-100"}`}>
-              {(hasActiveFilters || showPendingActsOnly ? visibleActsCards : visibleActsCards.slice(0, displayLimit)).map((card, idx) => (
+              {/* While the full-screen swipe deck is open it covers the feed, so
+                  we unmount the feed cards entirely — this both frees the ~18k
+                  DOM nodes / hundreds of images they hold and removes the layer
+                  that was faintly bleeding through (and scrolling) behind the
+                  translucent overlay. The list re-renders when the deck closes. */}
+              {(swipeOpen ? [] : (hasActiveFilters || showPendingActsOnly ? visibleActsCards : visibleActsCards.slice(0, displayLimit))).map((card, idx) => (
                 <Fragment key={idx < 12 ? `${card.id}-${staggerKey}` : card.id}>
                 <div
                   id={`card-${card.id}`}
@@ -2703,21 +2776,21 @@ export default function App() {
                 >
                 <ActionCard
                   card={card.isFeatured ? { ...card, featuredIllustration: <FeaturedIllustration /> } : card}
-                  onBoost={handleBoost}
-                  onComplete={handleComplete}
-                  onShare={handleShare}
-                  onBookmark={handleBookmark}
-                  onEdit={isImpersonating ? undefined : (id) => setEditCardId(id)}
+                  onBoost={cardCb.onBoost}
+                  onComplete={cardCb.onComplete}
+                  onShare={cardCb.onShare}
+                  onBookmark={cardCb.onBookmark}
+                  onEdit={isImpersonating ? undefined : cardCb.onEdit}
                   onInfoClick={card.pinToTop ? () => setInfoOpen(true) : undefined}
                   isBoosted={effectiveBoosted.has(card.id)}
                   isCompleted={effectiveCompleted.has(card.id)}
                   isBookmarked={effectiveBookmarked.has(card.id)}
                   canEdit={!isImpersonating && canEditCard(card)}
                   isPending={!isImpersonating && isAdminUser && card.adminApproved === false}
-                  onApprove={!isImpersonating && isAdminUser ? handleApproveCard : undefined}
+                  onApprove={!isImpersonating && isAdminUser ? cardCb.onApprove : undefined}
                   accessToken={accessToken}
-                  onCardUpdated={handleCardSaved}
-                  onSpreadShared={handleSpreadShared}
+                  onCardUpdated={cardCb.onCardUpdated}
+                  onSpreadShared={cardCb.onSpreadShared}
                 />
                 </div>
                 </Fragment>
@@ -2860,19 +2933,19 @@ export default function App() {
           Auto-expires after 30s (see useEffect above). Sits well clear of the
           always-on tagline footer so it doesn't cover it. */}
       {scrollNudgeVisible && !scrollNudgeDismissed && (
-        <div className="toast-pop-in fixed bottom-16 right-4 md:bottom-24 md:right-8 z-40 w-[min(92vw,480px)] flex items-start gap-3 bg-[#fd8e33] rounded-2xl shadow-2xl px-5 py-4 ring-2 ring-white/20">
-          <img src={fistIconImg} alt="" className="h-12 w-auto block shrink-0" draggable={false} />
+        <div className="toast-pop-in fixed bottom-16 right-4 md:bottom-24 md:right-8 z-40 w-[min(92vw,420px)] flex items-start gap-2.5 bg-[#fd8e33] rounded-2xl shadow-2xl px-4 py-3 ring-2 ring-white/20">
+          <img src={fistIconImg} alt="" className="h-9 w-auto block shrink-0" draggable={false} />
           <div className="min-w-0 flex-1">
-            <p className="font-['Poppins',sans-serif] font-black text-[18px] md:text-[20px] text-white leading-snug mb-2">
+            <p className="font-['Poppins',sans-serif] font-black text-[15px] text-white leading-snug mb-1">
               Finding it hard to choose?
             </p>
-            <p className="font-['Poppins',sans-serif] text-[13px] md:text-[14px] text-white/90 leading-snug mb-3">
+            <p className="font-['Poppins',sans-serif] text-[12px] text-white/90 leading-snug mb-2.5">
               Set your act preferences and we'll match you in 30 seconds.
             </p>
             <div className="flex justify-end">
               <button
                 onClick={() => { setScrollNudgeVisible(false); setMatchOpen(true); }}
-                className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-white hover:bg-gray-50 text-[#fd8e33] font-['Poppins',sans-serif] font-extrabold text-[15px] rounded-xl shadow-sm transition-colors whitespace-nowrap"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-white hover:bg-gray-50 text-[#fd8e33] font-['Poppins',sans-serif] font-extrabold text-[13px] rounded-xl shadow-sm transition-colors whitespace-nowrap"
               >
                 ✨ Set Act Preferences →
               </button>
@@ -3007,6 +3080,7 @@ export default function App() {
         <ErrorBoundary>
           <SwipeDeck
             cards={displayedCards.filter((c) => !c.pinToTop && !swipedCardIds.has(c.id))}
+            accessToken={accessToken}
             onClose={() => setSwipeOpen(false)}
             onInterested={(card) => {
               if (!bookmarkedCards.has(card.id)) handleBookmark(card.id);

@@ -16,6 +16,75 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.91",
+    date: "2026-06-03",
+    title: "Swipe mode no longer scrolls or shows the feed behind it",
+    sections: [
+      {
+        heading: "Swipe to Discover",
+        items: [
+          "The feed behind swipe mode no longer scrolls or faintly shows through — opening the deck now fully takes over the screen, so there's nothing distracting behind the cards.",
+          "As a bonus, hiding the feed while you swipe frees up a lot of memory, keeping the deck snappy on phones.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.90",
+    date: "2026-06-03",
+    title: "Report a problem right from swipe mode",
+    sections: [
+      {
+        heading: "Swipe to Discover",
+        items: [
+          "Added a flag button to the top-right of each card in swipe mode, so you can report an act that's expired or inappropriate without leaving the deck — same quick report form as the rest of the site.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.89",
+    date: "2026-06-03",
+    title: "Swipe mode stays smooth, no matter how many you save",
+    sections: [
+      {
+        heading: "Swipe to Discover",
+        items: [
+          "Fixed the swipe deck getting laggy and hard to swipe the further you went — saving an act used to briefly freeze the whole app behind the scenes, and it got worse the more you saved. Swiping is now consistently smooth from the first card to the last.",
+          "Saving an act no longer fires off a network request on every single swipe — your saves are now batched and synced once you pause, which is gentler on slower phone connections.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.88",
+    date: "2026-06-02",
+    title: "Generated banners: always anti-Trump, and they actually stick",
+    sections: [
+      {
+        heading: "Admin tools",
+        items: [
+          "The cartoon-banner generator now has a hard anti-Trump rule baked in — it will never depict anyone supporting or wearing pro-Trump gear, and only shows Trump/MAGA in a clearly oppositional context.",
+          "Fixed a bug where a freshly generated (or pasted) banner wouldn't actually show on the card after saving — the saved image now reliably takes over from the built-in default.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.87",
+    date: "2026-06-02",
+    title: "Location sticks when you clear filters",
+    sections: [
+      {
+        heading: "Filtering The Acts",
+        items: [
+          "\"Clear all\" now keeps your location set — it only clears categories and the other filters, so you don't have to re-pick where you are every time.",
+          "Added a divider after the location pills to show they work a little differently from the rest.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.86",
     date: "2026-06-02",
     title: "Cleaner desktop swipe + fist on the match nudge",

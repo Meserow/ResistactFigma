@@ -341,6 +341,11 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
         authorLink:     authorLink.trim() || undefined,
         targetUrl:      targetUrl.trim() || null,
         topImageUrl:    topImageUrl.trim() || null,
+        // The header image the admin set/generated is what should display. Mirror
+        // it into cartoonImageUrl (the field the feed reads first) so a generated
+        // cartoon reliably wins over the static manifest after saving. Only when
+        // an image is actually set — otherwise leave any existing cartoon alone.
+        ...(topImageUrl.trim() ? { cartoonImageUrl: topImageUrl.trim() } : {}),
         imageContain,
         atHome,
         highlighted,

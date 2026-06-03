@@ -5643,7 +5643,7 @@ app.put("/make-server-9eb1ae04/actions/:id", async (c) => {
     // URL safety on edit too — admins are usually trustworthy but the QA
     // probe showed this is exactly the kind of field a careless paste could
     // poison. Validate every URL-bearing field present in the body.
-    for (const field of ["targetUrl", "authorLink", "topImageUrl"]) {
+    for (const field of ["targetUrl", "authorLink", "topImageUrl", "cartoonImageUrl"]) {
       if (body[field] !== undefined) {
         const check = validateSubmittedUrl(body[field], field);
         if (!check.ok) return c.json({ error: check.reason }, 400);
@@ -5949,6 +5949,10 @@ app.post("/make-server-9eb1ae04/admin/bulk-import", async (c) => {
 // Brand cartoon style — kept in sync with scripts/generate-card-art.mjs
 // (STYLE_PROMPT, lines ~78-89). If you change one, change the other.
 const CARTOON_STYLE_PROMPT =
+  "POLITICAL STANCE — READ FIRST, NON-NEGOTIABLE: This is an anti-Trump, pro-democracy resistance platform. Every image MUST read as OPPOSING Donald Trump and his administration and MAGA. " +
+  "NEVER depict anyone supporting, admiring, celebrating, or wearing pro-Trump gear — no MAGA hats, no red MAGA caps, no Trump-face or Trump-name t-shirts/merch worn approvingly, no Trump campaign signs held favorably, no Trump flags flown with pride. " +
+  "Sympathetic characters (the protagonists) are everyday people RESISTING: activists, organizers, volunteers, neighbors taking civic action. " +
+  "If Trump, his administration, ICE, or MAGA appear at all, they must be unmistakably in a CRITICAL / oppositional framing — e.g., on a protest sign being rejected, crossed out, with a red 'no' slash, or as the thing the crowd is marching against — NEVER glorified or worn by a hero of the scene. When in doubt, leave Trump's face out entirely and show the positive civic action instead. " +
   "Create a clean modern comic-book illustration inspired by the reference image, adapted for a wide horizontal banner. " +
   "Use the reference for INSPIRATION — capture the subject, mood, and spirit — but feel free to reinvent the composition so it fills a wide banner format well. The reference may be a square photo, a logo, or a portrait; reframe it as a horizontal scene. Keep the same general subject matter (e.g. if the reference shows a protest sign, paint a protest scene; if a phone, paint someone using a phone; if a product, paint someone using or holding it). " +
   "Apply: clean black ink linework (refined, not heavy or grainy), flat colors with light gradient shading, subtle Ben-Day dot accents used sparingly only on skin tones or sky — not all over the image. " +

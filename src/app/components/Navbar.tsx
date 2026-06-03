@@ -181,6 +181,11 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
   const totalActiveFilters = Object.values(activeFilters).reduce((sum, arr) => sum + arr.length, 0);
   const hasActiveSearch = searchQuery.trim().length > 0;
   const totalActiveAll = totalActiveFilters + (hasActiveSearch ? 1 : 0) + (quickActionsOnly ? 1 : 0) + (textingOnly ? 1 : 0);
+  // "Clear all" deliberately leaves Location (incl. Remote) in place — it's the
+  // "where can I act?" cut people set once and keep — so the count/visibility of
+  // the Clear-all button reflects only the filters it actually clears.
+  const clearableFilters = Object.entries(activeFilters).reduce((sum, [k, arr]) => sum + (k === "Location" ? 0 : arr.length), 0);
+  const totalClearable = clearableFilters + (hasActiveSearch ? 1 : 0) + (quickActionsOnly ? 1 : 0) + (textingOnly ? 1 : 0);
 
   // ── Facts: distinct categories sorted alphabetically.
   //   First 5 show as inline pills; the rest go into a "More" dropdown.
@@ -845,6 +850,9 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                 <Globe size={11} className={locSelected.includes("Remote") ? "text-white" : "text-gray-400"} />
                 Remote Only
               </button>
+              {/* Divider — sets the location pills (which persist through "Clear
+                  all") apart from the filters that do clear. */}
+              <span aria-hidden className="mx-1 h-5 w-px self-center shrink-0 bg-gray-300" />
               {/* 5 Minutes Max pill (3rd) — toggles the quickAction-only filter.
                   Clustered with Location + Remote at the front of the row. */}
               {onQuickActionsChange && (
@@ -907,10 +915,13 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               {/* Clear all — appended to the chip row so it doesn't claim
                   dedicated horizontal real estate on the right. Only shows
                   when at least one filter is active. */}
-              {totalActiveAll > 0 && (
+              {totalClearable > 0 && (
                 <button
                   onClick={() => {
-                    Object.keys(activeTab === "facts" ? FACTS_FILTER_OPTIONS : ACTS_FILTER_OPTIONS).forEach((f) => onFilterChange(f, []));
+                    // Clear everything EXCEPT Location (it persists by design).
+                    Object.keys(activeTab === "facts" ? FACTS_FILTER_OPTIONS : ACTS_FILTER_OPTIONS)
+                      .filter((f) => f !== "Location")
+                      .forEach((f) => onFilterChange(f, []));
                     if (hasActiveSearch) onSearchChange("");
                     if (quickActionsOnly && onQuickActionsChange) onQuickActionsChange(false);
                     if (textingOnly && onTextingChange) onTextingChange(false);
@@ -918,7 +929,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                   className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-semibold whitespace-nowrap text-red-400 hover:text-red-600 hover:bg-red-50 transition-all"
                 >
                   <X size={11} />
-                  Clear all ({totalActiveAll})
+                  Clear all ({totalClearable})
                 </button>
               )}
             </div>
