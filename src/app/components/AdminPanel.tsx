@@ -1350,7 +1350,7 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
                       {ncImaging ? <Loader2 size={13} className="animate-spin" /> : <ImageIcon size={13} />}
                       {ncImaging ? "Generating…" : ncCartoon ? "Regenerate cartoon" : "Generate cartoon"}
                     </button>
-                    {ncRefImage && <span className="font-['Poppins',sans-serif] text-[10px] text-gray-400">uses the page image as reference</span>}
+                    {ncRefImage && <span className="font-['Poppins',sans-serif] text-[10px] text-gray-400">draws from the text; falls back to the page image if the text isn't enough</span>}
                   </div>
                   {ncCartoon && (
                     <div className="relative h-28 rounded-xl overflow-hidden bg-gray-50 border border-gray-200">

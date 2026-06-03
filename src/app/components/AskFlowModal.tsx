@@ -72,6 +72,9 @@ const TIME_COMMITMENT_MAP: Record<TimeBucket, string> = {
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
 
+/** Coerce a model-supplied tone value into the 0–3 integer the sliders use. */
+const clampTone = (v: unknown): number => Math.max(0, Math.min(3, Math.round(Number(v) || 0)));
+
 // ─── Category data ─────────────────────────────────────────────────────────────
 const CATEGORIES: { name: string; icon: LucideIcon; color: string }[] = [
   { name: "Act of Kindness",            icon: Handshake,      color: "#127f05" },
@@ -146,6 +149,15 @@ export function AskFlowModal({
   const [step, setStep] = useState(0);
   const submittingRef = useRef(false);
   const fileInputRef  = useRef<HTMLInputElement>(null);
+
+  // ── "Start from a link" auto-fill (approved members) ──────────────────────────
+  // Paste a URL → server drafts every field + draws a banner; we drop the result
+  // into the form below, fully editable, then the member reviews and submits.
+  const [autoUrl,    setAutoUrl]    = useState("");
+  const [autoBusy,   setAutoBusy]   = useState(false);
+  const [autoStatus, setAutoStatus] = useState<string | null>(null);
+  const [autoError,  setAutoError]  = useState<string | null>(null);
+  const autoRef = useRef(false);
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -307,6 +319,95 @@ export function AskFlowModal({
     }
   }
 
+  /** Paste-a-link auto-fill: draft every field from the page, then auto-draw the
+   * banner. Everything lands editable in the form below; nothing auto-submits. */
+  async function handleAutoFill() {
+    if (autoRef.current) return;
+    const target = autoUrl.trim();
+    if (!/^https?:\/\//i.test(target)) {
+      setAutoError("Paste a full link starting with http:// or https://"); return;
+    }
+    if (!isLoggedIn) { onLoginRequired(); return; }
+    autoRef.current = true;
+    setAutoError(null);
+    setAutoBusy(true);
+    try {
+      // 1) Draft the fields from the page.
+      setAutoStatus("Reading the page…");
+      let draftRes: Response;
+      try {
+        draftRes = await fetch(`${API}/actions/from-url`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+          body: JSON.stringify({ url: target }),
+        });
+      } catch {
+        setAutoError("Network error — check your connection and try again."); return;
+      }
+      let dData: any = {};
+      try { dData = await draftRes.json(); } catch { /* empty body */ }
+      if (!draftRes.ok) {
+        setAutoError(dData.error ?? `Couldn't read that link (HTTP ${draftRes.status}).`); return;
+      }
+      const draft = dData.draft ?? {};
+      const refImageUrl: string | null = dData.refImageUrl ?? null;
+
+      // Populate the form — everything stays editable.
+      setAutoStatus("Filling in your act…");
+      if (draft.title)       setFormTitle(String(draft.title).slice(0, 80));
+      if (draft.synopsis)    setFormSynopsis(String(draft.synopsis).slice(0, 100));
+      if (draft.description) setFormDesc(String(draft.description));
+      setFormLink(draft.targetUrl ? String(draft.targetUrl) : target);
+      if (draft.authorName)  setFormAuthorName(String(draft.authorName));
+      if (draft.authorRole)  setFormAuthorRole(String(draft.authorRole));
+      if (typeof draft.isOnline === "boolean") setFormIsOnline(draft.isOnline);
+      // Location is geography-only; "Remote"/online lives in the isOnline flag.
+      if (draft.location && (LOCATION_OPTIONS as readonly string[]).includes(draft.location)) {
+        setFormLocation(draft.location);
+      }
+      if (draft.eventDate && /^\d{4}-\d{2}-\d{2}$/.test(String(draft.eventDate))) {
+        setFormEventDate(String(draft.eventDate));
+      }
+      // Category → match the picker list (its color flows from there); else Other.
+      const matched = CATEGORIES.find((c) => c.name.toLowerCase() === String(draft.category ?? "").toLowerCase());
+      const catName = matched?.name ?? "Other";
+      setSelectedCategory(catName);
+      // Tone — use the model's vector when present, else the category default.
+      if (draft.toneOverride && typeof draft.toneOverride === "object") {
+        const t = draft.toneOverride;
+        setTone({ anger: clampTone(t.anger), comedy: clampTone(t.comedy), subversion: clampTone(t.subversion), hope: clampTone(t.hope), energy: clampTone(t.energy) });
+        setToneEdited(true);
+      } else {
+        const d = categoryToneDefault(catName);
+        setTone({ anger: d.anger, comedy: d.comedy, subversion: d.subversion, hope: d.hope, energy: d.energy });
+      }
+
+      // 2) Draw the banner automatically. Non-fatal: if it fails or hits the
+      // daily cap, the drafted fields stay and the member can upload their own.
+      setAutoStatus("Drawing your banner…");
+      try {
+        const imgRes = await fetch(`${API}/actions/generate-image`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+          body: JSON.stringify({
+            title: String(draft.title ?? "").trim(),
+            description: String(draft.description ?? "").trim(),
+            refImageUrl,
+          }),
+        });
+        let iData: any = {};
+        try { iData = await imgRes.json(); } catch { /* empty body */ }
+        if (imgRes.ok && iData.url) setFormImageUrl(String(iData.url));
+        else if (imgRes.status === 429) setAutoError(iData.error ?? "Daily image limit reached — add a header image yourself below.");
+      } catch { /* banner is optional; keep the drafted fields */ }
+
+      setAutoStatus(null);
+    } finally {
+      setAutoBusy(false);
+      autoRef.current = false;
+    }
+  }
+
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <Overlay onClose={onClose}>
@@ -351,6 +452,45 @@ export function AskFlowModal({
                 title="What's the Act?"
                 hint="Make it clear and compelling — this is the headline people will see."
               >
+                {/* Approved members can paste a link and let us draft the whole
+                    card (fields + banner). Everything below stays editable. */}
+                {isApproved && (
+                  <div className="rounded-xl border border-[#ed6624]/30 bg-[#ed6624]/[0.06] p-3">
+                    <label className="flex items-center gap-1.5 font-['Poppins',sans-serif] text-[12px] font-semibold text-[#23297e]">
+                      <Sparkles size={13} className="text-[#ed6624]" />
+                      Have a link? Let us fill this in for you
+                    </label>
+                    <p className="mt-0.5 font-['Poppins',sans-serif] text-[11px] text-gray-500">
+                      Paste a page about the action — we'll draft the title, details, and a banner. Edit anything before you submit.
+                    </p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <input
+                        type="url" value={autoUrl} autoComplete="off" disabled={autoBusy}
+                        onChange={(e) => { setAutoUrl(e.target.value); setAutoError(null); }}
+                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAutoFill(); } }}
+                        placeholder="https://…"
+                        className={`${inputCls} flex-1`}
+                      />
+                      <button
+                        type="button" onClick={handleAutoFill}
+                        disabled={autoBusy || !autoUrl.trim()}
+                        className="shrink-0 px-3 py-2 bg-[#ed6624] hover:bg-[#c2521b] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-semibold text-xs rounded-lg inline-flex items-center gap-1.5"
+                      >
+                        {autoBusy ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+                        {autoBusy ? "Working…" : "Auto-fill"}
+                      </button>
+                    </div>
+                    {autoStatus && (
+                      <p className="mt-2 font-['Poppins',sans-serif] text-[11px] text-[#23297e] inline-flex items-center gap-1.5">
+                        <Loader2 size={12} className="animate-spin" /> {autoStatus}
+                      </p>
+                    )}
+                    {autoError && (
+                      <p className="mt-2 font-['Poppins',sans-serif] text-[11px] text-red-600">{autoError}</p>
+                    )}
+                  </div>
+                )}
+
                 <Field label="Title" required>
                   <input
                     type="text" value={formTitle} maxLength={80} autoComplete="off"

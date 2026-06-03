@@ -541,14 +541,31 @@ export default function App() {
   // On phones this is the DEFAULT way to browse Acts (see the auto-open effect
   // below); desktop keeps the classic card grid and can opt in via the button.
   const [swipeOpen, setSwipeOpen] = useState(false);
-  // While the full-screen swipe deck is open, lock the page body so the feed
-  // behind the overlay can't scroll (which read as a confusing ghost layer) and
-  // mobile can't rubber-band the background under the modal. Restored on close.
+  // While the full-screen swipe deck is open, lock the page behind it so it
+  // can't scroll (a moving background read as a confusing ghost layer and could
+  // fight the swipe gesture) and mobile can't rubber-band under the modal.
+  // overflow:hidden on <body> alone is unreliable on iOS Safari, so we also
+  // lock <html> and disable overscroll chaining on both. Restored on close.
   useEffect(() => {
     if (!swipeOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
+    const body = document.body;
+    const html = document.documentElement;
+    const prev = {
+      bodyOverflow: body.style.overflow,
+      htmlOverflow: html.style.overflow,
+      bodyOverscroll: body.style.overscrollBehavior,
+      htmlOverscroll: html.style.overscrollBehavior,
+    };
+    body.style.overflow = "hidden";
+    html.style.overflow = "hidden";
+    body.style.overscrollBehavior = "none";
+    html.style.overscrollBehavior = "none";
+    return () => {
+      body.style.overflow = prev.bodyOverflow;
+      html.style.overflow = prev.htmlOverflow;
+      body.style.overscrollBehavior = prev.bodyOverscroll;
+      html.style.overscrollBehavior = prev.htmlOverscroll;
+    };
   }, [swipeOpen]);
   const isMobile = useIsMobile();
   // App-level card detail modal. Opened from surfaces that aren't an ActionCard
@@ -3073,13 +3090,16 @@ export default function App() {
 
       {/* Swipe "Discover" mode — full-screen overlay over the current feed.
           The deck honors the active filters/match (it's fed from displayedCards)
-          and excludes cards already swiped, so reopening continues where the
-          user left off instead of restarting at the top. Right swipe saves
-          (bookmarks); both directions mark the card swiped so it won't return. */}
+          and excludes cards already swiped, already saved (bookmarked), or
+          already completed — so reopening continues where the user left off and,
+          crucially, cards saved/done on ANOTHER device don't reappear here (the
+          swiped set is localStorage-only, but bookmarks + completions sync via
+          /me/*). Right swipe saves (bookmarks); both directions mark the card
+          swiped so it won't return on this device. */}
       {swipeOpen && (
         <ErrorBoundary>
           <SwipeDeck
-            cards={displayedCards.filter((c) => !c.pinToTop && !swipedCardIds.has(c.id))}
+            cards={displayedCards.filter((c) => !c.pinToTop && !swipedCardIds.has(c.id) && !bookmarkedCards.has(c.id) && !completedCards.has(c.id))}
             accessToken={accessToken}
             onClose={() => setSwipeOpen(false)}
             onInterested={(card) => {

@@ -296,7 +296,7 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
   );
 
   return (
-    <div className="hero-modal-overlay fixed inset-0 z-[100] flex flex-col bg-[#0d1b2a]/80 backdrop-blur-sm">
+    <div className="hero-modal-overlay fixed inset-0 z-[100] flex flex-col bg-[#0d1b2a]/80 backdrop-blur-sm" style={{ overscrollBehavior: "none" }}>
       {/* Header — a full-width white bar so the (dark-artwork) ResistAct logo
           reads big and clear above the dark deck. Done + count sit on the white
           bar in brand navy; the swipe hint moves just below on the dark area. */}

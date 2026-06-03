@@ -16,6 +16,61 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.95",
+    date: "2026-06-03",
+    title: "Sign-up now mentions you can add your own acts",
+    sections: [
+      {
+        heading: "Join The Resistance",
+        items: [
+          "The \"What you get\" list on the sign-up screen now includes adding your own acts — so new folks know they can share ideas for others to join, not just save and track.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.94",
+    date: "2026-06-03",
+    title: "Add an Act from a link — we fill in the whole card for you",
+    sections: [
+      {
+        heading: "Add an Act",
+        items: [
+          "Approved members can now paste a link at the top of \"Add an Act\" and we'll draft the entire card for you — title, subtitle, description, category, location, action link, and even a custom banner — so you don't have to fill anything in from scratch.",
+          "Everything lands editable: tweak whatever you like, then submit. Just like before, your act goes to the team for approval before it appears on the site.",
+          "No link handy? The fill-it-in-yourself flow works exactly as it always has.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.93",
+    date: "2026-06-03",
+    title: "Swipe mode stops re-showing acts you've already saved",
+    sections: [
+      {
+        heading: "Swipe to Discover",
+        items: [
+          "Acts you've already saved or marked done no longer come back around in swipe mode — and now that holds true even when you sign in on a different computer. Before, switching devices could bring your saved acts back into the deck.",
+          "Locked the page behind the swipe deck so it can't scroll or bounce, which was occasionally fighting with left/right swipes.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.92",
+    date: "2026-06-03",
+    title: "Cartoon generator draws from the card's words first",
+    sections: [
+      {
+        heading: "Admin tools",
+        items: [
+          "\"Generate cartoon\" now starts from the card's title and description, which is the cheaper way to make art. It only reaches for the source page's image when the words alone aren't descriptive enough to know what to draw — so most cartoons cost less to make, with no change in how you use the button.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.91",
     date: "2026-06-03",
     title: "Swipe mode no longer scrolls or shows the feed behind it",
