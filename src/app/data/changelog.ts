@@ -16,6 +16,84 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.86",
+    date: "2026-06-02",
+    title: "Cleaner desktop swipe + fist on the match nudge",
+    sections: [
+      {
+        heading: "Swipe to discover",
+        items: [
+          "On desktop, the Done button is gone — just click the dark area around the card to exit.",
+          "Your saved count and how many are left now show together, centered just below the logo above the card (phones keep them in the top-right corner).",
+        ],
+      },
+      {
+        heading: "Getting around",
+        items: [
+          "Added the ResistAct fist to the \"finding it hard to choose?\" prompt.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.85",
+    date: "2026-06-02",
+    title: "Swipe hints flank the card on desktop",
+    sections: [
+      {
+        heading: "Swipe to discover",
+        items: [
+          "On wide screens, the swipe hints now sit on either side of the card (centered vertically) at a slightly smaller size; phones keep the compact row above the card.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.84",
+    date: "2026-06-02",
+    title: "Bigger swipe hints on desktop",
+    sections: [
+      {
+        heading: "Swipe to discover",
+        items: [
+          "The \"Swipe left to PASS / Swipe right to SAVE\" hints are now much larger on desktop screens (phones keep the compact size).",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.83",
+    date: "2026-06-02",
+    title: "Swipe stamps sit over the card text",
+    sections: [
+      {
+        heading: "Swipe to discover",
+        items: [
+          "The SAVE / PASS stamp now lands in the middle of the card's text instead of over the artwork, so it's easy to read as you swipe.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.82",
+    date: "2026-06-02",
+    title: "The Join window recognizes you",
+    sections: [
+      {
+        heading: "Joining the resistance",
+        items: [
+          "If you've signed in on this device before, the Join window now greets you by name and is set up to sign you back in (with your email already filled in) — creating a brand-new account is demoted to a small \"Not you? Create a new account\" link.",
+        ],
+      },
+      {
+        heading: "Getting around",
+        items: [
+          "Dropped the background pill behind the \"🔥 N done\" counter so it's just the flame and number.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.81",
     date: "2026-06-02",
     title: "Clearer Join window + phone sign-up bar",

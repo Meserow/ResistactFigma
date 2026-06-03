@@ -293,6 +293,8 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted }:
           reads big and clear above the dark deck. Done + count sit on the white
           bar in brand navy; the swipe hint moves just below on the dark area. */}
       <div className="relative flex items-center justify-center bg-white px-4 py-3 shadow-md">
+        {/* Done button — phones/tablets only. On wide desktop the user just
+            clicks the darkened area around the card to exit. */}
         <button
           onClick={() => {
             // Hitting Done with saved acts → show the recap first; otherwise
@@ -300,12 +302,14 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted }:
             if (savedCards.length > 0 && !summaryOpen && !done) setSummaryOpen(true);
             else onClose();
           }}
-          className="absolute left-3 font-['Poppins',sans-serif] text-sm font-semibold inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[#23297e] hover:bg-[#23297e]/10 transition-colors"
+          className="lg:hidden absolute left-3 font-['Poppins',sans-serif] text-sm font-semibold inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[#23297e] hover:bg-[#23297e]/10 transition-colors"
         >
           <X size={16} /> Done
         </button>
         <img src={logoImg} alt="ResistAct" className="h-9 w-auto block" />
-        <span className="absolute right-3 inline-flex items-center gap-1.5 font-['Poppins',sans-serif] text-[11px] font-semibold tabular-nums">
+        {/* Phone/tablet: counts in the upper-right. Desktop moves them to a
+            centered strip below the logo (see below). */}
+        <span className="lg:hidden absolute right-3 inline-flex items-center gap-1.5 font-['Poppins',sans-serif] text-[11px] font-semibold tabular-nums">
           {savedCards.length > 0 && (
             <span className="inline-flex items-center gap-0.5 text-[#ed6624]" title="Saved this session">
               <Heart size={11} fill="currentColor" /> {savedCards.length}
@@ -314,13 +318,28 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted }:
           <span className="text-gray-500">{done ? "done" : `${remaining} to go`}</span>
         </span>
       </div>
+
+      {/* Desktop: saved + remaining counts, centered below the logo / above the
+          card (the upper-right version above is hidden on lg). */}
+      {!done && !summaryOpen && (
+        <div className="hidden lg:flex items-center justify-center gap-3 pt-3 font-['Poppins',sans-serif] text-base font-bold tabular-nums">
+          <span className="inline-flex items-center gap-1.5 text-[#ed6624]">
+            <Heart size={16} fill="currentColor" /> {savedCards.length} saved
+          </span>
+          <span className="text-white/30">•</span>
+          <span className="text-white/80">{remaining} to go</span>
+        </div>
+      )}
       {/* Plain-language, arrow-led instructions. "Pass" is teal, "Save" is the
           brand orange — orange vs teal differ on the blue-yellow axis, so they
           stay distinguishable for red-green color blindness; the words/arrows/
           icons also convey it without relying on hue. Hidden on the terminal
           recap / end screens where there's nothing left to swipe. */}
+      {/* Compact top-row hints for phones/tablets, where there's no room beside
+          the card. On wide screens (lg+) these hide and the side hints below
+          flank the card instead. */}
       {!done && !summaryOpen && (
-      <div className="flex items-center justify-between gap-2 whitespace-nowrap px-3 py-2 font-['Poppins',sans-serif] text-[11px] font-bold">
+      <div className="flex lg:hidden items-center justify-between gap-2 whitespace-nowrap px-3 py-2 font-['Poppins',sans-serif] text-[11px] font-bold">
         <span className="inline-flex items-center gap-1 text-teal-400">
           <ArrowLeft size={14} strokeWidth={3} className="shrink-0" />
           Swipe left to PASS
@@ -339,7 +358,29 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted }:
       )}
 
       {/* Deck */}
-      <div className="relative flex-1 flex items-center justify-center px-4 overflow-hidden select-none">
+      <div
+        className="relative flex-1 flex items-center justify-center px-4 overflow-hidden select-none"
+        onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      >
+        {/* Wide-desktop hints — flank the card, vertically centered. */}
+        {!done && !summaryOpen && (
+          <>
+            <span className="pointer-events-none absolute left-6 top-1/2 hidden -translate-y-1/2 items-center gap-2 whitespace-nowrap font-['Poppins',sans-serif] text-base font-bold text-teal-400 lg:inline-flex">
+              <ArrowLeft size={20} strokeWidth={3} className="shrink-0" />
+              Swipe left to PASS
+              <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-teal-400 text-white">
+                <X size={12} strokeWidth={3.5} />
+              </span>
+            </span>
+            <span className="pointer-events-none absolute right-6 top-1/2 hidden -translate-y-1/2 items-center gap-2 whitespace-nowrap font-['Poppins',sans-serif] text-base font-bold text-[#ed6624] lg:inline-flex">
+              <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#ed6624] text-white">
+                <Heart size={11} fill="currentColor" />
+              </span>
+              Swipe right to SAVE
+              <ArrowRight size={20} strokeWidth={3} className="shrink-0" />
+            </span>
+          </>
+        )}
         {summaryOpen ? (
           <div className="flex w-full max-w-sm flex-col items-center text-center text-white">
             <h2 className="font-['Poppins',sans-serif] text-2xl font-bold">Saved for later</h2>
@@ -426,9 +467,11 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted }:
                 {/* LIKE / PASS badges — opacity driven imperatively by paint(). */}
                 {isTop && (
                   <>
+                    {/* SAVE / PASS stamps — centered over the card's text area
+                        (not the banner) so they read clearly against the white. */}
                     <span
                       ref={likeRef}
-                      className="pointer-events-none absolute left-5 top-6 -rotate-12"
+                      className="pointer-events-none absolute left-1/2 top-[68%] -translate-x-1/2 -translate-y-1/2 -rotate-12"
                       style={{ opacity: 0, transition: "opacity 0.1s" }}
                     >
                       <span className="inline-flex items-center gap-1.5 rounded-lg border-4 border-white bg-[#ed6624] px-3 py-1 font-['Poppins',sans-serif] text-2xl font-extrabold uppercase text-white shadow-lg">
@@ -438,7 +481,7 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted }:
                     </span>
                     <span
                       ref={nopeRef}
-                      className="pointer-events-none absolute right-5 top-6 rotate-12"
+                      className="pointer-events-none absolute left-1/2 top-[68%] -translate-x-1/2 -translate-y-1/2 rotate-12"
                       style={{ opacity: 0, transition: "opacity 0.1s" }}
                     >
                       <span className="inline-flex items-center gap-1.5 rounded-lg border-4 border-white bg-teal-500 px-3 py-1 font-['Poppins',sans-serif] text-2xl font-extrabold uppercase text-white shadow-lg">

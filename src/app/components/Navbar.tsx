@@ -567,7 +567,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                 <button
                   onClick={onLoginClick}
                   title={`You've done ${myCompletions.total} action${myCompletions.total === 1 ? "" : "s"}. Sign in so we don't lose your streak.`}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#ed6624]/10 text-[#ed6624] hover:bg-[#ed6624]/20 transition-colors font-['Poppins',sans-serif] font-bold text-sm"
+                  className="flex items-center gap-1.5 px-1 text-[#ed6624] hover:text-[#c2521b] transition-colors font-['Poppins',sans-serif] font-bold text-sm"
                 >
                   <span aria-hidden>🔥</span>
                   {myCompletions.total > 99 ? "99+" : myCompletions.total} done

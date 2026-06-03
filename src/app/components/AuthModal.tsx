@@ -80,10 +80,29 @@ function GoogleIcon() {
   );
 }
 
+// A lightweight "we've seen this person before" hint, written to localStorage
+// on a successful login (see App) and kept across sign-out. Lets the modal
+// greet returning visitors and treat it as a sign-in rather than a fresh
+// account creation. Not auth — just a UX nicety; the real check is the password.
+function readKnownUser(): { name: string; email: string } | null {
+  try {
+    const raw = localStorage.getItem("resistact_known_user");
+    const v = raw ? JSON.parse(raw) : null;
+    return v && typeof v.email === "string" ? v : null;
+  } catch { return null; }
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 export function AuthModal({ onClose, onApproval }: AuthModalProps) {
+  const [knownUser] = useState(readKnownUser);
+  // When a returning visitor clicks "Not me? Create a new account", drop the
+  // recognized framing and fall back to the standard sign-up pitch.
+  const [useDifferent, setUseDifferent] = useState(false);
+  const returning = !!knownUser && !useDifferent;
+  const knownFirstName = knownUser?.name?.trim().split(/\s+/)[0] || "";
+
   const [step, setStep] = useState<"email" | "password">("email");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => readKnownUser()?.email ?? "");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -265,21 +284,26 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
           <div className="flex items-center gap-2 mb-1">
             <Flame size={22} className="text-[#ed6624]" strokeWidth={2.5} />
             <h2 className="font-['Poppins',sans-serif] font-bold text-gray-900 text-[22px] leading-tight">
-              Join The Resistance
+              {returning ? `Welcome back${knownFirstName ? `, ${knownFirstName}` : ""}!` : "Join The Resistance"}
             </h2>
           </div>
           <p className="font-['Poppins',sans-serif] text-gray-500 text-[13px] leading-snug">
-            Create a free account, or sign in if you already have one. It's free and takes seconds.
+            {returning
+              ? "Sign in to pick up where you left off — your streak's waiting."
+              : "Create a free account, or sign in if you already have one. It's free and takes seconds."}
           </p>
         </div>
 
-        {/* What an account gets you */}
-        <div className="mb-5 rounded-2xl bg-gray-50 px-4 py-3.5">
-          <p className="mb-3 font-['Poppins',sans-serif] text-[12.5px] font-semibold uppercase tracking-wide text-gray-400">
-            What you get
-          </p>
-          <AccountBenefits />
-        </div>
+        {/* What an account gets you — new visitors only (returning folks
+            already know; we keep their screen lean and sign-in focused). */}
+        {!returning && (
+          <div className="mb-5 rounded-2xl bg-gray-50 px-4 py-3.5">
+            <p className="mb-3 font-['Poppins',sans-serif] text-[12.5px] font-semibold uppercase tracking-wide text-gray-400">
+              What you get
+            </p>
+            <AccountBenefits />
+          </div>
+        )}
 
         {/* Google */}
         <div className="mb-4">
@@ -320,16 +344,30 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
             disabled={!email.trim()}
             className="w-full py-3 bg-[#ed6624] hover:bg-[#c2521b] disabled:opacity-50 text-white font-['Poppins',sans-serif] font-bold text-sm rounded-full transition-colors flex items-center justify-center gap-2"
           >
-            Continue
+            {returning ? "Sign in" : "Continue"}
             <ArrowRight size={16} />
           </button>
         </form>
 
-        <p className="mt-4 text-center font-['Poppins',sans-serif] text-[13px] text-gray-500 leading-snug">
-          <span className="font-semibold text-gray-700">New here?</span> We'll create your account.{" "}
-          <span className="font-semibold text-gray-700">Already a member?</span> We'll sign you in — same button either way.
-          <span className="mt-1.5 block text-[12px] text-gray-400">No tracking · no donation asks · no list you can't escape.</span>
-        </p>
+        {returning ? (
+          <p className="mt-4 text-center font-['Poppins',sans-serif] text-[13px] text-gray-500 leading-snug">
+            Not {knownFirstName || "you"}?{" "}
+            <button
+              type="button"
+              onClick={() => { setUseDifferent(true); setEmail(""); }}
+              className="font-semibold text-[#ed6624] hover:underline"
+            >
+              Create a new account
+            </button>
+            <span className="mt-1.5 block text-[12px] text-gray-400">No tracking · no donation asks · no list you can't escape.</span>
+          </p>
+        ) : (
+          <p className="mt-4 text-center font-['Poppins',sans-serif] text-[13px] text-gray-500 leading-snug">
+            <span className="font-semibold text-gray-700">New here?</span> We'll create your account.{" "}
+            <span className="font-semibold text-gray-700">Already a member?</span> We'll sign you in — same button either way.
+            <span className="mt-1.5 block text-[12px] text-gray-400">No tracking · no donation asks · no list you can't escape.</span>
+          </p>
+        )}
       </Backdrop>
     );
   }
