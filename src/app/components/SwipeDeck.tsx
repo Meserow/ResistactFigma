@@ -16,11 +16,12 @@
 // keys mirror the gesture so it's usable on desktop too.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Heart, RotateCcw, X, MapPin, Globe, Clock, ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { Heart, RotateCcw, X, MapPin, Globe, Clock, ArrowLeft, ArrowRight, Check, Flag } from "lucide-react";
 import logoImg from "../../assets/resistact-logo-horizontal.webp";
 import type { ActionCardData } from "./ActionCard";
 import { colorForCategory } from "../lib/categoryGroups";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
+import { FlagCardModal } from "./FlagCardModal";
 import cardFallbackImg from "../../assets/resistact-card-fallback.webp";
 
 type Dir = "left" | "right";
@@ -35,6 +36,9 @@ interface SwipeDeckProps {
   onPass?: (card: ActionCardData) => void;
   /** "I did this!" — the user completed the act. App marks it done. */
   onCompleted?: (card: ActionCardData) => void;
+  /** Auth token (or null when anonymous) — forwarded to the flag modal so a
+   *  report is attributed to the signed-in user, or sent with the anon key. */
+  accessToken?: string | null;
 }
 
 // Past this horizontal drag distance (px), releasing commits the swipe.
@@ -47,7 +51,7 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted }: SwipeDeckProps) {
+export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, accessToken }: SwipeDeckProps) {
   // Snapshot the incoming cards once, at mount. The parent removes a card from
   // its list the moment it's swiped (so it won't come back next time the deck
   // opens) — but if we read that shrinking list live, advancing `index` while
@@ -68,6 +72,10 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted }:
   // When true, the deck shows the "here's what you saved" recap instead of the
   // card stack (triggered by the header Done button when there's something saved).
   const [summaryOpen, setSummaryOpen] = useState(false);
+  // Card id being reported, if any — drives the flag modal. Set from the flag
+  // button on the top card's banner; cleared when the modal closes.
+  const [flagCardId, setFlagCardId] = useState<number | null>(null);
+  const flagCard = flagCardId == null ? null : deck.find((c) => c.id === flagCardId) ?? null;
 
   const remaining = deck.length - index;
   const reduced = useMemo(prefersReducedMotion, []);
@@ -288,7 +296,7 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted }:
   );
 
   return (
-    <div className="hero-modal-overlay fixed inset-0 z-[100] flex flex-col bg-[#0d1b2a]/80 backdrop-blur-sm">
+    <div className="hero-modal-overlay fixed inset-0 z-[100] flex flex-col bg-[#0d1b2a]/80 backdrop-blur-sm" style={{ overscrollBehavior: "none" }}>
       {/* Header — a full-width white bar so the (dark-artwork) ResistAct logo
           reads big and clear above the dark deck. Done + count sit on the white
           bar in brand navy; the swipe hint moves just below on the dark area. */}
@@ -463,7 +471,7 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted }:
                 onPointerUp={isTop ? onPointerUp : undefined}
                 onPointerCancel={isTop ? onPointerUp : undefined}
               >
-                <SwipeCardFace card={card} />
+                <SwipeCardFace card={card} onFlag={isTop ? () => setFlagCardId(card.id) : undefined} />
                 {/* LIKE / PASS badges — opacity driven imperatively by paint(). */}
                 {isTop && (
                   <>
@@ -537,6 +545,18 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted }:
           </div>
         </div>
       )}
+
+      {/* Report-a-problem modal. Rendered inside the deck overlay so its own
+          fixed backdrop layers above the card stack (the overlay establishes
+          the stacking context). Anyone — signed in or not — can flag. */}
+      {flagCard && (
+        <FlagCardModal
+          cardId={flagCard.id}
+          cardTitle={flagCard.title}
+          accessToken={accessToken}
+          onClose={() => setFlagCardId(null)}
+        />
+      )}
     </div>
   );
 }
@@ -544,7 +564,7 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted }:
 // ── Card face ─────────────────────────────────────────────────────────────────
 // A purpose-built, calm presentation of one Act for the deck (we don't reuse
 // ActionCard because its tap-to-open / footer actions fight the drag gesture).
-function SwipeCardFace({ card }: { card: ActionCardData }) {
+function SwipeCardFace({ card, onFlag }: { card: ActionCardData; onFlag?: () => void }) {
   const banner = card.cartoonImageUrl || card.topImage || cardFallbackImg;
   const catColor = card.categoryColor || colorForCategory(card.category) || "#23297e";
   return (
@@ -558,12 +578,29 @@ function SwipeCardFace({ card }: { card: ActionCardData }) {
           className={`h-full w-full ${card.imageContain ? "object-contain p-3" : "object-cover"}`}
           draggable={false}
         />
-        {/* Time commitment — a pill on the banner (top-right), like the cards. */}
-        {card.timeCommitment && (
-          <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-md bg-black/55 px-2.5 py-1 font-['Poppins',sans-serif] text-[12px] font-semibold text-white shadow-sm backdrop-blur-sm">
-            <Clock size={12} /> {card.timeCommitment}
-          </span>
-        )}
+        {/* Top-right cluster: the time-commitment pill (when present) sits next
+            to a flag button so people can report an expired or inappropriate
+            act without leaving the deck. The flag stops pointer-down from
+            bubbling to the card so tapping it never starts a swipe-drag. */}
+        <div className="absolute right-3 top-3 flex items-center gap-2">
+          {card.timeCommitment && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-black/55 px-2.5 py-1 font-['Poppins',sans-serif] text-[12px] font-semibold text-white shadow-sm backdrop-blur-sm">
+              <Clock size={12} /> {card.timeCommitment}
+            </span>
+          )}
+          {onFlag && (
+            <button
+              type="button"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => { e.stopPropagation(); onFlag(); }}
+              title="Report a problem with this act"
+              aria-label="Report"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/80 text-gray-500 shadow-sm backdrop-blur-sm transition-colors hover:bg-white hover:text-red-500"
+            >
+              <Flag size={15} />
+            </button>
+          )}
+        </div>
         {(card.isOnline || card.location) && (
           <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-md bg-white/95 px-2.5 py-1 shadow-sm backdrop-blur-sm">
             {card.location ? (

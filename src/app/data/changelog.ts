@@ -16,6 +16,130 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.95",
+    date: "2026-06-03",
+    title: "Sign-up now mentions you can add your own acts",
+    sections: [
+      {
+        heading: "Join The Resistance",
+        items: [
+          "The \"What you get\" list on the sign-up screen now includes adding your own acts — so new folks know they can share ideas for others to join, not just save and track.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.94",
+    date: "2026-06-03",
+    title: "Add an Act from a link — we fill in the whole card for you",
+    sections: [
+      {
+        heading: "Add an Act",
+        items: [
+          "Approved members can now paste a link at the top of \"Add an Act\" and we'll draft the entire card for you — title, subtitle, description, category, location, action link, and even a custom banner — so you don't have to fill anything in from scratch.",
+          "Everything lands editable: tweak whatever you like, then submit. Just like before, your act goes to the team for approval before it appears on the site.",
+          "No link handy? The fill-it-in-yourself flow works exactly as it always has.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.93",
+    date: "2026-06-03",
+    title: "Swipe mode stops re-showing acts you've already saved",
+    sections: [
+      {
+        heading: "Swipe to Discover",
+        items: [
+          "Acts you've already saved or marked done no longer come back around in swipe mode — and now that holds true even when you sign in on a different computer. Before, switching devices could bring your saved acts back into the deck.",
+          "Locked the page behind the swipe deck so it can't scroll or bounce, which was occasionally fighting with left/right swipes.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.92",
+    date: "2026-06-03",
+    title: "Cartoon generator draws from the card's words first",
+    sections: [
+      {
+        heading: "Admin tools",
+        items: [
+          "\"Generate cartoon\" now starts from the card's title and description, which is the cheaper way to make art. It only reaches for the source page's image when the words alone aren't descriptive enough to know what to draw — so most cartoons cost less to make, with no change in how you use the button.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.91",
+    date: "2026-06-03",
+    title: "Swipe mode no longer scrolls or shows the feed behind it",
+    sections: [
+      {
+        heading: "Swipe to Discover",
+        items: [
+          "The feed behind swipe mode no longer scrolls or faintly shows through — opening the deck now fully takes over the screen, so there's nothing distracting behind the cards.",
+          "As a bonus, hiding the feed while you swipe frees up a lot of memory, keeping the deck snappy on phones.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.90",
+    date: "2026-06-03",
+    title: "Report a problem right from swipe mode",
+    sections: [
+      {
+        heading: "Swipe to Discover",
+        items: [
+          "Added a flag button to the top-right of each card in swipe mode, so you can report an act that's expired or inappropriate without leaving the deck — same quick report form as the rest of the site.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.89",
+    date: "2026-06-03",
+    title: "Swipe mode stays smooth, no matter how many you save",
+    sections: [
+      {
+        heading: "Swipe to Discover",
+        items: [
+          "Fixed the swipe deck getting laggy and hard to swipe the further you went — saving an act used to briefly freeze the whole app behind the scenes, and it got worse the more you saved. Swiping is now consistently smooth from the first card to the last.",
+          "Saving an act no longer fires off a network request on every single swipe — your saves are now batched and synced once you pause, which is gentler on slower phone connections.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.88",
+    date: "2026-06-02",
+    title: "Generated banners: always anti-Trump, and they actually stick",
+    sections: [
+      {
+        heading: "Admin tools",
+        items: [
+          "The cartoon-banner generator now has a hard anti-Trump rule baked in — it will never depict anyone supporting or wearing pro-Trump gear, and only shows Trump/MAGA in a clearly oppositional context.",
+          "Fixed a bug where a freshly generated (or pasted) banner wouldn't actually show on the card after saving — the saved image now reliably takes over from the built-in default.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.87",
+    date: "2026-06-02",
+    title: "Location sticks when you clear filters",
+    sections: [
+      {
+        heading: "Filtering The Acts",
+        items: [
+          "\"Clear all\" now keeps your location set — it only clears categories and the other filters, so you don't have to re-pick where you are every time.",
+          "Added a divider after the location pills to show they work a little differently from the rest.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.86",
     date: "2026-06-02",
     title: "Cleaner desktop swipe + fist on the match nudge",

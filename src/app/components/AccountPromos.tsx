@@ -1,4 +1,4 @@
-import { Flame, TrendingUp, Award, RefreshCw, X } from "lucide-react";
+import { Flame, TrendingUp, Award, RefreshCw, Megaphone, X } from "lucide-react";
 
 /**
  * Account-creation promos for logged-out users:
@@ -11,6 +11,7 @@ const ACCOUNT_BENEFITS = [
   { icon: <TrendingUp size={16} strokeWidth={2.5} />, label: "Track your impact", sub: "Every act you take adds up." },
   { icon: <Award size={16} strokeWidth={2.5} />, label: "Earn resistance tiers", sub: "Build a streak, level up." },
   { icon: <RefreshCw size={16} strokeWidth={2.5} />, label: "Sync saves across devices", sub: "Your matches, everywhere." },
+  { icon: <Megaphone size={16} strokeWidth={2.5} />, label: "Add your own acts", sub: "Share an idea for others to join." },
 ];
 
 /** Vertical benefits list for the Join The Resistance modal. */

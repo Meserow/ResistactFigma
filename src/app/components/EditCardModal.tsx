@@ -341,6 +341,11 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
         authorLink:     authorLink.trim() || undefined,
         targetUrl:      targetUrl.trim() || null,
         topImageUrl:    topImageUrl.trim() || null,
+        // The header image the admin set/generated is what should display. Mirror
+        // it into cartoonImageUrl (the field the feed reads first) so a generated
+        // cartoon reliably wins over the static manifest after saving. Only when
+        // an image is actually set — otherwise leave any existing cartoon alone.
+        ...(topImageUrl.trim() ? { cartoonImageUrl: topImageUrl.trim() } : {}),
         imageContain,
         atHome,
         highlighted,
@@ -637,7 +642,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
                   type="button"
                   onClick={handleGenerateCartoon}
                   disabled={genCartoon || loading || approving}
-                  title="Draw a brand cartoon banner from the title (uses the current image as a reference)"
+                  title="Draw a brand cartoon banner from the title & description (falls back to the current image as a reference if the text isn't descriptive enough)"
                   className="flex items-center gap-1.5 px-3 py-2 border border-[#23297e]/20 bg-[#23297e]/5 hover:bg-[#23297e]/10 disabled:opacity-60 text-[#23297e] font-['Poppins',sans-serif] font-semibold text-xs rounded-lg transition-colors"
                 >
                   {genCartoon ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
