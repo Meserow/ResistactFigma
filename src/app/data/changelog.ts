@@ -16,6 +16,35 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.0",
+    date: "2026-06-03",
+    title: "1.4 — Discover, Save & Pass",
+    sections: [
+      {
+        heading: "Swipe to Discover",
+        items: [
+          "Swiping stays smooth from the first card to the last, no matter how many you save.",
+          "Report a problem — expired or inappropriate — on any act right from the deck.",
+        ],
+      },
+      {
+        heading: "The Acts",
+        items: [
+          "Save any act straight from the feed with the heart on its card — it now sits in its own little chip, separate from the boost and done counts beside it.",
+          "Acts you pass in Discover drop out of your feed (and show a small cyan X on the rare card where they still appear).",
+          "Your saves and passes sync to your account, so they carry across your phone and laptop.",
+        ],
+      },
+      {
+        heading: "Fixes",
+        items: [
+          "\"Add an Act\" and \"Set Act Preferences\" no longer close by accident when you click or drag off to the side.",
+          "Tidied the anonymous-browsing footer so it fits on two lines.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.100",
     date: "2026-06-03",
     title: "Save and pass acts right from the feed — and modals that don't vanish",
