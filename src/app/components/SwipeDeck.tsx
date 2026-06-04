@@ -39,6 +39,9 @@ interface SwipeDeckProps {
   /** Auth token (or null when anonymous) — forwarded to the flag modal so a
    *  report is attributed to the signed-in user, or sent with the anon key. */
   accessToken?: string | null;
+  /** Total Acts the user has saved/bookmarked overall (across all sessions),
+   *  shown alongside the count saved during this swipe session. */
+  totalSaved?: number;
 }
 
 // Past this horizontal drag distance (px), releasing commits the swipe.
@@ -51,7 +54,7 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, accessToken }: SwipeDeckProps) {
+export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, accessToken, totalSaved = 0 }: SwipeDeckProps) {
   // Snapshot the incoming cards once, at mount. The parent removes a card from
   // its list the moment it's swiped (so it won't come back next time the deck
   // opens) — but if we read that shrinking list live, advancing `index` while
@@ -320,9 +323,12 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
         <span className="lg:hidden absolute right-3 inline-flex items-center gap-1.5 font-['Poppins',sans-serif] text-[11px] font-semibold tabular-nums">
           {savedCards.length > 0 && (
             <span className="inline-flex items-center gap-0.5 text-[#ed6624]" title="Saved this session">
-              <Heart size={11} fill="currentColor" /> {savedCards.length}
+              <Heart size={11} fill="currentColor" /> +{savedCards.length}
             </span>
           )}
+          <span className="inline-flex items-center gap-0.5 text-[#ed6624]/70" title="Total saved">
+            <Heart size={11} /> {totalSaved}
+          </span>
           <span className="text-gray-500">{done ? "done" : `${remaining} to go`}</span>
         </span>
       </div>
@@ -332,7 +338,11 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
       {!done && !summaryOpen && (
         <div className="hidden lg:flex items-center justify-center gap-3 pt-3 font-['Poppins',sans-serif] text-base font-bold tabular-nums">
           <span className="inline-flex items-center gap-1.5 text-[#ed6624]">
-            <Heart size={16} fill="currentColor" /> {savedCards.length} saved
+            <Heart size={16} fill="currentColor" /> {savedCards.length} this session
+          </span>
+          <span className="text-white/30">•</span>
+          <span className="inline-flex items-center gap-1.5 text-[#ed6624]/80">
+            <Heart size={16} /> {totalSaved} total saved
           </span>
           <span className="text-white/30">•</span>
           <span className="text-white/80">{remaining} to go</span>
