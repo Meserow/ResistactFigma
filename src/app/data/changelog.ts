@@ -16,6 +16,33 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.97",
+    date: "2026-06-03",
+    title: "Swipe to Discover shows both this-session and all-time saves",
+    sections: [
+      {
+        heading: "Swipe to Discover",
+        items: [
+          "The counter at the top now shows how many acts you've saved during this swipe session AND your all-time saved total — so you can see both at a glance.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.96",
+    date: "2026-06-03",
+    title: "Add an Act: every act gets a custom cartoon banner",
+    sections: [
+      {
+        heading: "Add an Act",
+        items: [
+          "The header-image step now shows your generated cartoon banner large, front and center — no more uploading your own photo or pasting an image URL.",
+          "Don't love the banner? Hit \"Regenerate cartoon\" to draw a fresh one. Filling the act in by hand? You'll get a \"Generate cartoon banner\" button there too.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.95",
     date: "2026-06-03",
     title: "Sign-up now mentions you can add your own acts",

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import logoImg from "../../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
 import {
-  X, Loader2, Megaphone, Upload, Clock,
+  X, Loader2, Megaphone, Clock,
   Ban, DollarSign, Bike, Newspaper, Calendar, Share2, Hammer, PenLine, Users,
   HandHeart, Home, HardHat, Sparkles, Briefcase, Heart, Mail, GraduationCap,
   Smile, Volume2, Palette, Handshake, Send, Brain, Lightbulb,
@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
-import { supabase, type UserApproval } from "../lib/supabase";
+import { type UserApproval } from "../lib/supabase";
 import { LOCATION_OPTIONS } from "../lib/locations";
 import { categoryToneDefault, type VulnerableGroup, type TimeBucket } from "../lib/matcher";
 import { ToneRangeSlider } from "./ToneSlider";
@@ -143,12 +143,11 @@ export function AskFlowModal({
   const [amplifiesGroups,  setAmplifiesGroups]  = useState<VulnerableGroup[]>([]);
   const [createLoading,    setCreateLoading]    = useState(false);
   const [formError,        setFormError]        = useState<string | null>(null);
-  const [uploading,        setUploading]        = useState(false);
-  const [uploadError,      setUploadError]      = useState<string | null>(null);
+  const [genBanner,        setGenBanner]        = useState(false); // drawing the cartoon banner (last step)
+  const [bannerError,      setBannerError]      = useState<string | null>(null);
   /** Wizard step. Logged-in users see 3 steps; logged-out get a 4th auth gate. */
   const [step, setStep] = useState(0);
   const submittingRef = useRef(false);
-  const fileInputRef  = useRef<HTMLInputElement>(null);
 
   // ── "Start from a link" auto-fill (approved members) ──────────────────────────
   // Paste a URL → server drafts every field + draws a banner; we drop the result
@@ -158,48 +157,31 @@ export function AskFlowModal({
   const [autoStatus, setAutoStatus] = useState<string | null>(null);
   const [autoError,  setAutoError]  = useState<string | null>(null);
   const autoRef = useRef(false);
+  // Source page image from the last auto-fill — passed to banner regeneration so
+  // the cartoon can fall back to the page art when the text alone isn't enough.
+  const [srcRefImage, setSrcRefImage] = useState<string | null>(null);
 
-  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setUploadError("Pick an image file (jpg/png/webp/gif).");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setUploadError("Image too large (max 5 MB).");
-      return;
-    }
-    setUploadError(null);
-    setUploading(true);
+  /** Draw (or redraw) the cartoon banner from the act's title + description.
+   * Members don't upload their own images — every act gets a brand cartoon. */
+  async function handleGenerateBanner() {
+    if (!formTitle.trim()) { setBannerError("Add a title first (step 1)."); return; }
+    if (!isLoggedIn) { onLoginRequired(); return; }
+    setBannerError(null);
+    setGenBanner(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token ?? accessToken;
-      if (!token) {
-        setUploadError("Sign in to upload images, or paste an image URL instead.");
-        setUploading(false);
-        if (fileInputRef.current) fileInputRef.current.value = "";
-        return;
-      }
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch(`${API}/actions/upload-image`, {
+      const res = await fetch(`${API}/actions/generate-image`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: fd,
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ title: formTitle.trim(), description: formDesc.trim(), refImageUrl: srcRefImage || undefined }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setUploadError(data.error ?? `Upload failed (${res.status}).`);
-        return;
-      }
-      setFormImageUrl(data.url);
-    } catch (err) {
-      console.error("Image upload error:", err);
-      setUploadError("Network error during upload.");
+      let data: any = {};
+      try { data = await res.json(); } catch { /* empty body */ }
+      if (res.ok && data.url) setFormImageUrl(String(data.url));
+      else setBannerError(data.error ?? `Couldn't draw a banner (HTTP ${res.status}). Try again.`);
+    } catch {
+      setBannerError("Network error — try again.");
     } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      setGenBanner(false);
     }
   }
 
@@ -351,6 +333,7 @@ export function AskFlowModal({
       }
       const draft = dData.draft ?? {};
       const refImageUrl: string | null = dData.refImageUrl ?? null;
+      setSrcRefImage(refImageUrl);
 
       // Populate the form — everything stays editable.
       setAutoStatus("Filling in your act…");
@@ -727,59 +710,57 @@ export function AskFlowModal({
             )}
 
             {/* ── Last step: Header image ──────────────────────────────────── */}
+            {/* Members don't upload their own art — every act gets a brand
+                cartoon banner, drawn from the title + description. */}
             {isImageStep && (
               <Section
                 title="Header Image"
-                hint="A great photo makes your action stand out. Upload one or paste a URL."
+                hint="Every act gets a custom cartoon banner — here's yours."
               >
                 <Field label="Header image" required>
-                  <div className="flex items-center gap-2 mb-2 flex-wrap">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploading}
-                      className="flex items-center gap-1.5 px-3 py-2 bg-[#ed6624] hover:bg-[#c2521b] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-semibold text-xs rounded-lg transition-colors"
-                    >
-                      {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
-                      {uploading ? "Uploading…" : "Upload from computer"}
-                    </button>
-                    <span className="font-['Poppins',sans-serif] text-[11px] text-gray-400">or paste a URL ↓</span>
-                    <label className="ml-auto flex items-center gap-1.5 cursor-pointer select-none">
-                      <input
-                        type="checkbox" checked={formImageContain}
-                        onChange={(e) => setFormImageContain(e.target.checked)}
-                        className="w-3.5 h-3.5 rounded accent-[#ed6624]"
-                      />
-                      <span className="font-['Poppins',sans-serif] text-[11.5px] text-gray-500">
-                        Fit logo (don't crop)
-                      </span>
-                    </label>
-                  </div>
-                  <input
-                    type="url" value={formImageUrl} autoComplete="off"
-                    onChange={(e) => setFormImageUrl(e.target.value)}
-                    placeholder="https://… (paste any image URL)"
-                    className={inputCls}
-                  />
-                  {formImageUrl.trim() && (
-                    <div className="mt-2 relative h-24 rounded-xl overflow-hidden bg-gray-50 border border-gray-200">
-                      <img
-                        src={formImageUrl.trim()}
-                        alt="Header preview"
-                        className="w-full h-full object-cover"
-                        onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = "none"; }}
-                      />
+                  {formImageUrl.trim() ? (
+                    <>
+                      <div
+                        className="relative w-full overflow-hidden rounded-2xl border border-gray-200 bg-gray-50"
+                        style={{ aspectRatio: "3 / 2" }}
+                      >
+                        <img
+                          src={formImageUrl.trim()}
+                          alt="Cartoon banner"
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleGenerateBanner}
+                        disabled={genBanner || !formTitle.trim()}
+                        className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-[#23297e]/20 bg-[#23297e]/5 px-3 py-2 font-['Poppins',sans-serif] text-xs font-semibold text-[#23297e] transition-colors hover:bg-[#23297e]/10 disabled:opacity-60"
+                      >
+                        {genBanner ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+                        {genBanner ? "Drawing…" : "Regenerate cartoon"}
+                      </button>
+                    </>
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center">
+                      <p className="mb-3 font-['Poppins',sans-serif] text-[13px] text-gray-500">
+                        We'll draw a custom cartoon banner for your act.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleGenerateBanner}
+                        disabled={genBanner || !formTitle.trim()}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-[#ed6624] px-4 py-2 font-['Poppins',sans-serif] text-xs font-semibold text-white transition-colors hover:bg-[#c2521b] disabled:opacity-60"
+                      >
+                        {genBanner ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+                        {genBanner ? "Drawing your banner…" : "Generate cartoon banner"}
+                      </button>
+                      {!formTitle.trim() && (
+                        <p className="mt-2 font-['Poppins',sans-serif] text-[11px] text-gray-400">Add a title first (step 1).</p>
+                      )}
                     </div>
                   )}
-                  {uploadError && (
-                    <p className="mt-1.5 font-['Poppins',sans-serif] text-[11px] text-red-500">{uploadError}</p>
+                  {bannerError && (
+                    <p className="mt-2 font-['Poppins',sans-serif] text-[11px] text-red-500">{bannerError}</p>
                   )}
                 </Field>
               </Section>

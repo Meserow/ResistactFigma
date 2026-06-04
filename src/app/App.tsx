@@ -3101,6 +3101,7 @@ export default function App() {
           <SwipeDeck
             cards={displayedCards.filter((c) => !c.pinToTop && !swipedCardIds.has(c.id) && !bookmarkedCards.has(c.id) && !completedCards.has(c.id))}
             accessToken={accessToken}
+            totalSaved={effectiveBookmarked.size}
             onClose={() => setSwipeOpen(false)}
             onInterested={(card) => {
               if (!bookmarkedCards.has(card.id)) handleBookmark(card.id);
