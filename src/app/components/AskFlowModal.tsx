@@ -878,9 +878,11 @@ function Overlay({ children, onClose }: { children: React.ReactNode; onClose: ()
   return (
     <div
       className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      onClick={onClose}
     >
-      <div className="w-full max-w-3xl flex justify-center" onClick={(e) => e.stopPropagation()}>
+      {/* No backdrop-click-to-close: this is a multi-step form, so a stray click
+          or drag-release on the dark area shouldn't discard what you've typed.
+          Close only via the explicit X / Cancel. */}
+      <div className="w-full max-w-3xl flex justify-center">
         {children}
       </div>
     </div>

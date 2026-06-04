@@ -4991,6 +4991,36 @@ app.put("/make-server-9eb1ae04/me/bookmarks", async (c) => {
   }
 });
 
+// ─── GET /me/passes — acts the user left-swiped ("not for me") ────────────────
+app.get("/make-server-9eb1ae04/me/passes", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    if (!token) return c.json({ error: "Unauthorized" }, 401);
+    const user = await getUser(token);
+    if (!user) return c.json({ error: "Invalid token" }, 401);
+    const passes = (await kv.get(`user-passes:${user.id}`)) ?? [];
+    return c.json({ passes });
+  } catch (err) {
+    return c.json({ error: `Failed to load passes: ${err}` }, 500);
+  }
+});
+
+// ─── PUT /me/passes — bulk replace ───────────────────────────────────────────
+app.put("/make-server-9eb1ae04/me/passes", async (c) => {
+  try {
+    const token = c.req.header("Authorization")?.split(" ")[1];
+    if (!token) return c.json({ error: "Unauthorized" }, 401);
+    const user = await getUser(token);
+    if (!user) return c.json({ error: "Invalid token" }, 401);
+    const body = await c.req.json().catch(() => null);
+    const ids = Array.isArray(body?.ids) ? body.ids.filter((id: any) => typeof id === "number") : [];
+    await kv.set(`user-passes:${user.id}`, ids);
+    return c.json({ ok: true, count: ids.length });
+  } catch (err) {
+    return c.json({ error: `Failed to save passes: ${err}` }, 500);
+  }
+});
+
 // ─── GET /me/spread-shared — has this user spread the word about ResistAct? ───
 // Backs the rule "once a logged-in user has shared, hide the pinned Spread the
 // Word card from them." A record at `share:spread:{user.id}` means yes.

@@ -41,12 +41,13 @@ export function SignupBanner({ onLoginClick, onDismiss }: { onLoginClick: () => 
     <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[#1a1f63] bg-[#23297e] shadow-[0_-1px_3px_rgba(0,0,0,0.15)]">
       <div className="flex items-center justify-between gap-3 px-4 py-2.5 text-white md:px-6">
         <div className="min-w-0">
+          {/* One paragraph (not two stacked) so the copy flows and wraps to at
+              most 2 lines — "Stay anonymous…" sits right after "…sync across
+              devices." instead of forcing its own third line. */}
           <p className="font-['Poppins',sans-serif] text-[13px] leading-snug md:text-sm">
             <span className="font-bold">You're browsing anonymously.</span>{" "}
-            <span className="hidden text-white/85 sm:inline">Create a free account to save your progress, earn tiers, and sync across devices.</span>
-          </p>
-          <p className="hidden font-['Poppins',sans-serif] text-[12px] italic leading-snug text-white/60 sm:block">
-            Stay anonymous if you like — no tracking, no spam.
+            <span className="hidden text-white/85 sm:inline">Create a free account to save your progress, earn tiers, and sync across devices.</span>{" "}
+            <span className="hidden italic text-white/60 sm:inline">Stay anonymous if you like — no tracking, no spam.</span>
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">

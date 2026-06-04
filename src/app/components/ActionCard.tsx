@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from "react";
-import { CheckCircle2, Clock, Globe, MapPin, Pencil } from "lucide-react";
+import { CheckCircle2, Clock, Globe, Heart, MapPin, Pencil, X } from "lucide-react";
 import { useAnimatedNumber } from "../lib/animations";
 import { ShareModal } from "./ShareModal";
 import { SpreadTheWordModal } from "./SpreadTheWordModal";
@@ -123,12 +123,16 @@ interface ActionCardProps {
   onComplete?: (id: number) => void;
   onShare?: (id: number) => void;
   onBookmark?: (id: number) => void;
+  /** Toggle "pass" (not-for-me) from the card's pass (X) button. */
+  onPass?: (id: number) => void;
   onEdit?: (id: number) => void;
   onApprove?: (id: number) => void;
   onInfoClick?: () => void;
   isBoosted?: boolean;
   isCompleted?: boolean;
   isBookmarked?: boolean;
+  /** Whether the user has passed (left-swiped / "not for me") this act. */
+  isPassed?: boolean;
   canEdit?: boolean;
   /** When true (admin-only), renders a red PENDING APPROVAL banner with a
    * one-click approve button at the top of the card. */
@@ -150,7 +154,7 @@ interface ActionCardProps {
   onSpreadShared?: () => void;
 }
 
-function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdit, onApprove, onInfoClick, isBoosted, isCompleted, isBookmarked, canEdit, isPending, compact = false, accessToken, onCardUpdated, onSpreadShared }: ActionCardProps) {
+function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPass, onEdit, onApprove, onInfoClick, isBoosted, isCompleted, isBookmarked, isPassed, canEdit, isPending, compact = false, accessToken, onCardUpdated, onSpreadShared }: ActionCardProps) {
   const [shareOpen, setShareOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
@@ -205,12 +209,45 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onEdi
     const boostCount = card.boosts ?? 0;
     const showBoost = !card.pinToTop && boostCount > 0;
     const showDone = effectiveCount > 0;
+    // Personal controls to the LEFT of the public boost/done counts. The save
+    // HEART always shows (solid orange when saved, hollow grey when not) so you
+    // can save straight from the grid. The pass X appears ONLY once an act has
+    // actually been passed (cyan) — a "this is passed" marker, not an always-on
+    // button. In practice it's rarely seen (passed acts are hidden from the
+    // feed); it's here for the saved/completed-and-passed cases and smoke tests.
+    // Tapping it un-passes. Both hidden on the pinned Spread-the-Word card.
+    const showHeart = !card.pinToTop && !!onBookmark;
+    const showPass = !card.pinToTop && !!onPass && !!isPassed;
     const animatedBoosts = useAnimatedNumber(boostCount);
     const animatedDones = useAnimatedNumber(effectiveCount);
     const isHotBoost = boostCount >= HOT_BOOST_THRESHOLD;
-    if (!showBoost && !showDone) return null;
+    if (!showBoost && !showDone && !showHeart && !showPass) return null;
     return (
       <div className="absolute bottom-2 left-3 flex items-center gap-2 bg-white/95 backdrop-blur-sm rounded-md px-2 py-0.5 shadow-sm">
+        {showHeart && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onBookmark?.(card.id); }}
+            aria-label={isBookmarked ? "Remove from saved" : "Save this act"}
+            aria-pressed={isBookmarked}
+            title={isBookmarked ? "Saved — tap to remove" : "Save this act"}
+            className={`inline-flex items-center transition-colors ${isBookmarked ? "text-[#ed6624]" : "text-gray-400 hover:text-[#ed6624]"}`}
+          >
+            <Heart size={13} strokeWidth={2.5} fill={isBookmarked ? "currentColor" : "none"} />
+          </button>
+        )}
+        {showPass && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onPass?.(card.id); }}
+            aria-label={isPassed ? "Undo pass" : "Pass — not for me"}
+            aria-pressed={isPassed}
+            title={isPassed ? "Passed — tap to undo" : "Pass — hide this from my feed"}
+            className={`inline-flex items-center transition-colors ${isPassed ? "text-cyan-500" : "text-gray-400 hover:text-cyan-500"}`}
+          >
+            <X size={14} strokeWidth={isPassed ? 3.5 : 2.5} />
+          </button>
+        )}
         {showBoost && (
           <span className="inline-flex items-center gap-1 text-gray-600 font-['Poppins',sans-serif] font-medium text-[11px] whitespace-nowrap">
             <span aria-hidden className={isHotBoost ? "resistact-anim-flicker inline-block" : "inline-block"}>🔥</span>

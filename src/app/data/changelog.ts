@@ -16,6 +16,53 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.3.100",
+    date: "2026-06-03",
+    title: "Save and pass acts right from the feed — and modals that don't vanish",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Each act card now has a save heart on the left of the banner — tap it to save (it turns orange). Acts you've passed in Discover also show a small cyan X there, though you'll rarely see it since passed acts are hidden from your feed.",
+          "Tweaked the anonymous-browsing footer so it fits on two lines instead of three.",
+        ],
+      },
+      {
+        heading: "Fixes",
+        items: [
+          "\"Add an Act\" and \"Set Act Preferences\" no longer close by accident when you click or drag off to the side — they now only close with the X (or their own buttons), so you won't lose what you were entering.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.99",
+    date: "2026-06-03",
+    title: "Acts you pass in Discover stay out of your feed",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "When you swipe left on an act in Swipe to Discover, it now also disappears from your main Acts feed — a pass means 'not for me', so it won't keep showing up. (If you later save or mark it done, it comes back.)",
+          "Your passes now sync to your account, so passing an act on your phone also hides it on your laptop.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.3.98",
+    date: "2026-06-03",
+    title: "Save acts with one tap from the feed",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Added a heart to each act card (next to the boost and done counts) — tap it to save the act, tap again to unsave. It's solid red when you've saved it and a hollow grey outline when you haven't, so you can see and change your saves without opening the card.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.3.97",
     date: "2026-06-03",
     title: "Swipe to Discover shows both this-session and all-time saves",

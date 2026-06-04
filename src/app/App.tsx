@@ -469,6 +469,17 @@ export default function App() {
       return stored ? new Set<number>(JSON.parse(stored)) : new Set<number>();
     } catch { return new Set<number>(); }
   });
+  // Cards the user has explicitly PASSED (left-swiped = "not for me"). Unlike
+  // `swipedCardIds` (which is every card seen in the deck), passes also get
+  // hidden from the main feed — a pass shouldn't keep resurfacing. Persisted
+  // locally for instant effect and synced to the account (when signed in) via
+  // /me/passes so a pass on one device hides it everywhere.
+  const [passedCardIds, setPassedCardIds] = useState<Set<number>>(() => {
+    try {
+      const stored = localStorage.getItem("resistact_passed");
+      return stored ? new Set<number>(JSON.parse(stored)) : new Set<number>();
+    } catch { return new Set<number>(); }
+  });
   const [bookmarksOpen, setBookmarksOpen] = useState(false);
   const [boostedFacts, setBoostedFacts] = useState<Set<number>>(() => {
     try {
@@ -1433,6 +1444,7 @@ export default function App() {
         fetchMyCompletions(session.access_token);
         fetchMyBoosts(session.access_token);
         fetchMyBookmarks(session.access_token);
+        fetchMyPasses(session.access_token);
         fetchMySpreadShared(session.access_token);
         syncMatchPreferencesOnLogin(session.access_token);
       } else {
@@ -2100,6 +2112,61 @@ export default function App() {
     });
   };
 
+  // Server sync for passes — debounced exactly like bookmarks so swiping left
+  // through a stack doesn't fire a PUT per card. localStorage is written
+  // synchronously (instant feed-hide); the server copy makes it cross-device.
+  const passSyncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingPassIds = useRef<number[] | null>(null);
+  const flushPassSync = () => {
+    if (passSyncTimer.current) { clearTimeout(passSyncTimer.current); passSyncTimer.current = null; }
+    const ids = pendingPassIds.current;
+    pendingPassIds.current = null;
+    if (!ids || !accessToken) return;
+    fetch(`${API}/me/passes`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ ids }),
+    }).catch(() => {});
+  };
+
+  // Record a left-swipe "pass": hides the act from the feed (and keeps it out of
+  // the deck). No-ops if already passed or while impersonating (view-as is
+  // read-only and shouldn't write passes against the admin's own account).
+  const markPassed = (id: number) => {
+    if (blockWriteIfImpersonating()) return;
+    setPassedCardIds((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      try { localStorage.setItem("resistact_passed", JSON.stringify([...next])); } catch {}
+      if (accessToken) {
+        pendingPassIds.current = [...next];
+        if (passSyncTimer.current) clearTimeout(passSyncTimer.current);
+        passSyncTimer.current = setTimeout(flushPassSync, 800);
+      }
+      return next;
+    });
+  };
+
+  // Toggle pass from a card's pass (X) button — the feed version of a left-swipe,
+  // but reversible (the swipe deck only ever adds). Same local write + debounced
+  // server sync. Passing hides the card from the feed (per the pass filter);
+  // un-passing brings it back.
+  const handlePassToggle = (id: number) => {
+    if (blockWriteIfImpersonating()) return;
+    setPassedCardIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      try { localStorage.setItem("resistact_passed", JSON.stringify([...next])); } catch {}
+      if (accessToken) {
+        pendingPassIds.current = [...next];
+        if (passSyncTimer.current) clearTimeout(passSyncTimer.current);
+        passSyncTimer.current = setTimeout(flushPassSync, 800);
+      }
+      return next;
+    });
+  };
+
   async function fetchMyBookmarks(token: string) {
     try {
       const res = await fetch(`${API}/me/bookmarks`, { headers: { Authorization: `Bearer ${token}` } });
@@ -2121,6 +2188,32 @@ export default function App() {
       });
     } catch (err) {
       console.warn("Could not fetch bookmarks:", err);
+    }
+  }
+
+  // Mirror of fetchMyBookmarks for passes: pull the account's passed ids on
+  // login and merge with any made anonymously on this device, pushing the union
+  // back if it grew. Fails quietly if the endpoint isn't live yet.
+  async function fetchMyPasses(token: string) {
+    try {
+      const res = await fetch(`${API}/me/passes`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!Array.isArray(data.passes)) return;
+      setPassedCardIds((prev) => {
+        const merged = new Set([...prev, ...data.passes]);
+        try { localStorage.setItem("resistact_passed", JSON.stringify([...merged])); } catch {}
+        if (merged.size !== data.passes.length) {
+          fetch(`${API}/me/passes`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ ids: [...merged] }),
+          }).catch(() => {});
+        }
+        return merged;
+      });
+    } catch (err) {
+      console.warn("Could not fetch passes:", err);
     }
   }
 
@@ -2241,18 +2334,19 @@ export default function App() {
   const cardHandlersRef = useRef({
     handleBoost, handleComplete, handleShare, handleBookmark,
     handleEdit: (id: number) => setEditCardId(id),
-    handleApproveCard, handleCardSaved, handleSpreadShared,
+    handleApproveCard, handleCardSaved, handleSpreadShared, handlePassToggle,
   });
   cardHandlersRef.current = {
     handleBoost, handleComplete, handleShare, handleBookmark,
     handleEdit: (id: number) => setEditCardId(id),
-    handleApproveCard, handleCardSaved, handleSpreadShared,
+    handleApproveCard, handleCardSaved, handleSpreadShared, handlePassToggle,
   };
   const cardCb = useMemo(() => ({
     onBoost: (id: number) => cardHandlersRef.current.handleBoost(id),
     onComplete: (id: number) => cardHandlersRef.current.handleComplete(id),
     onShare: (id: number) => cardHandlersRef.current.handleShare(id),
     onBookmark: (id: number) => cardHandlersRef.current.handleBookmark(id),
+    onPass: (id: number) => cardHandlersRef.current.handlePassToggle(id),
     onEdit: (id: number) => cardHandlersRef.current.handleEdit(id),
     onApprove: (id: number) => cardHandlersRef.current.handleApproveCard(id),
     onCardUpdated: (updated: ActionCardData, toast?: string) => cardHandlersRef.current.handleCardSaved(updated, toast),
@@ -2487,7 +2581,14 @@ export default function App() {
               // Pull from the raw card list so match-scoring / ranking can't hide
               // unapproved cards from the admin review queue.
               ? cards.filter((c) => c.adminApproved === false && !(c.eventDate && c.eventDate < todayISO))
-              : displayedCards;
+              // Hide acts the user passed (left-swiped) in Discover — a pass means
+              // "not for me", so keep it out of the feed. A card still shows if
+              // it's since been saved or marked done (those signals override a
+              // stale pass). Skipped while impersonating, where passes belong to
+              // the admin's own account, not the viewed user.
+              : (isImpersonating
+                  ? displayedCards
+                  : displayedCards.filter((c) => c.pinToTop || !(passedCardIds.has(c.id) && !bookmarkedCards.has(c.id) && !completedCards.has(c.id))));
             return (
           <>
             {/* Phone-only browse-mode toggle — sits just under the filter pills
@@ -2797,11 +2898,13 @@ export default function App() {
                   onComplete={cardCb.onComplete}
                   onShare={cardCb.onShare}
                   onBookmark={cardCb.onBookmark}
+                  onPass={cardCb.onPass}
                   onEdit={isImpersonating ? undefined : cardCb.onEdit}
                   onInfoClick={card.pinToTop ? () => setInfoOpen(true) : undefined}
                   isBoosted={effectiveBoosted.has(card.id)}
                   isCompleted={effectiveCompleted.has(card.id)}
                   isBookmarked={effectiveBookmarked.has(card.id)}
+                  isPassed={!isImpersonating && passedCardIds.has(card.id)}
                   canEdit={!isImpersonating && canEditCard(card)}
                   isPending={!isImpersonating && isAdminUser && card.adminApproved === false}
                   onApprove={!isImpersonating && isAdminUser ? cardCb.onApprove : undefined}
@@ -3107,7 +3210,7 @@ export default function App() {
               if (!bookmarkedCards.has(card.id)) handleBookmark(card.id);
               markSwiped(card.id);
             }}
-            onPass={(card) => markSwiped(card.id)}
+            onPass={(card) => { markSwiped(card.id); markPassed(card.id); }}
             onCompleted={(card) => {
               if (!completedCards.has(card.id)) handleComplete(card.id);
               markSwiped(card.id);
