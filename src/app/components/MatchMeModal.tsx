@@ -367,13 +367,12 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJo
       role="dialog"
       aria-modal="true"
       aria-labelledby="match-me-title"
-      onClick={onClose}
       className="hero-modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-[#0d1b2a]/60 p-4 sm:p-6"
     >
-      {/* Outer card — flex column so the footer can be pinned outside the
-          scroll area. overflow-hidden clips the rounded corners. */}
+      {/* No backdrop-click-to-close: setting preferences is a multi-step flow, so
+          a stray click or drag-release on the dark area shouldn't dismiss it.
+          Close only via the explicit X / footer buttons. */}
       <div
-        onClick={(e) => e.stopPropagation()}
         className="hero-modal-card relative flex flex-col w-full max-w-[1100px] max-h-[92vh] overflow-hidden rounded-[10px] bg-white shadow-2xl"
       >
         <button
