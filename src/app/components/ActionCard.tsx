@@ -222,46 +222,58 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
     const animatedDones = useAnimatedNumber(effectiveCount);
     const isHotBoost = boostCount >= HOT_BOOST_THRESHOLD;
     if (!showBoost && !showDone && !showHeart && !showPass) return null;
+    // Two SEPARATE frosted chips at the banner's bottom-left: a personal
+    // save/pass pill (heart + pass-X marker) and, beside it, the public
+    // boost/done counts pill — so "your action" reads as distinct from "the
+    // crowd's tallies". Each chip self-hides when it has nothing to show.
     return (
-      <div className="absolute bottom-2 left-3 flex items-center gap-2 bg-white/95 backdrop-blur-sm rounded-md px-2 py-0.5 shadow-sm">
-        {showHeart && (
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onBookmark?.(card.id); }}
-            aria-label={isBookmarked ? "Remove from saved" : "Save this act"}
-            aria-pressed={isBookmarked}
-            title={isBookmarked ? "Saved — tap to remove" : "Save this act"}
-            className={`inline-flex items-center transition-colors ${isBookmarked ? "text-[#ed6624]" : "text-gray-400 hover:text-[#ed6624]"}`}
-          >
-            <Heart size={13} strokeWidth={2.5} fill={isBookmarked ? "currentColor" : "none"} />
-          </button>
+      <div className="absolute bottom-2 left-3 flex items-center gap-1.5">
+        {(showHeart || showPass) && (
+          <div className="flex items-center gap-2 bg-white/95 backdrop-blur-sm rounded-md px-2 py-0.5 shadow-sm">
+            {showHeart && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onBookmark?.(card.id); }}
+                aria-label={isBookmarked ? "Remove from saved" : "Save this act"}
+                aria-pressed={isBookmarked}
+                title={isBookmarked ? "Saved — tap to remove" : "Save this act"}
+                className={`inline-flex items-center transition-colors ${isBookmarked ? "text-[#ed6624]" : "text-gray-400 hover:text-[#ed6624]"}`}
+              >
+                <Heart size={13} strokeWidth={2.5} fill={isBookmarked ? "currentColor" : "none"} />
+              </button>
+            )}
+            {showPass && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onPass?.(card.id); }}
+                aria-label={isPassed ? "Undo pass" : "Pass — not for me"}
+                aria-pressed={isPassed}
+                title={isPassed ? "Passed — tap to undo" : "Pass — hide this from my feed"}
+                className={`inline-flex items-center transition-colors ${isPassed ? "text-cyan-500" : "text-gray-400 hover:text-cyan-500"}`}
+              >
+                <X size={14} strokeWidth={isPassed ? 3.5 : 2.5} />
+              </button>
+            )}
+          </div>
         )}
-        {showPass && (
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onPass?.(card.id); }}
-            aria-label={isPassed ? "Undo pass" : "Pass — not for me"}
-            aria-pressed={isPassed}
-            title={isPassed ? "Passed — tap to undo" : "Pass — hide this from my feed"}
-            className={`inline-flex items-center transition-colors ${isPassed ? "text-cyan-500" : "text-gray-400 hover:text-cyan-500"}`}
-          >
-            <X size={14} strokeWidth={isPassed ? 3.5 : 2.5} />
-          </button>
-        )}
-        {showBoost && (
-          <span className="inline-flex items-center gap-1 text-gray-600 font-['Poppins',sans-serif] font-medium text-[11px] whitespace-nowrap">
-            <span aria-hidden className={isHotBoost ? "resistact-anim-flicker inline-block" : "inline-block"}>🔥</span>
-            <span>{animatedBoosts.toLocaleString()}</span>
-          </span>
-        )}
-        {showDone && (
-          // Done badge: brand teal-green (#0d8c6e — same identity as the
-          // "I did this!" pill inside the modal) so the checkmark reads
-          // as a positive signal at a glance, not as a neutral metric.
-          <span className="inline-flex items-center gap-1 text-[#0d8c6e] font-['Poppins',sans-serif] font-medium text-[11px] whitespace-nowrap">
-            <span aria-hidden>✓</span>
-            <span className="text-[#0d8c6e]/80">{animatedDones.toLocaleString()}</span>
-          </span>
+        {(showBoost || showDone) && (
+          <div className="flex items-center gap-2 bg-white/95 backdrop-blur-sm rounded-md px-2 py-0.5 shadow-sm">
+            {showBoost && (
+              <span className="inline-flex items-center gap-1 text-gray-600 font-['Poppins',sans-serif] font-medium text-[11px] whitespace-nowrap">
+                <span aria-hidden className={isHotBoost ? "resistact-anim-flicker inline-block" : "inline-block"}>🔥</span>
+                <span>{animatedBoosts.toLocaleString()}</span>
+              </span>
+            )}
+            {showDone && (
+              // Done badge: brand teal-green (#0d8c6e — same identity as the
+              // "I did this!" pill inside the modal) so the checkmark reads
+              // as a positive signal at a glance, not as a neutral metric.
+              <span className="inline-flex items-center gap-1 text-[#0d8c6e] font-['Poppins',sans-serif] font-medium text-[11px] whitespace-nowrap">
+                <span aria-hidden>✓</span>
+                <span className="text-[#0d8c6e]/80">{animatedDones.toLocaleString()}</span>
+              </span>
+            )}
+          </div>
         )}
       </div>
     );
