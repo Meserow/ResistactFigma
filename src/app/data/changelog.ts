@@ -16,6 +16,19 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.1",
+    date: "2026-06-05",
+    title: "Passes now stick across your devices",
+    sections: [
+      {
+        heading: "Fixes",
+        items: [
+          "Acts you pass on one device no longer come back in Discover on another — the swipe deck now respects passes that sync to your account, so a pass on your phone stays passed on your laptop.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.0",
     date: "2026-06-03",
     title: "1.4 — Discover, Save & Pass",
