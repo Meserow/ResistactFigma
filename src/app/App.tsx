@@ -3202,7 +3202,7 @@ export default function App() {
       {swipeOpen && (
         <ErrorBoundary>
           <SwipeDeck
-            cards={displayedCards.filter((c) => !c.pinToTop && !swipedCardIds.has(c.id) && !bookmarkedCards.has(c.id) && !completedCards.has(c.id))}
+            cards={displayedCards.filter((c) => !c.pinToTop && !swipedCardIds.has(c.id) && !passedCardIds.has(c.id) && !bookmarkedCards.has(c.id) && !completedCards.has(c.id))}
             accessToken={accessToken}
             totalSaved={effectiveBookmarked.size}
             onClose={() => setSwipeOpen(false)}
