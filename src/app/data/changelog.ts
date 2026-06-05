@@ -25,6 +25,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         items: [
           "Swiping stays smooth from the first card to the last, no matter how many you save.",
           "Report a problem — expired or inappropriate — on any act right from the deck.",
+          "On wide screens, the \"swipe left / swipe right\" hints now sit right next to the card instead of way out at the screen edges.",
         ],
       },
       {

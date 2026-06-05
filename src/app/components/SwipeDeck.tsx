@@ -383,14 +383,18 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
         {/* Wide-desktop hints — flank the card, vertically centered. */}
         {!done && !summaryOpen && (
           <>
-            <span className="pointer-events-none absolute left-6 top-1/2 hidden -translate-y-1/2 items-center gap-2 whitespace-nowrap font-['Poppins',sans-serif] text-base font-bold text-teal-400 lg:inline-flex">
+            {/* Anchor the side hints just outside the centered card (≤500px wide,
+                so ~250px each side of center at lg) instead of the screen edges,
+                so they sit right beside the card rather than way out at the
+                margins. The right-edge anchor lets the PASS hint grow leftward. */}
+            <span className="pointer-events-none absolute right-[calc(50%+272px)] top-1/2 hidden -translate-y-1/2 items-center gap-2 whitespace-nowrap font-['Poppins',sans-serif] text-base font-bold text-teal-400 lg:inline-flex">
               <ArrowLeft size={20} strokeWidth={3} className="shrink-0" />
               Swipe left to PASS
               <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-teal-400 text-white">
                 <X size={12} strokeWidth={3.5} />
               </span>
             </span>
-            <span className="pointer-events-none absolute right-6 top-1/2 hidden -translate-y-1/2 items-center gap-2 whitespace-nowrap font-['Poppins',sans-serif] text-base font-bold text-[#ed6624] lg:inline-flex">
+            <span className="pointer-events-none absolute left-[calc(50%+272px)] top-1/2 hidden -translate-y-1/2 items-center gap-2 whitespace-nowrap font-['Poppins',sans-serif] text-base font-bold text-[#ed6624] lg:inline-flex">
               <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#ed6624] text-white">
                 <Heart size={11} fill="currentColor" />
               </span>

@@ -324,7 +324,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
             // Pinned "Spread the Word" gets a hairline navy outline (and stays
             // full color); any other featured card uses the grid-wide gray
             // border + 85%→100%-on-hover rule.
-            card.pinToTop ? "border-[0.75px] border-gray-400 opacity-100" : "border-[0.75px] border-gray-400 opacity-90 hover:opacity-100"
+            card.pinToTop ? "border-[0.75px] border-gray-400 opacity-90 hover:opacity-100" : "border-[0.75px] border-gray-400 opacity-80 hover:opacity-100"
           }`}
           onClick={card.pinToTop ? () => setShareOpen(true) : () => setDetailsOpen(true)}
         >
@@ -468,12 +468,12 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
       <div
         onClick={() => setDetailsOpen(true)}
         className={`resistact-banner-host transform-gpu cursor-pointer bg-white rounded-2xl border-[0.75px] border-gray-400 flex flex-col overflow-hidden h-full transition-all duration-200 ease-out hover:shadow-md motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10 ${
-          // Resting 85% opacity, full color on hover — gives the grid a calm,
+          // Resting 80% opacity, full color on hover — gives the grid a calm,
           // browsable feel and makes the hovered card pop. The pinned
-          // "Spread the Word" card is exempt: it's the one card that should
-          // always read at full strength. `transition-all` above covers the
-          // opacity tween so it eases in/out smoothly.
-          card.pinToTop ? "opacity-100" : "opacity-90 hover:opacity-100"
+          // "Spread the Word" card rests a touch brighter (90%) so it stands out
+          // slightly from the grid, and still goes full on hover. `transition-all`
+          // above covers the opacity tween so it eases in/out smoothly.
+          card.pinToTop ? "opacity-90 hover:opacity-100" : "opacity-80 hover:opacity-100"
         } ${isPending ? "ring-2 ring-red-400" : ""}`}
       >
         {/* ── Admin: pending approval banner ── */}
