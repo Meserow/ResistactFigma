@@ -53,7 +53,7 @@ export function SignupBanner({ onLoginClick, onDismiss }: { onLoginClick: () => 
         <div className="flex shrink-0 items-center gap-1.5">
           <button
             onClick={onLoginClick}
-            className="inline-flex items-center gap-1.5 rounded-full bg-[#ed6624] px-3.5 py-1.5 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#c2521b]"
+            className="inline-flex items-center gap-1.5 rounded-full bg-[#ed6624] px-3.5 pb-1.5 pt-2 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#c2521b]"
           >
             <Flame size={14} strokeWidth={2.25} />
             <span className="hidden sm:inline">Join The Resistance</span>
