@@ -863,6 +863,83 @@ const SEED_RECEIPTS: Array<{
 // ─── Health check ─────────────────────────────────────────────────────────────
 app.get("/make-server-9eb1ae04/health", (c) => c.json({ status: "ok" }));
 
+// ─── GEO: coarse IP → US state, for first-visit location auto-detect ──────────
+// The frontend calls this once per visitor when the Location pill is empty so it
+// can pre-set a state (and fall back to an inline picker if we can't tell).
+// Privacy: we resolve the IP to a STATE only — never store precise location.
+// Supabase Edge doesn't inject geo headers, so we ask a free no-key provider
+// (ipapi.co) server-side, validate the answer against our canonical state list,
+// and cache per-instance so repeat visitors don't re-hit the provider.
+//
+// Canonical US states we accept (mirrors LOCATION_OPTIONS minus National /
+// Multi-State, which aren't places a *user* lives). ipapi.co returns the full
+// region name; "District of Columbia" is folded to our "Washington DC".
+const GEO_US_STATES: ReadonlySet<string> = new Set([
+  "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado",
+  "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho",
+  "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine",
+  "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi",
+  "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey",
+  "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio",
+  "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina",
+  "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia",
+  "Washington", "Washington DC", "West Virginia", "Wisconsin", "Wyoming",
+]);
+
+// Per-instance cache (cleared on cold start). Geo rarely changes, so this is
+// plenty to absorb repeat hits and keep us under the provider's free rate limit.
+const GEO_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h
+const geoCache = new Map<string, { state: string | null; at: number }>();
+
+function canonicalUsState(region: string | undefined | null): string | null {
+  if (!region) return null;
+  const r = region.trim();
+  if (r === "District of Columbia") return "Washington DC";
+  return GEO_US_STATES.has(r) ? r : null;
+}
+
+app.get("/make-server-9eb1ae04/geo", async (c) => {
+  try {
+    // First public IP in x-forwarded-for is the client; fall back to other
+    // proxy headers. Private/empty → we can't detect, so return null cleanly.
+    const fwd = c.req.header("x-forwarded-for")?.split(",")[0]?.trim();
+    const ip = fwd || c.req.header("x-real-ip") || c.req.header("cf-connecting-ip") || "";
+    if (!ip || ip.startsWith("10.") || ip.startsWith("192.168.") || ip === "127.0.0.1" || ip === "::1") {
+      return c.json({ state: null });
+    }
+
+    const cached = geoCache.get(ip);
+    if (cached && Date.now() - cached.at < GEO_CACHE_TTL_MS) {
+      return c.json({ state: cached.state });
+    }
+
+    // Never let a slow provider stall the visitor — hard 2s timeout.
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 2000);
+    let state: string | null = null;
+    try {
+      const res = await fetch(`https://ipapi.co/${encodeURIComponent(ip)}/json/`, {
+        signal: ctrl.signal,
+        headers: { "User-Agent": "ResistAct/1.0 (resistact.org)" },
+      });
+      if (res.ok) {
+        const data = await res.json() as { country_code?: string; region?: string };
+        if (data.country_code === "US") state = canonicalUsState(data.region);
+      }
+    } catch (err) {
+      console.log("Geo lookup failed:", err);
+    } finally {
+      clearTimeout(timer);
+    }
+
+    geoCache.set(ip, { state, at: Date.now() });
+    return c.json({ state });
+  } catch (err) {
+    console.log("Geo endpoint error:", err);
+    return c.json({ state: null });
+  }
+});
+
 // ─── AUTH: Status — verify JWT & return/create approval record ────────────────
 app.get("/make-server-9eb1ae04/auth/status", async (c) => {
   try {

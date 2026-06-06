@@ -45,6 +45,9 @@ interface SwipeDeckProps {
   /** Total Acts the user has saved/bookmarked overall (across all sessions),
    *  shown alongside the count saved during this swipe session. */
   totalSaved?: number;
+  /** Opens the user's My Matches panel. Wired to the "total saved" count so the
+   *  user can jump straight to their saved acts. The parent closes the deck. */
+  onOpenMatches?: () => void;
   /** Categories the user already has selected in the feed's pill filters. The
    *  deck opens pre-narrowed to the same kinds of acts so the swipe tool honors
    *  the choices they made on the feed. */
@@ -75,7 +78,7 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, accessToken, totalSaved = 0, initialCategories = [], filters }: SwipeDeckProps) {
+export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, accessToken, totalSaved = 0, onOpenMatches, initialCategories = [], filters }: SwipeDeckProps) {
   // Snapshot the incoming cards at mount. The parent removes a card from its
   // list the moment it's swiped (so it won't come back) — if we read that
   // shrinking list live, advancing `index` while the array shrinks would skip
@@ -472,20 +475,30 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
           flank the card instead. */}
       {!done && !summaryOpen && (
       <div className="flex lg:hidden items-center justify-between gap-2 whitespace-nowrap px-3 py-2 font-['Poppins',sans-serif] text-[11px] font-bold">
-        <span className="inline-flex items-center gap-1 text-teal-400">
+        <button
+          type="button"
+          onClick={() => commit("left")}
+          aria-label="Pass on this act"
+          className="inline-flex items-center gap-1 text-teal-400 transition-opacity hover:opacity-80 active:opacity-60"
+        >
           <ArrowLeft size={14} strokeWidth={3} className="shrink-0" />
           Swipe left to PASS
           <span className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-teal-400 text-white">
             <X size={9} strokeWidth={3.5} />
           </span>
-        </span>
-        <span className="inline-flex items-center gap-1 text-[#ed6624]">
+        </button>
+        <button
+          type="button"
+          onClick={() => commit("right")}
+          aria-label="Save this act"
+          className="inline-flex items-center gap-1 text-[#ed6624] transition-opacity hover:opacity-80 active:opacity-60"
+        >
           <span className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-[#ed6624] text-white">
             <Heart size={8} fill="currentColor" />
           </span>
           Swipe right to SAVE
           <ArrowRight size={14} strokeWidth={3} className="shrink-0" />
-        </span>
+        </button>
       </div>
       )}
 
@@ -625,20 +638,30 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
                 so ~250px each side of center at lg) instead of the screen edges,
                 so they sit right beside the card rather than way out at the
                 margins. The right-edge anchor lets the PASS hint grow leftward. */}
-            <span className="pointer-events-none absolute right-[calc(50%+264px)] top-1/2 hidden -translate-y-1/2 items-center gap-1.5 whitespace-nowrap font-['Poppins',sans-serif] text-[13px] font-semibold text-teal-400 lg:inline-flex">
+            <button
+              type="button"
+              onClick={() => commit("left")}
+              aria-label="Pass on this act"
+              className="absolute right-[calc(50%+264px)] top-1/2 hidden -translate-y-1/2 items-center gap-1.5 whitespace-nowrap font-['Poppins',sans-serif] text-[13px] font-semibold text-teal-400 transition-opacity hover:opacity-80 active:opacity-60 lg:inline-flex"
+            >
               <ArrowLeft size={15} strokeWidth={3} className="shrink-0" />
               Swipe left to PASS
               <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-teal-400 text-white">
                 <X size={10} strokeWidth={3.5} />
               </span>
-            </span>
-            <span className="pointer-events-none absolute left-[calc(50%+264px)] top-1/2 hidden -translate-y-1/2 items-center gap-1.5 whitespace-nowrap font-['Poppins',sans-serif] text-[13px] font-semibold text-[#ed6624] lg:inline-flex">
+            </button>
+            <button
+              type="button"
+              onClick={() => commit("right")}
+              aria-label="Save this act"
+              className="absolute left-[calc(50%+264px)] top-1/2 hidden -translate-y-1/2 items-center gap-1.5 whitespace-nowrap font-['Poppins',sans-serif] text-[13px] font-semibold text-[#ed6624] transition-opacity hover:opacity-80 active:opacity-60 lg:inline-flex"
+            >
               <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#ed6624] text-white">
                 <Heart size={9} fill="currentColor" />
               </span>
               Swipe right to SAVE
               <ArrowRight size={15} strokeWidth={3} className="shrink-0" />
-            </span>
+            </button>
           </>
         )}
         {summaryOpen ? (
@@ -812,9 +835,20 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
               <Heart size={11} fill="currentColor" /> {savedCards.length} this session
             </span>
             <span className="text-white/30">•</span>
-            <span className="inline-flex items-center gap-1 text-[#ed6624]/80">
-              <Heart size={11} /> {totalSaved} total saved
-            </span>
+            {onOpenMatches ? (
+              <button
+                type="button"
+                onClick={onOpenMatches}
+                title="View My Matches"
+                className="inline-flex items-center gap-1 text-[#ed6624]/80 underline-offset-2 transition-colors hover:text-[#ed6624] hover:underline"
+              >
+                <Heart size={11} /> {totalSaved} total saved
+              </button>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-[#ed6624]/80">
+                <Heart size={11} /> {totalSaved} total saved
+              </span>
+            )}
             <span className="text-white/30">•</span>
             <span className="text-white/80">{remaining} to go</span>
           </div>

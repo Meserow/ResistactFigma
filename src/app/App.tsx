@@ -294,6 +294,17 @@ interface CardsCachePayload {
 // later if users complain about losing picks across devices).
 const PILL_FILTERS_KEY = "resistact:pill-filters:v1";
 
+// First-visit geo auto-detect. Stores the outcome so detection + the banner
+// only ever happen once per device: "detected"/"dismissed"/"skip" all suppress
+// future runs. (A network failure is intentionally NOT persisted, so a flaky
+// first visit can still resolve on the next one.)
+const GEO_KEY = "resistact:geo:v1";
+// States a *user* can live in — National / Multi-State aren't places, so they're
+// excluded from the manual picker (the filter passes those through anyway).
+const GEO_STATE_OPTIONS = LOCATION_OPTIONS.filter(
+  (o) => o !== "National" && o !== "Multi-State",
+);
+
 interface PillFiltersPayload {
   activeFilters: Record<string, string[]>;
   quickActionsOnly: boolean;
@@ -600,6 +611,15 @@ export default function App() {
   );
   const [scrollNudgeVisible, setScrollNudgeVisible] = useState(false);
   const scrollNudgeFired = useRef(false);
+  // First-visit location auto-detect. When the visitor has no Location pill set,
+  // we ask the server's /geo endpoint for a coarse IP→state guess so the feed
+  // isn't full of out-of-state acts before they engage. A hit pre-sets the pill
+  // and shows a "Showing Acts for X — change?" banner; a miss (VPN / non-US /
+  // failure) shows an inline state picker instead. `geoBanner` drives that UI.
+  const [geoBanner, setGeoBanner] = useState<
+    { kind: "detected"; state: string } | { kind: "prompt" } | null
+  >(null);
+  const geoDetectFired = useRef(false);
   /** Active match prefs — when set, the feed re-ranks by `rankCards`. */
   const [matchPrefs, setMatchPrefs] = useState<Preferences | null>(null);
   // Incremented every time the user applies a new Match config. Used to
@@ -1393,6 +1413,81 @@ export default function App() {
     }
     return LOCATION_OPTIONS.filter((opt) => opt !== "Remote" && set.has(opt));
   }, [approvedCards]);
+
+  // Does the visitor already have a real state in the Location pill? (A bare
+  // "Remote" pick doesn't count — that's not a place.) Used to decide whether
+  // first-visit geo detection should run at all.
+  const hasStateLocationPill = () =>
+    (activeFiltersRef.current?.Location ?? []).some((l) => l !== "Remote");
+
+  // Apply a state to the Location pill (preserving a "Remote" pick if present)
+  // and close the geo banner. Used by both auto-detect and the manual picker.
+  function applyGeoState(state: string) {
+    setActiveFilters((prev) => ({
+      ...prev,
+      Location: [...(prev.Location ?? []).filter((l) => l === "Remote"), state],
+    }));
+    setGeoBanner(null);
+    try { localStorage.setItem(GEO_KEY, JSON.stringify({ status: "detected", state })); } catch {}
+  }
+
+  function dismissGeoBanner() {
+    setGeoBanner(null);
+    try { localStorage.setItem(GEO_KEY, JSON.stringify({ status: "dismissed" })); } catch {}
+  }
+
+  // ── First-visit location auto-detect — runs once per device ─────────────────
+  // Only for visitors with no Location pill set. Calls /geo; a US-state hit
+  // pre-sets the pill + shows a correctable banner, a miss shows a state picker.
+  // Never blocks paint — the feed renders unfiltered, then narrows when we
+  // resolve. Skipped entirely once a prior outcome is stored.
+  useEffect(() => {
+    if (geoDetectFired.current) return;
+    geoDetectFired.current = true;
+    if (typeof localStorage === "undefined") return;
+    // Already detected / dismissed / skipped on this device → never repeat.
+    if (localStorage.getItem(GEO_KEY)) return;
+    // User already told us where they are (restored pill) → record + skip.
+    if (hasStateLocationPill()) {
+      try { localStorage.setItem(GEO_KEY, JSON.stringify({ status: "skip" })); } catch {}
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${API}/geo`, { headers: HEADERS });
+        const data = res.ok ? await res.json() : { state: null };
+        if (cancelled) return;
+        // The user may have set a location while we were waiting — don't stomp it.
+        if (hasStateLocationPill()) {
+          try { localStorage.setItem(GEO_KEY, JSON.stringify({ status: "skip" })); } catch {}
+          return;
+        }
+        const state = typeof data?.state === "string" && GEO_STATE_OPTIONS.includes(data.state as typeof GEO_STATE_OPTIONS[number])
+          ? data.state
+          : null;
+        if (state) {
+          // Pre-set the pill (preserving a "Remote" pick) and show the
+          // correctable banner. Mirrors applyGeoState but keeps the banner.
+          setActiveFilters((prev) => ({
+            ...prev,
+            Location: [...(prev.Location ?? []).filter((l) => l === "Remote"), state],
+          }));
+          setGeoBanner({ kind: "detected", state });
+          try { localStorage.setItem(GEO_KEY, JSON.stringify({ status: "detected", state })); } catch {}
+        } else {
+          setGeoBanner({ kind: "prompt" });
+          try { localStorage.setItem(GEO_KEY, JSON.stringify({ status: "prompt" })); } catch {}
+        }
+      } catch {
+        // Network failure — surface the manual picker but DON'T persist, so a
+        // future visit can still auto-detect.
+        if (!cancelled) setGeoBanner({ kind: "prompt" });
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Scroll nudge — fires once after user scrolls past ~8 cards ──────────────
   // Points people at Swipe to Discover when the feed gets long. We deliberately
@@ -2638,11 +2733,84 @@ export default function App() {
               </div>
             )}
 
+            {/* Geo banner — first-visit location auto-detect, MERGED with the
+                result-count + Sort chrome into a single bar so arriving visitors
+                don't see two stacked banners. "detected" shows the auto-picked
+                state with a way to change it; "prompt" shows a manual state
+                picker. The count + Sort (desktop) ride along on the right. When
+                this banner is up, the filtered/unfiltered banners below suppress
+                themselves (via `!geoBanner`) so nothing doubles up. */}
+            {geoBanner && activeTab === "acts" && (
+              <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-[#ed6624]/30 bg-[#ed6624]/5 px-4 py-2.5">
+                <MapPin size={16} className="text-[#ed6624] shrink-0" strokeWidth={2.5} />
+                {geoBanner.kind === "detected" ? (
+                  <p className="font-['Poppins',sans-serif] text-sm text-gray-700">
+                    Showing Acts for <strong className="text-[#23297e]">{geoBanner.state}</strong>.
+                  </p>
+                ) : (
+                  <>
+                    <p className="font-['Poppins',sans-serif] text-sm text-gray-700 whitespace-nowrap">
+                      Pick your state to see Acts near you:
+                    </p>
+                    <select
+                      value=""
+                      onChange={(e) => { if (e.target.value) applyGeoState(e.target.value); }}
+                      className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm font-['Poppins',sans-serif] text-gray-700"
+                    >
+                      <option value="">Choose a state…</option>
+                      {GEO_STATE_OPTIONS.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </>
+                )}
+
+                {/* Result count — desktop only, mirrors the filtered/unfiltered
+                    banners' copy so the merged bar carries the same info. */}
+                {!isMobile && synced && !matchPrefs && (
+                  <>
+                    <span className="text-[#ed6624]/40">•</span>
+                    <p className="font-['Poppins',sans-serif] text-sm text-gray-600">
+                      {hasActiveFilters ? (
+                        <><strong className="text-[#23297e]">{displayedCards.length}</strong> {displayedCards.length === 1 ? "action" : "actions"} match your filters.</>
+                      ) : (
+                        <>Showing all <strong className="text-[#23297e]">{displayedCards.length}</strong> actions — unfiltered.</>
+                      )}
+                    </p>
+                  </>
+                )}
+
+                {/* Right-side controls: Change (detected), Sort (desktop), Dismiss. */}
+                <div className="ml-auto flex items-center gap-3 shrink-0">
+                  {geoBanner.kind === "detected" && (
+                    <button
+                      onClick={() => setGeoBanner({ kind: "prompt" })}
+                      className="font-['Poppins',sans-serif] text-xs font-bold text-[#ed6624] hover:text-[#e07a28] hover:underline transition-colors whitespace-nowrap"
+                    >
+                      Not you? Change
+                    </button>
+                  )}
+                  {!isMobile && synced && !matchPrefs && (
+                    <SortDropdown
+                      sortBy={sortBy}
+                      onSortChange={setSortBy}
+                      showDone={showDone}
+                      onShowDoneChange={setShowDone}
+                      completedCount={myCompletions?.total ?? 0}
+                    />
+                  )}
+                  <button onClick={dismissGeoBanner} aria-label="Dismiss" className="text-gray-400 hover:text-gray-600 transition-colors">
+                    <X size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Unfiltered banner — nudges users to try the match tool.
                 Also carries the Sort dropdown so the sort control lives
                 next to the live result count. Hidden on phones, where the
                 feed leads with the cards (and swipe) rather than this chrome. */}
-            {!matchPrefs && !hasActiveFilters && activeTab === "acts" && synced && !isMobile && (
+            {!geoBanner && !matchPrefs && !hasActiveFilters && activeTab === "acts" && synced && !isMobile && (
               <div className="mb-4 flex flex-col items-start gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                 <p className="font-['Poppins',sans-serif] text-sm text-gray-600">
                   Showing all <strong className="text-[#23297e]">{displayedCards.length}</strong> actions — unfiltered.
@@ -2669,7 +2837,7 @@ export default function App() {
                 quick-actions filters are active (but no Match preferences).
                 Mirrors the unfiltered banner style; carries the Sort control.
                 Hidden on phones to match the unfiltered banner above. */}
-            {!matchPrefs && hasActiveFilters && activeTab === "acts" && synced && !showPendingActsOnly && !isMobile && (
+            {!geoBanner && !matchPrefs && hasActiveFilters && activeTab === "acts" && synced && !showPendingActsOnly && !isMobile && (
               <div className="mb-4 flex flex-col items-start gap-2 rounded-lg border border-[#23297e]/30 bg-[#23297e]/5 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                 <p className="font-['Poppins',sans-serif] text-sm text-gray-700">
                   <strong className="text-[#23297e]">{displayedCards.length}</strong> {displayedCards.length === 1 ? "action" : "actions"} match your filters.
@@ -2906,7 +3074,7 @@ export default function App() {
                 <Fragment key={idx < 12 ? `${card.id}-${staggerKey}` : card.id}>
                 <div
                   id={`card-${card.id}`}
-                  className={idx < 12 ? "resistact-anim-stagger" : undefined}
+                  className={idx < 12 ? "resistact-anim-stagger opacity-[0.85]" : "opacity-[0.85]"}
                   style={idx < 12 ? { animationDelay: `${idx * 40}ms` } : undefined}
                 >
                 <ActionCard
@@ -3222,6 +3390,7 @@ export default function App() {
             cards={deckPoolCards.filter((c) => !c.pinToTop && !swipedCardIds.has(c.id) && !passedCardIds.has(c.id) && !bookmarkedCards.has(c.id) && !completedCards.has(c.id))}
             accessToken={accessToken}
             totalSaved={effectiveBookmarked.size}
+            onOpenMatches={() => { setSwipeOpen(false); setBookmarksOpen(true); }}
             initialCategories={activeFilters["Category"] ?? []}
             filters={{
               quickOnly: quickActionsOnly,
