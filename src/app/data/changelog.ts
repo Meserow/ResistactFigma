@@ -16,6 +16,21 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.20",
+    date: "2026-06-06",
+    title: "Cleared out expired and dead-link Acts",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Pulled 27 Acts from the feed whose links had gone dead (the page or account no longer exists) or whose source account had gone quiet for months — so you won't land on a 404 or a stale campaign.",
+          "Past-date events already drop off automatically the day after they happen; this clears the leftover broken and dormant ones too.",
+          "These Acts aren't deleted — they're tucked into the admin review queue and can be restored anytime.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.19",
     date: "2026-06-06",
     title: "See your selected categories above the feed",

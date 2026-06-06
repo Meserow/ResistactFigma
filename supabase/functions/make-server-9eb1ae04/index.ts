@@ -4882,79 +4882,6 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       console.log(`Category merge: renamed ${renamed} cards`, counts);
     }
 
-    // One-time: hide the cards flagged "expired" by the 2026-06-06 audit
-    // (/audit-acts). Two buckets, both still publicly visible at audit time:
-    //   • broken-link-404 — targetUrl returned HTTP 404 (page/account gone).
-    //   • dormant-source   — origin Bluesky account silent 60+ days.
-    // We demote each to adminApproved:false so it drops out of the public
-    // feed but stays in the admin review queue for a human to restore or
-    // delete — non-destructive and reversible. We also stamp informational
-    // markers (expired / expiredReason / expiredAt); the actual hiding is
-    // done by adminApproved:false (the public gate in App.tsx).
-    //
-    // NOTE: stale *event* cards from the same audit are intentionally absent
-    // here — the feed already hides any card whose eventDate has passed
-    // ("Hide expired events from everyone" gate in App.tsx), so they need no
-    // data change. To re-run after edits, bump the flag version below.
-    // v2: load all action cards in ONE getByPrefix and do the
-    // already-hidden skip check in memory. v1 issued a per-card kv.get, and
-    // the edge function's per-request budget cut the loop after ~8 KV ops —
-    // so each retry burned its budget re-reading the cards v1 had already
-    // flipped and never reached the rest. The single batch read leaves the
-    // budget for the writes that still need doing, so repeated /actions hits
-    // converge to all 27. Idempotent: already-hidden cards are skipped.
-    const expireAudit20260606Done = await getMigrationFlag("cleanup:expire-audit-2026-06-06:v2");
-    if (!expireAudit20260606Done) {
-      const expiredReasons: Record<number, string> = {
-        // broken source link — HTTP 404
-        1005: "broken-link-404", 1018: "broken-link-404", 1020: "broken-link-404",
-        1087: "broken-link-404", 1275: "broken-link-404", 1279: "broken-link-404",
-        1289: "broken-link-404", 2065: "broken-link-404", 2114: "broken-link-404",
-        // dormant Bluesky source — 60+ days silent
-        1403: "dormant-source", 2163: "dormant-source", 2165: "dormant-source",
-        2167: "dormant-source", 2173: "dormant-source", 2180: "dormant-source",
-        2182: "dormant-source", 2184: "dormant-source", 2186: "dormant-source",
-        2187: "dormant-source", 2236: "dormant-source", 2238: "dormant-source",
-        2239: "dormant-source", 2242: "dormant-source", 2244: "dormant-source",
-        2245: "dormant-source", 2251: "dormant-source", 2255: "dormant-source",
-      };
-      const expiredAt = new Date().toISOString();
-      // One batch read; skip-check happens in memory (no per-card round-trip).
-      const allActionCards = (await kv.getByPrefix("action:")) as any[];
-      const byId = new Map<number, any>();
-      for (const c of allActionCards) {
-        if (c && typeof c === "object" && typeof c.id === "number") byId.set(c.id, c);
-      }
-      let hidden = 0;
-      const hiddenIds: number[] = [];
-      for (const [idStr, reason] of Object.entries(expiredReasons)) {
-        const id = Number(idStr);
-        const card = byId.get(id);
-        if (!card) continue;                         // already deleted — skip
-        if (card.adminApproved === false) continue;  // already hidden — skip
-        await kv.set(`action:${id}`, {
-          ...card,
-          adminApproved: false,
-          expired: true,
-          expiredReason: reason,
-          expiredAt,
-          updatedAt: expiredAt,
-          updatedBy: "audit:expire-2026-06-06",
-        });
-        hidden++;
-        hiddenIds.push(id);
-      }
-      // Only claim the migration done once every target is hidden, so a
-      // budget-truncated run leaves the flag unset and the next /actions
-      // request resumes where this one stopped.
-      const allDone = Object.keys(expiredReasons).every((idStr) => {
-        const c = byId.get(Number(idStr));
-        return !c || c.adminApproved === false || hiddenIds.includes(Number(idStr));
-      });
-      if (allDone) await setMigrationFlag("cleanup:expire-audit-2026-06-06:v2");
-      console.log(`Expire-audit 2026-06-06 (v2): hid ${hidden} this pass (allDone=${allDone}). IDs: ${hiddenIds.join(", ")}`);
-    }
-
     // PERF: in-process cache + parallel KV reads. The catalog (~600 cards)
     // changes infrequently relative to read traffic (admins approve cards
     // every few minutes; boosts trickle; user submissions are sparse), so
@@ -6017,6 +5944,79 @@ async function bulkImportFingerprint(targetUrl: string, title: string): Promise<
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(key));
   return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
 }
+
+// ─── POST /admin/expire-audit — hide the cards flagged by /audit-acts ────────
+// Auth: same static `ADMIN_IMPORT_TOKEN` header as bulk-import (no user JWT,
+// so the audit tooling can run it). Demotes the listed cards to
+// adminApproved:false — which drops them from the public feed but keeps them
+// in the admin review queue — and stamps informational expired markers. This
+// is non-destructive and reversible (re-approve from the admin panel).
+//
+// Why a dedicated endpoint instead of a one-time migration in GET /actions:
+// the lazy in-handler migration ran unreliably (warm-isolate caching + a
+// per-request budget truncated the loop). A synchronous endpoint does one
+// batch read, writes only what still needs writing, invalidates the cache,
+// and returns the exact result. Idempotent — safe to call repeatedly.
+const EXPIRE_AUDIT_2026_06_06: Record<number, string> = {
+  // broken source link — HTTP 404
+  1005: "broken-link-404", 1018: "broken-link-404", 1020: "broken-link-404",
+  1087: "broken-link-404", 1275: "broken-link-404", 1279: "broken-link-404",
+  1289: "broken-link-404", 2065: "broken-link-404", 2114: "broken-link-404",
+  // dormant Bluesky source — 60+ days silent
+  1403: "dormant-source", 2163: "dormant-source", 2165: "dormant-source",
+  2167: "dormant-source", 2173: "dormant-source", 2180: "dormant-source",
+  2182: "dormant-source", 2184: "dormant-source", 2186: "dormant-source",
+  2187: "dormant-source", 2236: "dormant-source", 2238: "dormant-source",
+  2239: "dormant-source", 2242: "dormant-source", 2244: "dormant-source",
+  2245: "dormant-source", 2251: "dormant-source", 2255: "dormant-source",
+};
+app.post("/make-server-9eb1ae04/admin/expire-audit", async (c) => {
+  try {
+    const token = c.req.header("X-Admin-Import-Token");
+    const expected = Deno.env.get("ADMIN_IMPORT_TOKEN");
+    if (!expected) return c.json({ error: "ADMIN_IMPORT_TOKEN not configured on server" }, 500);
+    if (!token || token !== expected) return c.json({ error: "Forbidden" }, 403);
+
+    const expiredAt = new Date().toISOString();
+    const hiddenIds: number[] = [];
+    const alreadyHidden: number[] = [];
+    const missing: number[] = [];
+    for (const [idStr, reason] of Object.entries(EXPIRE_AUDIT_2026_06_06)) {
+      const id = Number(idStr);
+      // Harvested cards live under user-action:*, org-seed cards under
+      // action:* — try the seed key first, then the user key (same order as
+      // the DELETE /actions/:id route).
+      let key = `action:${id}`;
+      let card = await kv.get(key) as any;
+      if (!card) { key = `user-action:${id}`; card = await kv.get(key) as any; }
+      if (!card || typeof card !== "object") { missing.push(id); continue; }
+      if (card.adminApproved === false && card.expired === true) { alreadyHidden.push(id); continue; }
+      await kv.set(key, {
+        ...card,
+        adminApproved: false,
+        expired: true,
+        expiredReason: reason,
+        expiredAt,
+        updatedAt: expiredAt,
+        updatedBy: "audit:expire-2026-06-06",
+      });
+      hiddenIds.push(id);
+    }
+    invalidateActionsCache();
+    console.log(`expire-audit: hid ${hiddenIds.length}, already ${alreadyHidden.length}, missing ${missing.length}`);
+    return c.json({
+      ok: true,
+      hidden: hiddenIds.length,
+      alreadyHidden: alreadyHidden.length,
+      missing,
+      total: Object.keys(EXPIRE_AUDIT_2026_06_06).length,
+      hiddenIds,
+    });
+  } catch (err) {
+    console.log("expire-audit error:", err);
+    return c.json({ error: `expire-audit failed: ${err}` }, 500);
+  }
+});
 
 app.post("/make-server-9eb1ae04/admin/bulk-import", async (c) => {
   try {
