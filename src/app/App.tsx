@@ -810,7 +810,11 @@ export default function App() {
     return locationToState(loc) === null;
   }
 
-  function applyFilters(allCards: ActionCardData[]): ActionCardData[] {
+  // `categoryOverride` lets a caller substitute its own category selection for
+  // the feed's pill filter — pass `[]` to ignore category entirely (used to
+  // build the swipe deck's pool, which does its own category filtering), or
+  // `null`/omit to use the active pill filter.
+  function applyFilters(allCards: ActionCardData[], categoryOverride?: string[] | null): ActionCardData[] {
     const q = deferredSearchQuery.toLowerCase().trim();
     // SEARCH OVERRIDES EVERYTHING — when the user types a query, the
     // explicit intent ("find me THIS thing") is much stronger than any
@@ -846,7 +850,7 @@ export default function App() {
     return allCards.filter((card) => {
 
       // Category
-      const cats = activeFilters["Category"] ?? [];
+      const cats = categoryOverride ?? activeFilters["Category"] ?? [];
       if (cats.length > 0 && !cats.includes(card.category)) return false;
 
       // Location — match by canonical state. Legacy "City, ST" values and the
@@ -1024,7 +1028,11 @@ export default function App() {
   const pendingSmacksCount = isAdminUser ? receipts.filter((r) => (r as any).adminApproved === false).length : 0;
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const displayedCards = useMemo(() => {
+  // The full feed pipeline (gating → filters → match-rank → sort → pin), with
+  // the category filter parameterized. `displayedCards` runs it with the active
+  // pill category; `deckPoolCards` runs it ignoring category so the swipe deck
+  // can offer EVERY category and let its own filter narrow them.
+  const buildFeed = (categoryOverride: string[] | null) => {
     // IMPERSONATION OVERRIDE — when view-as is active, shadow the per-user
     // state slots with the impersonated user's data so the rest of this
     // memo's existing references (matchPrefs, completedCards, boostedCards,
@@ -1089,7 +1097,7 @@ export default function App() {
     const pinnedAlwaysShow = hasSharedSpread ? [] : gated.filter((c) => c.pinToTop);
     const unpinnedGated = gated.filter((c) => !c.pinToTop);
 
-    const filtered = applyFilters(unpinnedGated);
+    const filtered = applyFilters(unpinnedGated, categoryOverride);
 
     // Helper: prepend the always-show pinned card(s) to any result array.
     // Filters and match-me operate only on `filtered` / `rankable` below,
@@ -1122,7 +1130,7 @@ export default function App() {
       // explicit filter intent. Fixes the audit finding from v1.1.52
       // (reports/audit-2026-05-24.md) where state-local protests
       // bypassed quickActionsOnly.
-      for (const c of applyFilters(candidates)) {
+      for (const c of applyFilters(candidates, categoryOverride)) {
         if (typeof c.id === "number") localUpcomingIds.add(c.id);
       }
     }
@@ -1324,16 +1332,26 @@ export default function App() {
       }
     }
     return pinFirst(completedLast(out));
+  };
+
   // deps: everything applyFilters + ranking reads from component scope.
-  // deferredSearchQuery (not searchQuery) means this memo is bypassed
+  // deferredSearchQuery (not searchQuery) means these memos are bypassed
   // entirely during keystrokes — React renders the stale list instantly,
-  // then re-runs the memo only after the deferred value settles.
-  }, [cards, deferredSearchQuery, activeFilters, quickActionsOnly, textingOnly, showDone,
+  // then re-runs only after the deferred value settles.
+  const feedDeps = [cards, deferredSearchQuery, activeFilters, quickActionsOnly, textingOnly, showDone,
       completedCards, matchPrefs, isAdminUser, todayISO, boostedCards,
       sortBy, demoteHyperLocal, hasSharedSpread,
       // Impersonation override — recompute when entering / exiting view-as,
       // and when any of the impersonated slots change underneath us.
-      isImpersonating, effectiveMatchPrefs, effectiveCompleted, effectiveBoosted, approval]); // eslint-disable-line react-hooks/exhaustive-deps
+      isImpersonating, effectiveMatchPrefs, effectiveCompleted, effectiveBoosted, approval];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const displayedCards = useMemo(() => buildFeed(null), feedDeps);
+  // Category-agnostic pool for the swipe deck: same gating/location/search/
+  // ranking, but NOT narrowed by the feed's category pills — the deck's own
+  // category filter (seeded from those pills) does that, so the user can both
+  // narrow AND broaden their category picks inside Discover.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const deckPoolCards = useMemo(() => buildFeed([]), feedDeps);
 
   // True when any filter chip is selected OR a search is active — bypasses
   // server pagination so client-side filtering sees the full dataset.
@@ -1472,8 +1490,12 @@ export default function App() {
   }, []);
 
   // ── Scroll nudge — fires once after user scrolls past ~8 cards ──────────────
+  // Points people at Swipe to Discover when the feed gets long. We deliberately
+  // do NOT gate this on match prefs: the old nudge pitched "set your act
+  // preferences" (pointless once set), but this one pitches swiping, which is
+  // just as useful whether or not preferences exist.
   useEffect(() => {
-    if (scrollNudgeDismissed || matchPrefs !== null || activeTab !== "acts") return;
+    if (scrollNudgeDismissed || activeTab !== "acts") return;
     const onScroll = () => {
       if (scrollNudgeFired.current) return;
       if (window.scrollY > 1600) {
@@ -1483,7 +1505,7 @@ export default function App() {
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [scrollNudgeDismissed, matchPrefs, activeTab]);
+  }, [scrollNudgeDismissed, activeTab]);
 
   // ── Hero → toolbar morph: expose scroll progress (0→1 over the first ~120px)
   //   as the CSS var --hero-collapse on <html>. The hero (HomeHero/LoggedInHero)
@@ -1507,11 +1529,6 @@ export default function App() {
     window.addEventListener("scroll", update, { passive: true });
     return () => window.removeEventListener("scroll", update);
   }, [activeTab]);
-
-  // Hide nudge if user sets match prefs
-  useEffect(() => {
-    if (matchPrefs !== null) setScrollNudgeVisible(false);
-  }, [matchPrefs]);
 
   // Auto-dismiss the nudge toast after 30 seconds so it doesn't stick around
   // forever. It's a soft suggestion — if the user hasn't engaged in 30s,
@@ -3200,17 +3217,17 @@ export default function App() {
           <img src={fistIconImg} alt="" className="h-9 w-auto block shrink-0" draggable={false} />
           <div className="min-w-0 flex-1">
             <p className="font-['Poppins',sans-serif] font-black text-[15px] text-white leading-snug mb-1">
-              Finding it hard to choose?
+              A lot to scroll through?
             </p>
             <p className="font-['Poppins',sans-serif] text-[12px] text-white/90 leading-snug mb-2.5">
-              Set your act preferences and we'll match you in 30 seconds.
+              Flip through acts one at a time and save the ones for you — just swipe.
             </p>
             <div className="flex justify-end">
               <button
-                onClick={() => { setScrollNudgeVisible(false); setMatchOpen(true); }}
+                onClick={() => { setScrollNudgeVisible(false); setSwipeOpen(true); }}
                 className="inline-flex items-center gap-1.5 px-4 py-2 bg-white hover:bg-gray-50 text-[#fd8e33] font-['Poppins',sans-serif] font-extrabold text-[13px] rounded-xl shadow-sm transition-colors whitespace-nowrap"
               >
-                ✨ Set Act Preferences →
+                🔥 Swipe to Discover →
               </button>
             </div>
           </div>
@@ -3345,10 +3362,51 @@ export default function App() {
       {swipeOpen && (
         <ErrorBoundary>
           <SwipeDeck
-            cards={displayedCards.filter((c) => !c.pinToTop && !swipedCardIds.has(c.id) && !bookmarkedCards.has(c.id) && !completedCards.has(c.id))}
+            cards={deckPoolCards.filter((c) => !c.pinToTop && !swipedCardIds.has(c.id) && !passedCardIds.has(c.id) && !bookmarkedCards.has(c.id) && !completedCards.has(c.id))}
             accessToken={accessToken}
             totalSaved={effectiveBookmarked.size}
-            onClose={() => setSwipeOpen(false)}
+            initialCategories={activeFilters["Category"] ?? []}
+            filters={{
+              quickOnly: quickActionsOnly,
+              remoteOnly: (activeFilters["Location"] ?? []).includes("Remote"),
+              states: (activeFilters["Location"] ?? []).filter((l) => l !== "Remote"),
+              stateOptions: dynamicLocations,
+              // Pool identity: changes whenever a non-category filter that
+              // reshapes deckPoolCards changes, telling the deck to re-snapshot.
+              signature: `${quickActionsOnly}|${[...(activeFilters["Location"] ?? [])].sort().join(",")}`,
+              onToggleQuick: () => setQuickActionsOnly((v) => !v),
+              onToggleRemote: () =>
+                setActiveFilters((prev) => {
+                  const cur = prev["Location"] ?? [];
+                  const next = cur.includes("Remote") ? cur.filter((l) => l !== "Remote") : [...cur, "Remote"];
+                  const out = { ...prev };
+                  if (next.length) out["Location"] = next; else delete out["Location"];
+                  return out;
+                }),
+              onToggleState: (st) =>
+                setActiveFilters((prev) => {
+                  const cur = prev["Location"] ?? [];
+                  const next = cur.includes(st) ? cur.filter((l) => l !== st) : [...cur, st];
+                  const out = { ...prev };
+                  if (next.length) out["Location"] = next; else delete out["Location"];
+                  return out;
+                }),
+            }}
+            onClose={(cats) => {
+              // Carry the categories the user landed on in Discover back to the
+              // feed's pill filters so their picks persist when they return to
+              // scrolling. `cats` is undefined when nothing about the category
+              // selection should change (e.g. an old call site) — guard it.
+              if (Array.isArray(cats)) {
+                setActiveFilters((prev) => {
+                  const next = { ...prev };
+                  if (cats.length > 0) next["Category"] = cats;
+                  else delete next["Category"];
+                  return next;
+                });
+              }
+              setSwipeOpen(false);
+            }}
             onInterested={(card) => {
               if (!bookmarkedCards.has(card.id)) handleBookmark(card.id);
               markSwiped(card.id);

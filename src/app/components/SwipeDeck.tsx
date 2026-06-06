@@ -16,10 +16,10 @@
 // keys mirror the gesture so it's usable on desktop too.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Heart, RotateCcw, X, MapPin, Globe, Clock, ArrowLeft, ArrowRight, Check, Flag } from "lucide-react";
+import { Heart, RotateCcw, X, MapPin, Globe, Clock, ArrowLeft, ArrowRight, Check, Flag, SlidersHorizontal, ChevronDown, Zap } from "lucide-react";
 import logoImg from "../../assets/resistact-logo-horizontal.webp";
 import type { ActionCardData } from "./ActionCard";
-import { colorForCategory } from "../lib/categoryGroups";
+import { colorForCategory, iconForCategory } from "../lib/categoryGroups";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { FlagCardModal } from "./FlagCardModal";
 import cardFallbackImg from "../../assets/resistact-card-fallback.webp";
@@ -29,7 +29,10 @@ type Dir = "left" | "right";
 interface SwipeDeckProps {
   /** Ordered Acts to present — typically the current ranked feed. */
   cards: ActionCardData[];
-  onClose: () => void;
+  /** Called when the deck closes. Receives the categories the user has the
+   *  deck filtered to (empty = "all"), so the parent can persist them back to
+   *  the feed's pill filters. */
+  onClose: (categories?: string[]) => void;
   /** Right swipe — "this is a possibility". App bookmarks + (later) learns. */
   onInterested?: (card: ActionCardData) => void;
   /** Left swipe — "not for me". App records the pass + (later) learns. */
@@ -42,6 +45,24 @@ interface SwipeDeckProps {
   /** Total Acts the user has saved/bookmarked overall (across all sessions),
    *  shown alongside the count saved during this swipe session. */
   totalSaved?: number;
+  /** Categories the user already has selected in the feed's pill filters. The
+   *  deck opens pre-narrowed to the same kinds of acts so the swipe tool honors
+   *  the choices they made on the feed. */
+  initialCategories?: string[];
+  /** The feed's non-category filters, surfaced inside the deck so the user can
+   *  adjust them without leaving Discover. Toggling drives the parent's feed
+   *  state (reusing all its location/quick logic); `signature` changes whenever
+   *  the resulting card pool changes, which tells the deck to re-snapshot. */
+  filters?: {
+    quickOnly: boolean;       // "5 minutes max"
+    remoteOnly: boolean;      // "Remote only"
+    states: string[];         // selected location states
+    stateOptions: string[];   // states that have cards
+    signature: string;        // pool identity — re-snapshot when it changes
+    onToggleQuick: () => void;
+    onToggleRemote: () => void;
+    onToggleState: (state: string) => void;
+  };
 }
 
 // Past this horizontal drag distance (px), releasing commits the swipe.
@@ -54,13 +75,16 @@ function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, accessToken, totalSaved = 0 }: SwipeDeckProps) {
-  // Snapshot the incoming cards once, at mount. The parent removes a card from
-  // its list the moment it's swiped (so it won't come back next time the deck
-  // opens) — but if we read that shrinking list live, advancing `index` while
-  // the array shrinks would skip cards. Freezing the deck for this session
-  // keeps the gesture correct; the next open re-snapshots the (smaller) list.
-  const [deck] = useState(() => cards);
+export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, accessToken, totalSaved = 0, initialCategories = [], filters }: SwipeDeckProps) {
+  // Snapshot the incoming cards at mount. The parent removes a card from its
+  // list the moment it's swiped (so it won't come back) — if we read that
+  // shrinking list live, advancing `index` while the array shrinks would skip
+  // cards. So we freeze the deck and only RE-snapshot deliberately: when the
+  // user changes a pool-affecting filter (location / remote / 5-min) inside the
+  // deck, `filters.signature` changes and the effect below re-snapshots from
+  // the freshly-filtered `cards`. Swipes never change the signature, so they
+  // never trigger a re-snapshot.
+  const [deck, setDeck] = useState(() => cards);
   // Pointer into `deck` for the current top card.
   const [index, setIndex] = useState(0);
   // Stack of past verdicts so a single level of Undo is possible.
@@ -80,9 +104,108 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
   const [flagCardId, setFlagCardId] = useState<number | null>(null);
   const flagCard = flagCardId == null ? null : deck.find((c) => c.id === flagCardId) ?? null;
 
-  const remaining = deck.length - index;
+  // ── In-deck category filter ─────────────────────────────────────────────────
+  // The deck snapshots its cards at mount and walks them with `index` (see the
+  // note on `deck` above) — so a stable array is what keeps the gesture correct.
+  // Filtering doesn't mutate that loop: it derives a `view` (the master snapshot
+  // minus cards already acted on this session, optionally narrowed to the picked
+  // categories) and we only recompute it when the *selection* changes, then reset
+  // the cursor. Within a selection, `view` is stable and `index` advances exactly
+  // as before. `acted` tracks ids swiped this session so they don't reappear when
+  // the filter changes.
+  const acted = useRef<Set<number>>(new Set());
+  // Seed the selection from the feed's category pills, intersected with what
+  // the deck actually contains so we never light up a category with zero cards.
+  const [selectedCats, setSelectedCats] = useState<Set<string>>(() => {
+    const present = new Set(deck.map((c) => c.category).filter(Boolean) as string[]);
+    return new Set((initialCategories ?? []).filter((c) => present.has(c)));
+  });
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [locationOpen, setLocationOpen] = useState(false);
+  const [view, setView] = useState<ActionCardData[]>(() => {
+    const sel = new Set(
+      (initialCategories ?? []).filter((c) => deck.some((d) => d.category === c)),
+    );
+    return sel.size === 0
+      ? deck
+      : deck.filter((c) => c.category != null && sel.has(c.category));
+  });
+
+  // Categories actually present in this deck, alphabetized — we only offer
+  // filters that would match something.
+  const deckCats = useMemo(() => {
+    const s = new Set<string>();
+    for (const c of deck) if (c.category) s.add(c.category);
+    return [...s].sort((a, b) => a.localeCompare(b));
+  }, [deck]);
+
+  const computeView = useCallback(
+    (sel: Set<string>) =>
+      deck.filter(
+        (c) =>
+          !acted.current.has(c.id) &&
+          (sel.size === 0 || (c.category != null && sel.has(c.category))),
+      ),
+    [deck],
+  );
+
+  // Apply a new category selection: rebuild the view and reset the cursor.
+  // Clears any in-flight fling so the fresh top card starts at rest.
+  const applyCats = useCallback(
+    (sel: Set<string>) => {
+      flyingRef.current = null;
+      setFlying(null);
+      setSelectedCats(sel);
+      setView(computeView(sel));
+      setHistory([]);
+      setIndex(0);
+    },
+    [computeView],
+  );
+
+  const toggleCat = useCallback(
+    (cat: string) => {
+      const next = new Set(selectedCats);
+      if (next.has(cat)) next.delete(cat); else next.add(cat);
+      applyCats(next);
+    },
+    [selectedCats, applyCats],
+  );
+
+  const clearCats = useCallback(() => applyCats(new Set()), [applyCats]);
+
+  // Closing always reports the current category selection up so the feed's pill
+  // filters stay in sync with what the user chose in Discover.
+  const close = useCallback(() => onClose([...selectedCats]), [onClose, selectedCats]);
+
+  // Re-snapshot when a pool-affecting filter (location / remote / 5-min) changes.
+  // The parent has already recomputed `cards` for the new filter; we freeze that
+  // as the new deck, keep the current category selection, and reset the cursor.
+  // Guarded on `signature` so ordinary swipes (which also change `cards`) never
+  // trigger a re-snapshot. `acted` is preserved so cards already swiped this
+  // session don't reappear.
+  const poolSigRef = useRef(filters?.signature);
+  useEffect(() => {
+    const sig = filters?.signature;
+    if (sig === undefined || sig === poolSigRef.current) return;
+    poolSigRef.current = sig;
+    flyingRef.current = null;
+    setFlying(null);
+    setDeck(cards);
+    setView(
+      cards.filter(
+        (c) =>
+          !acted.current.has(c.id) &&
+          (selectedCats.size === 0 || (c.category != null && selectedCats.has(c.category))),
+      ),
+    );
+    setHistory([]);
+    setIndex(0);
+  }, [filters?.signature, cards, selectedCats]);
+
+  const remaining = view.length - index;
   const reduced = useMemo(prefersReducedMotion, []);
-  const done = index >= deck.length;
+  const done = index >= view.length;
 
   // ── Imperative drag (no per-move React state) ───────────────────────────────
   // Re-rendering the whole deck on every pointermove made the gesture jagged on
@@ -125,8 +248,8 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
 
   const commit = useCallback(
     (dir: Dir) => {
-      if (flyingRef.current || index >= deck.length) return;
-      const card = deck[index];
+      if (flyingRef.current || index >= view.length) return;
+      const card = view[index];
       flyingRef.current = dir;
 
       // Advance the deck + fire the verdict. Runs EXACTLY once — whichever of
@@ -139,6 +262,7 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
         finished = true;
         flyingRef.current = null;
         setFlying(null);
+        acted.current.add(card.id);
         setHistory((h) => [...h, { index, dir }]);
         setIndex((i) => i + 1);
         if (dir === "right") setSavedCards((s) => [...s, card]);
@@ -174,7 +298,7 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
       // interrupted, tab backgrounded, no layout box, etc.).
       window.setTimeout(finish, 380);
     },
-    [deck, index, onInterested, onPass, reduced],
+    [view, index, onInterested, onPass, reduced],
   );
 
   const undo = useCallback(() => {
@@ -183,17 +307,21 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
     setHistory((h) => h.slice(0, -1));
     setIndex(last.index);
     // If the undone card had been saved, pull it back out of the saved list
-    // (no-op for passed/completed cards, which were never added).
-    const restored = deck[last.index];
-    if (restored) setSavedCards((s) => s.filter((c) => c.id !== restored.id));
-  }, [history, deck]);
+    // (no-op for passed/completed cards, which were never added). Also drop it
+    // from the session "acted" set so it isn't filtered away on a later change.
+    const restored = view[last.index];
+    if (restored) {
+      acted.current.delete(restored.id);
+      setSavedCards((s) => s.filter((c) => c.id !== restored.id));
+    }
+  }, [history, view]);
 
   // "I did this!" — mark the current act completed and advance. Flies the card
   // UP (a distinct motion from the left/right pass/save) and reuses the same
   // finish-once guard as commit() so the deck never gets stuck mid-animation.
   const completeCurrent = useCallback(() => {
-    if (flyingRef.current || index >= deck.length) return;
-    const card = deck[index];
+    if (flyingRef.current || index >= view.length) return;
+    const card = view[index];
     flyingRef.current = "right";
     let finished = false;
     const finish = () => {
@@ -201,6 +329,7 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
       finished = true;
       flyingRef.current = null;
       setFlying(null);
+      acted.current.add(card.id);
       setHistory((h) => [...h, { index, dir: "right" }]);
       setIndex((i) => i + 1);
       try { onCompleted?.(card); } catch (err) { console.error("SwipeDeck complete callback threw:", err); }
@@ -219,7 +348,7 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
       el.addEventListener("transitionend", onEnd);
     }
     window.setTimeout(finish, 380);
-  }, [deck, index, onCompleted, reduced]);
+  }, [view, index, onCompleted, reduced]);
 
   // Keyboard: ←/→ swipe, ⌫ undo, Esc close.
   useEffect(() => {
@@ -227,11 +356,11 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
       if (e.key === "ArrowLeft") commit("left");
       else if (e.key === "ArrowRight") commit("right");
       else if (e.key === "Backspace") { e.preventDefault(); undo(); }
-      else if (e.key === "Escape") onClose();
+      else if (e.key === "Escape") close();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [commit, undo, onClose]);
+  }, [commit, undo, close]);
 
   // ── Pointer drag on the top card ───────────────────────────────────────────
   // Capture on the card element itself (topCardRef) — NOT e.target, which is a
@@ -311,7 +440,7 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
             // Hitting Done with saved acts → show the recap first; otherwise
             // (nothing saved, or already on the recap / end screen) just close.
             if (savedCards.length > 0 && !summaryOpen && !done) setSummaryOpen(true);
-            else onClose();
+            else close();
           }}
           className="lg:hidden absolute left-3 font-['Poppins',sans-serif] text-sm font-semibold inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[#23297e] hover:bg-[#23297e]/10 transition-colors"
         >
@@ -333,21 +462,6 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
         </span>
       </div>
 
-      {/* Desktop: saved + remaining counts, centered below the logo / above the
-          card (the upper-right version above is hidden on lg). */}
-      {!done && !summaryOpen && (
-        <div className="hidden lg:flex items-center justify-center gap-3 pt-3 font-['Poppins',sans-serif] text-base font-bold tabular-nums">
-          <span className="inline-flex items-center gap-1.5 text-[#ed6624]">
-            <Heart size={16} fill="currentColor" /> {savedCards.length} this session
-          </span>
-          <span className="text-white/30">•</span>
-          <span className="inline-flex items-center gap-1.5 text-[#ed6624]/80">
-            <Heart size={16} /> {totalSaved} total saved
-          </span>
-          <span className="text-white/30">•</span>
-          <span className="text-white/80">{remaining} to go</span>
-        </div>
-      )}
       {/* Plain-language, arrow-led instructions. "Pass" is teal, "Save" is the
           brand orange — orange vs teal differ on the blue-yellow axis, so they
           stay distinguishable for red-green color blindness; the words/arrows/
@@ -375,10 +489,134 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
       </div>
       )}
 
+      {/* Category filter — a compact toggle that opens a chip panel so people
+          can narrow the deck to the kinds of acts they want, without leaving
+          Discover. The panel is an absolute overlay (doesn't reflow the card)
+          and the chip list scrolls, so it works on a phone. Filtering rebuilds
+          `view` and resets the cursor (see applyCats); the gesture itself is
+          untouched. Shown even on the end screen so a filter is never a trap. */}
+      {!summaryOpen && (deckCats.length > 1 || selectedCats.size > 0) && (
+        <div className="relative z-40 px-3 pb-1 pt-2">
+          <div className="mx-auto flex w-full max-w-[500px] items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setFilterOpen((o) => !o)}
+              aria-expanded={filterOpen}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-white/12 px-3 py-1.5 font-['Poppins',sans-serif] text-[12px] font-bold text-white ring-1 ring-white/20 backdrop-blur-sm transition-colors hover:bg-white/20"
+            >
+              <SlidersHorizontal size={13} className="shrink-0" />
+              {selectedCats.size === 0
+                ? "All categories"
+                : `${selectedCats.size} categor${selectedCats.size === 1 ? "y" : "ies"}`}
+              <ChevronDown size={13} className={`shrink-0 transition-transform ${filterOpen ? "rotate-180" : ""}`} />
+            </button>
+            {selectedCats.size > 0 && (
+              <span
+                className="min-w-0 flex-1 truncate font-['Poppins',sans-serif] text-[11px] font-normal italic text-white/55"
+                title={[...selectedCats].sort((a, b) => a.localeCompare(b)).join(", ")}
+              >
+                {[...selectedCats].sort((a, b) => a.localeCompare(b)).join(" · ")}
+              </span>
+            )}
+            {selectedCats.size > 0 && (
+              <button
+                type="button"
+                onClick={clearCats}
+                className="shrink-0 font-['Poppins',sans-serif] text-[12px] font-semibold text-white/70 underline underline-offset-2 transition-colors hover:text-white"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          {filterOpen && (
+            <div className="absolute inset-x-3 top-full z-50 mt-1">
+              <div className="mx-auto max-h-[64vh] max-w-[500px] overflow-y-auto rounded-2xl bg-white p-3 shadow-2xl ring-1 ring-black/10">
+                {filters && (
+                  <>
+                    <p className="mb-2 font-['Poppins',sans-serif] text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+                      Filters
+                    </p>
+                    {/* Order mirrors the main feed: Location → Remote Only →
+                        divider → 5 min max. */}
+                    <div className="mb-3 flex flex-wrap items-center gap-1.5">
+                      {filters.stateOptions.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setLocationOpen((o) => !o)}
+                          aria-expanded={locationOpen}
+                          className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-1 font-['Poppins',sans-serif] text-xs font-medium transition-all ${
+                            filters.states.length > 0
+                              ? "border-[#23297e] bg-[#23297e] text-white"
+                              : "border-gray-200 bg-white text-gray-600 hover:border-[#23297e] hover:text-[#23297e]"
+                          }`}
+                        >
+                          <MapPin size={11} className={filters.states.length > 0 ? "text-white" : "text-gray-400"} />
+                          {filters.states.length === 0
+                            ? "Location"
+                            : filters.states.length === 1
+                              ? filters.states[0]
+                              : `${filters.states.length} locations`}
+                          <ChevronDown size={13} className={`shrink-0 transition-transform ${locationOpen ? "rotate-180" : ""}`} />
+                        </button>
+                      )}
+                      <FilterToggle on={filters.remoteOnly} onClick={filters.onToggleRemote} icon={Globe} label="Remote only" activeColor="#ed6624" />
+                      {/* Divider — sets the location pills apart from the filters
+                          that clear, matching the main page. */}
+                      <span aria-hidden className="mx-1 h-5 w-px self-center shrink-0 bg-gray-300" />
+                      <FilterToggle on={filters.quickOnly} onClick={filters.onToggleQuick} icon={Zap} label="5 min max" activeColor="#5a3e9e" />
+                    </div>
+                    {locationOpen && filters.stateOptions.length > 0 && (
+                      <div className="mb-3 flex max-h-[30vh] flex-wrap gap-1.5 overflow-y-auto rounded-xl bg-gray-50 p-2 ring-1 ring-gray-200">
+                        {filters.stateOptions.map((st) => (
+                          <FilterToggle
+                            key={st}
+                            on={filters.states.includes(st)}
+                            onClick={() => filters.onToggleState(st)}
+                            icon={MapPin}
+                            label={st}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+                <p className="mb-2 font-['Poppins',sans-serif] text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+                  Show only these types
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {deckCats.map((cat) => {
+                    const on = selectedCats.has(cat);
+                    const color = colorForCategory(cat) || "#23297e";
+                    const Icon = iconForCategory(cat);
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => toggleCat(cat)}
+                        aria-pressed={on}
+                        className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-1 font-['Poppins',sans-serif] text-xs font-medium transition-all ${
+                          on
+                            ? "text-white"
+                            : "border-gray-200 bg-white text-gray-600 hover:border-[#23297e] hover:text-[#23297e]"
+                        }`}
+                        style={on ? { background: color, borderColor: color } : undefined}
+                      >
+                        <Icon size={11} className={on ? "text-white" : "text-gray-400"} />
+                        {cat}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Deck */}
       <div
         className="relative flex-1 flex items-center justify-center px-4 overflow-hidden select-none"
-        onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        onClick={(e) => { if (e.target === e.currentTarget) close(); }}
       >
         {/* Wide-desktop hints — flank the card, vertically centered. */}
         {!done && !summaryOpen && (
@@ -387,19 +625,19 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
                 so ~250px each side of center at lg) instead of the screen edges,
                 so they sit right beside the card rather than way out at the
                 margins. The right-edge anchor lets the PASS hint grow leftward. */}
-            <span className="pointer-events-none absolute right-[calc(50%+272px)] top-1/2 hidden -translate-y-1/2 items-center gap-2 whitespace-nowrap font-['Poppins',sans-serif] text-base font-bold text-teal-400 lg:inline-flex">
-              <ArrowLeft size={20} strokeWidth={3} className="shrink-0" />
+            <span className="pointer-events-none absolute right-[calc(50%+264px)] top-1/2 hidden -translate-y-1/2 items-center gap-1.5 whitespace-nowrap font-['Poppins',sans-serif] text-[13px] font-semibold text-teal-400 lg:inline-flex">
+              <ArrowLeft size={15} strokeWidth={3} className="shrink-0" />
               Swipe left to PASS
-              <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-teal-400 text-white">
-                <X size={12} strokeWidth={3.5} />
+              <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-teal-400 text-white">
+                <X size={10} strokeWidth={3.5} />
               </span>
             </span>
-            <span className="pointer-events-none absolute left-[calc(50%+272px)] top-1/2 hidden -translate-y-1/2 items-center gap-2 whitespace-nowrap font-['Poppins',sans-serif] text-base font-bold text-[#ed6624] lg:inline-flex">
-              <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#ed6624] text-white">
-                <Heart size={11} fill="currentColor" />
+            <span className="pointer-events-none absolute left-[calc(50%+264px)] top-1/2 hidden -translate-y-1/2 items-center gap-1.5 whitespace-nowrap font-['Poppins',sans-serif] text-[13px] font-semibold text-[#ed6624] lg:inline-flex">
+              <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#ed6624] text-white">
+                <Heart size={9} fill="currentColor" />
               </span>
               Swipe right to SAVE
-              <ArrowRight size={20} strokeWidth={3} className="shrink-0" />
+              <ArrowRight size={15} strokeWidth={3} className="shrink-0" />
             </span>
           </>
         )}
@@ -418,7 +656,7 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
                 Keep swiping
               </button>
               <button
-                onClick={onClose}
+                onClick={close}
                 className="font-['Poppins',sans-serif] text-sm font-bold rounded-full bg-[#ed6624] hover:bg-[#e07a28] text-white px-5 py-2.5 transition-colors"
               >
                 Back to the feed
@@ -427,8 +665,10 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
           </div>
         ) : done ? (
           <div className="flex w-full max-w-sm flex-col items-center text-center text-white">
-            <div className="mb-2 text-5xl">🎉</div>
-            <h2 className="font-['Poppins',sans-serif] text-2xl font-bold">That's the stack!</h2>
+            <div className="mb-2 text-5xl">{selectedCats.size > 0 ? "✅" : "🎉"}</div>
+            <h2 className="font-['Poppins',sans-serif] text-2xl font-bold">
+              {selectedCats.size > 0 ? "That's every act in those types!" : "That's the stack!"}
+            </h2>
             <p className="mt-1 font-['Poppins',sans-serif] text-white/85">
               You saved <strong>{savedCards.length}</strong> act{savedCards.length === 1 ? "" : "s"}.
             </p>
@@ -444,15 +684,23 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
                 Nothing saved this round — that's ok.
               </p>
             )}
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              {selectedCats.size > 0 && (
+                <button
+                  onClick={clearCats}
+                  className="font-['Poppins',sans-serif] text-sm font-semibold rounded-full bg-white/15 hover:bg-white/25 text-white px-5 py-2.5 transition-colors"
+                >
+                  Show all categories
+                </button>
+              )}
               <button
-                onClick={() => { setIndex(0); setHistory([]); setSavedCards([]); }}
+                onClick={() => { acted.current = new Set(); setView(computeView(selectedCats)); setIndex(0); setHistory([]); setSavedCards([]); }}
                 className="font-['Poppins',sans-serif] text-sm font-semibold rounded-full bg-white/15 hover:bg-white/25 text-white px-5 py-2.5 transition-colors"
               >
                 Start over
               </button>
               <button
-                onClick={onClose}
+                onClick={close}
                 className="font-['Poppins',sans-serif] text-sm font-bold rounded-full bg-[#ed6624] hover:bg-[#e07a28] text-white px-5 py-2.5 transition-colors"
               >
                 Back to the feed
@@ -461,7 +709,7 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
           </div>
         ) : (
           // Render up to 3 cards: the top (interactive) + 2 peeking behind.
-          deck.slice(index, index + 3).map((card, i) => {
+          view.slice(index, index + 3).map((card, i) => {
             const isTop = i === 0;
             // The top card's transform/transition are driven imperatively (see
             // paint()/commit()), so they're deliberately omitted here — React
@@ -557,6 +805,19 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
               Mark this one already done and add to my score!
             </button>
           </div>
+          {/* Desktop: saved + remaining counts, at the very bottom (the mobile
+              upper-right version in the header stays as-is). */}
+          <div className="mt-3 hidden lg:flex items-center justify-center gap-2 font-['Poppins',sans-serif] text-[11px] font-semibold tabular-nums">
+            <span className="inline-flex items-center gap-1 text-[#ed6624]">
+              <Heart size={11} fill="currentColor" /> {savedCards.length} this session
+            </span>
+            <span className="text-white/30">•</span>
+            <span className="inline-flex items-center gap-1 text-[#ed6624]/80">
+              <Heart size={11} /> {totalSaved} total saved
+            </span>
+            <span className="text-white/30">•</span>
+            <span className="text-white/80">{remaining} to go</span>
+          </div>
         </div>
       )}
 
@@ -584,7 +845,7 @@ function SwipeCardFace({ card, onFlag }: { card: ActionCardData; onFlag?: () => 
   return (
     // Mirrors the card-details modal: rounded white panel, 3:2 banner with
     // category + location pills, full title and description, time meta.
-    <div className="flex h-[calc(100dvh-268px)] sm:h-auto sm:max-h-[80vh] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+    <div className="flex h-[calc(100dvh-312px)] sm:h-auto sm:max-h-[calc(100dvh-300px)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
       <div className={`relative w-full min-h-[180px] flex-1 sm:min-h-0 sm:flex-none sm:aspect-[3/2] ${card.imageContain ? "bg-gray-50" : "bg-[#23297e]"}`}>
         <ImageWithFallback
           src={banner}
@@ -648,7 +909,7 @@ function SwipeCardFace({ card, onFlag }: { card: ActionCardData; onFlag?: () => 
           feed card so the category sits in the same place across card types. */}
       <div className="shrink-0 flex items-center justify-between gap-3 border-t border-gray-100 px-5 py-3">
         <span
-          className="inline-flex items-center rounded-md px-2 py-0.5 font-['Poppins',sans-serif] text-[11px] font-bold tracking-wide text-white shrink-0"
+          className="inline-flex items-center rounded-lg px-3 py-1 font-['Poppins',sans-serif] text-[13px] font-bold tracking-wide text-white shrink-0"
           style={{ backgroundColor: catColor }}
         >
           {card.category}
@@ -663,6 +924,28 @@ function SwipeCardFace({ card, onFlag }: { card: ActionCardData; onFlag?: () => 
         )}
       </div>
     </div>
+  );
+}
+
+// Pill toggle for the deck's non-category filters (5-min / remote / location).
+// Neutral slate styling so it reads as a different axis from the colored
+// category chips above it.
+function FilterToggle({
+  on, onClick, icon: Icon, label, activeColor = "#23297e",
+}: { on: boolean; onClick: () => void; icon: React.ElementType; label: string; activeColor?: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={on}
+      className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-2.5 py-1 font-['Poppins',sans-serif] text-xs font-medium transition-all ${
+        on ? "text-white" : "border-gray-200 bg-white text-gray-600 hover:text-gray-800"
+      }`}
+      style={on ? { backgroundColor: activeColor, borderColor: activeColor } : undefined}
+    >
+      <Icon size={11} className={on ? "text-white" : "text-gray-400"} />
+      {label}
+    </button>
   );
 }
 

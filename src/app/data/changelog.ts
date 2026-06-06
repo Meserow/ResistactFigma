@@ -16,9 +16,9 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: "1.4.1",
+    version: "1.4.11",
     date: "2026-06-06",
-    title: "1.4.1 — Acts near you, automatically",
+    title: "1.4.11 — Acts near you, automatically",
     sections: [
       {
         heading: "Your location, on arrival",
@@ -27,6 +27,156 @@ export const CHANGELOG: ChangelogEntry[] = [
           "Picked the wrong state? Just hit \"Not you? Change\" on the banner and choose your own.",
           "If we can't tell where you are, you'll get a quick state picker right at the top of the feed instead.",
           "We only ever guess your state, never anything more precise — and if you've already set a location, we leave it alone.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.10",
+    date: "2026-06-05",
+    title: "More ways to filter while you swipe",
+    sections: [
+      {
+        heading: "Discover",
+        items: [
+          "The filter panel in Swipe now does more than categories — narrow to “5 minutes max”, “Remote only”, or a location, right alongside the category picks.",
+          "Each category in the filter now shows its little icon, so they're quicker to spot.",
+          "Adjusting any of these in Swipe updates your feed too, so your choices stick when you go back to scrolling.",
+        ],
+      },
+      {
+        heading: "Polish",
+        items: [
+          "Trimmed the size of the “Swipe left / right” hints beside the cards so they're less shouty.",
+          "Moved the saved/remaining counts to the bottom of the swipe view on desktop, clearing the top for the card.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.9",
+    date: "2026-06-05",
+    title: "New Refuse Fascism actions from Mobilize",
+    sections: [
+      {
+        heading: "New Acts",
+        items: [
+          "Added four Refuse Fascism actions pulled from their Mobilize page: an online teach-in on what fascism is, the No Kings 4 rally and march in Seattle (June 14), the 'America at 250' panel on Independence Mall in Philadelphia (June 26), and Refuse Fascism's contingent in the NYC Pride March (June 28).",
+          "These are awaiting admin review before they show up in the public feed.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.8",
+    date: "2026-06-05",
+    title: "Swipe categories you can change — and that stick",
+    sections: [
+      {
+        heading: "Discover",
+        items: [
+          "The category filter in Swipe now lets you pick from every category, so you can broaden as well as narrow what you're swiping — not just the types you'd already chosen on the feed.",
+          "Whatever categories you land on in Swipe carry back to your feed when you leave, so your picks follow you between scrolling and swiping.",
+        ],
+      },
+      {
+        heading: "Fixes",
+        items: [
+          "Restored the rounded corners on swipe cards, which could square off on shorter screens.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.7",
+    date: "2026-06-05",
+    title: "Swipe deck remembers your category picks",
+    sections: [
+      {
+        heading: "Discover",
+        items: [
+          "Open Swipe to Discover and it now starts with the same categories you’ve picked on the feed — no need to set them twice.",
+          "The category filter shows your current picks right next to the button, so you can see what you’re swiping at a glance.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.6",
+    date: "2026-06-05",
+    title: "Tidier swipe header on desktop",
+    sections: [
+      {
+        heading: "Discover",
+        items: [
+          "The saved/remaining counts at the top of the swipe deck are now smaller and less shouty on desktop, matching the compact size already used on phones.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.5",
+    date: "2026-06-05",
+    title: "The swipe nudge shows up for everyone now",
+    sections: [
+      {
+        heading: "Fixes",
+        items: [
+          "The “A lot to scroll through?” pop-up that points you to swiping now appears even if you’ve already set your act preferences — previously it stayed hidden once preferences were saved, so it never showed on devices where you’d set them.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.4",
+    date: "2026-06-05",
+    title: "Filter what you swipe by category",
+    sections: [
+      {
+        heading: "Discover",
+        items: [
+          "Tap “All categories” at the top of the swipe deck to narrow it to just the kinds of acts you want — pick Protest, Amplify, Phone Calling, or any mix, and swipe only those.",
+          "Pick as many categories as you like; “Clear” puts everything back. Acts you’ve already swiped this session stay gone when you change the filter.",
+          "Works the same on your phone and your laptop.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.3",
+    date: "2026-06-05",
+    title: "A nudge toward swiping when the feed gets long",
+    sections: [
+      {
+        heading: "Discover",
+        items: [
+          "The little pop-up that appears after you've scrolled a while now points you to Swipe to Discover — flip through acts one at a time and save the ones for you, instead of scrolling forever.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.2",
+    date: "2026-06-05",
+    title: "Bigger category labels on every card",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "The category label in the corner of each act (Amplify, Petition, Protest, and the rest) is now larger and easier to read — everywhere it appears: the feed, the swipe deck, and the act details.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.1",
+    date: "2026-06-05",
+    title: "Passes now stick across your devices",
+    sections: [
+      {
+        heading: "Fixes",
+        items: [
+          "Acts you pass on one device no longer come back in Discover on another — the swipe deck now respects passes that sync to your account, so a pass on your phone stays passed on your laptop.",
         ],
       },
     ],
