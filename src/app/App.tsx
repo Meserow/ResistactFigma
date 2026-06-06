@@ -2837,11 +2837,45 @@ export default function App() {
                 quick-actions filters are active (but no Match preferences).
                 Mirrors the unfiltered banner style; carries the Sort control.
                 Hidden on phones to match the unfiltered banner above. */}
-            {!geoBanner && !matchPrefs && hasActiveFilters && activeTab === "acts" && synced && !showPendingActsOnly && !isMobile && (
+            {!geoBanner && !matchPrefs && hasActiveFilters && activeTab === "acts" && synced && !showPendingActsOnly && !isMobile && (() => {
+              // Surface the active state(s) so the banner always names the location
+              // being filtered for — not just on the first-visit geo banner. "Remote"
+              // isn't a place, so it's excluded from the location callout.
+              const activeStates = (activeFilters["Location"] ?? []).filter((l) => l !== "Remote");
+              const activeCats = activeFilters["Category"] ?? [];
+              return (
               <div className="mb-4 flex flex-col items-start gap-2 rounded-lg border border-[#23297e]/30 bg-[#23297e]/5 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                <p className="font-['Poppins',sans-serif] text-sm text-gray-700">
-                  <strong className="text-[#23297e]">{displayedCards.length}</strong> {displayedCards.length === 1 ? "action" : "actions"} match your filters.
-                </p>
+                <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1.5">
+                  {activeStates.length > 0 && (
+                    <span className="inline-flex items-center gap-1.5 font-['Poppins',sans-serif] text-sm text-gray-700">
+                      <MapPin size={15} className="text-[#23297e] shrink-0" strokeWidth={2.5} />
+                      Showing Acts for <strong className="text-[#23297e]">{activeStates.join(", ")}</strong> —
+                    </span>
+                  )}
+                  <span className="font-['Poppins',sans-serif] text-sm text-gray-700">
+                    <strong className="text-[#23297e]">{displayedCards.length}</strong> {displayedCards.length === 1 ? "action" : "actions"} match your filters.
+                  </span>
+                  {/* Selected categories — compact like the swipe deck: a dimmed,
+                      truncated "·"-joined list (full list in the tooltip) with a
+                      Clear link, rather than a loud row of colored chips. */}
+                  {activeCats.length > 0 && (
+                    <>
+                      <span
+                        className="min-w-0 max-w-[42ch] truncate font-['Poppins',sans-serif] text-[12px] italic text-gray-500"
+                        title={[...activeCats].sort((a, b) => a.localeCompare(b)).join(", ")}
+                      >
+                        {[...activeCats].sort((a, b) => a.localeCompare(b)).join(" · ")}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setActiveFilters((prev) => { const n = { ...prev }; delete n["Category"]; return n; })}
+                        className="shrink-0 font-['Poppins',sans-serif] text-[12px] font-semibold text-[#23297e] underline underline-offset-2 transition-colors hover:text-[#ed6624]"
+                      >
+                        Clear
+                      </button>
+                    </>
+                  )}
+                </div>
                 <SortDropdown
                   sortBy={sortBy}
                   onSortChange={setSortBy}
@@ -2850,7 +2884,8 @@ export default function App() {
                   completedCount={myCompletions?.total ?? 0}
                 />
               </div>
-            )}
+              );
+            })()}
 
             {/* Pending-only banner */}
             {isAdminUser && showPendingActsOnly && (() => {
@@ -3074,7 +3109,7 @@ export default function App() {
                 <Fragment key={idx < 12 ? `${card.id}-${staggerKey}` : card.id}>
                 <div
                   id={`card-${card.id}`}
-                  className={idx < 12 ? "resistact-anim-stagger opacity-[0.85]" : "opacity-[0.85]"}
+                  className={idx < 12 ? "resistact-anim-stagger opacity-90" : "opacity-90"}
                   style={idx < 12 ? { animationDelay: `${idx * 40}ms` } : undefined}
                 >
                 <ActionCard

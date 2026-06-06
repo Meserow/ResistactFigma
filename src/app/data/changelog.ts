@@ -16,6 +16,48 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.19",
+    date: "2026-06-06",
+    title: "See your selected categories above the feed",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "The banner above the feed now lists your selected categories — a compact, dimmed summary with a Clear link, like the swipe view — so it's clear what you're filtered to.",
+          "Nudged the feed cards a touch more opaque (90%) for a slightly crisper look.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.18",
+    date: "2026-06-06",
+    title: "Feed banner names your state",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "When a location filter is on, the banner above the feed now always names it (\"Showing Acts for Washington — 781 actions match your filters\") — not just on your first visit.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.17",
+    date: "2026-06-06",
+    title: "Edit Action shows cartoons only",
+    sections: [
+      {
+        heading: "Admin",
+        items: [
+          "The header-image field and preview in Edit Action now show only the card's cartoon — old source-photo URLs are no longer surfaced.",
+          "A card with no cartoon yet opens with a blank field and no preview, ready for you to paste or generate one.",
+          "Saving with the field left blank no longer wipes the card's existing image — it's preserved untouched.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.16",
     date: "2026-06-06",
     title: "One tidy banner above the feed",
