@@ -158,18 +158,13 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
   const [authorRole,         setAuthorRole]         = useState(card.authorRole);
   const [authorLink,         setAuthorLink]         = useState(card.authorLink ?? "");
   const [targetUrl,          setTargetUrl]          = useState<string>((card as any).targetUrl ?? "");
-  // Seed the URL field with whatever image the card actually shows. We no longer
-  // paste non-cartoon photo URLs here, so when there's no explicit topImageUrl we
-  // surface the Supabase cartoon URL (cartoonImageUrl) instead — that's the value
-  // admins want to read off and copy onto other cards. We only fall back to
-  // `topImage` when it's an absolute http(s) URL (a real hosted image): for
-  // seed/org cards topImage is a bundled asset path, which isn't reusable.
-  const [topImageUrl,        setTopImageUrl]        = useState<string>(
-    (card as any).topImageUrl ||
-    card.cartoonImageUrl ||
-    (/^https?:\/\//i.test(card.topImage ?? "") ? card.topImage! : "") ||
-    "",
-  );
+  // The URL field surfaces ONLY the card's cartoon (cartoonImageUrl) — never the
+  // legacy source photo (topImageUrl/topImage), which ResistAct no longer uses.
+  // So admins see/copy the cartoon URL, and a card with no cartoon yet starts
+  // blank (ready to paste one) instead of showing a dead photo path. Saving an
+  // empty field is non-destructive — see saveCard, which omits the image fields
+  // when blank so it never wipes the card's existing image.
+  const [topImageUrl,        setTopImageUrl]        = useState<string>(card.cartoonImageUrl ?? "");
   const [imageContain,       setImageContain]       = useState<boolean>(card.imageContain === true);
   const [atHome,             setAtHome]             = useState<boolean>(card.atHome === true);
   const [highlighted, setHighlighted] = useState<boolean>((card as any).highlighted === true);
@@ -369,12 +364,15 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
         authorRole:     authorRole.trim(),
         authorLink:     authorLink.trim() || undefined,
         targetUrl:      targetUrl.trim() || null,
-        topImageUrl:    topImageUrl.trim() || null,
-        // The header image the admin set/generated is what should display. Mirror
-        // it into cartoonImageUrl (the field the feed reads first) so a generated
-        // cartoon reliably wins over the static manifest after saving. Only when
-        // an image is actually set — otherwise leave any existing cartoon alone.
-        ...(topImageUrl.trim() ? { cartoonImageUrl: topImageUrl.trim() } : {}),
+        // Image fields: write ONLY when the field has a URL (which is always a
+        // cartoon now). We mirror it into cartoonImageUrl too — the field the
+        // feed reads first — so the cartoon wins over any legacy image. When the
+        // field is blank we OMIT both: the PUT merges, so omitting preserves the
+        // card's existing image rather than wiping it. A blank field means "no
+        // cartoon yet," never "delete the image."
+        ...(topImageUrl.trim()
+          ? { topImageUrl: topImageUrl.trim(), cartoonImageUrl: topImageUrl.trim() }
+          : {}),
         imageContain,
         atHome,
         highlighted,
@@ -707,13 +705,15 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
                 {urlCopied ? "Copied!" : "Copy"}
               </button>
             </div>
-            {(topImageUrl.trim() || card.cartoonImageUrl || card.topImage) && (
+            {/* Preview shows ONLY the cartoon (field value or cartoonImageUrl) —
+                never the legacy source photo. No cartoon yet → no preview. */}
+            {(topImageUrl.trim() || card.cartoonImageUrl) && (
               <div
                 className="mt-2 relative h-24 rounded-xl overflow-hidden bg-gray-50 border border-gray-200 cursor-zoom-in group"
                 onClick={() => setLightboxOpen(true)}
               >
                 <img
-                  src={topImageUrl.trim() || card.cartoonImageUrl || card.topImage}
+                  src={topImageUrl.trim() || card.cartoonImageUrl}
                   alt="Header preview"
                   className="w-full h-full object-cover"
                   onError={(e) => { (e.currentTarget.parentElement as HTMLElement).style.display = "none"; }}
@@ -860,9 +860,10 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
           eventDate:      eventDate.trim() || undefined,
           // CardDetailsModal renders `cartoonImageUrl ?? topImage`; mirror the
           // edited header URL into both so the preview reflects unsaved image
-          // changes (including a freshly generated cartoon sitting in topImageUrl).
-          cartoonImageUrl: topImageUrl.trim() || card.cartoonImageUrl || card.topImage,
-          topImage:        topImageUrl.trim() || card.cartoonImageUrl || card.topImage,
+          // changes. Cartoon only — legacy source photos are intentionally not
+          // surfaced (no cartoon yet → the card's own fallback art shows).
+          cartoonImageUrl: topImageUrl.trim() || card.cartoonImageUrl,
+          topImage:        topImageUrl.trim() || card.cartoonImageUrl,
         } as ActionCardData}
         onClose={() => setPreviewOpen(false)}
       />
@@ -881,7 +882,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
           <X size={18} />
         </button>
         <img
-          src={topImageUrl.trim() || card.cartoonImageUrl || card.topImage}
+          src={topImageUrl.trim() || card.cartoonImageUrl}
           alt="Header image"
           className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
           onClick={(e) => e.stopPropagation()}
