@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { X, Loader2, Pencil, Trash2, Upload, Clock, Flame, Laugh, VenetianMask, Sunrise, Zap, ZoomIn, Sparkles, CheckCircle2, Eye } from "lucide-react";
+import { X, Loader2, Pencil, Trash2, Upload, Clock, Flame, Laugh, VenetianMask, Sunrise, Zap, ZoomIn, Sparkles, CheckCircle2, Eye, Copy, Check } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
 import type { ActionCardData } from "./ActionCard";
@@ -158,7 +158,18 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
   const [authorRole,         setAuthorRole]         = useState(card.authorRole);
   const [authorLink,         setAuthorLink]         = useState(card.authorLink ?? "");
   const [targetUrl,          setTargetUrl]          = useState<string>((card as any).targetUrl ?? "");
-  const [topImageUrl,        setTopImageUrl]        = useState<string>((card as any).topImageUrl ?? "");
+  // Seed the URL field with whatever image the card actually shows. We no longer
+  // paste non-cartoon photo URLs here, so when there's no explicit topImageUrl we
+  // surface the Supabase cartoon URL (cartoonImageUrl) instead — that's the value
+  // admins want to read off and copy onto other cards. We only fall back to
+  // `topImage` when it's an absolute http(s) URL (a real hosted image): for
+  // seed/org cards topImage is a bundled asset path, which isn't reusable.
+  const [topImageUrl,        setTopImageUrl]        = useState<string>(
+    (card as any).topImageUrl ||
+    card.cartoonImageUrl ||
+    (/^https?:\/\//i.test(card.topImage ?? "") ? card.topImage! : "") ||
+    "",
+  );
   const [imageContain,       setImageContain]       = useState<boolean>(card.imageContain === true);
   const [atHome,             setAtHome]             = useState<boolean>(card.atHome === true);
   const [highlighted, setHighlighted] = useState<boolean>((card as any).highlighted === true);
@@ -177,6 +188,8 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
   const [deleting,      setDeleting]      = useState(false);
   const [uploading,     setUploading]     = useState(false);
   const [uploadError,   setUploadError]   = useState<string | null>(null);
+  // Brief "Copied!" confirmation after copying the header image URL.
+  const [urlCopied,     setUrlCopied]     = useState(false);
   // AI assist (admin) — generate the subtitle text and the cartoon banner.
   const [genSub,        setGenSub]        = useState(false);
   const [subError,      setSubError]      = useState<string | null>(null);
@@ -184,6 +197,7 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
   const [cartoonError,  setCartoonError]  = useState<string | null>(null);
   const [approving,     setApproving]     = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const urlInputRef = useRef<HTMLInputElement>(null);
   // The card's *original* source image, captured once at mount. Used as the
   // visual reference for "Generate cartoon" so regenerating keeps referencing
   // the source art rather than the last cartoon we produced (which would drift).
@@ -275,6 +289,21 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
     } finally {
       setGenCartoon(false);
     }
+  }
+
+  async function handleCopyImageUrl() {
+    const url = topImageUrl.trim();
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // Clipboard API unavailable (insecure context / permissions) — fall back
+      // to selecting the field so the admin can copy manually.
+      urlInputRef.current?.select();
+      return;
+    }
+    setUrlCopied(true);
+    window.setTimeout(() => setUrlCopied(false), 1500);
   }
 
   async function handleDelete() {
@@ -659,12 +688,25 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
                 <span className="font-['Poppins',sans-serif] text-[11.5px] text-gray-500">Fit logo (don't crop)</span>
               </label>
             </div>
-            <input
-              type="url" value={topImageUrl}
-              onChange={(e) => setTopImageUrl(e.target.value)}
-              placeholder="https://… (paste any image URL)"
-              className={INPUT_CLS}
-            />
+            <div className="flex items-stretch gap-2">
+              <input
+                ref={urlInputRef}
+                type="url" value={topImageUrl}
+                onChange={(e) => setTopImageUrl(e.target.value)}
+                placeholder="https://… (paste any image URL)"
+                className={`${INPUT_CLS} flex-1`}
+              />
+              <button
+                type="button"
+                onClick={handleCopyImageUrl}
+                disabled={!topImageUrl.trim()}
+                title="Copy image URL"
+                className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-[#23297e]/20 bg-[#23297e]/5 px-3 font-['Poppins',sans-serif] text-xs font-semibold text-[#23297e] transition-colors hover:bg-[#23297e]/10 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {urlCopied ? <Check size={13} /> : <Copy size={13} />}
+                {urlCopied ? "Copied!" : "Copy"}
+              </button>
+            </div>
             {(topImageUrl.trim() || card.cartoonImageUrl || card.topImage) && (
               <div
                 className="mt-2 relative h-24 rounded-xl overflow-hidden bg-gray-50 border border-gray-200 cursor-zoom-in group"

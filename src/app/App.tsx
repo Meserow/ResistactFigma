@@ -3049,7 +3049,7 @@ export default function App() {
                 <Fragment key={idx < 12 ? `${card.id}-${staggerKey}` : card.id}>
                 <div
                   id={`card-${card.id}`}
-                  className={idx < 12 ? "resistact-anim-stagger" : undefined}
+                  className={idx < 12 ? "resistact-anim-stagger opacity-[0.85]" : "opacity-[0.85]"}
                   style={idx < 12 ? { animationDelay: `${idx * 40}ms` } : undefined}
                 >
                 <ActionCard
@@ -3365,6 +3365,7 @@ export default function App() {
             cards={deckPoolCards.filter((c) => !c.pinToTop && !swipedCardIds.has(c.id) && !passedCardIds.has(c.id) && !bookmarkedCards.has(c.id) && !completedCards.has(c.id))}
             accessToken={accessToken}
             totalSaved={effectiveBookmarked.size}
+            onOpenMatches={() => { setSwipeOpen(false); setBookmarksOpen(true); }}
             initialCategories={activeFilters["Category"] ?? []}
             filters={{
               quickOnly: quickActionsOnly,

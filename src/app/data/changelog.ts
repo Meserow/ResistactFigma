@@ -16,6 +16,52 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.15",
+    date: "2026-06-06",
+    title: "Copy a card's cartoon image URL",
+    sections: [
+      {
+        heading: "Admin",
+        items: [
+          "The header-image URL field in Edit Action now shows the card's existing cartoon image URL, so you can copy it and reuse it on other cards.",
+          "Added a Copy button next to the field — one click copies the image URL to your clipboard.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.13",
+    date: "2026-06-06",
+    title: "Jump to My Matches from Discover",
+    sections: [
+      {
+        heading: "Discover",
+        items: [
+          "The \"total saved\" count at the bottom of the swipe view is now a link — tap it to jump straight to My Matches.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.12",
+    date: "2026-06-06",
+    title: "Tap to save, lighter feed",
+    sections: [
+      {
+        heading: "Discover",
+        items: [
+          "The \"Swipe left to PASS\" and \"Swipe right to SAVE\" hints are now buttons — tap them to pass or save without making the swipe gesture.",
+        ],
+      },
+      {
+        heading: "Polish",
+        items: [
+          "Softened the action cards in the main feed slightly so the page feels a touch lighter.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.11",
     date: "2026-06-06",
     title: "1.4.11 — Acts near you, automatically",
