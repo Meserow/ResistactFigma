@@ -16,6 +16,22 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.1",
+    date: "2026-06-06",
+    title: "1.4.1 — Acts near you, automatically",
+    sections: [
+      {
+        heading: "Your location, on arrival",
+        items: [
+          "First time you land, ResistAct now figures out your state and shows you Acts that actually apply where you are — no setup needed.",
+          "Picked the wrong state? Just hit \"Not you? Change\" on the banner and choose your own.",
+          "If we can't tell where you are, you'll get a quick state picker right at the top of the feed instead.",
+          "We only ever guess your state, never anything more precise — and if you've already set a location, we leave it alone.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.0",
     date: "2026-06-03",
     title: "1.4 — Discover, Save & Pass",
