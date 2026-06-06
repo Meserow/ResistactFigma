@@ -2733,31 +2733,20 @@ export default function App() {
               </div>
             )}
 
-            {/* Geo banner — first-visit location auto-detect. "detected" shows
-                the auto-picked state with a way to change it; "prompt" shows a
-                manual state picker when we couldn't tell. Shown on all screen
-                sizes (unlike the chrome banners below) since it's the core fix
-                for arriving visitors seeing out-of-state acts. */}
+            {/* Geo banner — first-visit location auto-detect, MERGED with the
+                result-count + Sort chrome into a single bar so arriving visitors
+                don't see two stacked banners. "detected" shows the auto-picked
+                state with a way to change it; "prompt" shows a manual state
+                picker. The count + Sort (desktop) ride along on the right. When
+                this banner is up, the filtered/unfiltered banners below suppress
+                themselves (via `!geoBanner`) so nothing doubles up. */}
             {geoBanner && activeTab === "acts" && (
               <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-[#ed6624]/30 bg-[#ed6624]/5 px-4 py-2.5">
                 <MapPin size={16} className="text-[#ed6624] shrink-0" strokeWidth={2.5} />
                 {geoBanner.kind === "detected" ? (
-                  <>
-                    <p className="font-['Poppins',sans-serif] text-sm text-gray-700">
-                      Showing Acts for <strong className="text-[#23297e]">{geoBanner.state}</strong>.
-                    </p>
-                    <div className="ml-auto flex items-center gap-3 shrink-0">
-                      <button
-                        onClick={() => setGeoBanner({ kind: "prompt" })}
-                        className="font-['Poppins',sans-serif] text-xs font-bold text-[#ed6624] hover:text-[#e07a28] hover:underline transition-colors whitespace-nowrap"
-                      >
-                        Not you? Change
-                      </button>
-                      <button onClick={dismissGeoBanner} aria-label="Dismiss" className="text-gray-400 hover:text-gray-600 transition-colors">
-                        <X size={16} />
-                      </button>
-                    </div>
-                  </>
+                  <p className="font-['Poppins',sans-serif] text-sm text-gray-700">
+                    Showing Acts for <strong className="text-[#23297e]">{geoBanner.state}</strong>.
+                  </p>
                 ) : (
                   <>
                     <p className="font-['Poppins',sans-serif] text-sm text-gray-700 whitespace-nowrap">
@@ -2773,11 +2762,47 @@ export default function App() {
                         <option key={s} value={s}>{s}</option>
                       ))}
                     </select>
-                    <button onClick={dismissGeoBanner} aria-label="Dismiss" className="ml-auto text-gray-400 hover:text-gray-600 transition-colors shrink-0">
-                      <X size={16} />
-                    </button>
                   </>
                 )}
+
+                {/* Result count — desktop only, mirrors the filtered/unfiltered
+                    banners' copy so the merged bar carries the same info. */}
+                {!isMobile && synced && !matchPrefs && (
+                  <>
+                    <span className="text-[#ed6624]/40">•</span>
+                    <p className="font-['Poppins',sans-serif] text-sm text-gray-600">
+                      {hasActiveFilters ? (
+                        <><strong className="text-[#23297e]">{displayedCards.length}</strong> {displayedCards.length === 1 ? "action" : "actions"} match your filters.</>
+                      ) : (
+                        <>Showing all <strong className="text-[#23297e]">{displayedCards.length}</strong> actions — unfiltered.</>
+                      )}
+                    </p>
+                  </>
+                )}
+
+                {/* Right-side controls: Change (detected), Sort (desktop), Dismiss. */}
+                <div className="ml-auto flex items-center gap-3 shrink-0">
+                  {geoBanner.kind === "detected" && (
+                    <button
+                      onClick={() => setGeoBanner({ kind: "prompt" })}
+                      className="font-['Poppins',sans-serif] text-xs font-bold text-[#ed6624] hover:text-[#e07a28] hover:underline transition-colors whitespace-nowrap"
+                    >
+                      Not you? Change
+                    </button>
+                  )}
+                  {!isMobile && synced && !matchPrefs && (
+                    <SortDropdown
+                      sortBy={sortBy}
+                      onSortChange={setSortBy}
+                      showDone={showDone}
+                      onShowDoneChange={setShowDone}
+                      completedCount={myCompletions?.total ?? 0}
+                    />
+                  )}
+                  <button onClick={dismissGeoBanner} aria-label="Dismiss" className="text-gray-400 hover:text-gray-600 transition-colors">
+                    <X size={16} />
+                  </button>
+                </div>
               </div>
             )}
 
@@ -2785,7 +2810,7 @@ export default function App() {
                 Also carries the Sort dropdown so the sort control lives
                 next to the live result count. Hidden on phones, where the
                 feed leads with the cards (and swipe) rather than this chrome. */}
-            {!matchPrefs && !hasActiveFilters && activeTab === "acts" && synced && !isMobile && (
+            {!geoBanner && !matchPrefs && !hasActiveFilters && activeTab === "acts" && synced && !isMobile && (
               <div className="mb-4 flex flex-col items-start gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                 <p className="font-['Poppins',sans-serif] text-sm text-gray-600">
                   Showing all <strong className="text-[#23297e]">{displayedCards.length}</strong> actions — unfiltered.
@@ -2812,7 +2837,7 @@ export default function App() {
                 quick-actions filters are active (but no Match preferences).
                 Mirrors the unfiltered banner style; carries the Sort control.
                 Hidden on phones to match the unfiltered banner above. */}
-            {!matchPrefs && hasActiveFilters && activeTab === "acts" && synced && !showPendingActsOnly && !isMobile && (
+            {!geoBanner && !matchPrefs && hasActiveFilters && activeTab === "acts" && synced && !showPendingActsOnly && !isMobile && (
               <div className="mb-4 flex flex-col items-start gap-2 rounded-lg border border-[#23297e]/30 bg-[#23297e]/5 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                 <p className="font-['Poppins',sans-serif] text-sm text-gray-700">
                   <strong className="text-[#23297e]">{displayedCards.length}</strong> {displayedCards.length === 1 ? "action" : "actions"} match your filters.

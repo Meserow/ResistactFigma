@@ -16,6 +16,19 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.16",
+    date: "2026-06-06",
+    title: "One tidy banner above the feed",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "The location notice and the \"actions match your filters\" count now share a single bar above the feed instead of stacking as two separate banners.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.15",
     date: "2026-06-06",
     title: "Copy a card's cartoon image URL",
