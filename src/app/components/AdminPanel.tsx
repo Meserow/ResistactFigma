@@ -63,24 +63,23 @@ type PanelMode = "cards" | "users" | "nourl" | "noimage" | "matcher" | "online" 
 // Category labels + colors for the "Create from URL" form's dropdown. Mirrors
 // EditCardModal's CATEGORY_OPTIONS so a created card gets the right pill color.
 const NEWCARD_CATEGORIES: { label: string; color: string }[] = [
-  { label: "Act of Kindness", color: "#127f05" }, { label: "Amplify", color: "#8a00e6" },
-  { label: "Art/Performance Art", color: "#896312" }, { label: "Boycott", color: "#23297e" },
-  { label: "Crafting", color: "#c34e00" }, { label: "Email Campaign", color: "#e44b4b" },
+  { label: "Kindness", color: "#127f05" }, { label: "Amplify", color: "#8a00e6" },
+  { label: "Art", color: "#896312" }, { label: "Boycott", color: "#23297e" },
+  { label: "Crafting", color: "#c34e00" }, { label: "Email", color: "#e44b4b" },
   { label: "Flash Mob", color: "#ff00d5" },
   { label: "Funding", color: "#127f05" }, { label: "Host", color: "#b45309" },
   { label: "Housing", color: "#896312" }, { label: "Irreverence", color: "#ff00d5" },
-  { label: "Join a Group", color: "#0891b2" }, { label: "Labor", color: "#127f05" },
-  { label: "Letter Writing", color: "#c34e00" }, { label: "Meeting", color: "#23297e" },
+  { label: "Group", color: "#0891b2" }, { label: "Labor", color: "#127f05" },
+  { label: "Writing", color: "#c34e00" }, { label: "Meeting", color: "#23297e" },
   { label: "Mental Health", color: "#ff00d5" }, { label: "News Story", color: "#896312" },
-  { label: "Personal Commitment", color: "#23297e" }, { label: "Petition", color: "#05737f" },
-  { label: "Phone Calling", color: "#c2185b" }, { label: "Prayer", color: "#8a00e6" },
+  { label: "Commitment", color: "#23297e" }, { label: "Petition", color: "#05737f" },
+  { label: "Phoning", color: "#c2185b" }, { label: "Prayer", color: "#8a00e6" },
   { label: "Professional Skills", color: "#126d89" },
   { label: "Protest", color: "#23297e" }, { label: "Represent", color: "#b45309" },
   { label: "Show Up", color: "#23297e" }, { label: "Social Media", color: "#e44b4b" },
   { label: "Texting", color: "#2f7d6b" },
   { label: "Training", color: "#126d89" }, { label: "Transportation", color: "#126d89" },
   { label: "Video", color: "#e44b4b" }, { label: "Witness", color: "#767574" },
-  { label: "Other", color: "#767574" },
 ];
 
 interface NewCardForm {

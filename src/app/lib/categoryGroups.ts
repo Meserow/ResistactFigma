@@ -38,11 +38,11 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
     // briefly in "Care" but felt out of place next to Mental Health/Prayer.
     // (Renamed from "Boost" June 2026 — the old name collided with the 🔥
     // boost engagement action. CATEGORY_ALIASES folds old data forward.)
-    categories: ["Amplify", "Art/Performance Art", "Boycott", "Crafting", "Flash Mob", "Irreverence", "Protest", "Video"],
+    categories: ["Amplify", "Art", "Boycott", "Crafting", "Flash Mob", "Irreverence", "Protest", "Video"],
   },
   {
     heading: "Reach Out",
-    categories: ["Email Campaign", "Letter Writing", "Petition", "Phone Calling", "Social Media", "Texting"],
+    categories: ["Email", "Petition", "Phoning", "Social Media", "Texting", "Writing"],
   },
   {
     // Renamed from "Show Up" — the heading collided with the "Show Up"
@@ -53,11 +53,11 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
     // "Host" → hosting an event is showing up from the organizer side.
     // "Transportation" → giving people rides to actions / canvasses /
     // hearings is showing up by enabling others' presence.
-    categories: ["Host", "Join a Group", "Labor", "Meeting", "Professional Skills", "Show Up", "Training", "Transportation", "Volunteer", "Witness"],
+    categories: ["Group", "Host", "Labor", "Meeting", "Professional Skills", "Show Up", "Training", "Transportation", "Volunteer", "Witness"],
   },
   {
     heading: "Care",
-    categories: ["Act of Kindness", "Mental Health", "Prayer"],
+    categories: ["Kindness", "Mental Health", "Prayer"],
   },
   {
     heading: "Money / Stuff",
@@ -65,7 +65,7 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
   },
   {
     heading: "Other",
-    categories: ["News Story", "Other", "Personal Commitment"],
+    categories: ["Commitment", "News Story"],
   },
 ];
 
@@ -89,30 +89,30 @@ export const KNOWN_CATEGORIES: Set<string> = new Set(
  *  greens are forest, reds are brick, teals are muted, magentas are
  *  rose. No more #ff00d5 hot pink. */
 export const CATEGORY_COLORS: Record<string, string> = {
-  "Act of Kindness":     "#4a7c59", // forest green
+  "Kindness":            "#4a7c59", // forest green (renamed from "Act of Kindness")
   "Amplify":             "#5a3e9e", // brand purple — distinct from the brand-orange CTA color (was #ed6624)
-  "Art/Performance Art": "#8b6f47", // warm sienna
+  "Art":                 "#8b6f47", // warm sienna (renamed from "Art/Performance Art")
   "Boycott":             "#7c2d12", // rust
   "Crafting":            "#c34e00", // warm orange
-  "Email Campaign":      "#b84545", // muted brick red
+  "Email":               "#b84545", // muted brick red (renamed from "Email Campaign")
   "Flash Mob":           "#d4516a", // coral-pink (replaces hot pink)
   "Funding":             "#4a7c59", // forest green
   "Host":                "#b45309", // burnt orange
   "Housing":             "#8b6f47", // warm sienna
   "Irreverence":         "#b8326b", // muted rose (replaces hot pink)
-  "Join a Group":        "#4a7d8a", // muted sky-teal
+  "Group":               "#4a7d8a", // muted sky-teal (renamed from "Join a Group" June 2026)
   "Labor":               "#4a7c59", // forest green
   // "Learn" merged into "Training" — kept off the list so the chip
   // disappears from the navbar. CATEGORY_ALIASES in App.tsx folds any
   // stored "Learn" category value forward at render time.
-  "Letter Writing":      "#c34e00", // warm orange (absorbs Letter to Editor)
+  "Writing":             "#c34e00", // warm orange (renamed from "Letter Writing"; absorbs Letter to Editor)
   "Meeting":             "#23297e", // brand navy
   "Mental Health":       "#7a4f8a", // muted purple-rose (replaces hot pink)
   "News Story":          "#8b6f47", // warm sienna
   "Other":               "#767574", // neutral gray
-  "Personal Commitment": "#23297e", // brand navy
+  "Commitment":          "#23297e", // brand navy (renamed from "Personal Commitment" June 2026)
   "Petition":            "#3a6d80", // muted teal
-  "Phone Calling":       "#b8326b", // muted rose-magenta (renamed from "Call" June 2026)
+  "Phoning":             "#b8326b", // muted rose-magenta (renamed from "Phone Calling"/"Call")
   "Prayer":              "#5a3e9e", // brand purple
   "Professional Skills": "#3a6d80", // muted teal
   "Protest":             "#23297e", // brand navy
@@ -141,27 +141,27 @@ export function colorForCategory(category: string | undefined | null): string {
  *  add a category, add its icon here too — the lookup falls back to a neutral
  *  tag glyph for anything missing, so a gap is graceful but not pretty. */
 export const CATEGORY_ICONS: Record<string, LucideIcon> = {
-  "Act of Kindness":     HeartHandshake,
+  "Kindness":            HeartHandshake,
   "Amplify":             Volume2,        // matches the brand-orange "amplify others" idea
-  "Art/Performance Art": Palette,
+  "Art":                 Palette,
   "Boycott":             Ban,
   "Crafting":            Scissors,
-  "Email Campaign":      Mail,
+  "Email":               Mail,
   "Flash Mob":           Users,
   "Funding":             HandCoins,
   "Host":                DoorOpen,       // welcoming people in to an event
   "Housing":             House,
   "Irreverence":         Drama,          // theater masks — satire / street theater
-  "Join a Group":        UserPlus,
+  "Group":               UserPlus,
   "Labor":               HardHat,
-  "Letter Writing":      PenLine,
+  "Writing":             PenLine,
   "Meeting":             Calendar,
   "Mental Health":       Brain,
   "News Story":          Newspaper,
   "Other":               Lightbulb,
-  "Personal Commitment": Heart,
+  "Commitment":          Heart,
   "Petition":            FileSignature,
-  "Phone Calling":       Phone,          // renamed from "Call" June 2026
+  "Phoning":             Phone,          // renamed from "Phone Calling"/"Call"
   "Prayer":              Sparkles,
   "Professional Skills": Briefcase,
   "Protest":             Megaphone,

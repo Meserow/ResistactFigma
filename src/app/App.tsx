@@ -115,23 +115,32 @@ const HEADERS = { "Content-Type": "application/json", Authorization: `Bearer ${p
 //   forward here so any KV records carrying the old label render as the new.)
 const TITLE_CASE_STOPWORDS = new Set(["of", "to", "a", "the", "and", "or", "in", "on", "for", "at"]);
 const CATEGORY_ALIASES: Record<string, string> = {
-  "art piece": "Art/Performance Art",
-  "art/performance art": "Art/Performance Art",
-  "call/write": "Phone Calling",
-  "call": "Phone Calling",
+  "art piece": "Art",
+  "art/performance art": "Art",
+  "call/write": "Phoning",
+  "call": "Phoning",
   // Three category mergers (May 2026): old name on the left, surviving
   // category on the right. KV records with the old value render as the
   // new one — no migration required for display. A KV migration in the
   // Edge Function rewrites stored values to match.
   "learn": "Training",
-  "letter to editor": "Letter Writing",
+  "letter to editor": "Writing",
   "bird-dog": "Show Up",
-  "spread positivity": "Act of Kindness",
+  "spread positivity": "Kindness",
   "purchase": "Represent",
   // "Boost" → "Amplify" (June 2026). The category name collided with the
   // 🔥 boost engagement action, so it was renamed. Old "Boost"/"BOOST" KV
   // values fold forward to "Amplify" at render time — no migration needed.
   "boost": "Amplify",
+  // Shortened labels (June 2026). Old stored values fold forward at render
+  // time — no migration needed.
+  "join a group": "Group",
+  "personal commitment": "Commitment",
+  "letter writing": "Writing",
+  "act of kindness": "Kindness",
+  "art": "Art",
+  "email campaign": "Email",
+  "phone calling": "Phoning",
 };
 function normaliseCategory(s: string | undefined | null): string {
   const trimmed = (s ?? "").trim();
@@ -868,25 +877,27 @@ export default function App() {
       const locs = activeFilters["Location"] ?? [];
       if (locs.length > 0) {
         const cardState = locationToState(card.location);
-        const stateFilters = locs.filter(l => l !== "Remote");
+        // "Remote" and "In Person" are mutually-exclusive mode toggles, not
+        // places — strip them out before treating the rest as state filters.
+        const stateFilters = locs.filter(l => l !== "Remote" && l !== "In Person");
         const hasStateFilter = stateFilters.length > 0;
         const wantsRemote = locs.includes("Remote");
+        const wantsInPerson = locs.includes("In Person");
         const matchesState = cardState !== null && stateFilters.includes(cardState);
 
-        // "Remote" pill: show only remote-doable acts. resolveCard has already
-        // folded the legacy atHome flag and "Remote"/"At Home" location strings
-        // into card.isOnline, so the single flag is authoritative here.
+        // resolveCard has already folded the legacy atHome flag and
+        // "Remote"/"At Home" location strings into card.isOnline, so the single
+        // flag is authoritative for the online axis.
         const matchesRemote = !!card.isOnline;
 
-        if (wantsRemote) {
-          // Remote is a hard filter: ONLY remote-doable acts survive, so every
-          // in-person card disappears — even when a state is also selected.
-          if (!matchesRemote) return false;
-        } else if (hasStateFilter) {
-          // State filter only: keep matching-state cards + location-agnostic cards.
-          // Hard-filter only cards pinned to a specific OTHER state.
-          if (!matchesState && !isLocationAgnostic(card)) return false;
-        }
+        // Online-axis hard filters: Remote → only remote acts; In Person → only
+        // in-person acts. (The pills enforce that only one can be on at a time.)
+        if (wantsRemote && !matchesRemote) return false;
+        if (wantsInPerson && matchesRemote) return false;
+
+        // State filter: keep matching-state + location-agnostic cards; hard-filter
+        // only cards pinned to a specific OTHER state.
+        if (hasStateFilter && !matchesState && !isLocationAgnostic(card)) return false;
       }
 
       // Quick actions only (5–10 min wins)
@@ -1152,7 +1163,7 @@ export default function App() {
     // original order (pin → highlights → rest). With a location set, the feed
     // is already scoped to that state + agnostic cards, so the in-person tier
     // surfaces *local* show-up-somewhere actions.
-    const hasStateLocation = (activeFilters["Location"] ?? []).some((l) => l !== "Remote");
+    const hasStateLocation = (activeFilters["Location"] ?? []).some((l) => l !== "Remote" && l !== "In Person");
 
     const withPinned = (arr: ActionCardData[]): ActionCardData[] => {
       // Order (location set): pinToTop (Spread the Word) → IN-PERSON tier →
@@ -1309,7 +1320,7 @@ export default function App() {
     // When a state filter is active, use a context-aware bucket so that
     // state-matching cards sort ABOVE online/national/multi-state acts
     // within each score tier (rather than falling below them).
-    const activeStateFilters = (activeFilters["Location"] ?? []).filter(l => l !== "Remote");
+    const activeStateFilters = (activeFilters["Location"] ?? []).filter(l => l !== "Remote" && l !== "In Person");
     const byScore = new Map<number, ActionCardData[]>();
     for (const c of filtered) {
       const s = Math.round(effectiveScore(c));
@@ -1418,14 +1429,14 @@ export default function App() {
   // "Remote" pick doesn't count — that's not a place.) Used to decide whether
   // first-visit geo detection should run at all.
   const hasStateLocationPill = () =>
-    (activeFiltersRef.current?.Location ?? []).some((l) => l !== "Remote");
+    (activeFiltersRef.current?.Location ?? []).some((l) => l !== "Remote" && l !== "In Person");
 
   // Apply a state to the Location pill (preserving a "Remote" pick if present)
   // and close the geo banner. Used by both auto-detect and the manual picker.
   function applyGeoState(state: string) {
     setActiveFilters((prev) => ({
       ...prev,
-      Location: [...(prev.Location ?? []).filter((l) => l === "Remote"), state],
+      Location: [...(prev.Location ?? []).filter((l) => l === "Remote" || l === "In Person"), state],
     }));
     setGeoBanner(null);
     try { localStorage.setItem(GEO_KEY, JSON.stringify({ status: "detected", state })); } catch {}
@@ -1471,7 +1482,7 @@ export default function App() {
           // correctable banner. Mirrors applyGeoState but keeps the banner.
           setActiveFilters((prev) => ({
             ...prev,
-            Location: [...(prev.Location ?? []).filter((l) => l === "Remote"), state],
+            Location: [...(prev.Location ?? []).filter((l) => l === "Remote" || l === "In Person"), state],
           }));
           setGeoBanner({ kind: "detected", state });
           try { localStorage.setItem(GEO_KEY, JSON.stringify({ status: "detected", state })); } catch {}
@@ -2841,7 +2852,7 @@ export default function App() {
               // Surface the active state(s) so the banner always names the location
               // being filtered for — not just on the first-visit geo banner. "Remote"
               // isn't a place, so it's excluded from the location callout.
-              const activeStates = (activeFilters["Location"] ?? []).filter((l) => l !== "Remote");
+              const activeStates = (activeFilters["Location"] ?? []).filter((l) => l !== "Remote" && l !== "In Person");
               const activeCats = activeFilters["Category"] ?? [];
               return (
               <div className="mb-4 flex flex-col items-start gap-2 rounded-lg border border-[#23297e]/30 bg-[#23297e]/5 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
@@ -2849,7 +2860,14 @@ export default function App() {
                   {activeStates.length > 0 && (
                     <span className="inline-flex items-center gap-1.5 font-['Poppins',sans-serif] text-sm text-gray-700">
                       <MapPin size={15} className="text-[#23297e] shrink-0" strokeWidth={2.5} />
-                      Showing Acts for <strong className="text-[#23297e]">{activeStates.join(", ")}</strong> —
+                      Showing Acts for <strong className="text-[#23297e]">{activeStates.join(", ")}</strong>
+                      <button
+                        onClick={() => setGeoBanner({ kind: "prompt" })}
+                        className="font-['Poppins',sans-serif] text-xs font-bold text-[#ed6624] hover:text-[#e07a28] hover:underline transition-colors whitespace-nowrap"
+                      >
+                        Change
+                      </button>
+                      <span aria-hidden>—</span>
                     </span>
                   )}
                   <span className="font-['Poppins',sans-serif] text-sm text-gray-700">
@@ -2860,6 +2878,7 @@ export default function App() {
                       Clear link, rather than a loud row of colored chips. */}
                   {activeCats.length > 0 && (
                     <>
+                      <span className="shrink-0 font-['Poppins',sans-serif] text-[12px] font-semibold text-gray-500">Categories:</span>
                       <span
                         className="min-w-0 max-w-[42ch] truncate font-['Poppins',sans-serif] text-[12px] italic text-gray-500"
                         title={[...activeCats].sort((a, b) => a.localeCompare(b)).join(", ")}
@@ -3430,7 +3449,7 @@ export default function App() {
             filters={{
               quickOnly: quickActionsOnly,
               remoteOnly: (activeFilters["Location"] ?? []).includes("Remote"),
-              states: (activeFilters["Location"] ?? []).filter((l) => l !== "Remote"),
+              states: (activeFilters["Location"] ?? []).filter((l) => l !== "Remote" && l !== "In Person"),
               stateOptions: dynamicLocations,
               // Pool identity: changes whenever a non-category filter that
               // reshapes deckPoolCards changes, telling the deck to re-snapshot.

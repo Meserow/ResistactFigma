@@ -16,6 +16,77 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.24",
+    date: "2026-06-06",
+    title: "Polish: round save button, grouped location toggles",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "The save (heart) button on each card now sits in a clean round badge instead of a stretched pill.",
+          "\"In Person\" and \"Remote Only\" are now a single connected button group, so it's clearer they're two sides of the same choice.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.23",
+    date: "2026-06-06",
+    title: "In Person filter & a simpler location row",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "The location filter is now two simple toggles — \"In Person\" and \"Remote Only\" — that switch between in-person and remote acts (only one at a time). Your state is auto-detected and shown in the banner above the feed, with a \"Change\" link to switch it.",
+          "Retired the \"Other\" category — its acts were moved into Group and Commitment.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.22",
+    date: "2026-06-06",
+    title: "More short category names",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Shortened more category names: \"Letter Writing\" → \"Writing\", \"Act of Kindness\" → \"Kindness\", \"Art/Performance Art\" → \"Art\", \"Email Campaign\" → \"Email\", \"Phone Calling\" → \"Phoning\". Acts filed under the old names carry over automatically.",
+          "The selected-categories summary in the feed banner now reads \"Categories: …\".",
+          "Renamed the quick-action filter from \"5 Minutes Max\" to \"5 Mins Max\".",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.21",
+    date: "2026-06-06",
+    title: "Shorter category names",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Renamed two categories for brevity: \"Join a Group\" is now \"Group\" and \"Personal Commitment\" is now \"Commitment\". Acts filed under the old names carry over automatically.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.20",
+    date: "2026-06-06",
+    title: "Cleared out expired and dead-link Acts",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Pulled 27 Acts from the feed whose links had gone dead (the page or account no longer exists) or whose source account had gone quiet for months — so you won't land on a 404 or a stale campaign.",
+          "Past-date events already drop off automatically the day after they happen; this clears the leftover broken and dormant ones too.",
+          "These Acts aren't deleted — they're tucked into the admin review queue and can be restored anytime.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.19",
     date: "2026-06-06",
     title: "See your selected categories above the feed",

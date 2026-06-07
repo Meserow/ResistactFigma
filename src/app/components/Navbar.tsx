@@ -228,8 +228,18 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
   const locOptions = actsLocations ?? [];
   const locSelected = activeFilters["Location"] ?? [];
   const locOpen = openFilter === "Location";
-  // Selected states (excludes the "Remote" token, which has its own pill).
-  const locStates = locSelected.filter((l) => l !== "Remote");
+  // Selected states (excludes the "Remote"/"In Person" mode tokens, which are
+  // toggles, not places).
+  const locStates = locSelected.filter((l) => l !== "Remote" && l !== "In Person");
+  // The two mutually-exclusive online-axis modes. State (chosen via the banner)
+  // persists across mode changes; turning one mode on turns the other off.
+  const remoteOn = locSelected.includes("Remote");
+  const inPersonOn = locSelected.includes("In Person");
+  const setLocationMode = (mode: "Remote" | "In Person" | null) => {
+    const next = [...locStates];
+    if (mode) next.push(mode);
+    onFilterChange("Location", next);
+  };
   // What the navy Location pill reads: the state name when exactly one is
   // picked, otherwise just "Location" (with a count badge for 2+).
   const locLabel = locStates.length === 1 ? locStates[0] : "Location";
@@ -785,71 +795,34 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                 being a simple toggle. "Where can I act?" is the most
                 useful first cut at the feed, so it sits at the front. */}
             <div className="hidden sm:flex flex-1 min-w-0 flex-wrap items-center gap-y-1.5 gap-x-1">
-              {/* Location pill — same chip style as the categories, but opens
-                  a dropdown panel for state/region selection rather than being
-                  a single-toggle. */}
-              <div className="relative shrink-0">
+              {/* In Person / Remote Only — a segmented button group (the two are
+                  mutually-exclusive modes). The state itself is auto-detected and
+                  chosen via the feed banner, not here. */}
+              <div className="shrink-0 inline-flex items-center overflow-hidden rounded-full border border-gray-200">
                 <button
-                  onClick={() => setOpenFilter(locOpen ? null : "Location")}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
-                    locStates.length > 0
-                      ? "bg-[#23297e] text-white border-[#23297e]"
-                      : "bg-white text-gray-600 border-gray-200 hover:border-[#23297e] hover:text-[#23297e]"
+                  onClick={() => setLocationMode(inPersonOn ? null : "In Person")}
+                  aria-pressed={inPersonOn}
+                  className={`flex items-center gap-1 px-2.5 py-1 font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap ${
+                    inPersonOn ? "bg-[#23297e] text-white" : "bg-white text-gray-600 hover:text-[#23297e]"
                   }`}
+                  title="Show only in-person actions"
                 >
-                  <MapPin size={11} className={locStates.length > 0 ? "text-white" : "text-gray-400"} />
-                  {locLabel}
-                  {locStates.length > 1 && (
-                    <span className="ml-0.5 w-4 h-4 rounded-full bg-[#ed6624] text-white text-[9px] flex items-center justify-center font-bold shrink-0">
-                      {locStates.length}
-                    </span>
-                  )}
-                  <ChevronDown size={11} className={`transition-transform duration-150 ${locOpen ? "rotate-180" : ""}`} />
+                  <MapPin size={11} className={inPersonOn ? "text-white" : "text-gray-400"} />
+                  In Person
                 </button>
-                {locOpen && (
-                  <div className="absolute top-full left-0 mt-1.5 w-56 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 z-50 flex flex-col max-h-[min(28rem,80vh)]">
-                    <p className="px-4 pt-1 pb-2 font-['Poppins',sans-serif] text-[10px] uppercase tracking-widest text-gray-400 font-semibold border-b border-gray-50 shrink-0">
-                      Location
-                    </p>
-                    <div className="overflow-y-auto flex-1">
-                      {locOptionsOrdered.map((option) => (
-                        <label key={option} className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
-                          <input
-                            type="checkbox"
-                            checked={locSelected.includes(option)}
-                            onChange={() => toggleFilterOption("Location", option)}
-                            className="accent-[#23297e] w-3.5 h-3.5 rounded shrink-0"
-                          />
-                          <span className="font-['Poppins',sans-serif] text-sm text-gray-700">{option}</span>
-                        </label>
-                      ))}
-                    </div>
-                    {locStates.length > 0 && (
-                      <button
-                        onClick={() => onFilterChange("Location", locSelected.filter((l) => l === "Remote"))}
-                        className="w-full text-center text-xs text-red-400 hover:text-red-600 py-2 border-t border-gray-50 mt-1 font-['Poppins',sans-serif] font-medium transition-colors shrink-0"
-                      >
-                        Clear filter
-                      </button>
-                    )}
-                  </div>
-                )}
+                <span aria-hidden className="h-5 w-px shrink-0 bg-gray-200" />
+                <button
+                  onClick={() => setLocationMode(remoteOn ? null : "Remote")}
+                  aria-pressed={remoteOn}
+                  className={`flex items-center gap-1 px-2.5 py-1 font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap ${
+                    remoteOn ? "bg-[#ed6624] text-white" : "bg-white text-gray-600 hover:text-[#ed6624]"
+                  }`}
+                  title="Show only remote actions (doable from anywhere)"
+                >
+                  <Globe size={11} className={remoteOn ? "text-white" : "text-gray-400"} />
+                  Remote Only
+                </button>
               </div>
-              {/* Remote pill (2nd) — strict filter: only online/at-home acts
-                  show, so every in-person card disappears. Underlying filter
-                  token is "Remote" in the Location array. */}
-              <button
-                onClick={() => toggleFilterOption("Location", "Remote")}
-                className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
-                  locSelected.includes("Remote")
-                    ? "bg-[#ed6624] text-white border-[#ed6624]"
-                    : "bg-white text-gray-600 border-gray-200 hover:border-[#ed6624] hover:text-[#ed6624]"
-                }`}
-                title="Show only remote actions (doable from anywhere)"
-              >
-                <Globe size={11} className={locSelected.includes("Remote") ? "text-white" : "text-gray-400"} />
-                Remote Only
-              </button>
               {/* Divider — sets the location pills (which persist through "Clear
                   all") apart from the filters that do clear. */}
               <span aria-hidden className="mx-1 h-5 w-px self-center shrink-0 bg-gray-300" />
@@ -866,7 +839,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                   title="Show only actions that take 5 minutes or less"
                 >
                   <Zap size={11} className={quickActionsOnly ? "text-white" : "text-gray-400"} fill={quickActionsOnly ? "#ffffff" : "none"} />
-                  5 Minutes Max
+                  5 Mins Max
                 </button>
               )}
               {/* Category pills — every category as a wrapping pill row.
@@ -1199,28 +1172,32 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                     the Location dropdown (below), keeping this row short.
                     Centered on phones. */}
                 <div className="flex flex-wrap justify-center gap-1.5">
-                  {/* Location button */}
-                  <button
-                    onClick={() => setOpenFilter(locMobileOpen ? null : "acts-loc-mobile")}
-                    className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
-                      locSelected.length > 0
-                        ? "bg-[#23297e] text-white border-[#23297e]"
-                        : "bg-white text-gray-600 border-gray-200"
-                    }`}
-                  >
-                    {/* "Remote only" takes over the label whenever it's on — the
-                        user cares more about knowing they're on Remote than which
-                        state they picked. The state stays selected; if any states
-                        are also chosen we still show their count as a badge. */}
-                    {locSelected.includes("Remote") ? <Globe size={11} /> : <MapPin size={11} />}
-                    {locSelected.includes("Remote") ? "Remote" : locLabel}
-                    {locStates.length > (locSelected.includes("Remote") ? 0 : 1) && (
-                      <span className="w-4 h-4 rounded-full bg-[#ed6624] text-white text-[9px] flex items-center justify-center font-bold shrink-0">
-                        {locStates.length}
-                      </span>
-                    )}
-                    <ChevronDown size={11} className={locMobileOpen ? "rotate-180" : ""} />
-                  </button>
+                  {/* In Person / Remote Only — segmented button group, mutually
+                      exclusive. State is auto-detected and chosen via the feed
+                      banner, so there's no state dropdown here anymore. */}
+                  <div className="shrink-0 inline-flex items-center overflow-hidden rounded-full border border-gray-200">
+                    <button
+                      onClick={() => setLocationMode(inPersonOn ? null : "In Person")}
+                      aria-pressed={inPersonOn}
+                      className={`flex items-center gap-1 px-3 py-1 text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap ${
+                        inPersonOn ? "bg-[#23297e] text-white" : "bg-white text-gray-600"
+                      }`}
+                    >
+                      <MapPin size={11} />
+                      In Person
+                    </button>
+                    <span aria-hidden className="h-5 w-px shrink-0 bg-gray-200" />
+                    <button
+                      onClick={() => setLocationMode(remoteOn ? null : "Remote")}
+                      aria-pressed={remoteOn}
+                      className={`flex items-center gap-1 px-3 py-1 text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap ${
+                        remoteOn ? "bg-[#ed6624] text-white" : "bg-white text-gray-600"
+                      }`}
+                    >
+                      <Globe size={11} />
+                      Remote Only
+                    </button>
+                  </div>
 
                   {/* Category button — "5 Min Max" now lives inside this
                       dropdown on phones (see the Category drawer below) to
@@ -1250,44 +1227,6 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                   </button>
                 </div>
 
-                {/* Location drawer */}
-                {locMobileOpen && (
-                  <div className="mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 max-h-80 overflow-y-auto">
-                    {/* "Remote only" — moved in here from its own pill on phones
-                        to keep the filter row short. It's the "doable from
-                        anywhere" cut, so it leads, separated from the place list. */}
-                    <label className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100">
-                      <input
-                        type="checkbox"
-                        checked={locSelected.includes("Remote")}
-                        onChange={() => toggleFilterOption("Location", "Remote")}
-                        className="accent-[#ed6624] w-3.5 h-3.5 rounded shrink-0"
-                      />
-                      <Globe size={14} className="shrink-0 text-[#ed6624]" />
-                      <span className="font-['Poppins',sans-serif] text-sm text-gray-700">Remote only</span>
-                    </label>
-                    {locOptionsOrdered.map((option) => (
-                      <label key={option} className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={locSelected.includes(option)}
-                          onChange={() => toggleFilterOption("Location", option)}
-                          className="accent-[#23297e] w-3.5 h-3.5 rounded shrink-0"
-                        />
-                        <span className="font-['Poppins',sans-serif] text-sm text-gray-700">{option}</span>
-                      </label>
-                    ))}
-                    {locSelected.length > 0 && (
-                      <button
-                        onClick={() => onFilterChange("Location", [])}
-                        className="w-full text-center text-xs text-red-400 hover:text-red-600 py-2 border-t border-gray-50 mt-1 font-['Poppins',sans-serif] font-medium transition-colors"
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-                )}
-
                 {/* Category drawer */}
                 {catMobileOpen && (
                   <div className="mt-2 bg-white border border-gray-100 rounded-2xl shadow-xl py-2 max-h-80 overflow-y-auto">
@@ -1304,7 +1243,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                           className="accent-[#5a3e9e] w-3.5 h-3.5 rounded shrink-0"
                         />
                         <Zap size={14} className="shrink-0 text-[#5a3e9e]" fill={quickActionsOnly ? "#5a3e9e" : "none"} />
-                        <span className="font-['Poppins',sans-serif] text-sm text-gray-700">5 Min Max</span>
+                        <span className="font-['Poppins',sans-serif] text-sm text-gray-700">5 Mins Max</span>
                       </label>
                     )}
                     <p className="px-4 pt-1 pb-2 font-['Poppins',sans-serif] text-[10px] uppercase tracking-widest text-gray-400 font-semibold border-b border-gray-50">
