@@ -13,21 +13,23 @@ export function SwipeCallout({ onSwipeClick }: { onSwipeClick?: () => void }) {
     <button
       onClick={onSwipeClick}
       title="Swipe through acts one at a time"
-      className="swipe-callout group hidden md:inline-flex items-center gap-3 rounded-full border border-[#23297e]/15 bg-gradient-to-r from-[#23297e]/[0.05] to-[#ed6624]/[0.07] px-4 py-1.5 transition-all hover:border-[#ed6624]/45 hover:shadow-md"
+      className="swipe-callout group hidden md:inline-flex items-center gap-3 rounded-full border border-[#d6541a] bg-gradient-to-r from-[#ed6624] to-[#f5853f] px-4 py-1.5 shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg hover:from-[#e25a1c] hover:to-[#f07a2e]"
     >
-      {/* Animated mini card-stack */}
+      {/* Animated mini card-stack — solid white cards with navy borders so the
+          three offset cards stay legible against the orange fill (white-on-white
+          borders made them blur into a single blob). */}
       <span className="relative inline-block h-7 w-[22px] shrink-0">
-        <span className="swipe-cc-back absolute inset-0 rounded-[5px] border-2 border-[#23297e]/25 bg-white" />
-        <span className="swipe-cc-mid absolute inset-0 rounded-[5px] border-2 border-[#23297e]/45 bg-white" />
+        <span className="swipe-cc-back absolute inset-0 rounded-[5px] border-2 border-[#23297e]/40 bg-white" />
+        <span className="swipe-cc-mid absolute inset-0 rounded-[5px] border-2 border-[#23297e]/65 bg-white" />
         <span className="swipe-cc-top absolute inset-0 flex items-center justify-center rounded-[5px] border-2 border-[#23297e] bg-white">
           <span className="block h-1.5 w-1.5 rounded-full bg-[#ed6624]" />
         </span>
       </span>
       <span className="flex flex-col items-start text-left leading-tight whitespace-nowrap">
-        <span className="text-[13px] font-extrabold text-[#23297e]">Swipe to Discover</span>
-        <span className="text-[10.5px] font-medium italic text-[#23297e]/60">Flip through acts one at a time</span>
+        <span className="text-[13px] font-extrabold text-white">Swipe to Discover</span>
+        <span className="text-[10.5px] font-medium italic text-white/85">Flip through acts one at a time</span>
       </span>
-      <ChevronRight size={16} className="text-[#23297e]/40 transition-all group-hover:translate-x-0.5 group-hover:text-[#ed6624]" />
+      <ChevronRight size={16} className="text-white/80 transition-all group-hover:translate-x-0.5 group-hover:text-white" />
       <style>{`
         .swipe-callout .swipe-cc-back { transform: translate(4px, 3px) rotate(7deg); }
         .swipe-callout .swipe-cc-mid  { transform: translate(2px, 1.5px) rotate(3.5deg); }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useDeferredValue, lazy, Suspense, Fragment } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback, useDeferredValue, lazy, Suspense, Fragment } from "react";
 import { Wrench, Flame, Smile, VenetianMask, Sun, Zap, MapPin, Globe, Users, DollarSign, EyeOff, Loader2, Eye, X, LayoutList, Layers, Star } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { initAnalytics, analytics, disableAnalyticsForAdmin, clearAdminAnalyticsOptOut } from "./lib/analytics";
@@ -6,7 +6,9 @@ import { GAMIFICATION_KEYFRAMES } from "./lib/animations";
 import { burstConfetti } from "./lib/confetti";
 import fistIcon from "../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
 import { Navbar } from "./components/Navbar";
+import { WelcomeHero } from "./components/WelcomeHero";
 import { ActionCard, ActionCardData } from "./components/ActionCard";
+import { FlipGrid } from "./components/FlipGrid";
 import { cartoonUrlFor } from "./data/cartoon-manifest";
 import { synopsisFor } from "./data/synopsis-manifest";
 import { FactCard } from "./components/FactCard";
@@ -42,6 +44,7 @@ import { CelebrationModal } from "./components/CelebrationModal";
 import { FeedbackModal } from "./components/FeedbackModal";
 import { SmacksPage, STATIC_SMACKS, type ReceiptCard } from "./components/SmacksPage";
 import { rankCards, score as scoreCard, loadPreferences, clearPreferences, applyMatcherConfig, fetchUserPreferences, pushUserPreferences, savePreferences, timeBucketFor, cardIsLocalToState, DEFAULT_PREFERENCES, type Preferences, type UserContext } from "./lib/matcher";
+import { parseSignalLog, appendSignal, SIGNAL_LOG_KEY, buildProfile, personalRank, type SignalEvent, type SignalKind } from "./lib/personalize";
 import svgPaths from "../imports/svg-77lgd1zdt6";
 import { projectId, publicAnonKey } from "/utils/supabase/info";
 import { supabase } from "./lib/supabase";
@@ -320,7 +323,7 @@ interface PillFiltersPayload {
   activeFilters: Record<string, string[]>;
   quickActionsOnly: boolean;
   showDone: boolean;
-  sortBy: "popular" | "newest" | "az";
+  sortBy: "foryou" | "popular" | "newest" | "az";
 }
 
 // Texting/SMS actions, identified from the card TITLE (the action verb) so we
@@ -351,7 +354,12 @@ function readPillFilters(): PillFiltersPayload | null {
       activeFilters,
       quickActionsOnly: parsed.quickActionsOnly === true,
       showDone: parsed.showDone === true,
-      sortBy: parsed.sortBy === "newest" || parsed.sortBy === "az" ? parsed.sortBy : "popular",
+      // "For You" is the default for anyone who hasn't explicitly chosen a
+      // sort. Existing stored choices (popular/newest/az) are respected.
+      sortBy:
+        parsed.sortBy === "popular" || parsed.sortBy === "newest" || parsed.sortBy === "az" || parsed.sortBy === "foryou"
+          ? parsed.sortBy
+          : "foryou",
     };
   } catch {
     return null;
@@ -834,9 +842,39 @@ export default function App() {
   const [showDone, setShowDone] = useState(
     () => readPillFilters()?.showDone ?? false,
   );
-  const [sortBy, setSortBy] = useState<"popular" | "newest" | "az">(
-    () => readPillFilters()?.sortBy ?? "popular",
+  const [sortBy, setSortBy] = useState<"foryou" | "popular" | "newest" | "az">(
+    () => readPillFilters()?.sortBy ?? "foryou",
   );
+
+  // ── Personalization signal log ──────────────────────────────────────────
+  // Append-only behavioral log feeding the "For You" ranking. Lives alongside
+  // the existing completed/boosted/bookmarked Sets (which stay the source of
+  // truth for UI state) and carries the two extra dimensions the profile needs:
+  // which KIND of signal, and WHEN. Persisted to localStorage on every append;
+  // server cross-device sync is a planned follow-up (needs an edge endpoint).
+  const [signalLog, setSignalLog] = useState<SignalEvent[]>(
+    () => {
+      try { return parseSignalLog(localStorage.getItem(SIGNAL_LOG_KEY)); } catch { return []; }
+    },
+  );
+  const logSignal = useCallback((id: number, kind: SignalKind) => {
+    if (typeof id !== "number") return;
+    setSignalLog((prev) => {
+      const next = appendSignal(prev, id, kind, Date.now());
+      try { localStorage.setItem(SIGNAL_LOG_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, []);
+
+  // One-time welcome card above the Acts feed. Shown once per device, then
+  // dismissed for good (persisted). Applies to everyone, anonymous included.
+  const [welcomeSeen, setWelcomeSeen] = useState<boolean>(() => {
+    try { return localStorage.getItem("resistact_welcome_seen") === "1"; } catch { return false; }
+  });
+  const dismissWelcome = useCallback(() => {
+    setWelcomeSeen(true);
+    try { localStorage.setItem("resistact_welcome_seen", "1"); } catch {}
+  }, []);
 
   function handleFilterChange(filterName: string, selected: string[]) {
     setActiveFilters((prev) => ({ ...prev, [filterName]: selected }));
@@ -1098,6 +1136,27 @@ export default function App() {
   // the category filter parameterized. `displayedCards` runs it with the active
   // pill category; `deckPoolCards` runs it ignoring category so the swipe deck
   // can offer EVERY category and let its own filter narrow them.
+  // ── Learned "For You" profile ────────────────────────────────────────────
+  // Fold the behavioral signal log into a preference profile (inferred tone,
+  // category affinity, time fit, in-person↔remote lean). Uses start-of-today
+  // (UTC) as the decay reference so the result is stable within a day rather
+  // than churning every render. Returns null below the cold-start threshold,
+  // in which case the feed falls back to Popular.
+  const profileNowMs = Date.parse(todayISO);
+  const cardsById = useMemo(() => {
+    const m = new Map<number, ActionCardData>();
+    for (const c of cards) if (typeof c.id === "number") m.set(c.id, c);
+    return m;
+  }, [cards]);
+  const userProfile = useMemo(
+    () => buildProfile(signalLog, cardsById, profileNowMs),
+    [signalLog, cardsById, profileNowMs],
+  );
+  // True when the feed is actually being personalized right now (profile exists
+  // and the For You sort is active). Drives the "Tuned to you" banner copy and
+  // the welcome card's warm vs. cold-start wording.
+  const feedIsPersonalized = !!userProfile && sortBy === "foryou";
+
   const buildFeed = (categoryOverride: string[] | null) => {
     // IMPERSONATION OVERRIDE — when view-as is active, shadow the per-user
     // state slots with the impersonated user's data so the rest of this
@@ -1357,6 +1416,16 @@ export default function App() {
       return withPinned([]);
     }
 
+    // ── For You: personalized ranking learned from the user's own behavior ───
+    // Ranks `filtered` by inferred fit (tone, category, time, in-person lean,
+    // each weighted equally) with an engagement + upcoming-event overlay.
+    // Location is a SOFT lean here, never a hard filter — someone who engages
+    // with both in-person and remote acts still sees both. Below the cold-start
+    // signal threshold `userProfile` is null and we fall through to Popular.
+    if (sortBy === "foryou" && userProfile) {
+      return pinFirst(completedLast(personalRank(filtered, userProfile, profileNowMs)));
+    }
+
     if (sortBy === "az") {
       return pinFirst(completedLast([...filtered].sort((a, b) => a.title.localeCompare(b.title))));
     }
@@ -1406,7 +1475,7 @@ export default function App() {
   // then re-runs only after the deferred value settles.
   const feedDeps = [cards, deferredSearchQuery, activeFilters, quickActionsOnly, showDone,
       completedCards, matchPrefs, isAdminUser, todayISO, boostedCards,
-      sortBy, demoteHyperLocal, hasSharedSpread,
+      sortBy, demoteHyperLocal, hasSharedSpread, userProfile, profileNowMs,
       // Impersonation override — recompute when entering / exiting view-as,
       // and when any of the impersonated slots change underneath us.
       isImpersonating, effectiveMatchPrefs, effectiveCompleted, effectiveBoosted, approval];
@@ -2284,6 +2353,7 @@ export default function App() {
       // current state map so we know the category at click-time.
       const card = cards.find((c) => c.id === id);
       analytics.actionCompleted(id, card?.category);
+      logSignal(id, "did"); // strongest "For You" signal — they actually did it
       // Marking a saved act as done removes it from "My Matches" — once you've
       // done it, it no longer needs to sit in your saved queue. Reuses
       // handleBookmark so the localStorage write + debounced server sync match
@@ -2323,6 +2393,7 @@ export default function App() {
     const alreadyActed = boostedCards.has(id);
     const delta = alreadyActed ? -1 : 1;
     analytics.boostToggled(id, !alreadyActed);
+    if (!alreadyActed) logSignal(id, "boosted"); // endorsement → "For You" signal
 
     setActedCards((prev) => {
       const next = new Set(prev);
@@ -2384,6 +2455,10 @@ export default function App() {
 
   const handleBookmark = (id: number) => {
     if (blockWriteIfImpersonating()) return;
+    // Log the save as a "For You" signal on the way in (only when adding, not
+    // un-saving). Done outside the state updater so a StrictMode double-invoke
+    // of the updater can't double-log.
+    if (!bookmarkedCards.has(id)) logSignal(id, "saved");
     setBookmarkedCards((prev) => {
       const next = new Set(prev);
       const adding = !next.has(id);
@@ -2434,6 +2509,7 @@ export default function App() {
   // read-only and shouldn't write passes against the admin's own account).
   const markPassed = (id: number) => {
     if (blockWriteIfImpersonating()) return;
+    if (!passedCardIds.has(id)) logSignal(id, "passed"); // negative "For You" signal
     setPassedCardIds((prev) => {
       if (prev.has(id)) return prev;
       const next = new Set(prev);
@@ -2454,6 +2530,9 @@ export default function App() {
   // un-passing brings it back.
   const handlePassToggle = (id: number) => {
     if (blockWriteIfImpersonating()) return;
+    // Log only when adding a pass (not when un-passing) — same negative signal
+    // as a left-swipe. Outside the updater to avoid double-logging.
+    if (!passedCardIds.has(id)) logSignal(id, "passed");
     setPassedCardIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
@@ -2635,11 +2714,13 @@ export default function App() {
     handleBoost, handleComplete, handleShare, handleBookmark,
     handleEdit: (id: number) => setEditCardId(id),
     handleApproveCard, handleCardSaved, handleSpreadShared, handlePassToggle,
+    logSignal,
   });
   cardHandlersRef.current = {
     handleBoost, handleComplete, handleShare, handleBookmark,
     handleEdit: (id: number) => setEditCardId(id),
     handleApproveCard, handleCardSaved, handleSpreadShared, handlePassToggle,
+    logSignal,
   };
   const cardCb = useMemo(() => ({
     onBoost: (id: number) => cardHandlersRef.current.handleBoost(id),
@@ -2652,6 +2733,9 @@ export default function App() {
     onCardUpdated: (updated: ActionCardData, toast?: string) => cardHandlersRef.current.handleCardSaved(updated, toast),
     onSpreadShared: () => cardHandlersRef.current.handleSpreadShared(),
     onSwipeToDeck: () => setSwipeOpen(true),
+    // Weak/medium "For You" signals fired from inside the card: opening the
+    // detail modal (curiosity) and opening the share sheet (amplification).
+    onSignal: (id: number, kind: SignalKind) => cardHandlersRef.current.logSignal(id, kind),
   }), []);
 
   return (
@@ -2894,6 +2978,12 @@ export default function App() {
               : (isImpersonating
                   ? displayedCards
                   : displayedCards.filter((c) => c.pinToTop || !(passedCardIds.has(c.id) && !bookmarkedCards.has(c.id) && !completedCards.has(c.id))));
+            // The exact card list the grid renders — computed once so the FLIP
+            // grid's signature and the map below can't drift out of sync.
+            const feed = swipeOpen
+              ? []
+              : (hasActiveFilters || showPendingActsOnly ? visibleActsCards : visibleActsCards.slice(0, displayLimit));
+            const feedSig = feed.map((c) => c.id).join(",");
             return (
           <>
             {/* Phone-only browse-mode toggle — sits just under the filter pills
@@ -2924,6 +3014,14 @@ export default function App() {
                   Swipe
                 </button>
               </div>
+            )}
+
+            {/* One-time welcome — lands the "glad you're here" beat and frames
+                the feed as something the visitor shapes (not surveillance).
+                Warm vs. cold-start copy keys off whether the feed is actually
+                personalized yet. Shown once per device, then dismissed for good. */}
+            {!welcomeSeen && activeTab === "acts" && synced && (
+              <WelcomeHero personalized={feedIsPersonalized} onDismiss={dismissWelcome} />
             )}
 
             {/* Geo banner — first-visit location auto-detect, MERGED with the
@@ -2966,6 +3064,8 @@ export default function App() {
                     <p className="font-['Poppins',sans-serif] text-sm text-gray-600">
                       {hasActiveFilters ? (
                         <><strong className="text-[#23297e]">{displayedCards.length}</strong> {displayedCards.length === 1 ? "action" : "actions"} match your filters.</>
+                      ) : feedIsPersonalized ? (
+                        <><span aria-hidden>✨ </span>Tuned to you — <strong className="text-[#23297e]">{displayedCards.length}</strong> acts, ranked by what you've been into.</>
                       ) : (
                         <>Showing all <strong className="text-[#23297e]">{displayedCards.length}</strong> actions — unfiltered.</>
                       )}
@@ -2997,7 +3097,11 @@ export default function App() {
             {!geoBanner && !matchPrefs && !hasActiveFilters && activeTab === "acts" && synced && !isMobile && (
               <div className="mb-4 flex flex-col items-start gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                 <p className="font-['Poppins',sans-serif] text-sm text-gray-600">
-                  Showing all <strong className="text-[#23297e]">{displayedCards.length}</strong> actions — unfiltered.
+                  {feedIsPersonalized ? (
+                    <><span aria-hidden>✨ </span>Tuned to you — <strong className="text-[#23297e]">{displayedCards.length}</strong> acts, ranked by what you've been into.</>
+                  ) : (
+                    <>Showing all <strong className="text-[#23297e]">{displayedCards.length}</strong> actions — unfiltered.</>
+                  )}
                 </p>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 shrink-0">
                   {/* Manual location picker — narrows the feed to a chosen state.
@@ -3368,18 +3472,21 @@ export default function App() {
               </div>
             ) : (
             <>
-            <div className={`grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-6 transition-opacity duration-150 ${searchQuery !== deferredSearchQuery ? "opacity-50" : "opacity-100"}`}>
+            <FlipGrid
+              signature={feedSig}
+              forceKey={staggerKey}
+              className={`grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-6 transition-opacity duration-150 ${searchQuery !== deferredSearchQuery ? "opacity-50" : "opacity-100"}`}
+            >
               {/* While the full-screen swipe deck is open it covers the feed, so
                   we unmount the feed cards entirely — this both frees the ~18k
                   DOM nodes / hundreds of images they hold and removes the layer
                   that was faintly bleeding through (and scrolling) behind the
                   translucent overlay. The list re-renders when the deck closes. */}
-              {(swipeOpen ? [] : (hasActiveFilters || showPendingActsOnly ? visibleActsCards : visibleActsCards.slice(0, displayLimit))).map((card, idx) => (
-                <Fragment key={idx < 12 ? `${card.id}-${staggerKey}` : card.id}>
+              {feed.map((card) => (
+                <Fragment key={card.id}>
                 <div
                   id={`card-${card.id}`}
-                  className={idx < 12 ? "resistact-anim-stagger" : undefined}
-                  style={idx < 12 ? { animationDelay: `${idx * 40}ms` } : undefined}
+                  data-flip-id={card.id}
                 >
                 <ActionCard
                   card={card.isFeatured ? { ...card, featuredIllustration: <FeaturedIllustration /> } : card}
@@ -3401,11 +3508,12 @@ export default function App() {
                   onCardUpdated={cardCb.onCardUpdated}
                   onSpreadShared={cardCb.onSpreadShared}
                   onSwipeToDeck={cardCb.onSwipeToDeck}
+                  onSignal={cardCb.onSignal}
                 />
                 </div>
                 </Fragment>
               ))}
-            </div>
+            </FlipGrid>
             </>
             )}
 

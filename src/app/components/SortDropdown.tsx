@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, X } from "lucide-react";
 
-export type SortBy = "popular" | "newest" | "az";
+export type SortBy = "foryou" | "popular" | "newest" | "az";
+
+const SORT_LABELS: Record<SortBy, string> = {
+  foryou: "For You",
+  popular: "Popular",
+  newest: "Newest",
+  az: "A–Z",
+};
 
 /**
  * Compact, inline Sort dropdown — meant to live inside a results banner so
@@ -40,14 +47,14 @@ export function SortDropdown({
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  const label = sortBy === "popular" ? "Popular" : sortBy === "newest" ? "Newest" : "A–Z";
+  const label = SORT_LABELS[sortBy];
 
   return (
     <div ref={ref} className="relative shrink-0">
       <button
         onClick={() => setOpen((o) => !o)}
         className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-['Poppins',sans-serif] font-medium transition-colors whitespace-nowrap ${
-          sortBy !== "popular" ? "text-[#23297e]" : "text-gray-600 hover:text-[#23297e]"
+          sortBy !== "foryou" ? "text-[#23297e]" : "text-gray-600 hover:text-[#23297e]"
         }`}
       >
         <span className="text-gray-400 text-[10px] uppercase tracking-widest font-semibold">Sort</span>
@@ -56,7 +63,7 @@ export function SortDropdown({
       </button>
       {open && (
         <div className="absolute top-full right-0 mt-1.5 w-48 bg-white border border-gray-100 rounded-2xl shadow-xl py-1.5 z-50">
-          {(["popular", "newest", "az"] as const).map((opt) => (
+          {(["foryou", "popular", "newest", "az"] as const).map((opt) => (
             <button
               key={opt}
               onClick={() => { onSortChange(opt); setOpen(false); }}
@@ -66,7 +73,7 @@ export function SortDropdown({
                   : "text-gray-700 hover:bg-gray-50"
               }`}
             >
-              {opt === "popular" ? "Popular" : opt === "newest" ? "Newest" : "A–Z"}
+              {SORT_LABELS[opt]}
               {sortBy === opt && <span className="w-1.5 h-1.5 rounded-full bg-[#23297e]" />}
             </button>
           ))}
