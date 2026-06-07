@@ -16,18 +16,19 @@ ResistAct (resistact.org) is an anti-Trump / MAGA-resistance action-matching pla
 - **Backend:** Supabase Edge Function at `supabase/functions/make-server-9eb1ae04/index.ts`
 - **Data store:** Supabase KV (accessed via `kv_store.ts`)
 - **Deployment:** Edge function is deployed via `npx supabase functions deploy` with the project ref `zkihnylrvdofdbnhmmoq`
+  - **ALWAYS pass `--no-verify-jwt`.** The function does its own auth in-handler and the public feed calls it with the publishable (`sb_publishable_…`) anon key, which is NOT a JWT. Deploying without `--no-verify-jwt` re-enables gateway JWT verification (the CLI default) and breaks anonymous access site-wide (`UNAUTHORIZED_INVALID_JWT_FORMAT` on `/actions`). Full command: `supabase functions deploy make-server-9eb1ae04 --project-ref zkihnylrvdofdbnhmmoq --no-verify-jwt`.
 
 ## Local secrets / tokens (where to find them)
 
 Local credentials for deploys, scripts, and the "Create from URL" tooling live in a
 **gitignored, machine-local** file inside the repo:
 
-- **Path:** `/Users/ellenescarcega/GitHub/ResistactFigma/tools/automation/.env.txt`
-  (gitignored via `tools/automation/.env*` in `.gitignore`, so it's untracked and
-  can't be committed even though it lives under the repo root).
+- **Path:** `/Users/ellenescarcega/GitHub/ResistAct/tools/automation/.env`
+  (in the OUTER `ResistAct/` repo root, NOT under `ResistactFigma/`; gitignored via
+  `tools/automation/.env*`, so it's untracked and can't be committed).
 - **Keys it contains:** `SUPABASE_ACCESS_TOKEN` (Supabase personal access token, `sbp_…` —
-  used to authenticate `npx supabase functions deploy`) and `OPENAI_API_KEY` (`sk-…` —
-  used by the art-gen / "Create from URL" tooling).
+  used to authenticate `supabase functions deploy`), `OPENAI_API_KEY` (`sk-…` — used by
+  the art-gen / "Create from URL" tooling), plus `ADMIN_IMPORT_TOKEN` and `SUPABASE_SECRET_KEY`.
 - **How to use:** source the values into the environment for a command, e.g.
   `export SUPABASE_ACCESS_TOKEN=$(grep -m1 -E '^SUPABASE_ACCESS_TOKEN=.+' <path> | cut -d= -f2-)`
   then run the deploy. **Never print, echo, or commit the secret values** — only their

@@ -16,6 +16,20 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.62",
+    date: "2026-06-07",
+    title: "More accurate 'who's behind this' labels on Acts",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Cleaned up the little role label under each Act's author. Hundreds of Acts had been tagged with the generic \"Movement Organization\" — now they show what the source actually is, like \"Independent Newsroom\", \"Grassroots Network\", \"Faith Group\", \"Labor Org\", \"Legal Aid Org\", or \"Mutual Aid Network\".",
+          "New Acts added from a link will now get a fitting role automatically instead of defaulting to the generic label.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.61",
     date: "2026-06-07",
     title: "Fixed submitted Smacks not showing up",
