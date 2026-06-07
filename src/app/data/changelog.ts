@@ -16,14 +16,118 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: "1.4.33",
+    version: "1.4.40",
     date: "2026-06-06",
-    title: "Folded Housing into Show Up",
+    title: "Banner reflects In Person / Remote",
     sections: [
       {
         heading: "The Acts",
         items: [
-          "Retired the \"Housing\" category — its acts were moved into \"Show Up\".",
+          "The feed banner now names the mode you've picked — e.g. \"In person · Washington\", \"In person + remote · Washington\", or \"Showing remote acts\" when Remote is on by itself.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.39",
+    date: "2026-06-06",
+    title: "In Person + Remote together, hover polish",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Renamed the \"Remote Only\" filter to just \"Remote\".",
+          "\"In Person\" and \"Remote\" are now independent — you can turn on both to see in-person and remote acts together, instead of one replacing the other.",
+          "Fixed a flicker where a card's rounded corners briefly squared off when you hovered it.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.38",
+    date: "2026-06-06",
+    title: "Calmer feed banner & livelier swipe hints",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Simplified the filter banner above the feed — trimmed the wording so the location, count, and categories read more cleanly.",
+        ],
+      },
+      {
+        heading: "Discover",
+        items: [
+          "The \"Swipe left to PASS\" / \"Swipe right to SAVE\" arrows now gently nudge in their direction to hint at the gesture.",
+          "Made the swipe hints smaller on phones so they fit comfortably above the card.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.37",
+    date: "2026-06-06",
+    title: "Greeting moved to the footer; even card opacity",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Moved the \"Welcome back to the resistance, [name]. Day N\" greeting from the top hero down to the persistent footer bar, where it stays visible as you scroll.",
+          "Feed cards now all rest at the same opacity — previously the pinned card and the rest were slightly different, so some looked more faded than others.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.36",
+    date: "2026-06-06",
+    title: "Swipe hint polish",
+    sections: [
+      {
+        heading: "Discover",
+        items: [
+          "Toned the \"Swipe left to PASS\" / \"Swipe right to SAVE\" hints to light grey.",
+          "Fixed the \"total saved\" count, which was rendering larger than the rest of the line.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.35",
+    date: "2026-06-06",
+    title: "Smaller welcome-back greeting",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Made the logged-in \"Welcome back to the resistance\" greeting a bit smaller.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.34",
+    date: "2026-06-06",
+    title: "Filter banner Clear, and Housing for new acts",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Removed the separate \"Clear all\" link from the end of the category filter row; the \"Clear\" in the banner above the feed handles it.",
+          "Made that banner \"Clear\" link orange so it stands out.",
+          "\"Housing\" is available again when adding or editing an act — it's just no longer a default filter chip on the feed.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.33",
+    date: "2026-06-06",
+    title: "Tidied existing Housing acts into Show Up",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Moved the existing \"Housing\" acts into \"Show Up\" to consolidate the feed.",
         ],
       },
     ],

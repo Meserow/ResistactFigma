@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useDeferredValue, lazy, Suspense, Fragment } from "react";
-import { Wrench, Clock, Flame, Smile, VenetianMask, Sun, Zap, MapPin, Users, DollarSign, EyeOff, Loader2, Eye, X, LayoutList, Layers } from "lucide-react";
+import { Wrench, Clock, Flame, Smile, VenetianMask, Sun, Zap, MapPin, Globe, Users, DollarSign, EyeOff, Loader2, Eye, X, LayoutList, Layers } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { initAnalytics, analytics } from "./lib/analytics";
 import { GAMIFICATION_KEYFRAMES } from "./lib/animations";
@@ -143,8 +143,6 @@ const CATEGORY_ALIASES: Record<string, string> = {
   "phone calling": "Phoning",
   "professional skills": "Skills",
   "transportation": "Transport",
-  // "Housing" retired into "Show Up" (June 2026).
-  "housing": "Show Up",
 };
 function normaliseCategory(s: string | undefined | null): string {
   const trimmed = (s ?? "").trim();
@@ -907,10 +905,13 @@ export default function App() {
         // flag is authoritative for the online axis.
         const matchesRemote = !!card.isOnline;
 
-        // Online-axis hard filters: Remote → only remote acts; In Person → only
-        // in-person acts. (The pills enforce that only one can be on at a time.)
-        if (wantsRemote && !matchesRemote) return false;
-        if (wantsInPerson && matchesRemote) return false;
+        // Online-axis filter: Remote keeps remote acts, In Person keeps in-person
+        // acts, and they're independent toggles — both on keeps everything (OR),
+        // neither on applies no online-axis filter.
+        if (wantsRemote || wantsInPerson) {
+          const okOnline = (wantsRemote && matchesRemote) || (wantsInPerson && !matchesRemote);
+          if (!okOnline) return false;
+        }
 
         // State filter: keep matching-state + location-agnostic cards; hard-filter
         // only cards pinned to a specific OTHER state.
@@ -2862,32 +2863,47 @@ export default function App() {
                 Mirrors the unfiltered banner style; carries the Sort control.
                 Hidden on phones to match the unfiltered banner above. */}
             {!geoBanner && !matchPrefs && hasActiveFilters && activeTab === "acts" && synced && !showPendingActsOnly && !isMobile && (() => {
-              // Surface the active state(s) so the banner names the location being
-              // filtered for. "Remote"/"In Person" are modes, not places, so they're
-              // excluded. When Remote Only is on the feed isn't state-specific, so we
-              // drop the "Showing Acts for X" callout entirely.
-              const remoteOn = (activeFilters["Location"] ?? []).includes("Remote");
-              const activeStates = remoteOn ? [] : (activeFilters["Location"] ?? []).filter((l) => l !== "Remote" && l !== "In Person");
+              // Surface the active mode + state(s) so the banner names what's being
+              // filtered. "Remote"/"In Person" are modes, not places. When it's
+              // PURELY remote (Remote on, In Person off) the feed isn't state-specific,
+              // so we show "remote acts" instead of a state. Both modes on → say so.
+              const locTokens = activeFilters["Location"] ?? [];
+              const inPersonOn = locTokens.includes("In Person");
+              const remoteOn = locTokens.includes("Remote");
+              const pureRemote = remoteOn && !inPersonOn;
+              const activeStates = pureRemote ? [] : locTokens.filter((l) => l !== "Remote" && l !== "In Person");
+              const modeLabel = inPersonOn && remoteOn ? "In person + remote" : inPersonOn ? "In person" : "";
               const activeCats = activeFilters["Category"] ?? [];
               return (
               <div className="mb-4 flex flex-col items-start gap-2 rounded-lg border border-[#23297e]/30 bg-[#23297e]/5 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                 <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1.5">
-                  {activeStates.length > 0 && (
+                  {pureRemote ? (
+                    <span className="inline-flex items-center gap-1.5 font-['Poppins',sans-serif] text-[13px] text-gray-700">
+                      <Globe size={15} className="text-[#ed6624] shrink-0" strokeWidth={2.5} />
+                      <strong className="text-[#23297e]">Remote</strong> acts
+                    </span>
+                  ) : activeStates.length > 0 ? (
                     <span className="inline-flex items-center gap-1.5 font-['Poppins',sans-serif] text-[13px] text-gray-700">
                       <MapPin size={15} className="text-[#23297e] shrink-0" strokeWidth={2.5} />
-                      Showing Acts for <strong className="text-[#23297e]">{activeStates.join(", ")}</strong>
-                      <span className="font-normal text-gray-500">+ nationwide &amp; multi-state</span>
+                      {modeLabel && <><span className="font-semibold text-gray-500">{modeLabel}</span><span aria-hidden className="text-gray-300">·</span></>}
+                      <strong className="text-[#23297e]">{activeStates.join(", ")}</strong>
+                      <span className="text-[11px] font-normal text-gray-400">+ nationwide</span>
                       <button
                         onClick={() => setGeoBanner({ kind: "prompt" })}
-                        className="font-['Poppins',sans-serif] text-xs font-bold text-[#ed6624] hover:text-[#e07a28] hover:underline transition-colors whitespace-nowrap"
+                        className="font-['Poppins',sans-serif] text-[11px] font-semibold text-[#ed6624] hover:text-[#e07a28] hover:underline transition-colors whitespace-nowrap"
                       >
                         Change
                       </button>
-                      <span aria-hidden>—</span>
                     </span>
-                  )}
+                  ) : modeLabel ? (
+                    <span className="inline-flex items-center gap-1.5 font-['Poppins',sans-serif] text-[13px] text-gray-700">
+                      <MapPin size={15} className="text-[#23297e] shrink-0" strokeWidth={2.5} />
+                      <strong className="text-[#23297e]">{modeLabel}</strong> acts
+                    </span>
+                  ) : null}
                   <span className="font-['Poppins',sans-serif] text-[13px] text-gray-700">
-                    <strong className="text-[#23297e]">{displayedCards.length}</strong> {displayedCards.length === 1 ? "action" : "actions"} match your filters.
+                    <span aria-hidden className="mr-1.5 text-gray-300">·</span>
+                    <strong className="text-[#23297e]">{displayedCards.length}</strong> {displayedCards.length === 1 ? "action" : "actions"}
                   </span>
                   {/* Selected categories — compact like the swipe deck: a dimmed,
                       truncated "·"-joined list (full list in the tooltip) with a
@@ -3146,7 +3162,7 @@ export default function App() {
                 <Fragment key={idx < 12 ? `${card.id}-${staggerKey}` : card.id}>
                 <div
                   id={`card-${card.id}`}
-                  className={idx < 12 ? "resistact-anim-stagger opacity-95" : "opacity-95"}
+                  className={idx < 12 ? "resistact-anim-stagger" : undefined}
                   style={idx < 12 ? { animationDelay: `${idx * 40}ms` } : undefined}
                 >
                 <ActionCard
@@ -3258,15 +3274,29 @@ export default function App() {
               </button>
             );
           })()}
-          {/* Center: call-to-action tag */}
-          <p className="font-['Poppins',sans-serif] text-center text-[12px] md:text-base leading-tight min-w-0 flex-1">
-            <strong className="font-bold text-[#23297e]">
-              Pick one. <span className="text-[#ed6624]">Do it.</span> Share it.
-            </strong>{" "}
-            {/* Break onto its own line on phones; stays inline on desktop. */}
-            <br className="md:hidden" aria-hidden />
-            <em className="italic font-bold text-[#ed6624]">Come back tomorrow.</em>
-          </p>
+          {/* Center: a personalized greeting + streak for signed-in users (moved
+              here from the hero, where it competed with the logo), otherwise the
+              call-to-action tag. */}
+          {effectiveApproval ? (
+            <p className="font-['Poppins',sans-serif] text-center text-[12px] md:text-base leading-tight min-w-0 flex-1 font-bold text-[#23297e]">
+              {effectiveLoginStreak <= 1 ? "Welcome to the resistance" : "Welcome back to the resistance"}, {(effectiveApproval.name || "Resistor").split(/\s+/)[0]}.{" "}
+              <em className="italic font-bold text-[#ed6624] whitespace-nowrap">
+                {effectiveLoginStreak >= 7 && (
+                  <span className="resistact-anim-flicker mr-1 inline-block" aria-hidden title={`${effectiveLoginStreak}-day streak — keep it lit!`}>🔥</span>
+                )}
+                Day {effectiveLoginStreak}.
+              </em>
+            </p>
+          ) : (
+            <p className="font-['Poppins',sans-serif] text-center text-[12px] md:text-base leading-tight min-w-0 flex-1">
+              <strong className="font-bold text-[#23297e]">
+                Pick one. <span className="text-[#ed6624]">Do it.</span> Share it.
+              </strong>{" "}
+              {/* Break onto its own line on phones; stays inline on desktop. */}
+              <br className="md:hidden" aria-hidden />
+              <em className="italic font-bold text-[#ed6624]">Come back tomorrow.</em>
+            </p>
+          )}
           {/* Right: facts + smacks counts — each is a button that jumps to
               its tab and scrolls to the top, so the footer doubles as quick
               nav between sections. */}
@@ -3389,6 +3419,7 @@ export default function App() {
             canEdit={!isImpersonating && canEditCard(detailCard)}
             accessToken={accessToken ?? undefined}
             onCardUpdated={handleCardSaved}
+            onSwipeToDeck={() => { setDetailCardId(null); setSwipeOpen(true); }}
           />
         );
       })()}

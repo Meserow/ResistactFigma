@@ -85,6 +85,7 @@ const CATEGORIES: { name: string; icon: LucideIcon; color: string }[] = [
   { name: "Email",                      icon: Mail,           color: "#e44b4b" },
   { name: "Flash Mob",                  icon: Users,          color: "#ff00d5" },
   { name: "Funding",                    icon: DollarSign,     color: "#127f05" },
+  { name: "Housing",                    icon: Home,           color: "#896312" },
   { name: "Group",                      icon: HandHeart,      color: "#0891b2" },
   { name: "Labor",                      icon: HardHat,        color: "#127f05" },
   { name: "Writing",                    icon: Send,           color: "#c34e00" },

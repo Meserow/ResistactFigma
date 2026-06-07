@@ -171,6 +171,7 @@ export const DEFAULT_CATEGORY_TONE: Record<string, Tone> = {
   "SKILLS":  { anger: 0, comedy: 0, subversion: 0, care: 2, hope: 2, energy: 2 },
   "TRANSPORT":       { anger: 0, comedy: 0, subversion: 0, care: 3, hope: 2, energy: 2 },
   "VOLUNTEER":            { anger: 0, comedy: 0, subversion: 0, care: 3, hope: 2, energy: 2 },
+  "HOUSING":              { anger: 0, comedy: 0, subversion: 0, care: 3, hope: 2, energy: 2 },
   "LABOR":                { anger: 2, comedy: 0, subversion: 1, care: 2, hope: 2, energy: 2 },
   "CRAFTING":             { anger: 0, comedy: 1, subversion: 0, care: 2, hope: 2, energy: 2 },
   "NEWS STORY":           { anger: 1, comedy: 0, subversion: 1, care: 1, hope: 1, energy: 1 },
@@ -268,6 +269,7 @@ const CATEGORY_DEFAULT_BUCKET: Partial<Record<string, TimeBucket>> = {
   "PROTEST":            "fewHours",
   "FLASH MOB":          "fewHours",
   "TRANSPORT":     "fewHours",
+  "HOUSING":            "fewHours",
   "SKILLS":"fewHours",
   "ART":          "fewHours",
   "CRAFTING":           "fewHours",
@@ -347,8 +349,8 @@ const SURFACES_VOICE_FOR: Partial<Record<VulnerableGroup, Set<string>>> = {
   scientist:  new Set(["NEWS STORY", "PETITION", "SKILLS", "WRITING"]),
   lawyer:     new Set(["SKILLS", "NEWS STORY", "PETITION"]),
   lowIncome:  new Set(["PETITION", "EMAIL", "LABOR", "MEETING"]),
-  unhoused:   new Set(["PETITION", "EMAIL", "SHOW UP"]),
-  renter:     new Set(["PETITION", "EMAIL", "SHOW UP"]),
+  unhoused:   new Set(["PETITION", "EMAIL", "HOUSING"]),
+  renter:     new Set(["PETITION", "EMAIL", "HOUSING"]),
 };
 
 export function assessAmplification(card: ActionCardData, groups: VulnerableGroup[]): boolean {

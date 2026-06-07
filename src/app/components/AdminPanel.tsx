@@ -68,7 +68,7 @@ const NEWCARD_CATEGORIES: { label: string; color: string }[] = [
   { label: "Crafting", color: "#c34e00" }, { label: "Email", color: "#e44b4b" },
   { label: "Flash Mob", color: "#ff00d5" },
   { label: "Funding", color: "#127f05" }, { label: "Host", color: "#b45309" },
-  { label: "Irreverence", color: "#ff00d5" },
+  { label: "Housing", color: "#896312" }, { label: "Irreverence", color: "#ff00d5" },
   { label: "Group", color: "#0891b2" }, { label: "Labor", color: "#127f05" },
   { label: "Writing", color: "#c34e00" }, { label: "Meeting", color: "#23297e" },
   { label: "Mental Health", color: "#ff00d5" }, { label: "News Story", color: "#896312" },

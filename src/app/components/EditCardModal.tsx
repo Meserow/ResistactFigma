@@ -37,6 +37,7 @@ const CATEGORY_OPTIONS: { label: string; color: string }[] = [
   { label: "Flash Mob",            color: "#ff00d5" },
   { label: "Funding",              color: "#127f05" },
   { label: "Host",                 color: "#b45309" },
+  { label: "Housing",              color: "#896312" },
   { label: "Irreverence",          color: "#ff00d5" },
   { label: "Group",                color: "#0891b2" },
   { label: "Labor",                color: "#127f05" },

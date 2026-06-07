@@ -127,6 +127,17 @@ export const GAMIFICATION_KEYFRAMES = `
     50%      { transform: scale(1.08); }
   }
 
+  /* Swipe-hint nudge: the PASS/SAVE arrows drift in their swipe direction and
+     ease back, hinting at the gesture. Left arrow goes left, right arrow right. */
+  @keyframes resistact-nudge-left {
+    0%, 70%, 100% { transform: translateX(0); }
+    35%           { transform: translateX(-5px); }
+  }
+  @keyframes resistact-nudge-right {
+    0%, 70%, 100% { transform: translateX(0); }
+    35%           { transform: translateX(5px); }
+  }
+
   /* All gamification animations are gated behind motion-safe via this class
      wrapper. Users with prefers-reduced-motion get the static styles only. */
   @media (prefers-reduced-motion: reduce) {
@@ -135,6 +146,8 @@ export const GAMIFICATION_KEYFRAMES = `
     .resistact-anim-shimmer::after,
     .resistact-anim-pop,
     .resistact-anim-stagger,
+    .resistact-anim-nudge-left,
+    .resistact-anim-nudge-right,
     .resistact-card-shine::before {
       animation: none !important;
     }
@@ -145,6 +158,8 @@ export const GAMIFICATION_KEYFRAMES = `
   .resistact-anim-pop      { animation: resistact-count-pop 320ms ease-out; }
   .resistact-anim-bookmark { animation: resistact-bookmark-pop 320ms cubic-bezier(0.34, 1.56, 0.64, 1); }
   .resistact-anim-stagger  { animation: resistact-stagger-in 420ms ease-out both; }
+  .resistact-anim-nudge-left  { animation: resistact-nudge-left 2000ms ease-in-out infinite; display: inline-block; }
+  .resistact-anim-nudge-right { animation: resistact-nudge-right 2000ms ease-in-out infinite; display: inline-block; }
   /* Shimmer uses a pseudo-element so it can sweep on top of the parent
      without changing the parent's layout. Parent needs position:relative
      and overflow:hidden. */
@@ -223,6 +238,8 @@ export const GAMIFICATION_KEYFRAMES = `
      Pre-promoting with will-change keeps the rounded backing stable throughout. */
   .resistact-banner-host {
     will-change: transform;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
   }
   @media (prefers-reduced-motion: reduce) {
     .resistact-banner-desat,
