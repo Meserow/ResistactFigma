@@ -823,11 +823,8 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                   Remote Only
                 </button>
               </div>
-              {/* Divider — sets the location pills (which persist through "Clear
-                  all") apart from the filters that do clear. */}
-              <span aria-hidden className="mx-1 h-5 w-px self-center shrink-0 bg-gray-300" />
-              {/* 5 Minutes Max pill (3rd) — toggles the quickAction-only filter.
-                  Clustered with Location + Remote at the front of the row. */}
+              {/* 5 Mins Max pill — toggles the quickAction-only filter. Clustered
+                  with Location + Remote on the LEFT of the divider. */}
               {onQuickActionsChange && (
                 <button
                   onClick={() => onQuickActionsChange(!quickActionsOnly)}
@@ -842,6 +839,9 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                   5 Mins Max
                 </button>
               )}
+              {/* Divider — separates the persistent left-side filters (In Person /
+                  Remote / 5 Mins Max) from the category pills that "Clear all" resets. */}
+              <span aria-hidden className="mx-1 h-5 w-px self-center shrink-0 bg-gray-300" />
               {/* Category pills — every category as a wrapping pill row.
                   Sits after Location → Remote → 5 Minutes Max. */}
               {actsPillItems.map((option) => {
@@ -885,26 +885,6 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               })}
               {/* Texting pill now renders inline in its alphabetical slot among
                   the category pills above (see the actsPillItems map). */}
-              {/* Clear all — appended to the chip row so it doesn't claim
-                  dedicated horizontal real estate on the right. Only shows
-                  when at least one filter is active. */}
-              {totalClearable > 0 && (
-                <button
-                  onClick={() => {
-                    // Clear everything EXCEPT Location (it persists by design).
-                    Object.keys(activeTab === "facts" ? FACTS_FILTER_OPTIONS : ACTS_FILTER_OPTIONS)
-                      .filter((f) => f !== "Location")
-                      .forEach((f) => onFilterChange(f, []));
-                    if (hasActiveSearch) onSearchChange("");
-                    if (quickActionsOnly && onQuickActionsChange) onQuickActionsChange(false);
-                    if (textingOnly && onTextingChange) onTextingChange(false);
-                  }}
-                  className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-semibold whitespace-nowrap text-red-400 hover:text-red-600 hover:bg-red-50 transition-all"
-                >
-                  <X size={11} />
-                  Clear all ({totalClearable})
-                </button>
-              )}
             </div>
 
             {/* Mobile: dropdown (existing behavior preserved) */}

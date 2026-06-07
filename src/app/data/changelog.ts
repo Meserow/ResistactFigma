@@ -16,6 +16,110 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.33",
+    date: "2026-06-06",
+    title: "Folded Housing into Show Up",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Retired the \"Housing\" category — its acts were moved into \"Show Up\".",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.32",
+    date: "2026-06-06",
+    title: "\"Transportation\" is now \"Transport\"",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Shortened the \"Transportation\" category to \"Transport\". Acts filed under the old name carry over automatically.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.31",
+    date: "2026-06-06",
+    title: "Texting filter now adds acts, not removes them",
+    sections: [
+      {
+        heading: "Fixes",
+        items: [
+          "Fixed the Texting filter: with other categories selected, turning Texting on was shrinking the results (it required acts to be in both at once) instead of adding texting acts. It now works like the other category pills — selecting it includes texting acts alongside whatever else you've picked.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.30",
+    date: "2026-06-06",
+    title: "Tidier feed banner spacing",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Toned down the size of the location/count text in the feed banner and added a divider before the selected categories so the two read as separate.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.29",
+    date: "2026-06-06",
+    title: "Banner notes nationwide & multi-state acts",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "When a state is selected, the feed banner now says \"Showing Acts for [state] + nationwide & multi-state\" — making it clear those acts are included alongside the local ones, not filtered out.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.28",
+    date: "2026-06-06",
+    title: "\"Professional Skills\" is now \"Skills\"",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Shortened the \"Professional Skills\" category to \"Skills\". Acts filed under the old name carry over automatically.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.27",
+    date: "2026-06-06",
+    title: "5 Mins Max grouped with the location filters",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Moved \"5 Mins Max\" to the left of the divider so it sits with the In Person / Remote Only toggles, before the category pills.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.26",
+    date: "2026-06-06",
+    title: "Cleaner banner in Remote Only",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "When \"Remote Only\" is on, the banner no longer says \"Showing Acts for [state]\" — remote acts aren't tied to a place, so it just shows the result count.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.25",
     date: "2026-06-06",
     title: "Slightly crisper feed cards",

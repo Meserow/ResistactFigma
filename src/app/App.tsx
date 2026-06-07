@@ -141,6 +141,10 @@ const CATEGORY_ALIASES: Record<string, string> = {
   "art": "Art",
   "email campaign": "Email",
   "phone calling": "Phoning",
+  "professional skills": "Skills",
+  "transportation": "Transport",
+  // "Housing" retired into "Show Up" (June 2026).
+  "housing": "Show Up",
 };
 function normaliseCategory(s: string | undefined | null): string {
   const trimmed = (s ?? "").trim();
@@ -858,9 +862,22 @@ export default function App() {
     }
     return allCards.filter((card) => {
 
-      // Category
+      // Category (+ Texting). Texting is a cross-cutting tag, not a stored
+      // category — a card counts as "texting" if its title matches TEXTING_RE or
+      // its category is "Texting". It's OR'd with the selected categories so that
+      // turning Texting on ADDS texting acts to the current selection, rather than
+      // intersecting it down to near-nothing (the old behavior, when Texting was a
+      // separate AND filter applied on top of the category match).
+      // When a categoryOverride is passed (e.g. the swipe deck pool passes [] to
+      // ignore category filtering), the Texting toggle is ignored too — it's a
+      // category-type filter the caller is opting out of.
       const cats = categoryOverride ?? activeFilters["Category"] ?? [];
-      if (cats.length > 0 && !cats.includes(card.category)) return false;
+      const wantsTexting = categoryOverride == null && textingOnly;
+      if (cats.length > 0 || wantsTexting) {
+        const matchesCat = cats.includes(card.category);
+        const matchesTexting = wantsTexting && (card.category === "Texting" || cardIsTexting(card));
+        if (!matchesCat && !matchesTexting) return false;
+      }
 
       // Location — match by canonical state. Legacy "City, ST" values and the
       // "Multi-state" alias get normalized via locationToState. Remote-ness is
@@ -902,10 +919,6 @@ export default function App() {
 
       // Quick actions only (5–10 min wins)
       if (quickActionsOnly && !card.quickAction) return false;
-
-      // Texting/SMS only — catches both title-regex matches and cards an admin
-      // has explicitly filed under the "Texting" category.
-      if (textingOnly && !cardIsTexting(card) && card.category !== "Texting") return false;
 
       // Hide completed cards unless "Show Done" is checked
       if (!showDone && completedCards.has(card.id)) return false;
@@ -2849,18 +2862,21 @@ export default function App() {
                 Mirrors the unfiltered banner style; carries the Sort control.
                 Hidden on phones to match the unfiltered banner above. */}
             {!geoBanner && !matchPrefs && hasActiveFilters && activeTab === "acts" && synced && !showPendingActsOnly && !isMobile && (() => {
-              // Surface the active state(s) so the banner always names the location
-              // being filtered for — not just on the first-visit geo banner. "Remote"
-              // isn't a place, so it's excluded from the location callout.
-              const activeStates = (activeFilters["Location"] ?? []).filter((l) => l !== "Remote" && l !== "In Person");
+              // Surface the active state(s) so the banner names the location being
+              // filtered for. "Remote"/"In Person" are modes, not places, so they're
+              // excluded. When Remote Only is on the feed isn't state-specific, so we
+              // drop the "Showing Acts for X" callout entirely.
+              const remoteOn = (activeFilters["Location"] ?? []).includes("Remote");
+              const activeStates = remoteOn ? [] : (activeFilters["Location"] ?? []).filter((l) => l !== "Remote" && l !== "In Person");
               const activeCats = activeFilters["Category"] ?? [];
               return (
               <div className="mb-4 flex flex-col items-start gap-2 rounded-lg border border-[#23297e]/30 bg-[#23297e]/5 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                 <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1.5">
                   {activeStates.length > 0 && (
-                    <span className="inline-flex items-center gap-1.5 font-['Poppins',sans-serif] text-sm text-gray-700">
+                    <span className="inline-flex items-center gap-1.5 font-['Poppins',sans-serif] text-[13px] text-gray-700">
                       <MapPin size={15} className="text-[#23297e] shrink-0" strokeWidth={2.5} />
                       Showing Acts for <strong className="text-[#23297e]">{activeStates.join(", ")}</strong>
+                      <span className="font-normal text-gray-500">+ nationwide &amp; multi-state</span>
                       <button
                         onClick={() => setGeoBanner({ kind: "prompt" })}
                         className="font-['Poppins',sans-serif] text-xs font-bold text-[#ed6624] hover:text-[#e07a28] hover:underline transition-colors whitespace-nowrap"
@@ -2870,14 +2886,16 @@ export default function App() {
                       <span aria-hidden>—</span>
                     </span>
                   )}
-                  <span className="font-['Poppins',sans-serif] text-sm text-gray-700">
+                  <span className="font-['Poppins',sans-serif] text-[13px] text-gray-700">
                     <strong className="text-[#23297e]">{displayedCards.length}</strong> {displayedCards.length === 1 ? "action" : "actions"} match your filters.
                   </span>
                   {/* Selected categories — compact like the swipe deck: a dimmed,
                       truncated "·"-joined list (full list in the tooltip) with a
-                      Clear link, rather than a loud row of colored chips. */}
+                      Clear link, rather than a loud row of colored chips. A divider
+                      sets them apart from the location/count text. */}
                   {activeCats.length > 0 && (
                     <>
+                      <span aria-hidden className="mx-1 hidden h-4 w-px shrink-0 bg-gray-300 sm:inline-block" />
                       <span className="shrink-0 font-['Poppins',sans-serif] text-[12px] font-semibold text-gray-500">Categories:</span>
                       <span
                         className="min-w-0 max-w-[42ch] truncate font-['Poppins',sans-serif] text-[12px] italic text-gray-500"
@@ -2888,7 +2906,7 @@ export default function App() {
                       <button
                         type="button"
                         onClick={() => setActiveFilters((prev) => { const n = { ...prev }; delete n["Category"]; return n; })}
-                        className="shrink-0 font-['Poppins',sans-serif] text-[12px] font-semibold text-[#23297e] underline underline-offset-2 transition-colors hover:text-[#ed6624]"
+                        className="shrink-0 font-['Poppins',sans-serif] text-[12px] font-semibold text-[#ed6624] underline underline-offset-2 transition-colors hover:text-[#e07a28]"
                       >
                         Clear
                       </button>
