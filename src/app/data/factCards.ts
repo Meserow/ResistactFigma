@@ -134,7 +134,7 @@ export const FACT_CARDS: FactCard[] = [
     claim: "A lot of asylum claims are exaggerated or made up just to get into the country.",
     response: "U.S. law allows people to seek asylum, and claims are evaluated through legal processes; some are granted, many are denied.",
     askBack: "Should your concern be the law itself, the speed of the process, or fraud within the process?",
-    sourceUrl: "https://www.dhs.gov/topics/immigration",
+    sourceUrl: "https://www.uscis.gov/humanitarian/refugees-and-asylum/asylum",
     proof: "• U.S. and international law allow people to seek asylum under defined conditions.\n• Claims can be denied, but filing a claim is not proof the claim is fake.\n• Asylum review requires case-by-case adjudication rather than blanket assumptions.",
   },
   {
@@ -287,7 +287,7 @@ export const FACT_CARDS: FactCard[] = [
     claim: "There was so much unusual activity in the 2020 election that something must have gone wrong.",
     response: "Dozens of court cases, recounts, and audits did not find outcome-changing fraud.",
     askBack: "If a claim survives after courts reject it, what would count as proof against it?",
-    sourceUrl: "https://www.reuters.com/article/factcheck-election-courts-idUSL1N2XP2AI/",
+    sourceUrl: "https://www.brennancenter.org/our-work/research-reports/its-official-election-was-secure",
     proof: "• Dozens of court cases, recounts, and audits did not find fraud sufficient to change the 2020 result.\n• State officials from both parties certified results.\n• Extraordinary fraud claims need evidence stronger than suspicion and repetition.",
   },
   {
@@ -296,7 +296,7 @@ export const FACT_CARDS: FactCard[] = [
     claim: "The courts dismissed those election lawsuits so fast it felt like they weren't willing to look at the evidence.",
     response: "Courts did hear and dismiss many election cases on merits or for lack of evidence sufficient to proceed.",
     askBack: "Do you distinguish between 'I dislike the ruling' and 'the court refused to look'?",
-    sourceUrl: "https://www.reuters.com/article/factcheck-election-courts-idUSL1N2XP2AI/",
+    sourceUrl: "https://www.brennancenter.org/our-work/research-reports/its-official-election-was-secure",
     proof: "• Many courts did hear election-related claims and issued written rulings.\n• Some cases were rejected on standing or procedure; others reached the merits and still failed.\n• Saying courts 'refused to hear' everything misstates the record.",
   },
   {
@@ -332,7 +332,7 @@ export const FACT_CARDS: FactCard[] = [
     claim: "There were enough anomalies in the voting machine data to make people question whether some votes were changed.",
     response: "Audits, recounts, and court cases did not substantiate nationwide machine-flipping claims that changed the outcome.",
     askBack: "What is the strongest independently verified machine evidence you have seen?",
-    sourceUrl: "https://www.reuters.com/article/factcheck-election-courts-idUSL1N2XP2AI/",
+    sourceUrl: "https://www.brennancenter.org/our-work/research-reports/its-official-election-was-secure",
     proof: "• Voting-machine allegations were investigated, litigated, and widely rejected for lack of proof.\n• Hand counts and audits in multiple places aligned with certified results.\n• A scalable vote-switching claim would need reproducible discrepancies across jurisdictions.",
   },
   {
@@ -368,7 +368,7 @@ export const FACT_CARDS: FactCard[] = [
     claim: "Most people at January 6 were there to protest peacefully — a small group got out of hand.",
     response: "Hundreds of defendants were charged, officers were assaulted, and Congress was interrupted during certification.",
     askBack: "What makes a protest peaceful once police are attacked and the proceeding stops?",
-    sourceUrl: "https://www.justice.gov/usao-dc/36-months-jan-6-attack-capitol",
+    sourceUrl: "https://en.wikipedia.org/wiki/January_6_United_States_Capitol_attack",
     proof: "• January 6 included forced entry, assaults on officers, and disruption of certification.\n• Thousands of hours of video and court records document violence and obstruction.\n• Calling the whole event peaceful erases the documented criminal conduct.",
   },
   {
@@ -422,7 +422,7 @@ export const FACT_CARDS: FactCard[] = [
     claim: "EV mandates limit people's choices and push costs up for families who can't afford a new electric car.",
     response: "EV policy includes subsidies, standards, and infrastructure, but Americans still buy millions of gasoline vehicles and used cars.",
     askBack: "What matters more to you: preserving every option forever or lowering fuel and pollution costs over time?",
-    sourceUrl: "https://www.energy.gov/eere/vehicles/electric-vehicles",
+    sourceUrl: "https://afdc.energy.gov/laws",
     proof: "• EV policy often uses incentives, emissions standards, and procurement rules rather than literal car bans.\n• Consumers still buy conventional vehicles in the current market.\n• The debate is about standards and transition pace, not pure freedom versus coercion.",
   },
   {
@@ -611,7 +611,7 @@ export const FACT_CARDS: FactCard[] = [
     claim: "Child care is expensive, but it's ultimately a family responsibility — government shouldn't be subsidizing parenting choices.",
     response: "In many states, child care costs rival housing or college costs, which shapes labor-force participation and family income.",
     askBack: "If child care prices keep parents out of work, is that purely a private problem?",
-    sourceUrl: "https://www.childcareaware.org/the-us-and-the-high-price-of-child-care-2024/",
+    sourceUrl: "https://www.childcareaware.org/price-landscape24/",
     proof: "• Child-care costs affect labor-force participation and family income.\n• Many countries treat early care as infrastructure that supports work and child development.\n• Calling it purely private ignores the public economic effects.",
   },
   {
@@ -629,7 +629,7 @@ export const FACT_CARDS: FactCard[] = [
     claim: "We have strong domestic violence laws on the books — the problem is more about enforcement than new legislation.",
     response: "Protection levels vary by state, and legal access can shape safety and reporting.",
     askBack: "Should basic protection from abuse depend heavily on your ZIP code?",
-    sourceUrl: "https://www.ncsl.org/human-services/domestic-violence-domestic-partner-violence",
+    sourceUrl: "https://www.ncsl.org/human-services/domestic-violence-domestic-abuse-definitions-and-relationships",
     proof: "• State protections for domestic violence vary in funding, enforcement, housing support, and legal remedies.\n• Survivor outcomes depend on whether protections are usable in practice.\n• A formal law on the books does not guarantee equal protection everywhere.",
   },
   {
@@ -755,7 +755,7 @@ export const FACT_CARDS: FactCard[] = [
     claim: "After the failures of the last few years, healthy skepticism about what you're told is just common sense.",
     response: "Institutions can fail and still produce usable data; rejecting all institutions leaves only vibes, influencers, and rumors.",
     askBack: "How do you decide which institutions deserve partial trust instead of none?",
-    sourceUrl: "https://www.pewresearch.org/politics/2024/11/25/trust-in-government-1958-2024/",
+    sourceUrl: "https://www.pewresearch.org/politics/2025/12/04/public-trust-in-government-1958-2025/",
     proof: "• Institutional skepticism can be healthy, but total distrust makes evidence evaluation impossible.\n• Courts, agencies, universities, and newsrooms differ in quality and incentives.\n• Realism is not the same as assuming every institution is worthless.",
   },
   {
@@ -764,7 +764,7 @@ export const FACT_CARDS: FactCard[] = [
     claim: "The way Trump and his allies have been targeted by the Justice Department looks like political prosecution.",
     response: "Federal law enforcement has investigated officials and citizens from both parties; selective perception is not the same as selective law.",
     askBack: "Can you name a standard of evidence that would tell you prosecution is partisan rather than fact-based?",
-    sourceUrl: "https://www.justice.gov/usao-dc/36-months-jan-6-attack-capitol",
+    sourceUrl: "https://en.wikipedia.org/wiki/Criminal_proceedings_in_the_January_6_United_States_Capitol_attack",
     proof: "• Federal law-enforcement activity spans cases involving many ideologies and crime types.\n• High-profile examples can distort perception of overall case mix.\n• A selective-targeting accusation requires broader comparative evidence.",
   },
   {
@@ -782,7 +782,7 @@ export const FACT_CARDS: FactCard[] = [
     claim: "Fox and alternative media are more honest because they oppose elites.",
     response: "Being anti-establishment does not automatically make a source more accurate; opposition can distort facts too.",
     askBack: "How do you test whether a source is right when it confirms your side?",
-    sourceUrl: "https://www.reuters.com/article/factcheck-election-courts-idUSL1N2XP2AI/",
+    sourceUrl: "https://www.pewresearch.org/journalism/2016/07/07/trust-and-accuracy/",
     proof: "• Opposing elites does not automatically make a source more accurate.\n• Alternative media can also make false or exaggerated claims.\n• Honesty has to be measured against evidence, corrections, and track record.",
   },
   {
@@ -800,7 +800,7 @@ export const FACT_CARDS: FactCard[] = [
     claim: "Local news is struggling mainly because people get information online now — it's a business model problem.",
     response: "Consolidation and newsroom losses affect what communities know, which changes democratic accountability.",
     askBack: "If local reporting shrinks, who fills the gap: neighbors, party media, or rumors?",
-    sourceUrl: "https://www.pewresearch.org/journalism/fact-sheet/state-of-the-news-media/",
+    sourceUrl: "https://localnewsinitiative.northwestern.edu/projects/state-of-local-news/2024/report/",
     proof: "• Local news has declined alongside consolidation, advertising collapse, and hedge-fund ownership patterns.\n• Information loss at the local level affects civic knowledge and accountability.\n• The problem is structural, not unrelated to broader media economics and politics.",
   },
   {
@@ -854,7 +854,7 @@ export const FACT_CARDS: FactCard[] = [
     claim: "The Afghanistan withdrawal raised serious questions about whether allies can count on us when things get hard.",
     response: "Afghanistan was a collapse in one theater; it does not logically show all alliances fail or all deterrence is useless.",
     askBack: "Which lesson is specific to Afghanistan, and which lesson do you think applies everywhere?",
-    sourceUrl: "https://www.state.gov/u-s-relations-with-nato/",
+    sourceUrl: "https://www.nato.int/cps/en/natohq/topics_110496.htm",
     proof: "• The Afghanistan withdrawal was chaotic, but one withdrawal does not prove all alliances are pointless.\n• Different alliances have different purposes, partners, and outcomes.\n• A bad exit from one war is not a universal argument against all commitments.",
   },
   {
@@ -872,7 +872,7 @@ export const FACT_CARDS: FactCard[] = [
     claim: "While China is racing ahead on manufacturing and military capability, we're focused on climate pledges and social issues.",
     response: "U.S.-China competition spans semiconductors, trade, military posture, alliances, education, and industrial policy.",
     askBack: "Which arena worries you most: military, industrial, or technological?",
-    sourceUrl: "https://www.state.gov/u-s-relations-with-the-peoples-republic-of-china/",
+    sourceUrl: "https://ustr.gov/countries-regions/china-mongolia-taiwan/peoples-republic-china",
     proof: "• Competition with China involves technology, industrial capacity, alliances, and defense planning as well as domestic policy debates.\n• Climate and diversity policies do not by themselves explain strategic balance.\n• A slogan cannot replace a full account of power competition.",
   },
   {
@@ -899,7 +899,7 @@ export const FACT_CARDS: FactCard[] = [
     claim: "Countries like Russia and China respond to hard power and strength, not diplomatic agreements.",
     response: "Toughness can matter, but alliances multiply logistics, intelligence, and legitimacy in ways one country cannot replicate alone.",
     askBack: "What does 'strength' mean without partners and basing access?",
-    sourceUrl: "https://www.state.gov/u-s-relations-with-nato/",
+    sourceUrl: "https://www.nato.int/cps/en/natohq/topics_110496.htm",
     proof: "• Coercive toughness can matter, but countries also respond to economic ties, alliances, credibility, and capability.\n• Many successful security outcomes rely on coalition power, not solo swagger.\n• Respect in international politics is broader than fear.",
   },
   {
@@ -908,7 +908,7 @@ export const FACT_CARDS: FactCard[] = [
     claim: "With so much to fix at home, it's worth asking whether some of our overseas commitments are still worth the cost.",
     response: "Retrenchment can lower some costs but can also create new risks if allies, trade routes, or deterrence weaken.",
     askBack: "Which international commitment would you cut first, and what downstream risk would you accept?",
-    sourceUrl: "https://www.cfr.org/backgrounder/how-does-us-spend-its-money-defense",
+    sourceUrl: "https://www.pgpf.org/national-debt-clock/defense-spending",
     proof: "• Domestic renewal and international commitments are not always zero-sum; trade, security, and alliances can affect home conditions.\n• Retrenchment can reduce burdens in some cases but can also create new risks.\n• Withdrawal is a strategy choice with costs and benefits, not an automatic solution.",
   },
   {

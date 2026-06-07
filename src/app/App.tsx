@@ -1,12 +1,11 @@
 import { useState, useEffect, useMemo, useRef, useDeferredValue, lazy, Suspense, Fragment } from "react";
-import { Wrench, Clock, Flame, Smile, VenetianMask, Sun, Zap, MapPin, Globe, Users, DollarSign, EyeOff, Loader2, Eye, X, LayoutList, Layers } from "lucide-react";
+import { Wrench, Flame, Smile, VenetianMask, Sun, Zap, MapPin, Globe, Users, DollarSign, EyeOff, Loader2, Eye, X, LayoutList, Layers, Star } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { initAnalytics, analytics } from "./lib/analytics";
 import { GAMIFICATION_KEYFRAMES } from "./lib/animations";
 import { burstConfetti } from "./lib/confetti";
 import fistIcon from "../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
 import { Navbar } from "./components/Navbar";
-import { SortDropdown } from "./components/SortDropdown";
 import { ActionCard, ActionCardData } from "./components/ActionCard";
 import { cartoonUrlFor } from "./data/cartoon-manifest";
 import { synopsisFor } from "./data/synopsis-manifest";
@@ -319,7 +318,6 @@ const GEO_STATE_OPTIONS = LOCATION_OPTIONS.filter(
 interface PillFiltersPayload {
   activeFilters: Record<string, string[]>;
   quickActionsOnly: boolean;
-  textingOnly: boolean;
   showDone: boolean;
   sortBy: "popular" | "newest" | "az";
 }
@@ -351,7 +349,6 @@ function readPillFilters(): PillFiltersPayload | null {
     return {
       activeFilters,
       quickActionsOnly: parsed.quickActionsOnly === true,
-      textingOnly: parsed.textingOnly === true,
       showDone: parsed.showDone === true,
       sortBy: parsed.sortBy === "newest" || parsed.sortBy === "az" ? parsed.sortBy : "popular",
     };
@@ -782,9 +779,6 @@ export default function App() {
   const [quickActionsOnly, setQuickActionsOnly] = useState(
     () => readPillFilters()?.quickActionsOnly ?? false,
   );
-  const [textingOnly, setTextingOnly] = useState(
-    () => readPillFilters()?.textingOnly ?? false,
-  );
   const [showDone, setShowDone] = useState(
     () => readPillFilters()?.showDone ?? false,
   );
@@ -860,20 +854,15 @@ export default function App() {
     }
     return allCards.filter((card) => {
 
-      // Category (+ Texting). Texting is a cross-cutting tag, not a stored
-      // category — a card counts as "texting" if its title matches TEXTING_RE or
-      // its category is "Texting". It's OR'd with the selected categories so that
-      // turning Texting on ADDS texting acts to the current selection, rather than
-      // intersecting it down to near-nothing (the old behavior, when Texting was a
-      // separate AND filter applied on top of the category match).
-      // When a categoryOverride is passed (e.g. the swipe deck pool passes [] to
-      // ignore category filtering), the Texting toggle is ignored too — it's a
-      // category-type filter the caller is opting out of.
+      // Category. "Texting" is an ordinary selectable category like any other —
+      // the only special bit is matching: a card counts as Texting if its stored
+      // category is "Texting" OR its title matches TEXTING_RE (texting acts often
+      // live under another category). That regex match is OR'd in only when
+      // "Texting" is one of the selected categories.
       const cats = categoryOverride ?? activeFilters["Category"] ?? [];
-      const wantsTexting = categoryOverride == null && textingOnly;
-      if (cats.length > 0 || wantsTexting) {
+      if (cats.length > 0) {
         const matchesCat = cats.includes(card.category);
-        const matchesTexting = wantsTexting && (card.category === "Texting" || cardIsTexting(card));
+        const matchesTexting = cats.includes("Texting") && cardIsTexting(card);
         if (!matchesCat && !matchesTexting) return false;
       }
 
@@ -1363,7 +1352,7 @@ export default function App() {
   // deferredSearchQuery (not searchQuery) means these memos are bypassed
   // entirely during keystrokes — React renders the stale list instantly,
   // then re-runs only after the deferred value settles.
-  const feedDeps = [cards, deferredSearchQuery, activeFilters, quickActionsOnly, textingOnly, showDone,
+  const feedDeps = [cards, deferredSearchQuery, activeFilters, quickActionsOnly, showDone,
       completedCards, matchPrefs, isAdminUser, todayISO, boostedCards,
       sortBy, demoteHyperLocal, hasSharedSpread,
       // Impersonation override — recompute when entering / exiting view-as,
@@ -1383,7 +1372,6 @@ export default function App() {
   const hasActiveFilters =
     searchQuery.trim().length > 0 ||
     quickActionsOnly ||
-    textingOnly ||
     matchPrefs !== null ||
     Object.values(activeFilters).some((arr) => (arr ?? []).length > 0);
 
@@ -1520,7 +1508,9 @@ export default function App() {
   // preferences" (pointless once set), but this one pitches swiping, which is
   // just as useful whether or not preferences exist.
   useEffect(() => {
-    if (scrollNudgeDismissed || activeTab !== "acts") return;
+    // Only nudge when there's genuinely a lot to scroll — a small filtered set
+    // (e.g. ~20 cards) doesn't need a "use the match tool" prompt.
+    if (scrollNudgeDismissed || activeTab !== "acts" || displayedCards.length < 40) return;
     const onScroll = () => {
       if (scrollNudgeFired.current) return;
       if (window.scrollY > 1600) {
@@ -1530,7 +1520,7 @@ export default function App() {
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [scrollNudgeDismissed, activeTab]);
+  }, [scrollNudgeDismissed, activeTab, displayedCards.length]);
 
   // ── Hero → toolbar morph: expose scroll progress (0→1 over the first ~120px)
   //   as the CSS var --hero-collapse on <html>. The hero (HomeHero/LoggedInHero)
@@ -1634,6 +1624,12 @@ export default function App() {
         if (Array.isArray(remote.locationFilter) && remote.locationFilter.length > 0) {
           setActiveFilters((prev) => ({ ...prev, Location: remote.locationFilter }));
         }
+        // Auto-apply saved category preferences so they take effect on this
+        // device too — "Save these categories" is now how users set prefs, so
+        // they should follow the account and apply on arrival.
+        if ((remote.includedCategories?.length ?? 0) > 0) {
+          setMatchPrefs(remote);
+        }
       } else {
         const local = loadPreferences();
         if (local) {
@@ -1653,6 +1649,23 @@ export default function App() {
       console.warn("Match prefs sync failed:", err);
     }
   }
+
+  // ── Auto-apply saved category preferences on load ──
+  // If the user previously saved categories (via "Save these categories"), apply
+  // them on arrival so their preferred categories are already in effect — the
+  // localStorage path; the cross-device path runs in syncMatchPreferencesOnLogin.
+  // Runs once on mount. We only auto-apply when there's a real saved category
+  // preference, so users who never saved still land on the full feed.
+  useEffect(() => {
+    const saved = loadPreferences();
+    if (saved && (saved.includedCategories?.length ?? 0) > 0) {
+      setMatchPrefs(saved);
+      if (Array.isArray(saved.locationFilter) && saved.locationFilter.length > 0) {
+        setActiveFilters((prev) => ({ ...prev, Location: saved.locationFilter }));
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Fetch the signed-in user's completion scoreboard ──
   async function fetchMyCompletions(token: string) {
@@ -1789,8 +1802,8 @@ export default function App() {
   //    Same-device persistence so a user's category / location / Remote /
   //    quick-actions / show-done / sort pick survives page reloads. ──
   useEffect(() => {
-    writePillFilters({ activeFilters, quickActionsOnly, textingOnly, showDone, sortBy });
-  }, [activeFilters, quickActionsOnly, textingOnly, showDone, sortBy]);
+    writePillFilters({ activeFilters, quickActionsOnly, showDone, sortBy });
+  }, [activeFilters, quickActionsOnly, showDone, sortBy]);
 
   // ── Cross-device sync for the Location pill (signed-in users only) ──
   //    The Match Me preferences blob is the only thing we sync to the
@@ -2014,7 +2027,7 @@ export default function App() {
   // from the top rather than showing a truncated filtered list.
   useEffect(() => {
     setDisplayLimit(getDisplayPage());
-  }, [hasActiveFilters, searchQuery, activeFilters, quickActionsOnly, textingOnly]);
+  }, [hasActiveFilters, searchQuery, activeFilters, quickActionsOnly]);
 
   // ── Infinite scroll (desktop only) ──
   // A sentinel <div> at the bottom of the card grid; when it enters the
@@ -2488,6 +2501,7 @@ export default function App() {
     onApprove: (id: number) => cardHandlersRef.current.handleApproveCard(id),
     onCardUpdated: (updated: ActionCardData, toast?: string) => cardHandlersRef.current.handleCardSaved(updated, toast),
     onSpreadShared: () => cardHandlersRef.current.handleSpreadShared(),
+    onSwipeToDeck: () => setSwipeOpen(true),
   }), []);
 
   return (
@@ -2565,8 +2579,6 @@ export default function App() {
         onTabChange={handleTabChange}
         quickActionsOnly={quickActionsOnly}
         onQuickActionsChange={setQuickActionsOnly}
-        textingOnly={textingOnly}
-        onTextingChange={setTextingOnly}
         showDone={showDone}
         onShowDoneChange={setShowDone}
         completedCount={completedCards.size}
@@ -2815,15 +2827,6 @@ export default function App() {
                       Not you? Change
                     </button>
                   )}
-                  {!isMobile && synced && !matchPrefs && (
-                    <SortDropdown
-                      sortBy={sortBy}
-                      onSortChange={setSortBy}
-                      showDone={showDone}
-                      onShowDoneChange={setShowDone}
-                      completedCount={myCompletions?.total ?? 0}
-                    />
-                  )}
                   <button onClick={dismissGeoBanner} aria-label="Dismiss" className="text-gray-400 hover:text-gray-600 transition-colors">
                     <X size={16} />
                   </button>
@@ -2841,13 +2844,6 @@ export default function App() {
                   Showing all <strong className="text-[#23297e]">{displayedCards.length}</strong> actions — unfiltered.
                 </p>
                 <div className="flex items-center gap-4 shrink-0">
-                  <SortDropdown
-                    sortBy={sortBy}
-                    onSortChange={setSortBy}
-                    showDone={showDone}
-                    onShowDoneChange={setShowDone}
-                    completedCount={myCompletions?.total ?? 0}
-                  />
                   <button
                     onClick={() => setMatchOpen(true)}
                     className="font-['Poppins',sans-serif] text-xs font-bold text-[#ed6624] hover:text-[#e07a28] hover:underline transition-colors whitespace-nowrap"
@@ -2873,6 +2869,9 @@ export default function App() {
               const pureRemote = remoteOn && !inPersonOn;
               const activeStates = pureRemote ? [] : locTokens.filter((l) => l !== "Remote" && l !== "In Person");
               const modeLabel = inPersonOn && remoteOn ? "In person + remote" : inPersonOn ? "In person" : "";
+              // Whether a location/mode callout renders before the count (so the
+              // count's leading "·" separator only shows when something precedes it).
+              const hasLeadingCallout = pureRemote || activeStates.length > 0 || !!modeLabel;
               const activeCats = activeFilters["Category"] ?? [];
               return (
               <div className="mb-4 flex flex-col items-start gap-2 rounded-lg border border-[#23297e]/30 bg-[#23297e]/5 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
@@ -2899,12 +2898,28 @@ export default function App() {
                     <span className="inline-flex items-center gap-1.5 font-['Poppins',sans-serif] text-[13px] text-gray-700">
                       <MapPin size={15} className="text-[#23297e] shrink-0" strokeWidth={2.5} />
                       <strong className="text-[#23297e]">{modeLabel}</strong> acts
+                      <span className="text-gray-400">— anywhere</span>
+                      <button
+                        onClick={() => setGeoBanner({ kind: "prompt" })}
+                        className="font-['Poppins',sans-serif] text-[11px] font-semibold text-[#ed6624] hover:text-[#e07a28] hover:underline transition-colors whitespace-nowrap"
+                      >
+                        Pick a state
+                      </button>
                     </span>
                   ) : null}
                   <span className="font-['Poppins',sans-serif] text-[13px] text-gray-700">
-                    <span aria-hidden className="mr-1.5 text-gray-300">·</span>
+                    {hasLeadingCallout && <span aria-hidden className="mr-1.5 text-gray-300">·</span>}
                     <strong className="text-[#23297e]">{displayedCards.length}</strong> {displayedCards.length === 1 ? "action" : "actions"}
                   </span>
+                  {/* Active "5 Mins Max" filter — surfaced so the banner reflects it,
+                      matching the purple Zap of the pill that sets it. */}
+                  {quickActionsOnly && (
+                    <span className="inline-flex items-center gap-1 font-['Poppins',sans-serif] text-[12px] font-semibold text-[#5a3e9e]">
+                      <span aria-hidden className="text-gray-300">·</span>
+                      <Zap size={12} className="shrink-0" fill="currentColor" />
+                      5 mins max
+                    </span>
+                  )}
                   {/* Selected categories — compact like the swipe deck: a dimmed,
                       truncated "·"-joined list (full list in the tooltip) with a
                       Clear link, rather than a loud row of colored chips. A divider
@@ -2929,13 +2944,34 @@ export default function App() {
                     </>
                   )}
                 </div>
-                <SortDropdown
-                  sortBy={sortBy}
-                  onSortChange={setSortBy}
-                  showDone={showDone}
-                  onShowDoneChange={setShowDone}
-                  completedCount={myCompletions?.total ?? 0}
-                />
+                {/* Save the selected categories into the user's preferences
+                    (includedCategories) — persists, syncs to the account when
+                    signed in, and switches the feed to favor them. Replaces the
+                    old Sort control on the right of the banner. */}
+                {activeCats.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const base = loadPreferences() ?? DEFAULT_PREFERENCES;
+                      const next: Preferences = {
+                        ...base,
+                        includedCategories: activeCats,
+                        state: activeStates[0] ?? base.state,
+                        locationFilter: activeFilters["Location"] ?? [],
+                      };
+                      setMatchPrefs(next);
+                      savePreferences(next);
+                      if (accessToken) pushUserPreferences(accessToken, next);
+                      setStaggerKey((k) => k + 1);
+                      showToast(accessToken ? "Saved to your preferences" : "Saved — sign in to sync across devices");
+                    }}
+                    className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-[#ed6624] px-3 py-1.5 font-['Poppins',sans-serif] text-xs font-bold text-white transition-colors hover:bg-[#e07a28] whitespace-nowrap"
+                    title="Save these categories to your preferences"
+                  >
+                    <Star size={12} fill="currentColor" />
+                    Save these categories
+                  </button>
+                )}
               </div>
               );
             })()}
@@ -2996,47 +3032,6 @@ export default function App() {
                 this set of cards is showing (and the total count, so the volume
                 is visible at a glance). */}
             {matchPrefs && (() => {
-              // Friendly time labels — match the MatchMe slider vocabulary.
-              const timeLabel = (
-                matchPrefs.time === "5min"     ? "Under 5 min"
-                : matchPrefs.time === "10min"    ? "5–10 min"
-                : matchPrefs.time === "30min"    ? "~30 min"
-                : matchPrefs.time === "1hr"      ? "~1 hr"
-                : matchPrefs.time === "fewHours" ? "Few hrs / week"
-                : matchPrefs.time === "fullDay"  ? "~1 day"
-                : matchPrefs.time === "ongoing"  ? "Ongoing"
-                : null
-              );
-              // Tone-stop names — must match MatchMeModal TONE_LABELS so the
-              // banner chip says exactly what the user picked. Icons render as
-              // simple navy line-icons (lucide-react) — replaced the older
-              // colourful emoji set so the strip reads as one unified UI
-              // element rather than a row of disparate Unicode glyphs.
-              const toneStops: Record<"anger" | "comedy" | "subversion" | "hope" | "energy", { Icon: LucideIcon; label: string; stops: string[] }> = {
-                anger:      { Icon: Flame,         label: "Confrontational", stops: ["None", "Low", "Bold", "High"] },
-                comedy:     { Icon: Smile,         label: "Humor",           stops: ["None", "Light", "Irreverent", "Full mockery"] },
-                subversion: { Icon: VenetianMask,  label: "Subversive",      stops: ["None", "Mild", "Edgy", "Radical"] },
-                hope:       { Icon: Sun,           label: "Hopeful",         stops: ["None", "Some", "Uplifting", "Full hope"] },
-                energy:     { Icon: Zap,           label: "Motivation",      stops: ["Low",  "Mild",  "Engaged", "On fire"] },
-              };
-              // Show all 5 tone dims always, but visually distinguish dims at
-              // the default (1) from ones the user has moved off. Defaults
-              // render greyed-out + slimmer so they read as "background", and
-              // bumped ones get an orange accent so they pop. This gives the
-              // user a complete at-a-glance view of their match config without
-              // having to open the Match wizard, while still calling out
-              // what's been customised.
-              const toneChips = (Object.keys(toneStops) as Array<keyof typeof toneStops>)
-                .map((k) => {
-                  const raw = matchPrefs.tone[k] ?? 1;
-                  const v = Math.max(0, Math.min(3, raw));
-                  return {
-                    Icon: toneStops[k].Icon,
-                    label: toneStops[k].label,
-                    value: toneStops[k].stops[v],
-                    isDefault: raw === 1,
-                  };
-                });
               const groupCount = matchPrefs.vulnerableGroups?.length ?? 0;
               return (
                 <div className="mb-4 flex flex-col gap-2 rounded-lg border border-[#ed6624] bg-[#ed6624]/5 px-4 py-2.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
@@ -3062,30 +3057,39 @@ export default function App() {
                         simple navy line-icons so the strip reads as one unified
                         UI element rather than a row of disparate emoji. */}
                     <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[10px] text-gray-600 font-['Poppins',sans-serif]">
-                      {timeLabel && (
-                        <button onClick={() => { setMatchInitialStep(0); setMatchOpen(true); }} className="inline-flex items-center gap-0.5 rounded-full bg-white/70 border border-gray-200 px-1.5 py-0.5 text-[10px] leading-tight hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
-                          <Clock size={10} className="text-[#23297e] shrink-0" strokeWidth={2} />
-                          {timeLabel}
+                      {/* Active pill filters (In Person / Remote / 5 Mins Max) —
+                          these still apply in match mode, so surface them here too.
+                          Each chip is its accent color and toggles its filter off. */}
+                      {(activeFilters["Location"] ?? []).includes("In Person") && (
+                        <button
+                          onClick={() => setActiveFilters((prev) => ({ ...prev, Location: (prev.Location ?? []).filter((l) => l !== "In Person") }))}
+                          className="inline-flex items-center gap-0.5 rounded-full border border-[#23297e]/30 bg-[#23297e]/10 px-1.5 py-0.5 text-[10px] font-semibold leading-tight text-[#23297e] transition-colors hover:bg-[#23297e]/20"
+                          title="In person — tap to turn off"
+                        >
+                          <MapPin size={10} className="shrink-0 text-[#23297e]" strokeWidth={2} />
+                          In person
                         </button>
                       )}
-                      {toneChips.map((c) => {
-                        const Icon = c.Icon;
-                        return (
-                          <button
-                            key={c.label}
-                            onClick={() => { setMatchInitialStep(0); setMatchOpen(true); }}
-                            className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] leading-tight border transition-colors ${
-                              c.isDefault
-                                ? "bg-gray-50 border-gray-100 text-gray-400 hover:border-[#ed6624] hover:bg-[#ed6624]/5"
-                                : "bg-[#ed6624]/10 border-[#ed6624]/30 text-[#23297e] font-semibold hover:border-[#ed6624] hover:bg-[#ed6624]/20"
-                            }`}
-                            title={c.isDefault ? `${c.label} — default (not set)` : `${c.label} bumped to ${c.value}`}
-                          >
-                            <Icon size={10} className={`shrink-0 ${c.isDefault ? "text-gray-400" : "text-[#23297e]"}`} strokeWidth={2} />
-                            {c.label}: {c.value}
-                          </button>
-                        );
-                      })}
+                      {(activeFilters["Location"] ?? []).includes("Remote") && (
+                        <button
+                          onClick={() => setActiveFilters((prev) => ({ ...prev, Location: (prev.Location ?? []).filter((l) => l !== "Remote") }))}
+                          className="inline-flex items-center gap-0.5 rounded-full border border-[#ed6624]/40 bg-[#ed6624]/10 px-1.5 py-0.5 text-[10px] font-semibold leading-tight text-[#ed6624] transition-colors hover:bg-[#ed6624]/20"
+                          title="Remote — tap to turn off"
+                        >
+                          <Globe size={10} className="shrink-0 text-[#ed6624]" strokeWidth={2} />
+                          Remote
+                        </button>
+                      )}
+                      {quickActionsOnly && (
+                        <button
+                          onClick={() => setQuickActionsOnly(false)}
+                          className="inline-flex items-center gap-0.5 rounded-full border border-[#5a3e9e]/40 bg-[#5a3e9e]/10 px-1.5 py-0.5 text-[10px] font-semibold leading-tight text-[#5a3e9e] transition-colors hover:bg-[#5a3e9e]/20"
+                          title="5 mins max — tap to turn off"
+                        >
+                          <Zap size={10} className="shrink-0 text-[#5a3e9e]" strokeWidth={2} fill="currentColor" />
+                          5 mins max
+                        </button>
+                      )}
                       {matchPrefs.state && (
                         <button onClick={() => { setMatchInitialStep(0); setMatchOpen(true); }} className="inline-flex items-center gap-0.5 rounded-full bg-white/70 border border-gray-200 px-1.5 py-0.5 text-[10px] leading-tight hover:border-[#ed6624] hover:bg-[#ed6624]/5 transition-colors">
                           <MapPin size={10} className="text-[#23297e] shrink-0" strokeWidth={2} />
@@ -3122,13 +3126,6 @@ export default function App() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 shrink-0 self-start">
-                    <SortDropdown
-                      sortBy={sortBy}
-                      onSortChange={setSortBy}
-                      showDone={showDone}
-                      onShowDoneChange={setShowDone}
-                      completedCount={myCompletions?.total ?? 0}
-                    />
                     <button
                       onClick={() => setMatchOpen(true)}
                       className="font-['Poppins',sans-serif] text-xs font-semibold text-[#23297e] hover:underline"
@@ -3184,6 +3181,7 @@ export default function App() {
                   accessToken={accessToken}
                   onCardUpdated={cardCb.onCardUpdated}
                   onSpreadShared={cardCb.onSpreadShared}
+                  onSwipeToDeck={cardCb.onSwipeToDeck}
                 />
                 </div>
                 </Fragment>
@@ -3253,7 +3251,9 @@ export default function App() {
               <>
                 <div className="w-2 h-2 rounded-full bg-[#ed6624]" />
                 <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
-                  <strong className="text-[#ed6624] font-bold">{synced ? displayedCards.length : "—"}</strong>
+                  {/* Total acts on the site (not the filtered count — that's in the
+                      feed banner). serverTotal is the authoritative library size. */}
+                  <strong className="text-[#ed6624] font-bold">{synced ? serverTotal : "—"}</strong>
                   <span className="hidden md:inline">
                     {" "}acts
                     {synced && newActionsToday > 0 && ` (${newActionsToday} new today)`}

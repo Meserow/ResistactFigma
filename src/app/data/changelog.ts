@@ -16,6 +16,199 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.54",
+    date: "2026-06-07",
+    title: "Fixed broken source links on the Facts",
+    sections: [
+      {
+        heading: "The Facts",
+        items: [
+          "Audited every \"View source\" link on the Facts and fixed 11 that led to dead or missing pages — affecting 16 facts across immigration, elections, energy, families, media, and foreign policy.",
+          "Each broken link was replaced with a current, working source that still backs up the fact (official government pages where available, plus trusted research and reference sources).",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.53",
+    date: "2026-06-07",
+    title: "Cards get a navy outline on hover",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Hovering an Act card now highlights it with a crisp 2px navy border, making it clearer which card you're about to open.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.52",
+    date: "2026-06-06",
+    title: "Dropped the time chip from matches",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Removed the time estimate from the \"Matched for you\" banner — matches aren't based on time anymore. (The 5 Mins Max filter still shows when it's on.)",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.51",
+    date: "2026-06-06",
+    title: "Match banner shows In Person / Remote / 5 Mins Max",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "The \"Matched for you\" banner now shows your In Person, Remote, and 5 Mins Max filters as chips (each toggles off when tapped) — they still apply while matched, so now you can see them.",
+          "Hid the generic time chip when 5 Mins Max is on, so they no longer contradict each other.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.50",
+    date: "2026-06-06",
+    title: "Dropped the tone chips from the match banner",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Removed the tone indicators (Confrontational / Humor / Subversive / Hopeful / Motivation) from the \"Matched for you\" banner — they're no longer part of how matching works.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.49",
+    date: "2026-06-06",
+    title: "Saved categories stick across visits",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Your saved categories now apply automatically when you come back — on the same device and, once signed in, on any device.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.48",
+    date: "2026-06-06",
+    title: "Preferences come from saved categories",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Removed the \"Set Act Preferences\" button — you now set your preferences by picking categories on the feed and using \"Save these categories.\"",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.47",
+    date: "2026-06-06",
+    title: "Time is a dropdown in Edit Action",
+    sections: [
+      {
+        heading: "Admin",
+        items: [
+          "Replaced the Time slider in Edit Action with a dropdown of the exact time-commitment options. The slider's labels had drifted from the card (e.g. it read \"a few hours per month\" while the card showed \"~30 minutes\"); the dropdown can't disagree.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.46",
+    date: "2026-06-06",
+    title: "Save your categories from the feed banner",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Added a \"Save these categories\" button to the feed banner — it stores your selected categories in your preferences (synced to your account when signed in) and tunes the feed to favor them.",
+          "Removed the Sort control from the feed banner.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.45",
+    date: "2026-06-06",
+    title: "Footer total, fewer nudges, pick-a-state",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "The acts count in the bottom-left now shows the total number of acts on the site, not the filtered count (which already shows in the feed banner).",
+          "The \"lots to scroll\" nudge no longer pops up when you've only got a small filtered set on screen.",
+          "When you're set to In Person without a state, the banner now says \"anywhere\" and offers a \"Pick a state\" link so you can choose one.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.44",
+    date: "2026-06-06",
+    title: "Texting behaves like every other category",
+    sections: [
+      {
+        heading: "Fixes",
+        items: [
+          "Fixed the Texting filter: it's now a normal category pill, so \"Clear\" clears it, it shows in the banner's category list, and it adds to your selection like the others. Previously it was a separate toggle that \"Clear\" left stuck on.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.43",
+    date: "2026-06-06",
+    title: "Calmer category filter pills",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Selected category pills now show as a colored outline instead of a solid fill, so the filter row is much less busy. The In Person / Remote and 5 Mins Max toggles keep their solid color so they still stand out.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.42",
+    date: "2026-06-06",
+    title: "Banner shows the 5 Mins Max filter",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "When \"5 Mins Max\" is on, the feed banner now shows it alongside the location and categories.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.41",
+    date: "2026-06-06",
+    title: "Swipe a card open to enter Discover",
+    sections: [
+      {
+        heading: "Discover",
+        items: [
+          "Swiping left or right on an act's detail popup now drops you into the swipe deck — no need to find the \"Swipe to Discover\" button first.",
+        ],
+      },
+      {
+        heading: "The Acts",
+        items: [
+          "Made the feed banner wording consistent — the Remote view now reads \"Remote acts\" to match the other modes.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.40",
     date: "2026-06-06",
     title: "Banner reflects In Person / Remote",

@@ -6,7 +6,6 @@ import type { ActionCardData } from "./ActionCard";
 import { CardDetailsModal } from "./CardDetailsModal";
 import { LOCATION_OPTIONS, locationToState, normalizeCardLocation } from "../lib/locations";
 import { ToneRangeSlider } from "./ToneSlider";
-import { InvolvementPicker, involvementLevelFor } from "./InvolvementPicker";
 import type { TimeBucket } from "../lib/matcher";
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
@@ -81,12 +80,17 @@ const TIME_COMMITMENT_MAP: Record<TimeBucket, string> = {
   "ongoing":  "Ongoing",
 };
 
-const TIME_STOPS = [
-  { key: "5min"     as TimeBucket, title: "Just the basics", desc: "< 5 minutes" },
-  { key: "10min"    as TimeBucket, title: "A few minutes",   desc: "5–10 minutes" },
-  { key: "30min"    as TimeBucket, title: "A little",        desc: "A few hours per month" },
-  { key: "fewHours" as TimeBucket, title: "Regularly",       desc: "A few hours per week" },
-  { key: "ongoing"  as TimeBucket, title: "All in",          desc: "Ongoing organizing" },
+// Time-commitment dropdown options. Labels are the exact strings stored on the
+// card (TIME_COMMITMENT_MAP) so the picker can never disagree with what shows on
+// the card — the old slider used separate, drifted labels (e.g. "30min" read as
+// "A few hours per month" while the card said "~30 minutes").
+const TIME_OPTIONS: { key: TimeBucket; label: string }[] = [
+  { key: "5min",     label: "< 5 minutes" },
+  { key: "10min",    label: "5–10 minutes" },
+  { key: "30min",    label: "~30 minutes" },
+  { key: "fewHours", label: "1–3 hours" },
+  { key: "fullDay",  label: "Full day" },
+  { key: "ongoing",  label: "Ongoing" },
 ];
 
 function timeBucketFromCard(timeCommitment: string | undefined, quickAction?: boolean): TimeBucket {
@@ -426,9 +430,6 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
     }
   }
 
-  const tIdx = Math.max(0, TIME_STOPS.findIndex((l) => l.key === involvementLevelFor(involvement)));
-  const tLevel = TIME_STOPS[tIdx];
-
   return (
     <>
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -586,16 +587,22 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
               Tone & Time
             </p>
 
-            {/* Time */}
+            {/* Time — a dropdown of the exact time-commitment labels, so it always
+                matches the value shown on the card (the old slider drifted). */}
             <div>
               <div className="flex items-center mb-1.5">
                 <Clock size={14} strokeWidth={2} className="text-[#23297e] mr-1.5 shrink-0" />
-                <strong className="font-['Poppins',sans-serif] font-semibold text-xs text-[#23297e]">Time</strong>
-                <span className="ml-1.5 font-['Poppins',sans-serif] text-[11px] text-gray-500">
-                  · <span className="font-medium text-[#ed6624]">{tLevel.title}</span> — {tLevel.desc}
-                </span>
+                <strong className="font-['Poppins',sans-serif] font-semibold text-xs text-[#23297e]">Time commitment</strong>
               </div>
-              <ToneRangeSlider value={tIdx} onChange={(v) => setInvolvement(TIME_STOPS[v].key)} max={4} />
+              <select
+                value={involvement === "1hr" ? "fewHours" : involvement}
+                onChange={(e) => setInvolvement(e.target.value as TimeBucket)}
+                className={INPUT_CLS}
+              >
+                {TIME_OPTIONS.map((o) => (
+                  <option key={o.key} value={o.key}>{o.label}</option>
+                ))}
+              </select>
             </div>
 
             {/* Tone sliders — admin override; non-admins see read-only defaults */}
