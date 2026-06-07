@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useDeferredValue, lazy, Suspense, Fragment } from "react";
 import { Wrench, Flame, Smile, VenetianMask, Sun, Zap, MapPin, Globe, Users, DollarSign, EyeOff, Loader2, Eye, X, LayoutList, Layers, Star } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { initAnalytics, analytics } from "./lib/analytics";
+import { initAnalytics, analytics, disableAnalyticsForAdmin, clearAdminAnalyticsOptOut } from "./lib/analytics";
 import { GAMIFICATION_KEYFRAMES } from "./lib/animations";
 import { burstConfetti } from "./lib/confetti";
 import fistIcon from "../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
@@ -1798,6 +1798,19 @@ export default function App() {
   //    or the browser has Do-Not-Track on. Idempotent — safe to call again. ──
   useEffect(() => { initAnalytics(); }, []);
 
+  // ── Exclude admins from Google Analytics. Admins operate the site, so their
+  //    own activity shouldn't pollute visitor metrics. Once an admin signs in,
+  //    GA is killed for this browser AND a localStorage flag is set so future
+  //    reloads bail before gtag even loads (zero page_views). A confirmed
+  //    non-admin resolving on the same browser clears the flag. `approval`
+  //    stays null until auth resolves, so the flag is left untouched then —
+  //    letting a prior admin opt-out persist across reloads. ──
+  useEffect(() => {
+    if (approval == null) return;            // not resolved yet — leave flag as-is
+    if (approval.isAdmin === true) disableAnalyticsForAdmin();
+    else clearAdminAnalyticsOptOut();
+  }, [approval]);
+
   // ── Persist pill-filter selections to localStorage on every change.
   //    Same-device persistence so a user's category / location / Remote /
   //    quick-actions / show-done / sort pick survives page reloads. ──
@@ -2083,6 +2096,28 @@ export default function App() {
     if (pendingActsVersion > 0) setShowPendingActsOnly(true);
   }, [pendingActsVersion]);
 
+  // ── Auto-exit the admin "Pending approval only" view once its queue is
+  //    emptied — e.g. after approving the last pending card via "Approve all"
+  //    or one-by-one. Equivalent to clicking "Show all". A ref guards against
+  //    bouncing the instant an already-empty queue is opened: we only switch
+  //    back after having actually seen pending cards in this view, so finishing
+  //    a review flips to the full feed but opening an empty queue just leaves
+  //    the "0 unapproved" banner with a manual Show all. The pending count uses
+  //    the same predicate as the queue filter so the two can't disagree. ──
+  const sawPendingRef = useRef(false);
+  const pendingCardCount = isAdminUser
+    ? cards.filter((c) => c.adminApproved === false).length
+    : 0;
+  useEffect(() => {
+    if (!showPendingActsOnly) { sawPendingRef.current = false; return; }
+    if (pendingCardCount > 0) {
+      sawPendingRef.current = true;
+    } else if (sawPendingRef.current) {
+      setShowPendingActsOnly(false);
+      showToast("✓ All pending acts reviewed — showing all acts.");
+    }
+  }, [showPendingActsOnly, pendingCardCount]);
+
   // ── Load more ──
   const handleLoadMore = async () => {
     setLoadingMore(true);
@@ -2139,6 +2174,11 @@ export default function App() {
       // current state map so we know the category at click-time.
       const card = cards.find((c) => c.id === id);
       analytics.actionCompleted(id, card?.category);
+      // Marking a saved act as done removes it from "My Matches" — once you've
+      // done it, it no longer needs to sit in your saved queue. Reuses
+      // handleBookmark so the localStorage write + debounced server sync match
+      // a manual un-save. Only fires when the card is currently saved.
+      if (bookmarkedCards.has(id)) handleBookmark(id);
     }
 
     try {
@@ -2728,8 +2768,13 @@ export default function App() {
           (() => {
             const visibleActsCards = (isAdminUser && showPendingActsOnly)
               // Pull from the raw card list so match-scoring / ranking can't hide
-              // unapproved cards from the admin review queue.
-              ? cards.filter((c) => c.adminApproved === false && !(c.eventDate && c.eventDate < todayISO))
+              // unapproved cards from the admin review queue. Show EVERY pending
+              // card — including past-dated events — so the queue matches the
+              // server's pending count exactly. Filtering out past events here
+              // (the old `c.eventDate < todayISO` clause) made stale event cards
+              // count toward the "Pending Acts" badge while being invisible in
+              // the queue, so admins could never clear them.
+              ? cards.filter((c) => c.adminApproved === false)
               // Hide acts the user passed (left-swiped) in Discover — a pass means
               // "not for me", so keep it out of the feed. A card still shows if
               // it's since been saved or marked done (those signals override a
@@ -2873,6 +2918,26 @@ export default function App() {
               // count's leading "·" separator only shows when something precedes it).
               const hasLeadingCallout = pureRemote || activeStates.length > 0 || !!modeLabel;
               const activeCats = activeFilters["Category"] ?? [];
+              // "Save these…" persists the WHOLE feed selection — categories AND
+              // the non-category filters: the In Person / Remote / state location
+              // tokens (via locationFilter) and the "5 Mins Max" quick filter
+              // (mirrored into the matcher's `time` bucket). Show the button only
+              // when that selection differs from what's already saved — there's
+              // nothing to re-save when it matches. matchPrefs is always null in
+              // this banner, so the saved baseline is whatever's on disk.
+              const sameSet = (a: string[], b: string[]) =>
+                a.length === b.length &&
+                [...a].sort().join(" ") === [...b].sort().join(" ");
+              const savedPrefs = loadPreferences();
+              const alreadySaved = !!savedPrefs &&
+                sameSet(activeCats, savedPrefs.includedCategories ?? []) &&
+                sameSet(locTokens, savedPrefs.locationFilter ?? []) &&
+                quickActionsOnly === (savedPrefs.time === "5min");
+              // Something worth saving = any category, location/mode token, or the
+              // 5-min quick filter. (A search query isn't a preference.)
+              const hasSavable =
+                activeCats.length > 0 || locTokens.length > 0 || quickActionsOnly;
+              const showSaveButton = hasSavable && !alreadySaved;
               return (
               <div className="mb-4 flex flex-col items-start gap-2 rounded-lg border border-[#23297e]/30 bg-[#23297e]/5 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                 <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1.5">
@@ -2948,7 +3013,7 @@ export default function App() {
                     (includedCategories) — persists, syncs to the account when
                     signed in, and switches the feed to favor them. Replaces the
                     old Sort control on the right of the banner. */}
-                {activeCats.length > 0 && (
+                {showSaveButton && (
                   <button
                     type="button"
                     onClick={() => {
@@ -2957,7 +3022,14 @@ export default function App() {
                         ...base,
                         includedCategories: activeCats,
                         state: activeStates[0] ?? base.state,
-                        locationFilter: activeFilters["Location"] ?? [],
+                        locationFilter: locTokens,
+                        // Mirror "5 Mins Max" into the matcher's time bucket so the
+                        // saved prefs reflect it. With the toggle off, clear a
+                        // previously-saved 5-min back to the default rather than
+                        // leaving it stuck on.
+                        time: quickActionsOnly
+                          ? "5min"
+                          : base.time === "5min" ? DEFAULT_PREFERENCES.time : base.time,
                       };
                       setMatchPrefs(next);
                       savePreferences(next);
@@ -2966,10 +3038,10 @@ export default function App() {
                       showToast(accessToken ? "Saved to your preferences" : "Saved — sign in to sync across devices");
                     }}
                     className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-[#ed6624] px-3 py-1.5 font-['Poppins',sans-serif] text-xs font-bold text-white transition-colors hover:bg-[#e07a28] whitespace-nowrap"
-                    title="Save these categories to your preferences"
+                    title="Save these filters (categories, location, 5 Mins Max) to your preferences"
                   >
                     <Star size={12} fill="currentColor" />
-                    Save these categories
+                    {activeCats.length > 0 ? "Save these categories" : "Save these filters"}
                   </button>
                 )}
               </div>

@@ -312,36 +312,60 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
             {card.description}
           </p>
 
-          {/* Category — sits directly under the description. Admins can click
-              to recategorize (popover opens downward here). */}
-          {showCategoryPill && (
-            <div className="mt-4 relative">
-              {canEditCategory ? (
-                <button
-                  onClick={(e) => { e.stopPropagation(); setCatEditOpen((v) => !v); setCatError(null); }}
-                  title="Change category (admin)"
-                  className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 shadow-sm transition-opacity hover:opacity-90"
-                  style={{ backgroundColor: categoryColor }}
-                >
-                  <span className="font-['Poppins',sans-serif] font-bold tracking-wide text-[12px] text-white">{card.category}</span>
-                  {catSaving ? <Loader2 size={11} className="text-white animate-spin" /> : <Pencil size={10} className="text-white/85" />}
-                </button>
+          {/* Category + Boost row — the category pill sits directly under the
+              description; Boost is pulled up to sit parallel with it (and sized
+              to match) rather than taking its own full-width action row. */}
+          {(showCategoryPill || onBoost) && (
+            <div className="mt-4 flex items-center justify-between gap-2">
+              {showCategoryPill ? (
+                <div className="relative">
+                  {canEditCategory ? (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setCatEditOpen((v) => !v); setCatError(null); }}
+                      title="Change category (admin)"
+                      className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 shadow-sm transition-opacity hover:opacity-90"
+                      style={{ backgroundColor: categoryColor }}
+                    >
+                      <span className="font-['Poppins',sans-serif] font-bold tracking-wide text-[12px] text-white">{card.category}</span>
+                      {catSaving ? <Loader2 size={11} className="text-white animate-spin" /> : <Pencil size={10} className="text-white/85" />}
+                    </button>
+                  ) : (
+                    <span
+                      className="inline-flex items-center rounded-md px-2.5 py-1 shadow-sm font-['Poppins',sans-serif] font-bold tracking-wide text-[12px] text-white"
+                      style={{ backgroundColor: categoryColor }}
+                    >
+                      {card.category}
+                    </span>
+                  )}
+                  {canEditCategory && catEditOpen && (
+                    <CategoryEditPopover
+                      current={card.category}
+                      onPick={saveCategory}
+                      onClose={() => setCatEditOpen(false)}
+                      error={catError}
+                      saving={catSaving}
+                    />
+                  )}
+                </div>
               ) : (
-                <span
-                  className="inline-flex items-center rounded-md px-2.5 py-1 shadow-sm font-['Poppins',sans-serif] font-bold tracking-wide text-[12px] text-white"
-                  style={{ backgroundColor: categoryColor }}
-                >
-                  {card.category}
-                </span>
+                <span aria-hidden />
               )}
-              {canEditCategory && catEditOpen && (
-                <CategoryEditPopover
-                  current={card.category}
-                  onPick={saveCategory}
-                  onClose={() => setCatEditOpen(false)}
-                  error={catError}
-                  saving={catSaving}
-                />
+
+              {/* Boost — orange identity, mirrors the on-image boost button.
+                  Sized to match the category pill so the two read as one row. */}
+              {onBoost && (
+                <button
+                  onClick={() => onBoost(card.id)}
+                  className={`inline-flex items-center gap-1 rounded-full px-3 py-1 font-['Poppins',sans-serif] text-[12px] font-bold transition-colors ${
+                    isBoosted
+                      ? "bg-[#ed6624]/80 text-white hover:bg-[#ed6624]"
+                      : "bg-[#ed6624]/10 text-[#ed6624] hover:bg-[#ed6624]/20"
+                  }`}
+                >
+                  <Flame size={12} />
+                  {isBoosted ? "Boosted" : "Boost"}
+                  {typeof card.boosts === "number" && card.boosts > 0 ? <span className="opacity-80">· {card.boosts}</span> : null}
+                </button>
               )}
             </div>
           )}
@@ -368,56 +392,33 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
             );
           })()}
 
-          {/* Action row — secondary actions ("I did this!" + Boost) cluster
-              on the left, primary link-out ("I want to ResistAct!") anchors
-              on the right so the eye lands on the primary CTA last. Wraps
-              to a single column on narrow viewports. */}
-          <div className="mt-6 flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-2">
-            <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 w-full sm:w-auto">
-              {/* "I did this!" toggle — same color identity as the on-card pill
-                  (teal when complete, light teal when idle). Shows the running
-                  done count so users see the social proof + their own click. */}
-              {onComplete && (() => {
-                const baseCount = card.completions ?? 0;
-                const displayedCount = Math.max(baseCount, isCompleted ? 1 : 0);
-                return (
-                  <button
-                    onClick={() => onComplete(card.id)}
-                    className={`inline-flex w-full sm:w-auto justify-center items-center gap-1 rounded-full px-3 py-2 sm:py-1.5 font-['Poppins',sans-serif] text-[13px] font-bold transition-colors ${
-                      isCompleted
-                        ? "bg-[#0d8c6e] text-white hover:bg-[#0a7159]"
-                        : "bg-[#0d8c6e]/10 text-[#0d8c6e] hover:bg-[#0d8c6e]/20"
-                    }`}
-                  >
-                    <CheckCircle2 size={14} />
-                    {isCompleted ? "Done · undo" : "I did this!"}
-                    {displayedCount > 0 && <span className="opacity-80">· {displayedCount}</span>}
-                  </button>
-                );
-              })()}
-
-              {/* Boost — orange identity, mirrors the on-image boost button. */}
-              {onBoost && (
+          {/* Action row — "I did this!" and the primary link-out split one
+              row evenly (each flex-1) so the two main actions sit side by side
+              instead of stacking. Boost moved up to the category row above. */}
+          <div className="mt-6 flex flex-row items-stretch gap-2">
+            {/* "I did this!" toggle — same color identity as the on-card pill
+                (teal when complete, light teal when idle). Shows the running
+                done count so users see the social proof + their own click. */}
+            {onComplete && (() => {
+              const baseCount = card.completions ?? 0;
+              const displayedCount = Math.max(baseCount, isCompleted ? 1 : 0);
+              return (
                 <button
-                  onClick={() => onBoost(card.id)}
-                  className={`inline-flex w-full sm:w-auto justify-center items-center gap-1.5 rounded-full px-4 py-2 font-['Poppins',sans-serif] text-sm font-bold transition-colors ${
-                    isBoosted
-                      ? "bg-[#ed6624]/80 text-white hover:bg-[#ed6624]"
-                      : "bg-[#ed6624]/10 text-[#ed6624] hover:bg-[#ed6624]/20"
+                  onClick={() => onComplete(card.id)}
+                  className={`flex-1 inline-flex justify-center items-center gap-1 rounded-full px-3 py-2.5 font-['Poppins',sans-serif] text-[13px] font-bold transition-colors ${
+                    isCompleted
+                      ? "bg-[#0d8c6e] text-white hover:bg-[#0a7159]"
+                      : "bg-[#0d8c6e]/10 text-[#0d8c6e] hover:bg-[#0d8c6e]/20"
                   }`}
                 >
-                  <Flame size={14} />
-                  {isBoosted ? "Boosted" : "Boost"}
-                  {typeof card.boosts === "number" && card.boosts > 0 ? <span className="opacity-80">· {card.boosts}</span> : null}
+                  <CheckCircle2 size={14} />
+                  {isCompleted ? "Done · undo" : "I did this!"}
+                  {displayedCount > 0 && <span className="opacity-80">· {displayedCount}</span>}
                 </button>
-              )}
+              );
+            })()}
 
-              {/* Bookmark moved to the modal header utility cluster (icon-
-                  only). Keeping it out of the action row gives the other
-                  buttons more room. */}
-            </div>
-
-            {/* Primary CTA — right-anchored so it reads as the "go do it" call.
+            {/* Primary CTA — splits the row with "I did this!".
                 Spread the Word (pinToTop) gets its own "Spread the Word!"
                 button that re-opens the share dialog as the primary action.
                 Every other card link-outs to the targetUrl/authorLink.
@@ -430,14 +431,14 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
             {card.pinToTop && onShare ? (
               <button
                 onClick={() => { onClose(); onShare(); }}
-                className="inline-flex w-full sm:w-auto justify-center items-center gap-1.5 rounded-full bg-[#ed6624] px-5 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#c2521b]"
+                className="flex-1 inline-flex justify-center items-center gap-1.5 rounded-full bg-[#ed6624] px-4 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#c2521b]"
               >
                 <Flame size={14} /> Spread the Word!
               </button>
             ) : showDonePrompt && onComplete ? (
               <button
                 onClick={() => { onComplete(card.id); setShowDonePrompt(false); }}
-                className="inline-flex w-full sm:w-auto justify-center items-center gap-1.5 rounded-full bg-[#0d8c6e] px-5 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#0a7159]"
+                className="flex-1 inline-flex justify-center items-center gap-1.5 rounded-full bg-[#0d8c6e] px-4 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#0a7159]"
               >
                 <CheckCircle2 size={14} /> Mark this action: I did this!
               </button>
@@ -450,7 +451,7 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
                   clickedLinkRef.current = true;
                   analytics.actionLinkClicked(card.id, card.category);
                 }}
-                className="inline-flex w-full sm:w-auto justify-center items-center gap-1.5 rounded-full bg-[#ed6624] px-5 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#c2521b]"
+                className="flex-1 inline-flex justify-center items-center gap-1.5 rounded-full bg-[#ed6624] px-4 py-2.5 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#c2521b]"
               >
                 I want to Act! <ExternalLink size={14} />
               </a>

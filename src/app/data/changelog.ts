@@ -16,6 +16,54 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.57",
+    date: "2026-06-07",
+    title: "Tidier action layout on the act details screen",
+    sections: [
+      {
+        heading: "Act details",
+        items: [
+          "The Boost button now sits right next to the category label instead of taking up its own line, so the screen is more compact on phones.",
+          "\"I did this!\" and \"I want to Act!\" now share a single row side by side, making the two main actions easier to reach.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.56",
+    date: "2026-06-07",
+    title: "Done acts leave My Matches; admin pending queue fixed",
+    sections: [
+      {
+        heading: "My Matches",
+        items: [
+          "When you mark a saved act as done, it now automatically leaves My Matches — once you've done it, it no longer clutters your saved list.",
+        ],
+      },
+      {
+        heading: "Admin",
+        items: [
+          "Fixed the Pending Acts review queue: it now shows every act awaiting approval, including past-dated events. Previously these stale events were counted in the \"Pending Acts\" badge but hidden from the queue, so the count never matched and they couldn't be cleared.",
+          "After you approve the last pending act, the review view now automatically switches back to showing all acts — no need to click \"Show all\" yourself.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.55",
+    date: "2026-06-07",
+    title: "Admins no longer counted in site analytics",
+    sections: [
+      {
+        heading: "Behind the scenes",
+        items: [
+          "Signed-in admins are now automatically excluded from Google Analytics, so the team's own browsing no longer skews visitor numbers.",
+          "Once you've signed in as an admin on a browser, analytics stays off there even across page reloads — nothing to remember or re-enable.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.54",
     date: "2026-06-07",
     title: "Fixed broken source links on the Facts",

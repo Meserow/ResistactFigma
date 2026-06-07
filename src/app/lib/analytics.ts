@@ -34,6 +34,12 @@ const MEASUREMENT_ID: string =
 
 let loaded = false;
 let logged = false; // log the on/off state exactly once
+let disabled = false; // hard kill switch flipped by the admin opt-out
+
+// localStorage key marking this browser as belonging to an admin. Persisted
+// so that on a reload `initAnalytics()` can bail BEFORE gtag.js loads — an
+// admin who reloads never fires even a single anonymous page_view.
+const ADMIN_OPT_OUT_KEY = "ra-analytics-admin-opt-out";
 
 function userHasDoNotTrack(): boolean {
   if (typeof navigator === "undefined") return false;
@@ -43,6 +49,42 @@ function userHasDoNotTrack(): boolean {
     (navigator as any).msDoNotTrack === "1" ||
     (typeof window !== "undefined" && (window as any).doNotTrack === "1")
   );
+}
+
+function adminOptedOut(): boolean {
+  try {
+    return typeof localStorage !== "undefined" &&
+      localStorage.getItem(ADMIN_OPT_OUT_KEY) === "1";
+  } catch {
+    return false; // private mode / storage blocked — treat as not opted out
+  }
+}
+
+/**
+ * Permanently exclude this browser from GA — call when the signed-in user is
+ * an admin. Admins operate the site, so their activity shouldn't pollute the
+ * visitor analytics. Safe to call repeatedly, and works whether or not
+ * gtag.js has already loaded this session: GA4 honours the global
+ * `window['ga-disable-<MEASUREMENT_ID>'] = true` as a hard kill switch that
+ * stops all hits for that ID. The persisted flag makes future page loads bail
+ * out of `initAnalytics()` entirely, so reloads never fire a page_view.
+ */
+export function disableAnalyticsForAdmin(): void {
+  disabled = true;
+  try { localStorage.setItem(ADMIN_OPT_OUT_KEY, "1"); } catch { /* ignore */ }
+  if (typeof window !== "undefined" && MEASUREMENT_ID) {
+    (window as any)[`ga-disable-${MEASUREMENT_ID}`] = true;
+  }
+}
+
+/**
+ * Clear the admin opt-out. Called when a confirmed NON-admin user resolves on
+ * this browser (e.g. a shared machine), so they get tracked normally again on
+ * the next load. gtag stays disabled for the current page if it was already
+ * killed this session — the next load starts clean.
+ */
+export function clearAdminAnalyticsOptOut(): void {
+  try { localStorage.removeItem(ADMIN_OPT_OUT_KEY); } catch { /* ignore */ }
 }
 
 /**
@@ -67,6 +109,18 @@ export function initAnalytics(): void {
     if (!logged) {
       // eslint-disable-next-line no-console
       console.info("[analytics] Disabled — respecting browser Do-Not-Track signal.");
+      logged = true;
+    }
+    return;
+  }
+  if (adminOptedOut()) {
+    // This browser belongs to an admin. Set the GA4 kill switch too, in case
+    // gtag.js is ever loaded by another path, then bail before injecting it.
+    disabled = true;
+    if (typeof window !== "undefined") (window as any)[`ga-disable-${MEASUREMENT_ID}`] = true;
+    if (!logged) {
+      // eslint-disable-next-line no-console
+      console.info("[analytics] Disabled — admin opt-out.");
       logged = true;
     }
     return;
@@ -127,7 +181,7 @@ export function initAnalytics(): void {
  * No-op when analytics is disabled (no ID configured, DNT on, etc.).
  */
 export function track(event: string, params: Record<string, any> = {}): void {
-  if (!loaded) return;
+  if (!loaded || disabled) return;
   const gtag = (window as any).gtag as undefined | ((...args: any[]) => void);
   gtag?.("event", event, params);
 }
