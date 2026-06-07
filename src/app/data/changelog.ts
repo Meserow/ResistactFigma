@@ -16,6 +16,81 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.73",
+    date: "2026-06-07",
+    title: "A truer acts count, and the feed summary now shows on phones",
+    sections: [
+      {
+        heading: "Your feed",
+        items: [
+          "The running \"N acts\" count in the footer now reflects only the acts that are actually viewable — acts whose event date has passed, that are missing an image, or that are still awaiting approval no longer pad the total. The number you see is the number you can browse.",
+          "Admins still see (and count) acts pending approval, so the footer total matches their fuller view.",
+          "On phones, the feed summary at the top — the live act count and the location / \"Set your location\" picker — is now visible. It was previously desktop-only, so the welcome card looked cut off on mobile.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.72",
+    date: "2026-06-07",
+    title: "The welcome and the feed bar are now one tidy card",
+    sections: [
+      {
+        heading: "Your feed",
+        items: [
+          "Reworded the arrival greeting to \"You're here. That counts.\" — a warmer nudge that showing up is itself an act.",
+          "The welcome no longer sits as a separate box stacked on top of the location/filter bar — the two are now joined into a single card, so the top of your feed looks cleaner the moment you land.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.71",
+    date: "2026-06-07",
+    title: "A warmer welcome and a feed that's clearly yours",
+    sections: [
+      {
+        heading: "Your feed",
+        items: [
+          "Added a friendly welcome when you arrive — a reminder that this feed is yours to shape, with no account and no tracking required.",
+          "When the feed has learned what you're into, the bar above your acts now says so (\"Tuned to you\"), so it's clear we've ranked them around you.",
+          "The \"Swipe to Discover\" button is now a bold orange so it's easy to spot.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.70",
+    date: "2026-06-07",
+    title: "Cards glide into place when you filter",
+    sections: [
+      {
+        heading: "The Acts feed",
+        items: [
+          "When you tap a category pill, the cards now animate into their new arrangement instead of snapping — acts that stay slide smoothly to their new spot, and acts that newly appear fade up into view.",
+          "The motion is light on your device and only animates the cards on screen, so even big filters stay snappy.",
+          "If you've turned on reduced motion in your system settings, the feed updates instantly with no animation.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.69",
+    date: "2026-06-07",
+    title: "Your feed now learns what you like",
+    sections: [
+      {
+        heading: "For You",
+        items: [
+          "The Acts feed now orders itself around the kinds of acts you actually engage with — what you save, boost, mark \"I did this,\" share, and open all quietly shape what rises to the top.",
+          "Recent activity counts more than older activity, so your feed keeps up as your interests shift.",
+          "Brand-new or lightly-used sessions still see the usual popular ordering until there's enough to go on — nothing changes until the feed has learned something.",
+          "It weighs everything evenly — the mix of causes, formats, time, and in-person vs. remote you lean toward — and keeps in-person and remote blended, so leaning one way never hides the other.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.68",
     date: "2026-06-07",
     title: "Simpler, single-page match settings",

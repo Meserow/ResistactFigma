@@ -154,11 +154,29 @@ interface ActionCardProps {
   onSpreadShared?: () => void;
   /** Horizontal swipe on this card's detail modal → enter swipe mode. */
   onSwipeToDeck?: () => void;
+  /** Behavioral signal sink for the "For You" ranking. Fired when the user
+   * opens this act's detail modal ("opened") or its share sheet ("shared").
+   * Strong signals (boost/save/complete/pass) are logged by the parent's
+   * own handlers, so they're not duplicated here. */
+  onSignal?: (id: number, kind: "opened" | "shared") => void;
 }
 
-function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPass, onEdit, onApprove, onInfoClick, isBoosted, isCompleted, isBookmarked, isPassed, canEdit, isPending, compact = false, accessToken, onCardUpdated, onSpreadShared, onSwipeToDeck }: ActionCardProps) {
+function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPass, onEdit, onApprove, onInfoClick, isBoosted, isCompleted, isBookmarked, isPassed, canEdit, isPending, compact = false, accessToken, onCardUpdated, onSpreadShared, onSwipeToDeck, onSignal }: ActionCardProps) {
   const [shareOpen, setShareOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
+
+  // "For You" engagement signals. Fire when the detail or share surface opens
+  // (transition to true). The pinned "Spread the Word" card is excluded — its
+  // share/detail aren't act-level interest. Deps intentionally track only the
+  // open flag so each fresh open re-logs (sustained interest is itself signal).
+  useEffect(() => {
+    if (detailsOpen && !card.pinToTop) onSignal?.(card.id, "opened");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailsOpen]);
+  useEffect(() => {
+    if (shareOpen && !card.pinToTop) onSignal?.(card.id, "shared");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shareOpen]);
 
   // Pull the category color from the canonical map rather than card.categoryColor.
   // Per-card stored colors have drifted over many imports — same category, different

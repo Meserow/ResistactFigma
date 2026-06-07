@@ -59,8 +59,8 @@ interface NavbarProps {
   /** Quick-actions toggle: when true, only show 5–10 min "quick win" cards. */
   quickActionsOnly?: boolean;
   onQuickActionsChange?: (v: boolean) => void;
-  sortBy?: "popular" | "newest" | "az";
-  onSortChange?: (sort: "popular" | "newest" | "az") => void;
+  sortBy?: "foryou" | "popular" | "newest" | "az";
+  onSortChange?: (sort: "foryou" | "popular" | "newest" | "az") => void;
   onBookmarksClick?: () => void;
   bookmarkCount?: number;
   onFeedbackClick?: () => void;
