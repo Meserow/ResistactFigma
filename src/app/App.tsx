@@ -3128,7 +3128,7 @@ export default function App() {
                 <Fragment key={idx < 12 ? `${card.id}-${staggerKey}` : card.id}>
                 <div
                   id={`card-${card.id}`}
-                  className={idx < 12 ? "resistact-anim-stagger opacity-90" : "opacity-90"}
+                  className={idx < 12 ? "resistact-anim-stagger opacity-95" : "opacity-95"}
                   style={idx < 12 ? { animationDelay: `${idx * 40}ms` } : undefined}
                 >
                 <ActionCard
