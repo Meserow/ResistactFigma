@@ -18,6 +18,7 @@ import { FlagsAdminModal } from "./components/FlagsAdminModal";
 import { AskFlowModal } from "./components/AskFlowModal";
 import { JoinACTersModal } from "./components/JoinACTersModal";
 import { InfoModal } from "./components/InfoModal";
+import { TakeABreakModal } from "./components/TakeABreakModal";
 import { EditCardModal } from "./components/EditCardModal";
 import { CardDetailsModal } from "./components/CardDetailsModal";
 import { BookmarksPanel } from "./components/BookmarksPanel";
@@ -658,6 +659,11 @@ export default function App() {
   );
   const [scrollNudgeVisible, setScrollNudgeVisible] = useState(false);
   const scrollNudgeFired = useRef(false);
+  // "Take a break" doom-scroll check-in. Fires once after 15 minutes of ACTIVE
+  // time (hidden-tab time doesn't count), then snoozes itself for 24h so it
+  // never nags. The 15-minute mark is a nod to the meme it shows.
+  const [breakNudgeOpen, setBreakNudgeOpen] = useState(false);
+  const breakNudgeFired = useRef(false);
   // First-visit location auto-detect. When the visitor has no Location pill set,
   // we ask the server's /geo endpoint for a coarse IP→state guess so the feed
   // isn't full of out-of-state acts before they engage. A hit pre-sets the pill
@@ -1599,6 +1605,56 @@ export default function App() {
     const t = setTimeout(() => setScrollNudgeVisible(false), 30_000);
     return () => clearTimeout(t);
   }, [scrollNudgeVisible]);
+
+  // ── "Take a break" nudge: 15 min of ACTIVE time → check-in modal ──
+  // Accumulate visible-tab time only (background tabs don't count toward the
+  // doom-scroll clock), fire once, and skip entirely if we already showed it in
+  // the last 24h. Empty deps: runs once for the page's lifetime.
+  useEffect(() => {
+    const SNOOZE_KEY = "resistact_break_nudge_snooze_until";
+    const ACTIVE_MS_TO_FIRE = 15 * 60 * 1000;
+    if (Date.now() < Number(localStorage.getItem(SNOOZE_KEY) || 0)) return;
+
+    let activeMs = 0;
+    let lastTick = Date.now();
+    const tick = () => {
+      const now = Date.now();
+      // Only count the elapsed slice when the tab was actually visible.
+      if (document.visibilityState === "visible") activeMs += now - lastTick;
+      lastTick = now;
+      if (activeMs >= ACTIVE_MS_TO_FIRE && !breakNudgeFired.current) {
+        breakNudgeFired.current = true;
+        setBreakNudgeOpen(true);
+        window.clearInterval(id);
+      }
+    };
+    // Reset the clock on every visibility flip so a throttled background tick
+    // can't bank a huge delta the moment we return to the foreground.
+    const onVisibility = () => { lastTick = Date.now(); };
+    document.addEventListener("visibilitychange", onVisibility);
+    const id = window.setInterval(tick, 30_000);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, []);
+
+  // Snooze the break nudge for 24h whenever it's closed — by the X, the
+  // backdrop, or after acting on it — so it shows at most once a day.
+  const snoozeBreakNudge = () => {
+    localStorage.setItem(
+      "resistact_break_nudge_snooze_until",
+      String(Date.now() + 24 * 60 * 60 * 1000),
+    );
+    setBreakNudgeOpen(false);
+  };
+  const handleBreakNudgePrimary = () => {
+    snoozeBreakNudge();
+    // Logged in → swipe deck to save Acts for later. Logged out → Join the
+    // Resistance so their picks actually persist.
+    if (approval) setSwipeOpen(true);
+    else setAuthModalOpen(true);
+  };
 
   // ── On mount: restore session + listen for OAuth redirects ──
   useEffect(() => {
@@ -3625,6 +3681,15 @@ export default function App() {
       {/* Info / About modal */}
       {infoOpen && (
         <InfoModal onClose={() => setInfoOpen(false)} />
+      )}
+
+      {/* "Take a break" doom-scroll check-in (fires after 15 min active time) */}
+      {breakNudgeOpen && (
+        <TakeABreakModal
+          isLoggedIn={!!approval}
+          onPrimary={handleBreakNudgePrimary}
+          onClose={snoozeBreakNudge}
+        />
       )}
 
       {/* Feedback modal */}

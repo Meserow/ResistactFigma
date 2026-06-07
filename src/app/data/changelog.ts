@@ -16,6 +16,34 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.66",
+    date: "2026-06-07",
+    title: "A gentle nudge when you've been doomscrolling too long",
+    sections: [
+      {
+        heading: "Take a break",
+        items: [
+          "After 15 minutes on the site, a friendly check-in pops up reminding you that refreshing the feed doesn't change anything — but doing one real thing does.",
+          "From the check-in you can jump straight to saving Acts for later (or, if you're not signed in, join the Resistance so your picks are saved).",
+          "It only counts time you're actually looking at the page — minimized or background tabs don't add up — and it shows at most once a day.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.65",
+    date: "2026-06-07",
+    title: "Facts and Smacks cards get the same hover animation as Acts",
+    sections: [
+      {
+        heading: "The Facts & The Smacks",
+        items: [
+          "Fact and Smack cards now lift, scale up slightly, and pick up a navy outline when you hover over them — the same polished hover animation the Act cards already had.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.64",
     date: "2026-06-07",
     title: "No more flash of deleted Smacks on load",
