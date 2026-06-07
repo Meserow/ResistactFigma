@@ -7,6 +7,7 @@ import { burstConfetti } from "./lib/confetti";
 import fistIcon from "../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
 import { Navbar } from "./components/Navbar";
 import { WelcomeHero } from "./components/WelcomeHero";
+import { SwipeCardStack } from "./components/SwipeCardStack";
 import { ActionCard, ActionCardData } from "./components/ActionCard";
 import { FlipGrid } from "./components/FlipGrid";
 import { cartoonUrlFor } from "./data/cartoon-manifest";
@@ -29,7 +30,6 @@ import { locationToState, LOCATION_OPTIONS, normalizeCardLocation } from "./lib/
 import { HomeHero } from "./components/HomeHero";
 import { LoggedInHero } from "./components/LoggedInHero";
 import { SignupBanner } from "./components/AccountPromos";
-import fistIconImg from "../assets/resistact-fist.png";
 import { MatchMeModal } from "./components/MatchMeModal";
 import { SwipeDeck } from "./components/SwipeDeck";
 import { useIsMobile } from "./components/ui/use-mobile";
@@ -1157,6 +1157,39 @@ export default function App() {
   // the welcome card's warm vs. cold-start wording.
   const feedIsPersonalized = !!userProfile && sortBy === "foryou";
 
+  // ── Global eligibility gate ──────────────────────────────────────────────
+  // Single source of truth for "is this act viewable right now?". Applied both
+  // by buildFeed (to gate the visible feed) and by the footer's total tally, so
+  // the persistent "N acts" count always matches what's actually showable:
+  // expired events, imageless cards, and unapproved submissions are dropped for
+  // the public. Admins still see (and count) unapproved + imageless cards so
+  // they can review and fix them.
+  const actPassesGate = (card: ActionCardData, asAdmin: boolean): boolean => {
+    // Hide expired events from everyone.
+    if (card.eventDate && card.eventDate < todayISO) return false;
+    // Hide unapproved cards from non-admins. `!== true` (not `=== false`) so
+    // cards with `adminApproved: undefined` ALSO get hidden — explicit approval
+    // is required. Admins still see them (with a PENDING badge).
+    if (card.adminApproved !== true && !asAdmin) return false;
+    // Defense in depth: hide imageless / dead-image cards from the public. A URL
+    // on a CDN we know rotates its signed payloads — tiktokcdn / cdninstagram
+    // (403s after a couple weeks) — counts as "no image". A cartoon banner
+    // counts as an image (ActionCard draws `cartoonImageUrl ?? topImage`).
+    // Admins still see them so they can re-host / replace the art.
+    if (!asAdmin) {
+      const url = (card as any).topImageUrl as string | undefined;
+      const isLikelyExpired = typeof url === "string" && /(?:tiktokcdn|cdninstagram)/i.test(url);
+      const hasUsableUrl = Boolean(url) && !isLikelyExpired;
+      const hasImage =
+        hasUsableUrl ||
+        Boolean((card as any).topImageKey) ||
+        Boolean((card as any).topImage) ||
+        Boolean((card as any).cartoonImageUrl);
+      if (!hasImage) return false;
+    }
+    return true;
+  };
+
   const buildFeed = (categoryOverride: string[] | null) => {
     // IMPERSONATION OVERRIDE — when view-as is active, shadow the per-user
     // state slots with the impersonated user's data so the rest of this
@@ -1167,49 +1200,11 @@ export default function App() {
     const completedCards  = effectiveCompleted;
     const boostedCards    = effectiveBoosted;
     const isAdminUser     = isImpersonating ? false : (approval?.isAdmin === true);
-    // ── Global gate: expiry + approval + already-done ────────────────────────
-    const gated = cards.filter((card) => {
-      // Hide expired events from everyone
-      if (card.eventDate && card.eventDate < todayISO) return false;
-      // Hide unapproved cards from non-admins. Tightened from `=== false` to
-      // `!== true` so cards with `adminApproved: undefined` ALSO get hidden
-      // from the public — explicit approval is required, not just absence of
-      // an explicit false. Admins still see everything (with a PENDING badge
-      // on the unapproved ones).
-      if (card.adminApproved !== true && !isAdminUser) return false;
-      // Defense in depth: even an approved card hidden from public if it has
-      // no image. Server-side `approved-without-image-cleanup` migration is
-      // the authoritative fix, but until that's redeployed and re-run, this
-      // client-side guard stops imageless cards from leaking onto the public
-      // feed. Admins still see them so they can review + add an image.
-      if (!isAdminUser) {
-        // A URL counts as "no image" if it points at a CDN we know expires
-        // its signed-URL payloads — tiktokcdn-us / tiktokcdn rotates signed
-        // URLs every couple weeks and silently returns 403 after that.
-        // Instagram's `cdninstagram.com` does the same (`oh=` / `oe=` ttl).
-        // Treating those as missing means cards with dead URLs get hidden
-        // from the public until an admin re-hosts the image. Admins still
-        // see them so they can edit + replace.
-        const url = (card as any).topImageUrl as string | undefined;
-        const isLikelyExpired = typeof url === "string" && /(?:tiktokcdn|cdninstagram)/i.test(url);
-        const hasUsableUrl = Boolean(url) && !isLikelyExpired;
-        // A cartoon banner counts as an image — it's literally what the card
-        // renders in the feed (ActionCard draws `cartoonImageUrl ?? topImage`).
-        // Without this, ~140 approved cards whose only art is a generated
-        // cartoon (topImageUrl cleared/never set) were wrongly hidden from the
-        // public, silently shrinking the feed as more cards got cartoonized.
-        const hasImage =
-          hasUsableUrl ||
-          Boolean((card as any).topImageKey) ||
-          Boolean((card as any).topImage) ||
-          Boolean((card as any).cartoonImageUrl);
-        if (!hasImage) return false;
-      }
-      // Completed cards stay in the feed but get sorted to the bottom (see
-      // `completedLast` below) so users can still find things they've done
-      // without them dominating the top.
-      return true;
-    });
+    // ── Global gate: expiry + approval + image (see actPassesGate above) ──
+    // Completed cards still pass the gate — they stay in the feed but get
+    // sorted to the bottom (see `completedLast` below) so users can find
+    // things they've done without them dominating the top.
+    const gated = cards.filter((card) => actPassesGate(card, isAdminUser));
 
     // The "Spread the Word about ResistAct" card (pinToTop) must show up at
     // the very top of the feed UNCONDITIONALLY — filters, search query,
@@ -1487,6 +1482,19 @@ export default function App() {
   // narrow AND broaden their category picks inside Discover.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const deckPoolCards = useMemo(() => buildFeed([]), feedDeps);
+
+  // Total acts actually viewable to this user — the persistent footer tally.
+  // Runs ONLY the global eligibility gate (no category/search/Match filters,
+  // no pagination cap) over the full in-memory `cards` set, so the count
+  // reflects every showable act rather than the server's raw library size.
+  // Impersonation mirrors buildFeed: view-as drops admin privileges, so the
+  // count reflects the impersonated (public) user's POV.
+  const eligibleActsCount = useMemo(
+    () => cards.filter((c) => actPassesGate(c, isImpersonating ? false : isAdminUser)).length,
+    // actPassesGate closes over todayISO; cards / admin / impersonation drive it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [cards, todayISO, isAdminUser, isImpersonating],
+  );
 
   // True when any filter chip is selected OR a search is active — bypasses
   // server pagination so client-side filtering sees the full dataset.
@@ -3016,6 +3024,16 @@ export default function App() {
               </div>
             )}
 
+            {/* Feed-intro stack — the welcome greeting and whichever chrome
+                banner sits below it (geo / unfiltered / filtered / pending /
+                match) are FUSED into a single card via the child selectors on
+                this wrapper: any non-last child loses its bottom margin + bottom
+                rounding, any non-first child loses its top border + top rounding.
+                So arriving visitors see one component, not two stacked cards. A
+                lone child keeps its full styling; an empty wrapper (nothing to
+                show) has no margin/border/padding, so it leaves no phantom gap.
+                Each banner's own render condition is untouched. */}
+            <div className="[&>*:not(:last-child)]:!mb-0 [&>*:not(:last-child)]:!rounded-b-none [&>*:not(:first-child)]:!rounded-t-none [&>*:not(:first-child)]:!border-t-0">
             {/* One-time welcome — lands the "glad you're here" beat and frames
                 the feed as something the visitor shapes (not surveillance).
                 Warm vs. cold-start copy keys off whether the feed is actually
@@ -3465,6 +3483,7 @@ export default function App() {
                 </div>
               );
             })()}
+            </div>
 
             {loading ? (
               <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-6">
@@ -3578,9 +3597,11 @@ export default function App() {
               <>
                 <div className="w-2 h-2 rounded-full bg-[#ed6624]" />
                 <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
-                  {/* Total acts on the site (not the filtered count — that's in the
-                      feed banner). serverTotal is the authoritative library size. */}
-                  <strong className="text-[#ed6624] font-bold">{synced ? serverTotal : "—"}</strong>
+                  {/* Total acts VIEWABLE to this user — runs the eligibility gate
+                      (expired / imageless / unapproved removed for the public;
+                      admins still see unapproved + imageless). Not the navbar
+                      filtered count — that lives in the feed banner. */}
+                  <strong className="text-[#ed6624] font-bold">{synced ? eligibleActsCount : "—"}</strong>
                   <span className="hidden md:inline">
                     {" "}acts
                     {synced && newActionsToday > 0 && ` (${newActionsToday} new today)`}
@@ -3668,7 +3689,7 @@ export default function App() {
           always-on tagline footer so it doesn't cover it. */}
       {scrollNudgeVisible && !scrollNudgeDismissed && (
         <div className="toast-pop-in fixed bottom-16 right-4 md:bottom-24 md:right-8 z-40 w-[min(92vw,420px)] flex items-start gap-2.5 bg-[#fd8e33] rounded-2xl shadow-2xl px-4 py-3 ring-2 ring-white/20">
-          <img src={fistIconImg} alt="" className="h-9 w-auto block shrink-0" draggable={false} />
+          <SwipeCardStack className="mt-0.5" />
           <div className="min-w-0 flex-1">
             <p className="font-['Poppins',sans-serif] font-black text-[15px] text-white leading-snug mb-1">
               A lot to scroll through?

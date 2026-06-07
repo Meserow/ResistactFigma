@@ -42,7 +42,7 @@ export function WelcomeHero({
           ) : (
             <>
               <p className="font-['Poppins',sans-serif] text-[15px] font-extrabold text-[#23297e]">
-                Glad you showed up.
+                You're here. That counts.
               </p>
               <p className="mt-0.5 font-['Poppins',sans-serif] text-[13px] leading-snug text-gray-700">
                 This feed is yours to shape. Save, boost, or do a few acts and it starts tuning itself to you — no account, no tracking, just your corner of the resistance.

@@ -16,6 +16,34 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.73",
+    date: "2026-06-07",
+    title: "The acts counter now matches what you can actually see",
+    sections: [
+      {
+        heading: "Your feed",
+        items: [
+          "The running \"N acts\" count in the footer now reflects only the acts that are actually viewable — acts whose event date has passed, that are missing an image, or that are still awaiting approval no longer pad the total. The number you see is the number you can browse.",
+          "Admins still see (and count) acts pending approval, so the footer total matches their fuller view.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.72",
+    date: "2026-06-07",
+    title: "The welcome and the feed bar are now one tidy card",
+    sections: [
+      {
+        heading: "Your feed",
+        items: [
+          "Reworded the arrival greeting to \"You're here. That counts.\" — a warmer nudge that showing up is itself an act.",
+          "The welcome no longer sits as a separate box stacked on top of the location/filter bar — the two are now joined into a single card, so the top of your feed looks cleaner the moment you land.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.71",
     date: "2026-06-07",
     title: "A warmer welcome and a feed that's clearly yours",
