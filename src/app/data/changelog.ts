@@ -16,6 +16,19 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.25",
+    date: "2026-06-06",
+    title: "Slightly crisper feed cards",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Nudged the feed cards a touch more opaque (95%).",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.24",
     date: "2026-06-06",
     title: "Polish: round save button, grouped location toggles",
