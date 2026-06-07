@@ -229,7 +229,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
     return (
       <div className="absolute bottom-2 left-3 flex items-center gap-1.5">
         {(showHeart || showPass) && (
-          <div className="flex items-center gap-2 bg-white/95 backdrop-blur-sm rounded-md px-2 py-0.5 shadow-sm">
+          <div className={`flex items-center justify-center bg-white/95 backdrop-blur-sm shadow-sm ${showHeart && showPass ? "gap-2 rounded-full px-2.5 py-1" : "h-7 w-7 rounded-full"}`}>
             {showHeart && (
               <button
                 type="button"

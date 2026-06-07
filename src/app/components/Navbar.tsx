@@ -795,36 +795,34 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                 being a simple toggle. "Where can I act?" is the most
                 useful first cut at the feed, so it sits at the front. */}
             <div className="hidden sm:flex flex-1 min-w-0 flex-wrap items-center gap-y-1.5 gap-x-1">
-              {/* In Person toggle (1st) — strict filter: only in-person acts
-                  show. Mutually exclusive with Remote Only. The state itself is
-                  auto-detected and chosen via the feed banner, not here. */}
-              <button
-                onClick={() => setLocationMode(inPersonOn ? null : "In Person")}
-                className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
-                  inPersonOn
-                    ? "bg-[#23297e] text-white border-[#23297e]"
-                    : "bg-white text-gray-600 border-gray-200 hover:border-[#23297e] hover:text-[#23297e]"
-                }`}
-                title="Show only in-person actions"
-              >
-                <MapPin size={11} className={inPersonOn ? "text-white" : "text-gray-400"} />
-                In Person
-              </button>
-              {/* Remote Only toggle (2nd) — strict filter: only online/at-home
-                  acts show. Mutually exclusive with In Person. Underlying filter
-                  token is "Remote" in the Location array. */}
-              <button
-                onClick={() => setLocationMode(remoteOn ? null : "Remote")}
-                className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
-                  remoteOn
-                    ? "bg-[#ed6624] text-white border-[#ed6624]"
-                    : "bg-white text-gray-600 border-gray-200 hover:border-[#ed6624] hover:text-[#ed6624]"
-                }`}
-                title="Show only remote actions (doable from anywhere)"
-              >
-                <Globe size={11} className={remoteOn ? "text-white" : "text-gray-400"} />
-                Remote Only
-              </button>
+              {/* In Person / Remote Only — a segmented button group (the two are
+                  mutually-exclusive modes). The state itself is auto-detected and
+                  chosen via the feed banner, not here. */}
+              <div className="shrink-0 inline-flex items-center overflow-hidden rounded-full border border-gray-200">
+                <button
+                  onClick={() => setLocationMode(inPersonOn ? null : "In Person")}
+                  aria-pressed={inPersonOn}
+                  className={`flex items-center gap-1 px-2.5 py-1 font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap ${
+                    inPersonOn ? "bg-[#23297e] text-white" : "bg-white text-gray-600 hover:text-[#23297e]"
+                  }`}
+                  title="Show only in-person actions"
+                >
+                  <MapPin size={11} className={inPersonOn ? "text-white" : "text-gray-400"} />
+                  In Person
+                </button>
+                <span aria-hidden className="h-5 w-px shrink-0 bg-gray-200" />
+                <button
+                  onClick={() => setLocationMode(remoteOn ? null : "Remote")}
+                  aria-pressed={remoteOn}
+                  className={`flex items-center gap-1 px-2.5 py-1 font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap ${
+                    remoteOn ? "bg-[#ed6624] text-white" : "bg-white text-gray-600 hover:text-[#ed6624]"
+                  }`}
+                  title="Show only remote actions (doable from anywhere)"
+                >
+                  <Globe size={11} className={remoteOn ? "text-white" : "text-gray-400"} />
+                  Remote Only
+                </button>
+              </div>
               {/* Divider — sets the location pills (which persist through "Clear
                   all") apart from the filters that do clear. */}
               <span aria-hidden className="mx-1 h-5 w-px self-center shrink-0 bg-gray-300" />
@@ -1174,31 +1172,32 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                     the Location dropdown (below), keeping this row short.
                     Centered on phones. */}
                 <div className="flex flex-wrap justify-center gap-1.5">
-                  {/* In Person + Remote Only toggles — mutually exclusive. The
-                      state is auto-detected and chosen via the feed banner, so
-                      there's no state dropdown here anymore. */}
-                  <button
-                    onClick={() => setLocationMode(inPersonOn ? null : "In Person")}
-                    className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
-                      inPersonOn
-                        ? "bg-[#23297e] text-white border-[#23297e]"
-                        : "bg-white text-gray-600 border-gray-200"
-                    }`}
-                  >
-                    <MapPin size={11} />
-                    In Person
-                  </button>
-                  <button
-                    onClick={() => setLocationMode(remoteOn ? null : "Remote")}
-                    className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
-                      remoteOn
-                        ? "bg-[#ed6624] text-white border-[#ed6624]"
-                        : "bg-white text-gray-600 border-gray-200"
-                    }`}
-                  >
-                    <Globe size={11} />
-                    Remote Only
-                  </button>
+                  {/* In Person / Remote Only — segmented button group, mutually
+                      exclusive. State is auto-detected and chosen via the feed
+                      banner, so there's no state dropdown here anymore. */}
+                  <div className="shrink-0 inline-flex items-center overflow-hidden rounded-full border border-gray-200">
+                    <button
+                      onClick={() => setLocationMode(inPersonOn ? null : "In Person")}
+                      aria-pressed={inPersonOn}
+                      className={`flex items-center gap-1 px-3 py-1 text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap ${
+                        inPersonOn ? "bg-[#23297e] text-white" : "bg-white text-gray-600"
+                      }`}
+                    >
+                      <MapPin size={11} />
+                      In Person
+                    </button>
+                    <span aria-hidden className="h-5 w-px shrink-0 bg-gray-200" />
+                    <button
+                      onClick={() => setLocationMode(remoteOn ? null : "Remote")}
+                      aria-pressed={remoteOn}
+                      className={`flex items-center gap-1 px-3 py-1 text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap ${
+                        remoteOn ? "bg-[#ed6624] text-white" : "bg-white text-gray-600"
+                      }`}
+                    >
+                      <Globe size={11} />
+                      Remote Only
+                    </button>
+                  </div>
 
                   {/* Category button — "5 Min Max" now lives inside this
                       dropdown on phones (see the Category drawer below) to
