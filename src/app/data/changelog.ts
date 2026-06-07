@@ -18,14 +18,21 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     version: "1.4.73",
     date: "2026-06-07",
-    title: "A truer acts count, and the feed summary now shows on phones",
+    title: "A truer acts count, now folded into your welcome",
     sections: [
       {
         heading: "Your feed",
         items: [
+          "The welcome card up top now tells you how many acts are waiting — \"We have 778 actions for you — unfiltered\" (or \"matching your filters\" once you've narrowed things down). The count moved into that headline, so it's the first thing you see instead of a separate line below.",
+          "Reworded the welcome to point you at the filter buttons: shape the feed, then boost, save for later, or do a few acts now and it starts tuning itself to you.",
           "The running \"N acts\" count in the footer now reflects only the acts that are actually viewable — acts whose event date has passed, that are missing an image, or that are still awaiting approval no longer pad the total. The number you see is the number you can browse.",
           "Admins still see (and count) acts pending approval, so the footer total matches their fuller view.",
-          "On phones, the feed summary at the top — the live act count and the location / \"Set your location\" picker — is now visible. It was previously desktop-only, so the welcome card looked cut off on mobile.",
+          "On phones, the feed summary at the top — the live count and the location / \"Set your location\" picker — is now visible. It was previously desktop-only, so the welcome card looked cut off on mobile.",
+          "The welcome card no longer tells signed-in members \"no account, no tracking\" — that's the pitch for anonymous visitors, and it doesn't make sense once you have an account. Logged-out visitors still see it.",
+          "The feed count now says \"Acts\" instead of \"actions\" — matching how we name them everywhere else.",
+          "When you've picked several categories, the full list now shows on desktop instead of cutting off with a \"…\". On phones, where space is tight, it still trims to one line.",
+          "Cleaned up the feed summary bar — the location / count / categories row now sits on a white fill instead of a grey tint.",
+          "The \"You're here. That counts.\" welcome now bows out as soon as you start using the feed — scroll, filter, search, or switch tabs and it steps aside instead of lingering in the way. It still greets you when you first arrive.",
         ],
       },
     ],

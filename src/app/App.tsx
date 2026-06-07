@@ -876,11 +876,24 @@ export default function App() {
     try { localStorage.setItem("resistact_welcome_seen", "1"); } catch {}
   }, []);
 
+  // The welcome is a first-arrival greeting, not persistent chrome. Retire it
+  // (persisted, same as tapping its X) the moment the visitor scrolls into the
+  // feed — by then they're using the site and it's just in the way. Filtering
+  // and tab changes retire it too (see handleFilterChange / handleTabChange).
+  useEffect(() => {
+    if (welcomeSeen) return;
+    const onScroll = () => { if (window.scrollY > 100) dismissWelcome(); };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [welcomeSeen, dismissWelcome]);
+
   function handleFilterChange(filterName: string, selected: string[]) {
+    dismissWelcome();
     setActiveFilters((prev) => ({ ...prev, [filterName]: selected }));
   }
 
   function handleTabChange(tab: "facts" | "acts" | "receipts") {
+    dismissWelcome();
     setActiveTab(tab);
     setActiveFilters({});
     setSearchQuery("");
@@ -1503,6 +1516,13 @@ export default function App() {
     quickActionsOnly ||
     matchPrefs !== null ||
     Object.values(activeFilters).some((arr) => (arr ?? []).length > 0);
+
+  // True exactly when the one-time welcome card is on screen (same condition as
+  // its render below). The welcome headline now carries the live result count,
+  // so while it's up the geo / unfiltered / filtered banners below suppress
+  // their own count text to avoid showing the same number twice in one fused
+  // card. Once the welcome is dismissed, those banners show the count again.
+  const welcomeShowing = !welcomeSeen && activeTab === "acts" && synced;
 
   // ── Swipe mode is opt-in on phones ──────────────────────────────────────────
   // Phones used to drop straight into the swipe deck on load. That hijacked the
@@ -2815,12 +2835,12 @@ export default function App() {
         actsLocations={dynamicLocations}
         onFilterChange={handleFilterChange}
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={(q) => { dismissWelcome(); setSearchQuery(q); }}
         isSearchPending={searchQuery !== deferredSearchQuery}
         activeTab={activeTab}
         onTabChange={handleTabChange}
         quickActionsOnly={quickActionsOnly}
-        onQuickActionsChange={setQuickActionsOnly}
+        onQuickActionsChange={(v) => { dismissWelcome(); setQuickActionsOnly(v); }}
         showDone={showDone}
         onShowDoneChange={setShowDone}
         completedCount={completedCards.size}
@@ -3039,7 +3059,7 @@ export default function App() {
                 Warm vs. cold-start copy keys off whether the feed is actually
                 personalized yet. Shown once per device, then dismissed for good. */}
             {!welcomeSeen && activeTab === "acts" && synced && (
-              <WelcomeHero personalized={feedIsPersonalized} onDismiss={dismissWelcome} />
+              <WelcomeHero personalized={feedIsPersonalized} signedIn={!!accessToken} count={displayedCards.length} filtered={hasActiveFilters} onDismiss={dismissWelcome} />
             )}
 
             {/* Geo banner — first-visit location auto-detect, MERGED with the
@@ -3050,7 +3070,7 @@ export default function App() {
                 this banner is up, the filtered/unfiltered banners below suppress
                 themselves (via `!geoBanner`) so nothing doubles up. */}
             {geoBanner && activeTab === "acts" && (
-              <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-[#ed6624]/30 bg-[#ed6624]/5 px-4 py-2.5">
+              <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-[#ed6624]/30 bg-white px-4 py-2.5">
                 <MapPin size={16} className="text-[#ed6624] shrink-0" strokeWidth={2.5} />
                 {geoBanner.kind === "detected" ? (
                   <p className="font-['Poppins',sans-serif] text-sm text-gray-700">
@@ -3075,17 +3095,19 @@ export default function App() {
                 )}
 
                 {/* Result count — mirrors the filtered/unfiltered banners' copy
-                    so the merged bar carries the same info on every screen. */}
-                {synced && !matchPrefs && (
+                    so the merged bar carries the same info on every screen.
+                    Suppressed while the welcome card is up, since its headline
+                    already states the count. */}
+                {synced && !matchPrefs && !welcomeShowing && (
                   <>
                     <span className="text-[#ed6624]/40">•</span>
                     <p className="font-['Poppins',sans-serif] text-sm text-gray-600">
                       {hasActiveFilters ? (
-                        <><strong className="text-[#23297e]">{displayedCards.length}</strong> {displayedCards.length === 1 ? "action" : "actions"} match your filters.</>
+                        <><strong className="text-[#23297e]">{displayedCards.length}</strong> {displayedCards.length === 1 ? "Act" : "Acts"} match your filters.</>
                       ) : feedIsPersonalized ? (
-                        <><span aria-hidden>✨ </span>Tuned to you — <strong className="text-[#23297e]">{displayedCards.length}</strong> acts, ranked by what you've been into.</>
+                        <><span aria-hidden>✨ </span>Tuned to you — <strong className="text-[#23297e]">{displayedCards.length}</strong> Acts, ranked by what you've been into.</>
                       ) : (
-                        <>Showing all <strong className="text-[#23297e]">{displayedCards.length}</strong> actions — unfiltered.</>
+                        <>Showing all <strong className="text-[#23297e]">{displayedCards.length}</strong> Acts — unfiltered.</>
                       )}
                     </p>
                   </>
@@ -3113,14 +3135,18 @@ export default function App() {
                 picker. Stacks vertically on phones (flex-col) and sits inline
                 on wider screens (sm:flex-row). */}
             {!geoBanner && !matchPrefs && !hasActiveFilters && activeTab === "acts" && synced && (
-              <div className="mb-4 flex flex-col items-start gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                <p className="font-['Poppins',sans-serif] text-sm text-gray-600">
-                  {feedIsPersonalized ? (
-                    <><span aria-hidden>✨ </span>Tuned to you — <strong className="text-[#23297e]">{displayedCards.length}</strong> acts, ranked by what you've been into.</>
-                  ) : (
-                    <>Showing all <strong className="text-[#23297e]">{displayedCards.length}</strong> actions — unfiltered.</>
-                  )}
-                </p>
+              <div className="mb-4 flex flex-col items-start gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                {/* Count copy — hidden while the welcome card is up (its headline
+                    already states the count); the location picker below stays. */}
+                {!welcomeShowing && (
+                  <p className="font-['Poppins',sans-serif] text-sm text-gray-600">
+                    {feedIsPersonalized ? (
+                      <><span aria-hidden>✨ </span>Tuned to you — <strong className="text-[#23297e]">{displayedCards.length}</strong> Acts, ranked by what you've been into.</>
+                    ) : (
+                      <>Showing all <strong className="text-[#23297e]">{displayedCards.length}</strong> Acts — unfiltered.</>
+                    )}
+                  </p>
+                )}
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 shrink-0">
                   {/* Manual location picker — narrows the feed to a chosen state.
                       Mirrors the geo banner's picker (sets the Location filter via
@@ -3191,7 +3217,7 @@ export default function App() {
                 activeCats.length > 0 || locTokens.length > 0 || quickActionsOnly;
               const showSaveButton = hasSavable && !alreadySaved;
               return (
-              <div className="mb-4 flex flex-col items-start gap-2 rounded-lg border border-[#23297e]/30 bg-[#23297e]/5 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+              <div className="mb-4 flex flex-col items-start gap-2 rounded-lg border border-[#23297e]/30 bg-white px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                 <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1.5">
                   {pureRemote ? (
                     <span className="inline-flex items-center gap-1.5 font-['Poppins',sans-serif] text-[13px] text-gray-700">
@@ -3224,10 +3250,14 @@ export default function App() {
                       </button>
                     </span>
                   ) : null}
-                  <span className="font-['Poppins',sans-serif] text-[13px] text-gray-700">
-                    {hasLeadingCallout && <span aria-hidden className="mr-1.5 text-gray-300">·</span>}
-                    <strong className="text-[#23297e]">{displayedCards.length}</strong> {displayedCards.length === 1 ? "action" : "actions"}
-                  </span>
+                  {/* Count — hidden while the welcome card is up (its headline
+                      already states the count); the location/mode callout stays. */}
+                  {!welcomeShowing && (
+                    <span className="font-['Poppins',sans-serif] text-[13px] text-gray-700">
+                      {hasLeadingCallout && <span aria-hidden className="mr-1.5 text-gray-300">·</span>}
+                      <strong className="text-[#23297e]">{displayedCards.length}</strong> {displayedCards.length === 1 ? "Act" : "Acts"}
+                    </span>
+                  )}
                   {/* Active "5 Mins Max" filter — surfaced so the banner reflects it,
                       matching the purple Zap of the pill that sets it. */}
                   {quickActionsOnly && (
@@ -3245,8 +3275,11 @@ export default function App() {
                     <>
                       <span aria-hidden className="mx-1 hidden h-4 w-px shrink-0 bg-gray-300 sm:inline-block" />
                       <span className="shrink-0 font-['Poppins',sans-serif] text-[12px] font-semibold text-gray-500">Categories:</span>
+                      {/* Phone: truncate to one line (space is tight). Desktop:
+                          there's room, so show every category — drop the cap and
+                          let the list wrap. */}
                       <span
-                        className="min-w-0 max-w-[42ch] truncate font-['Poppins',sans-serif] text-[12px] italic text-gray-500"
+                        className="min-w-0 max-w-[42ch] truncate sm:max-w-none sm:overflow-visible sm:whitespace-normal font-['Poppins',sans-serif] text-[12px] italic text-gray-500"
                         title={[...activeCats].sort((a, b) => a.localeCompare(b)).join(", ")}
                       >
                         {[...activeCats].sort((a, b) => a.localeCompare(b)).join(" · ")}
@@ -3358,7 +3391,7 @@ export default function App() {
             {matchPrefs && (() => {
               const groupCount = matchPrefs.vulnerableGroups?.length ?? 0;
               return (
-                <div className="mb-4 flex flex-col gap-2 rounded-lg border border-[#ed6624] bg-[#ed6624]/5 px-4 py-2.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                <div className="mb-4 flex flex-col gap-2 rounded-lg border border-[#ed6624] bg-white px-4 py-2.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                   <div className="min-w-0 flex-1">
                     {/* Single-line strip: the "Matched for you" headline and the
                         active-setting chips share ONE flex-wrap row so they sit on
@@ -3368,8 +3401,12 @@ export default function App() {
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[10px] text-gray-600 font-['Poppins',sans-serif]">
                       <span className="font-['Poppins',sans-serif] text-sm text-gray-700">
                         <span className="resistact-anim-twinkle" aria-hidden>✨</span>{" "}
-                        <strong className="text-[#23297e]">Matched for you.</strong>{" "}
-                        Showing <strong className="text-[#23297e]">{displayedCards.length}</strong> {displayedCards.length === 1 ? "action" : "actions"}.
+                        <strong className="text-[#23297e]">Matched for you.</strong>
+                        {/* Count suppressed while the welcome card is up — its
+                            headline already states it. */}
+                        {!welcomeShowing && (
+                          <> Showing <strong className="text-[#23297e]">{displayedCards.length}</strong> {displayedCards.length === 1 ? "Act" : "Acts"}.</>
+                        )}
                         {/* Loading indicator while the rest of the catalog
                             is still streaming in. Without this, the user sees
                             "Matched for you. Showing 3 actions." and thinks
@@ -3449,23 +3486,21 @@ export default function App() {
                           Hiding {matchPrefs.excludedCategories!.length} {matchPrefs.excludedCategories!.length === 1 ? "category" : "categories"}
                         </button>
                       )}
-                    </div>
-                    {/* Selected categories on their OWN second line — keeps the
-                        chip strip above compact and stops the category list from
-                        interleaving with the In Person / Remote / state chips when
-                        the banner wraps. Compact "·"-joined list (full set in the
-                        tooltip), mirroring the filtered banner's treatment. */}
-                    {(matchPrefs.includedCategories?.length ?? 0) > 0 && (
-                      <div className="mt-1.5 flex min-w-0 items-baseline gap-1.5">
-                        <span className="shrink-0 font-['Poppins',sans-serif] text-[11px] font-semibold text-gray-500">Categories:</span>
-                        <span
-                          className="min-w-0 truncate font-['Poppins',sans-serif] text-[11px] italic text-gray-500"
-                          title={[...matchPrefs.includedCategories].sort((a, b) => a.localeCompare(b)).join(", ")}
-                        >
-                          {[...matchPrefs.includedCategories].sort((a, b) => a.localeCompare(b)).join(" · ")}
+                      {/* Selected categories — share the SAME flex-wrap row as the
+                          headline + chips so they sit on one line, wrapping to the
+                          next line only when the viewport is too narrow to fit. */}
+                      {(matchPrefs.includedCategories?.length ?? 0) > 0 && (
+                        <span className="inline-flex min-w-0 items-baseline gap-1.5">
+                          <span className="shrink-0 font-['Poppins',sans-serif] text-[11px] font-semibold text-gray-500">Categories:</span>
+                          <span
+                            className="min-w-0 truncate sm:overflow-visible sm:whitespace-normal font-['Poppins',sans-serif] text-[11px] italic text-gray-500"
+                            title={[...matchPrefs.includedCategories].sort((a, b) => a.localeCompare(b)).join(", ")}
+                          >
+                            {[...matchPrefs.includedCategories].sort((a, b) => a.localeCompare(b)).join(" · ")}
+                          </span>
                         </span>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center gap-3 shrink-0 self-start">
                     <button
