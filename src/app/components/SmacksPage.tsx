@@ -291,11 +291,16 @@ export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds =
   const canSubmit = !!accessToken && (approval?.status === "approved");
 
   // Merge static smacks with API receipts; API version wins on duplicate ID.
-  // Server-hidden IDs are excluded at this stage so they never appear anywhere.
+  // The `smacks:hidden` list is ONLY for hardcoded static smacks (id >= 5000)
+  // that can't be deleted from KV — so it's applied solely to STATIC_SMACKS.
+  // KV receipts are real, server-controlled records (deleting one removes it
+  // from KV, so it won't be in apiReceipts at all); applying the hidden list to
+  // them was the bug that made a freshly created smack vanish when its id
+  // happened to sit in the hidden set.
   const apiIds = new Set(apiReceipts.map((r) => r.id));
   const hiddenSet = new Set(serverHiddenIds);
   const receipts = [
-    ...apiReceipts.filter((r) => !hiddenSet.has(r.id)),
+    ...apiReceipts,
     ...STATIC_SMACKS.filter((r) => !apiIds.has(r.id) && !hiddenSet.has(r.id)),
   ];
 
