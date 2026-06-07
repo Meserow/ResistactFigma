@@ -474,30 +474,30 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
           the card. On wide screens (lg+) these hide and the side hints below
           flank the card instead. */}
       {!done && !summaryOpen && (
-      <div className="flex lg:hidden items-center justify-between gap-2 whitespace-nowrap px-3 py-2 font-['Poppins',sans-serif] text-[11px] font-bold">
+      <div className="flex lg:hidden items-center justify-between gap-2 whitespace-nowrap px-3 py-1.5 font-['Poppins',sans-serif] text-[9.5px] font-semibold">
         <button
           type="button"
           onClick={() => commit("left")}
           aria-label="Pass on this act"
-          className="inline-flex items-center gap-1 text-teal-400 transition-opacity hover:opacity-80 active:opacity-60"
+          className="inline-flex items-center gap-1 text-gray-300 transition-opacity hover:opacity-80 active:opacity-60"
         >
-          <ArrowLeft size={14} strokeWidth={3} className="shrink-0" />
+          <ArrowLeft size={12} strokeWidth={3} className="shrink-0 resistact-anim-nudge-left" />
           Swipe left to PASS
-          <span className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-teal-400 text-white">
-            <X size={9} strokeWidth={3.5} />
+          <span className="inline-flex h-3 w-3 shrink-0 items-center justify-center rounded-full bg-gray-300 text-gray-700">
+            <X size={8} strokeWidth={3.5} />
           </span>
         </button>
         <button
           type="button"
           onClick={() => commit("right")}
           aria-label="Save this act"
-          className="inline-flex items-center gap-1 text-[#ed6624] transition-opacity hover:opacity-80 active:opacity-60"
+          className="inline-flex items-center gap-1 text-gray-300 transition-opacity hover:opacity-80 active:opacity-60"
         >
-          <span className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-[#ed6624] text-white">
-            <Heart size={8} fill="currentColor" />
+          <span className="inline-flex h-3 w-3 shrink-0 items-center justify-center rounded-full bg-gray-300 text-gray-700">
+            <Heart size={7} fill="currentColor" />
           </span>
           Swipe right to SAVE
-          <ArrowRight size={14} strokeWidth={3} className="shrink-0" />
+          <ArrowRight size={12} strokeWidth={3} className="shrink-0 resistact-anim-nudge-right" />
         </button>
       </div>
       )}
@@ -642,11 +642,11 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
               type="button"
               onClick={() => commit("left")}
               aria-label="Pass on this act"
-              className="absolute right-[calc(50%+264px)] top-1/2 hidden -translate-y-1/2 items-center gap-1.5 whitespace-nowrap font-['Poppins',sans-serif] text-[13px] font-semibold text-teal-400 transition-opacity hover:opacity-80 active:opacity-60 lg:inline-flex"
+              className="absolute right-[calc(50%+264px)] top-1/2 hidden -translate-y-1/2 items-center gap-1.5 whitespace-nowrap font-['Poppins',sans-serif] text-[13px] font-semibold text-gray-300 transition-opacity hover:opacity-80 active:opacity-60 lg:inline-flex"
             >
-              <ArrowLeft size={15} strokeWidth={3} className="shrink-0" />
+              <ArrowLeft size={15} strokeWidth={3} className="shrink-0 resistact-anim-nudge-left" />
               Swipe left to PASS
-              <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-teal-400 text-white">
+              <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-gray-300 text-gray-700">
                 <X size={10} strokeWidth={3.5} />
               </span>
             </button>
@@ -654,13 +654,13 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
               type="button"
               onClick={() => commit("right")}
               aria-label="Save this act"
-              className="absolute left-[calc(50%+264px)] top-1/2 hidden -translate-y-1/2 items-center gap-1.5 whitespace-nowrap font-['Poppins',sans-serif] text-[13px] font-semibold text-[#ed6624] transition-opacity hover:opacity-80 active:opacity-60 lg:inline-flex"
+              className="absolute left-[calc(50%+264px)] top-1/2 hidden -translate-y-1/2 items-center gap-1.5 whitespace-nowrap font-['Poppins',sans-serif] text-[13px] font-semibold text-gray-300 transition-opacity hover:opacity-80 active:opacity-60 lg:inline-flex"
             >
-              <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#ed6624] text-white">
+              <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-gray-300 text-gray-700">
                 <Heart size={9} fill="currentColor" />
               </span>
               Swipe right to SAVE
-              <ArrowRight size={15} strokeWidth={3} className="shrink-0" />
+              <ArrowRight size={15} strokeWidth={3} className="shrink-0 resistact-anim-nudge-right" />
             </button>
           </>
         )}
@@ -840,12 +840,12 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
                 type="button"
                 onClick={onOpenMatches}
                 title="View My Matches"
-                className="inline-flex items-center gap-1 text-[#ed6624]/80 underline-offset-2 transition-colors hover:text-[#ed6624] hover:underline"
+                className="inline-flex items-center gap-1 text-[11px] text-[#ed6624]/80 underline-offset-2 transition-colors hover:text-[#ed6624] hover:underline"
               >
                 <Heart size={11} /> {totalSaved} total saved
               </button>
             ) : (
-              <span className="inline-flex items-center gap-1 text-[#ed6624]/80">
+              <span className="inline-flex items-center gap-1 text-[11px] text-[#ed6624]/80">
                 <Heart size={11} /> {totalSaved} total saved
               </span>
             )}

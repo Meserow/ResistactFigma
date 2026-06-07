@@ -16,6 +16,214 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.40",
+    date: "2026-06-06",
+    title: "Banner reflects In Person / Remote",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "The feed banner now names the mode you've picked — e.g. \"In person · Washington\", \"In person + remote · Washington\", or \"Showing remote acts\" when Remote is on by itself.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.39",
+    date: "2026-06-06",
+    title: "In Person + Remote together, hover polish",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Renamed the \"Remote Only\" filter to just \"Remote\".",
+          "\"In Person\" and \"Remote\" are now independent — you can turn on both to see in-person and remote acts together, instead of one replacing the other.",
+          "Fixed a flicker where a card's rounded corners briefly squared off when you hovered it.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.38",
+    date: "2026-06-06",
+    title: "Calmer feed banner & livelier swipe hints",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Simplified the filter banner above the feed — trimmed the wording so the location, count, and categories read more cleanly.",
+        ],
+      },
+      {
+        heading: "Discover",
+        items: [
+          "The \"Swipe left to PASS\" / \"Swipe right to SAVE\" arrows now gently nudge in their direction to hint at the gesture.",
+          "Made the swipe hints smaller on phones so they fit comfortably above the card.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.37",
+    date: "2026-06-06",
+    title: "Greeting moved to the footer; even card opacity",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Moved the \"Welcome back to the resistance, [name]. Day N\" greeting from the top hero down to the persistent footer bar, where it stays visible as you scroll.",
+          "Feed cards now all rest at the same opacity — previously the pinned card and the rest were slightly different, so some looked more faded than others.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.36",
+    date: "2026-06-06",
+    title: "Swipe hint polish",
+    sections: [
+      {
+        heading: "Discover",
+        items: [
+          "Toned the \"Swipe left to PASS\" / \"Swipe right to SAVE\" hints to light grey.",
+          "Fixed the \"total saved\" count, which was rendering larger than the rest of the line.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.35",
+    date: "2026-06-06",
+    title: "Smaller welcome-back greeting",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Made the logged-in \"Welcome back to the resistance\" greeting a bit smaller.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.34",
+    date: "2026-06-06",
+    title: "Filter banner Clear, and Housing for new acts",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Removed the separate \"Clear all\" link from the end of the category filter row; the \"Clear\" in the banner above the feed handles it.",
+          "Made that banner \"Clear\" link orange so it stands out.",
+          "\"Housing\" is available again when adding or editing an act — it's just no longer a default filter chip on the feed.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.33",
+    date: "2026-06-06",
+    title: "Tidied existing Housing acts into Show Up",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Moved the existing \"Housing\" acts into \"Show Up\" to consolidate the feed.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.32",
+    date: "2026-06-06",
+    title: "\"Transportation\" is now \"Transport\"",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Shortened the \"Transportation\" category to \"Transport\". Acts filed under the old name carry over automatically.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.31",
+    date: "2026-06-06",
+    title: "Texting filter now adds acts, not removes them",
+    sections: [
+      {
+        heading: "Fixes",
+        items: [
+          "Fixed the Texting filter: with other categories selected, turning Texting on was shrinking the results (it required acts to be in both at once) instead of adding texting acts. It now works like the other category pills — selecting it includes texting acts alongside whatever else you've picked.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.30",
+    date: "2026-06-06",
+    title: "Tidier feed banner spacing",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Toned down the size of the location/count text in the feed banner and added a divider before the selected categories so the two read as separate.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.29",
+    date: "2026-06-06",
+    title: "Banner notes nationwide & multi-state acts",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "When a state is selected, the feed banner now says \"Showing Acts for [state] + nationwide & multi-state\" — making it clear those acts are included alongside the local ones, not filtered out.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.28",
+    date: "2026-06-06",
+    title: "\"Professional Skills\" is now \"Skills\"",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Shortened the \"Professional Skills\" category to \"Skills\". Acts filed under the old name carry over automatically.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.27",
+    date: "2026-06-06",
+    title: "5 Mins Max grouped with the location filters",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Moved \"5 Mins Max\" to the left of the divider so it sits with the In Person / Remote Only toggles, before the category pills.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.26",
+    date: "2026-06-06",
+    title: "Cleaner banner in Remote Only",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "When \"Remote Only\" is on, the banner no longer says \"Showing Acts for [state]\" — remote acts aren't tied to a place, so it just shows the result count.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.25",
     date: "2026-06-06",
     title: "Slightly crisper feed cards",

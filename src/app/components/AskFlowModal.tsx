@@ -95,13 +95,13 @@ const CATEGORIES: { name: string; icon: LucideIcon; color: string }[] = [
   { name: "Commitment",                 icon: Heart,          color: "#23297e" },
   { name: "Petition",                   icon: PenLine,        color: "#05737f" },
   { name: "Prayer",                     icon: Sparkles,       color: "#8a00e6" },
-  { name: "Professional Skills",        icon: Briefcase,      color: "#126d89" },
+  { name: "Skills",                     icon: Briefcase,      color: "#126d89" },
   { name: "Purchase",                   icon: ShoppingCart,   color: "#b45309" },
   { name: "Protest",                    icon: Megaphone,      color: "#23297e" },
   { name: "Social Media",               icon: Share2,         color: "#e44b4b" },
   { name: "Spread Positivity",          icon: Smile,          color: "#8a00e6" },
   { name: "Training",                   icon: GraduationCap,  color: "#126d89" },
-  { name: "Transportation",             icon: Bike,           color: "#126d89" },
+  { name: "Transport",                  icon: Bike,           color: "#126d89" },
   { name: "Volunteer",                  icon: HandHelping,    color: "#4a7c59" },
 ];
 

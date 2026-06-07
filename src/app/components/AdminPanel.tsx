@@ -74,11 +74,11 @@ const NEWCARD_CATEGORIES: { label: string; color: string }[] = [
   { label: "Mental Health", color: "#ff00d5" }, { label: "News Story", color: "#896312" },
   { label: "Commitment", color: "#23297e" }, { label: "Petition", color: "#05737f" },
   { label: "Phoning", color: "#c2185b" }, { label: "Prayer", color: "#8a00e6" },
-  { label: "Professional Skills", color: "#126d89" },
+  { label: "Skills", color: "#126d89" },
   { label: "Protest", color: "#23297e" }, { label: "Represent", color: "#b45309" },
   { label: "Show Up", color: "#23297e" }, { label: "Social Media", color: "#e44b4b" },
   { label: "Texting", color: "#2f7d6b" },
-  { label: "Training", color: "#126d89" }, { label: "Transportation", color: "#126d89" },
+  { label: "Training", color: "#126d89" }, { label: "Transport", color: "#126d89" },
   { label: "Video", color: "#e44b4b" }, { label: "Witness", color: "#767574" },
 ];
 

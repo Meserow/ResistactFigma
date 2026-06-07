@@ -4706,6 +4706,26 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       console.log(`Retired Other category: reassigned ${updated} of ${fixes.length} cards.`);
     }
 
+    // One-time: retire the "Housing" category (June 2026). Fold its cards into
+    // "Show Up" so the Housing pill can be removed from the UI. Scan-based so it
+    // catches every Housing card (incl. pending ones), Title-case or uppercased.
+    const retireHousingDone = await getMigrationFlag("cleanup:retire-housing-category:v1");
+    if (!retireHousingDone) {
+      let updated = 0;
+      for (const prefix of ["action:", "user-action:"]) {
+        const all = (await kv.getByPrefix(prefix)) as any[];
+        for (const card of all) {
+          if (card && typeof card === "object" && typeof card.id === "number" &&
+              (card.category === "Housing" || card.category === "HOUSING")) {
+            await kv.set(`${prefix}${card.id}`, { ...card, category: "Show Up", categoryColor: "#23297e" });
+            updated++;
+          }
+        }
+      }
+      await setMigrationFlag("cleanup:retire-housing-category:v1");
+      console.log(`Retired Housing category: folded ${updated} cards into Show Up.`);
+    }
+
     const fixQuickActionMistagsDone = await getMigrationFlag("cleanup:fix-quickaction-mistags:v1");
     if (!fixQuickActionMistagsDone) {
       const idsToFix = [31, 55, 128, 285, 315, 1010, 1076, 1097, 1265, 1269, 1302, 1334, 2033, 2035, 2085];

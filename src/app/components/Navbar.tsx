@@ -231,13 +231,15 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
   // Selected states (excludes the "Remote"/"In Person" mode tokens, which are
   // toggles, not places).
   const locStates = locSelected.filter((l) => l !== "Remote" && l !== "In Person");
-  // The two mutually-exclusive online-axis modes. State (chosen via the banner)
-  // persists across mode changes; turning one mode on turns the other off.
+  // The two online-axis modes. They're INDEPENDENT toggles: each flips its own
+  // token without touching the other, so both can be on at once (= show both
+  // in-person and remote acts). State tokens persist either way.
   const remoteOn = locSelected.includes("Remote");
   const inPersonOn = locSelected.includes("In Person");
-  const setLocationMode = (mode: "Remote" | "In Person" | null) => {
-    const next = [...locStates];
-    if (mode) next.push(mode);
+  const toggleLocationMode = (mode: "Remote" | "In Person") => {
+    const next = locSelected.includes(mode)
+      ? locSelected.filter((l) => l !== mode)
+      : [...locSelected, mode];
     onFilterChange("Location", next);
   };
   // What the navy Location pill reads: the state name when exactly one is
@@ -795,39 +797,36 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                 being a simple toggle. "Where can I act?" is the most
                 useful first cut at the feed, so it sits at the front. */}
             <div className="hidden sm:flex flex-1 min-w-0 flex-wrap items-center gap-y-1.5 gap-x-1">
-              {/* In Person / Remote Only — a segmented button group (the two are
-                  mutually-exclusive modes). The state itself is auto-detected and
-                  chosen via the feed banner, not here. */}
+              {/* In Person / Remote — a segmented button group of two independent
+                  toggles; both can be on (= in-person + remote). The state itself
+                  is auto-detected and chosen via the feed banner, not here. */}
               <div className="shrink-0 inline-flex items-center overflow-hidden rounded-full border border-gray-200">
                 <button
-                  onClick={() => setLocationMode(inPersonOn ? null : "In Person")}
+                  onClick={() => toggleLocationMode("In Person")}
                   aria-pressed={inPersonOn}
                   className={`flex items-center gap-1 px-2.5 py-1 font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap ${
                     inPersonOn ? "bg-[#23297e] text-white" : "bg-white text-gray-600 hover:text-[#23297e]"
                   }`}
-                  title="Show only in-person actions"
+                  title="Show in-person actions"
                 >
                   <MapPin size={11} className={inPersonOn ? "text-white" : "text-gray-400"} />
                   In Person
                 </button>
                 <span aria-hidden className="h-5 w-px shrink-0 bg-gray-200" />
                 <button
-                  onClick={() => setLocationMode(remoteOn ? null : "Remote")}
+                  onClick={() => toggleLocationMode("Remote")}
                   aria-pressed={remoteOn}
                   className={`flex items-center gap-1 px-2.5 py-1 font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap ${
                     remoteOn ? "bg-[#ed6624] text-white" : "bg-white text-gray-600 hover:text-[#ed6624]"
                   }`}
-                  title="Show only remote actions (doable from anywhere)"
+                  title="Show remote actions (doable from anywhere)"
                 >
                   <Globe size={11} className={remoteOn ? "text-white" : "text-gray-400"} />
-                  Remote Only
+                  Remote
                 </button>
               </div>
-              {/* Divider — sets the location pills (which persist through "Clear
-                  all") apart from the filters that do clear. */}
-              <span aria-hidden className="mx-1 h-5 w-px self-center shrink-0 bg-gray-300" />
-              {/* 5 Minutes Max pill (3rd) — toggles the quickAction-only filter.
-                  Clustered with Location + Remote at the front of the row. */}
+              {/* 5 Mins Max pill — toggles the quickAction-only filter. Clustered
+                  with Location + Remote on the LEFT of the divider. */}
               {onQuickActionsChange && (
                 <button
                   onClick={() => onQuickActionsChange(!quickActionsOnly)}
@@ -842,6 +841,9 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                   5 Mins Max
                 </button>
               )}
+              {/* Divider — separates the persistent left-side filters (In Person /
+                  Remote / 5 Mins Max) from the category pills that "Clear all" resets. */}
+              <span aria-hidden className="mx-1 h-5 w-px self-center shrink-0 bg-gray-300" />
               {/* Category pills — every category as a wrapping pill row.
                   Sits after Location → Remote → 5 Minutes Max. */}
               {actsPillItems.map((option) => {
@@ -885,26 +887,6 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               })}
               {/* Texting pill now renders inline in its alphabetical slot among
                   the category pills above (see the actsPillItems map). */}
-              {/* Clear all — appended to the chip row so it doesn't claim
-                  dedicated horizontal real estate on the right. Only shows
-                  when at least one filter is active. */}
-              {totalClearable > 0 && (
-                <button
-                  onClick={() => {
-                    // Clear everything EXCEPT Location (it persists by design).
-                    Object.keys(activeTab === "facts" ? FACTS_FILTER_OPTIONS : ACTS_FILTER_OPTIONS)
-                      .filter((f) => f !== "Location")
-                      .forEach((f) => onFilterChange(f, []));
-                    if (hasActiveSearch) onSearchChange("");
-                    if (quickActionsOnly && onQuickActionsChange) onQuickActionsChange(false);
-                    if (textingOnly && onTextingChange) onTextingChange(false);
-                  }}
-                  className="shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-semibold whitespace-nowrap text-red-400 hover:text-red-600 hover:bg-red-50 transition-all"
-                >
-                  <X size={11} />
-                  Clear all ({totalClearable})
-                </button>
-              )}
             </div>
 
             {/* Mobile: dropdown (existing behavior preserved) */}
@@ -1172,12 +1154,12 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                     the Location dropdown (below), keeping this row short.
                     Centered on phones. */}
                 <div className="flex flex-wrap justify-center gap-1.5">
-                  {/* In Person / Remote Only — segmented button group, mutually
-                      exclusive. State is auto-detected and chosen via the feed
-                      banner, so there's no state dropdown here anymore. */}
+                  {/* In Person / Remote — segmented button group of two independent
+                      toggles; both can be on. State is auto-detected and chosen via
+                      the feed banner, so there's no state dropdown here anymore. */}
                   <div className="shrink-0 inline-flex items-center overflow-hidden rounded-full border border-gray-200">
                     <button
-                      onClick={() => setLocationMode(inPersonOn ? null : "In Person")}
+                      onClick={() => toggleLocationMode("In Person")}
                       aria-pressed={inPersonOn}
                       className={`flex items-center gap-1 px-3 py-1 text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap ${
                         inPersonOn ? "bg-[#23297e] text-white" : "bg-white text-gray-600"
@@ -1188,14 +1170,14 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                     </button>
                     <span aria-hidden className="h-5 w-px shrink-0 bg-gray-200" />
                     <button
-                      onClick={() => setLocationMode(remoteOn ? null : "Remote")}
+                      onClick={() => toggleLocationMode("Remote")}
                       aria-pressed={remoteOn}
                       className={`flex items-center gap-1 px-3 py-1 text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap ${
                         remoteOn ? "bg-[#ed6624] text-white" : "bg-white text-gray-600"
                       }`}
                     >
                       <Globe size={11} />
-                      Remote Only
+                      Remote
                     </button>
                   </div>
 

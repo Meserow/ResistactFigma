@@ -53,7 +53,7 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
     // "Host" → hosting an event is showing up from the organizer side.
     // "Transportation" → giving people rides to actions / canvasses /
     // hearings is showing up by enabling others' presence.
-    categories: ["Group", "Host", "Labor", "Meeting", "Professional Skills", "Show Up", "Training", "Transportation", "Volunteer", "Witness"],
+    categories: ["Group", "Host", "Labor", "Meeting", "Show Up", "Skills", "Training", "Transport", "Volunteer", "Witness"],
   },
   {
     heading: "Care",
@@ -114,7 +114,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
   "Petition":            "#3a6d80", // muted teal
   "Phoning":             "#b8326b", // muted rose-magenta (renamed from "Phone Calling"/"Call")
   "Prayer":              "#5a3e9e", // brand purple
-  "Professional Skills": "#3a6d80", // muted teal
+  "Skills":              "#3a6d80", // muted teal (renamed from "Professional Skills")
   "Protest":             "#23297e", // brand navy
   "Represent":           "#b45309", // burnt orange (renamed from "Purchase" May 2026)
   "Show Up":             "#23297e", // brand navy (absorbs Bird-Dog)
@@ -122,7 +122,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
   // Spread Positivity merged into Act of Kindness (May 2026).
   "Texting":             "#2f6fa8", // muted blue — out of the green/teal family so it doesn't read like "done" (was #2f7d6b)
   "Training":            "#3a6d80", // muted teal (absorbs Learn)
-  "Transportation":      "#3a6d80", // muted teal
+  "Transport":           "#3a6d80", // muted teal (renamed from "Transportation")
   "Video":               "#b84545", // muted brick red
   "Volunteer":           "#4a7c59", // forest green — hands-on community help
   "Witness":             "#767574", // neutral gray
@@ -163,14 +163,14 @@ export const CATEGORY_ICONS: Record<string, LucideIcon> = {
   "Petition":            FileSignature,
   "Phoning":             Phone,          // renamed from "Phone Calling"/"Call"
   "Prayer":              Sparkles,
-  "Professional Skills": Briefcase,
+  "Skills":              Briefcase,
   "Protest":             Megaphone,
   "Represent":           Shirt,          // wear the cause (renamed from "Purchase")
   "Show Up":             Footprints,     // in-person presence
   "Social Media":        Share2,
   "Texting":             MessageSquare,  // SMS / text banking
   "Training":            GraduationCap,
-  "Transportation":      Car,
+  "Transport":           Car,
   "Video":               Video,
   "Volunteer":           HandHelping,    // offering hands-on help
   "Witness":             Eye,

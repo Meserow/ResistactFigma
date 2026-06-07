@@ -52,6 +52,10 @@ interface CardDetailsModalProps {
   /** Bubbles the server's updated card back up to App so the feed's
    *  source-of-truth state and any other open views stay in sync. */
   onCardUpdated?: (updated: ActionCardData) => void;
+  /** Fired when the user makes a horizontal swipe gesture on the modal — a
+   *  signal they expected the Tinder-style deck. App closes this modal and
+   *  opens swipe mode. */
+  onSwipeToDeck?: () => void;
 }
 
 /**
@@ -59,8 +63,24 @@ interface CardDetailsModalProps {
  * `line-clamp-5` cuts it off in the grid view. Click the "Read more" link on a
  * card to open this; click overlay / Escape / X to close.
  */
-export function CardDetailsModal({ card, onClose, onShare, onComplete, isCompleted, onBoost, isBoosted, onBookmark, isBookmarked, onFlag, onEdit, canEdit, accessToken, onCardUpdated }: CardDetailsModalProps) {
+export function CardDetailsModal({ card, onClose, onShare, onComplete, isCompleted, onBoost, isBoosted, onBookmark, isBookmarked, onFlag, onEdit, canEdit, accessToken, onCardUpdated, onSwipeToDeck }: CardDetailsModalProps) {
   const cardRef = useRef<HTMLDivElement>(null);
+  // Horizontal-swipe detection → enter swipe mode. Records the touch start and,
+  // on release, fires onSwipeToDeck if the gesture was a clear horizontal swipe
+  // (so it doesn't trip on vertical scrolling of the modal's content).
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    swipeStart.current = { x: t.clientX, y: t.clientY };
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!onSwipeToDeck || !swipeStart.current) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - swipeStart.current.x;
+    const dy = t.clientY - swipeStart.current.y;
+    swipeStart.current = null;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) onSwipeToDeck();
+  };
 
   // ── Admin: inline category editor ──────────────────────────────────────
   // Only renders when canEdit + accessToken are both present. `catEditOpen`
@@ -161,6 +181,8 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
       <div
         ref={cardRef}
         onClick={(e) => e.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
         className="hero-modal-card relative w-full max-w-[720px] max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-2xl"
       >
         {/* Utility cluster — bookmark, flag, share, close. All icon-only,
