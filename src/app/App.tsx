@@ -2888,12 +2888,30 @@ export default function App() {
                 <p className="font-['Poppins',sans-serif] text-sm text-gray-600">
                   Showing all <strong className="text-[#23297e]">{displayedCards.length}</strong> actions — unfiltered.
                 </p>
-                <div className="flex items-center gap-4 shrink-0">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 shrink-0">
+                  {/* Manual location picker — narrows the feed to a chosen state.
+                      Mirrors the geo banner's picker (sets the Location filter via
+                      applyGeoState); once a state is picked this banner gives way to
+                      the filtered banner, which carries the change/clear controls. */}
+                  <label className="flex items-center gap-1.5 font-['Poppins',sans-serif] text-xs font-semibold text-gray-600 whitespace-nowrap">
+                    <MapPin size={14} className="text-[#23297e] shrink-0" strokeWidth={2.5} />
+                    <span className="sr-only">Set your location</span>
+                    <select
+                      value=""
+                      onChange={(e) => { if (e.target.value) applyGeoState(e.target.value); }}
+                      className="rounded-md border border-gray-300 bg-white px-2 py-1 text-xs font-['Poppins',sans-serif] text-gray-700"
+                    >
+                      <option value="">Set your location…</option>
+                      {GEO_STATE_OPTIONS.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </label>
                   <button
-                    onClick={() => setMatchOpen(true)}
+                    onClick={() => setSwipeOpen(true)}
                     className="font-['Poppins',sans-serif] text-xs font-bold text-[#ed6624] hover:text-[#e07a28] hover:underline transition-colors whitespace-nowrap"
                   >
-                    ✨ Find my match →
+                    🃏 Try swipe mode! →
                   </button>
                 </div>
               </div>
@@ -3108,27 +3126,29 @@ export default function App() {
               return (
                 <div className="mb-4 flex flex-col gap-2 rounded-lg border border-[#ed6624] bg-[#ed6624]/5 px-4 py-2.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="font-['Poppins',sans-serif] text-sm text-gray-700">
-                      <span className="resistact-anim-twinkle" aria-hidden>✨</span>{" "}
-                      <strong className="text-[#23297e]">Matched for you.</strong>{" "}
-                      Showing <strong className="text-[#23297e]">{displayedCards.length}</strong> {displayedCards.length === 1 ? "action" : "actions"}.
-                      {/* Loading indicator while the rest of the catalog
-                          is still streaming in. Without this, the user sees
-                          "Matched for you. Showing 3 actions." and thinks
-                          the matcher is broken — when in reality the cards
-                          array is only at offset 100/587 and more matches
-                          are seconds away. */}
-                      {serverTotal > 0 && cards.length < serverTotal && (
-                        <span className="ml-2 inline-flex items-center gap-1 text-xs text-gray-500 italic">
-                          <Loader2 size={11} className="animate-spin shrink-0" />
-                          loading more… ({cards.length}/{serverTotal})
-                        </span>
-                      )}
-                    </p>
-                    {/* Chip strip — wraps on narrow viewports. All icons are
-                        simple navy line-icons so the strip reads as one unified
-                        UI element rather than a row of disparate emoji. */}
-                    <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[10px] text-gray-600 font-['Poppins',sans-serif]">
+                    {/* Single-line strip: the "Matched for you" headline and the
+                        active-setting chips share ONE flex-wrap row so they sit on
+                        the same line. The icons are simple navy line-icons so the
+                        strip reads as one unified UI element. It only wraps to a
+                        second line when the viewport is too narrow to fit it all. */}
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[10px] text-gray-600 font-['Poppins',sans-serif]">
+                      <span className="font-['Poppins',sans-serif] text-sm text-gray-700">
+                        <span className="resistact-anim-twinkle" aria-hidden>✨</span>{" "}
+                        <strong className="text-[#23297e]">Matched for you.</strong>{" "}
+                        Showing <strong className="text-[#23297e]">{displayedCards.length}</strong> {displayedCards.length === 1 ? "action" : "actions"}.
+                        {/* Loading indicator while the rest of the catalog
+                            is still streaming in. Without this, the user sees
+                            "Matched for you. Showing 3 actions." and thinks
+                            the matcher is broken — when in reality the cards
+                            array is only at offset 100/587 and more matches
+                            are seconds away. */}
+                        {serverTotal > 0 && cards.length < serverTotal && (
+                          <span className="ml-2 inline-flex items-center gap-1 text-xs text-gray-500 italic">
+                            <Loader2 size={11} className="animate-spin shrink-0" />
+                            loading more… ({cards.length}/{serverTotal})
+                          </span>
+                        )}
+                      </span>
                       {/* Active pill filters (In Person / Remote / 5 Mins Max) —
                           these still apply in match mode, so surface them here too.
                           Each chip is its accent color and toggles its filter off. */}
@@ -3196,6 +3216,22 @@ export default function App() {
                         </button>
                       )}
                     </div>
+                    {/* Selected categories on their OWN second line — keeps the
+                        chip strip above compact and stops the category list from
+                        interleaving with the In Person / Remote / state chips when
+                        the banner wraps. Compact "·"-joined list (full set in the
+                        tooltip), mirroring the filtered banner's treatment. */}
+                    {(matchPrefs.includedCategories?.length ?? 0) > 0 && (
+                      <div className="mt-1.5 flex min-w-0 items-baseline gap-1.5">
+                        <span className="shrink-0 font-['Poppins',sans-serif] text-[11px] font-semibold text-gray-500">Categories:</span>
+                        <span
+                          className="min-w-0 truncate font-['Poppins',sans-serif] text-[11px] italic text-gray-500"
+                          title={[...matchPrefs.includedCategories].sort((a, b) => a.localeCompare(b)).join(", ")}
+                        >
+                          {[...matchPrefs.includedCategories].sort((a, b) => a.localeCompare(b)).join(" · ")}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-3 shrink-0 self-start">
                     <button

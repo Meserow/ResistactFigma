@@ -10,8 +10,18 @@ import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 const PROJECT_REF = "zkihnylrvdofdbnhmmoq";
+// Secret key — read from the environment, NEVER hardcoded. Put it in a
+// gitignored .env and run with:  node --env-file=.env scripts/upload-cartoon-banners.mjs
+// Accepts the new-style secret key (sb_secret_…) or a legacy service_role key.
 const SERVICE_ROLE_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpraWhueWxydmRvZmRibmhtbW9xIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzA3NzM1MSwiZXhwIjoyMDg4NjUzMzUxfQ.1EibWD6G0YYD1x1EgjntfUgNQ5jTtxduUB5YIX9_e2g";
+  process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!SERVICE_ROLE_KEY) {
+  console.error(
+    "Missing SUPABASE_SECRET_KEY (or SUPABASE_SERVICE_ROLE_KEY). " +
+      "Add it to .env and run: node --env-file=.env scripts/upload-cartoon-banners.mjs",
+  );
+  process.exit(1);
+}
 const BUCKET = "cartoon-banners";
 const STORAGE_BASE = `https://${PROJECT_REF}.supabase.co/storage/v1/object`;
 const LOCAL_DIR = new URL("../public/cartoon-banners/", import.meta.url).pathname;

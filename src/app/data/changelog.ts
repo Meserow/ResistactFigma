@@ -16,6 +16,55 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.60",
+    date: "2026-06-07",
+    title: "Matched-for-you banner now fits on one line",
+    sections: [
+      {
+        heading: "Matched for you",
+        items: [
+          "The \"Matched for you\" banner now keeps its headline and your active setting chips (In Person, Remote, your state, and so on) on a single line instead of stacking the chips underneath, so it takes up less room. It still wraps neatly on smaller phone screens.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.59",
+    date: "2026-06-07",
+    title: "Smarter feed banners — saving filters and your matched categories",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "\"Save these categories\" now also remembers the rest of your feed filters — In Person, Remote, and 5 Mins Max — not just the categories you picked.",
+          "The button now hides itself when the filters shown are already exactly what you've saved, so it only appears when there's something new to save.",
+          "When you've filtered by location or 5 Mins Max without picking any categories, the button reads \"Save these filters\" so it still makes sense.",
+        ],
+      },
+      {
+        heading: "Matched for you",
+        items: [
+          "The \"Matched for you\" banner now lists the categories you're matched on, so you can see at a glance what's shaping your feed.",
+          "When the banner is too wide to fit on one line, your categories now drop to their own second line instead of getting tangled up with the In Person / Remote / state chips.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.58",
+    date: "2026-06-07",
+    title: "Set your location right from The Acts, plus a swipe-mode shortcut",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Added a \"Set your location…\" picker to the top of the unfiltered Acts view, so you can jump straight to actions in your state without opening the match wizard first.",
+          "The shortcut beside it now reads \"🃏 Try swipe mode!\" and opens the swipe deck — flip through acts one at a time — instead of the match tool.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.57",
     date: "2026-06-07",
     title: "Tidier action layout on the act details screen",

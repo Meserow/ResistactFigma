@@ -18,7 +18,7 @@ const OUT_FILE = path.join(ART_DIR, "all.html");
 
 const PROJECT_ID = "zkihnylrvdofdbnhmmoq";
 const PUBLIC_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpraWhueWxydmRvZmRibmhtbW9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNzczNTEsImV4cCI6MjA4ODY1MzM1MX0.gkm2fiQHlBrexo4FHcn-a-WH1QZ8ewabcEcL5rTZF-0";
+  "sb_publishable_leJ13K9-4bbJ4n9v_R68LA__A2GqGdx";
 
 const CATEGORY_COLORS = {
   "Act of Kindness": "#127f05", "Art/Performance Art": "#896312",
