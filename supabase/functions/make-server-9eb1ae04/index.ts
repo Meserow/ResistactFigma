@@ -21,10 +21,25 @@ app.use(
 );
 
 // ─── Auth helpers ──────────────────────────────────────────────────────────────
+// Resolve the full-access key. Prefer the new-style secret key (injected as
+// SUPABASE_SECRET_KEYS, a JSON map keyed by name) because the legacy
+// SUPABASE_SERVICE_ROLE_KEY stops working once legacy JWT-based API keys are
+// disabled in the dashboard. Falls back to the legacy key while both coexist.
+function serviceRoleKey(): string {
+  const raw = Deno.env.get("SUPABASE_SECRET_KEYS");
+  if (raw) {
+    try {
+      const def = JSON.parse(raw)?.default;
+      if (typeof def === "string" && def) return def;
+    } catch { /* malformed — fall through to legacy */ }
+  }
+  return Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+}
+
 function adminClient() {
   return createClient(
     Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    serviceRoleKey(),
   );
 }
 
@@ -345,6 +360,7 @@ const KNOWN_MIGRATION_FLAG_KEYS: readonly string[] = [
   "migrate:spotsused-to-boosts:v1",
   "migration:admin-approved:v1",
   "migration:approved-without-image-cleanup:v1",
+  "migration:authorrole-reclassify:v1",
   "migration:cancel-your-10min:v1",
   "migration:common-cause-actions:v1",
   "migration:creators-import-2026-05-batch2:v1",
@@ -373,7 +389,7 @@ const KNOWN_MIGRATION_FLAG_KEYS: readonly string[] = [
   "migration:tsv-batch-2026-05-17:v1",
   "migration:user-cards:v1",
   "seed:ellen:v1",
-  "seed:org-actions:v27",
+  "seed:org-actions:v28",
   "seed:receipts:v2",
 ];
 
@@ -426,6 +442,239 @@ const ACTIONS_CACHE_TTL_MS = 15_000;
 let actionsCache: { cards: any[]; ts: number } | null = null;
 function invalidateActionsCache(): void {
   actionsCache = null;
+}
+
+// ─── authorRole reclassification map ───────────────────────────────────────
+// Maps authors that were bulk-tagged with the generic "Movement Organization"
+// catch-all to an accurate, concise role. Applied two ways so it can never
+// regress: (1) in the org-actions seed loop (the seed OVERWRITES authorRole
+// from source, so re-seeds self-heal), and (2) via the one-time
+// migration:authorrole-reclassify:v1 pass over live KV (covers cards inserted
+// by older migration blocks that aren't in SEED_CARDS). Authors not listed
+// here keep their current role — genuine member orgs (DSA, SURJ, WFP) stay
+// "Movement Organization" on purpose. See scripts/build-author-role-map.mjs.
+const ROLE_BY_AUTHOR: Record<string, string> = {
+  "Common Cause": "Advocacy Org",
+  "Common Cause Oregon": "Advocacy Org",
+  "Public Citizen": "Advocacy Org",
+  "Demand Justice": "Advocacy Org",
+  "Demand Progress": "Advocacy Org",
+  "Free Press": "Advocacy Org",
+  "Color of Change": "Advocacy Org",
+  "Children's Defense Fund": "Advocacy Org",
+  "Win Without War": "Advocacy Org",
+  "Detention Watch Network": "Advocacy Org",
+  "Avaaz": "Advocacy Org",
+  "Move to Amend": "Advocacy Org",
+  "People For (formerly People For the American Way)": "Advocacy Org",
+  "18MillionRising": "Advocacy Org",
+  "Inequality.org": "Advocacy Org",
+  "AAUW": "Advocacy Org",
+  "Popular Democracy": "Advocacy Org",
+  "Doctors for America": "Advocacy Org",
+  "Concerned Archivists Alliance": "Advocacy Org",
+  "Authors Against Book Bans": "Advocacy Org",
+  "Artists at Risk Connection (PEN America)": "Advocacy Org",
+  "PEN America banned-books list": "Advocacy Org",
+  "U.S. Press Freedom Tracker": "Advocacy Org",
+  "Critical Resistance": "Advocacy Org",
+  "Center for Constitutional Rights": "Civil Rights Org",
+  "Sikh Coalition": "Civil Rights Org",
+  "Indivisible": "Grassroots Network",
+  "Southend Indivisible": "Grassroots Network",
+  "Seattle Indivisible": "Grassroots Network",
+  "Indivisible Bellevue": "Grassroots Network",
+  "Indivisible Eastside": "Grassroots Network",
+  "Indivisible DC": "Grassroots Network",
+  "Indivisible Fremont": "Grassroots Network",
+  "Indivisible Fremont CA": "Grassroots Network",
+  "Indivisible Gaithersburg": "Grassroots Network",
+  "Indivisible Greater Vancouver": "Grassroots Network",
+  "Indivisible Greater West Loop": "Grassroots Network",
+  "Indivisible Harlem": "Grassroots Network",
+  "Indivisible Highlands and Beyond": "Grassroots Network",
+  "Indivisible Los Angeles": "Grassroots Network",
+  "Indivisible NELA": "Grassroots Network",
+  "Indivisible NEO": "Grassroots Network",
+  "Indivisible NY": "Grassroots Network",
+  "Indivisible Volunteer": "Grassroots Network",
+  "Indivisible Westside LA": "Grassroots Network",
+  "Indivisible Westside Los Angeles": "Grassroots Network",
+  "Indivisible Yolo": "Grassroots Network",
+  "Portland District 2 Neighbors Indivisible": "Grassroots Network",
+  "SW Indivisible Resistance": "Grassroots Network",
+  "South Snohomish County Indivisible": "Grassroots Network",
+  "Washington Indivisible Network": "Grassroots Network",
+  "50501 Movement": "Grassroots Network",
+  "50501 Affiliate": "Grassroots Network",
+  "50501 state chapters": "Grassroots Network",
+  "Joplin 50501": "Grassroots Network",
+  "No Kings (50501-aligned)": "Grassroots Network",
+  "Tesla Takedown": "Grassroots Network",
+  "Tesla Takedown Boston": "Grassroots Network",
+  "Sunrise Solidarity / Coalition Against Project 2025": "Grassroots Network",
+  "De-ICE Citizens Bank": "Grassroots Network",
+  "De-ICE Citizens Bank Coalition": "Grassroots Network",
+  "Resist And Defend": "Grassroots Network",
+  "She Is Me": "Grassroots Network",
+  "Central Illinois Iron Front": "Grassroots Network",
+  "Citizens Against Tyranny Network": "Grassroots Network",
+  "ICE Out For Good": "Grassroots Network",
+  "Chinga La Migra Crew": "Grassroots Network",
+  "Cat Ladies for America": "Grassroots Network",
+  "Biggest Little Action Group": "Grassroots Network",
+  "Fort Myers Visibility Brigade": "Grassroots Network",
+  "PDX Car Caravan Protest": "Grassroots Network",
+  "Aida 4 LA": "Grassroots Network",
+  "Shut The Flock Off BLoNo/MC": "Grassroots Network",
+  "Swing Left / Target Majority NYC": "Grassroots Network",
+  "The Wolves": "Grassroots Network",
+  "Latino Freeze Movement": "Grassroots Network",
+  "The People's Union USA": "Grassroots Network",
+  "Songs for Liberation": "Grassroots Network",
+  "Postcards to Voters": "Grassroots Network",
+  "Free DC": "Grassroots Network",
+  "ProPublica": "Independent Newsroom",
+  "The Marshall Project": "Independent Newsroom",
+  "The Intercept": "Independent Newsroom",
+  "Capital B": "Independent Newsroom",
+  "The 19th*": "Independent Newsroom",
+  "Bolts Magazine": "Independent Newsroom",
+  "Drop Site News": "Independent Newsroom",
+  "More Perfect Union": "Independent Newsroom",
+  "Type Investigations": "Independent Newsroom",
+  "Sludge": "Independent Newsroom",
+  "The Lever": "Independent Newsroom",
+  "Documented": "Independent Newsroom",
+  "Inkstick Media": "Independent Newsroom",
+  "Truthout / Kelly Hayes": "Independent Newsroom",
+  "Labor Notes": "Independent Newsroom",
+  "5 Calls": "Civic Tech Tool",
+  "Resistbot": "Civic Tech Tool",
+  "Vote.org": "Civic Tech Tool",
+  "Wayback Machine 'Save Page Now'": "Civic Tech Tool",
+  "Goods Unite Us": "Civic Tech Tool",
+  "Grab Your Wallet": "Civic Tech Tool",
+  "Progressive Shopper": "Civic Tech Tool",
+  "Sky Follower Bridge": "Civic Tech Tool",
+  "Bluesky": "Civic Tech Tool",
+  "Pixelfed": "Civic Tech Tool",
+  "Kolektiva (Mastodon)": "Civic Tech Tool",
+  "Catchafire": "Civic Tech Tool",
+  "CLEAR Global": "Civic Tech Tool",
+  "Code for America": "Civic Tech Tool",
+  "DemocracyLab": "Civic Tech Tool",
+  "Faithful America": "Faith Group",
+  "Friends Committee on National Legislation": "Faith Group",
+  "Pax Christi USA": "Faith Group",
+  "T'ruah": "Faith Group",
+  "Auburn Seminary": "Faith Group",
+  "Hindus for Human Rights": "Faith Group",
+  "NETWORK Lobby": "Faith Group",
+  "Sojourners": "Faith Group",
+  "Repairers of the Breach (Rev. Barber)": "Faith Group",
+  "Faith in Public Life": "Faith Group",
+  "Poor People's Campaign (Rev. Barber)": "Faith Group",
+  "Jewish Voice for Peace": "Faith Group",
+  "Bend the Arc (Jewish progressive)": "Faith Group",
+  "Federal Unionists Network": "Labor Org",
+  "EWOC (Emergency Workplace Organizing Committee)": "Labor Org",
+  "Coworker.org": "Labor Org",
+  "Fight For A Union": "Labor Org",
+  "Industrial Workers of the World": "Labor Org",
+  "National Domestic Workers Alliance": "Labor Org",
+  "Starbucks Workers United": "Labor Org",
+  "UE (United Electrical Workers)": "Labor Org",
+  "Amazon Labor Union (IBT Local 1)": "Labor Org",
+  "Mutual Aid Hub": "Mutual Aid Network",
+  "National Bail Fund Network": "Mutual Aid Network",
+  "Operation Olive Branch": "Mutual Aid Network",
+  "CLINIC (Catholic Legal Immigration Network)": "Legal Aid Org",
+  "Immigration Justice Campaign": "Legal Aid Org",
+  "Lawyers for Good Government": "Legal Aid Org",
+  "We the Action": "Legal Aid Org",
+  "Scale Justice (Pro Bono Net)": "Legal Aid Org",
+  "Immigrant Defense Project": "Legal Aid Org",
+  "Physicians for Human Rights": "Legal Aid Org",
+  "RAICES Texas": "Legal Aid Org",
+  "A Better Balance": "Legal Aid Org",
+  "Sunrise Movement": "Climate Org",
+  "Mothers Out Front": "Climate Org",
+  "Climate Justice Alliance": "Climate Org",
+  "Movement Generation": "Climate Org",
+  "Sierra Club": "Climate Org",
+  "United We Dream": "Immigrant Rights Org",
+  "Mijente": "Immigrant Rights Org",
+  "Welcome.US": "Immigrant Rights Org",
+  "Homes Not Borders": "Immigrant Rights Org",
+  "Welcoming America": "Immigrant Rights Org",
+  "Cities for Action": "Immigrant Rights Org",
+  "Freedom for Immigrants": "Immigrant Rights Org",
+  "El Refugio": "Immigrant Rights Org",
+  "First Friends of NJ and NY": "Immigrant Rights Org",
+  "National Day Laborer Organizing Network": "Immigrant Rights Org",
+  "CASA": "Immigrant Rights Org",
+  "CHIRLA / LA Rapid Response Network": "Immigrant Rights Org",
+  "La Resistencia": "Immigrant Rights Org",
+  "Respond Crisis Translation": "Immigrant Rights Org",
+  "Code Pink": "Direct Action Group",
+  "ADAPT": "Direct Action Group",
+  "About Face": "Direct Action Group",
+  "Veterans for Peace": "Direct Action Group",
+  "Refuse Fascism": "Direct Action Group",
+  "Training for Change": "Training Org",
+  "Highlander Center": "Training Org",
+  "PeoplesHub": "Training Org",
+  "Wildfire Project": "Training Org",
+  "Right To Be": "Training Org",
+  "Project NIA": "Training Org",
+  "Choose Democracy": "Training Org",
+  "Emerge America": "Training Org",
+  "Higher Heights for America": "Training Org",
+  "Run for Something": "Training Org",
+  "Vote Run Lead": "Training Org",
+  "314 Action": "Training Org",
+  "Power the Polls": "Training Org",
+  "The OpEd Project": "Training Org",
+  "Ruckus Society": "Training Org",
+  "Crisis Text Line": "Mental Health Resource",
+  "Trans Lifeline": "Mental Health Resource",
+  "NAMI": "Mental Health Resource",
+  "Active Minds": "Mental Health Resource",
+  "LGBT National Help Center": "Mental Health Resource",
+  "The Trevor Project": "Mental Health Resource",
+  "The Nap Ministry (Tricia Hersey)": "Mental Health Resource",
+  "Amplifier": "Artist Collective",
+  "Beehive Design Collective": "Artist Collective",
+  "Justseeds Artists' Cooperative": "Artist Collective",
+  "Tiny Pricks Project": "Artist Collective",
+  "The Yes Men": "Artist Collective",
+  "Theatre of the Oppressed NYC": "Artist Collective",
+  "Craftivist Collective": "Artist Collective",
+  "Pussyhat Project": "Artist Collective",
+  "Welcome Blanket Project": "Artist Collective",
+  "The Postcard Posse": "Artist Collective",
+  "Secret Handshake": "Artist Collective",
+  "Resistance Knitters": "Artist Collective",
+  "Really American": "Independent Creator",
+  "The Lincoln Project": "Independent Creator",
+  "MeidasTouch Network": "Independent Creator",
+  "Black Voters Matter": "Voting Rights Org",
+  "Mi Familia Vota": "Voting Rights Org",
+  "States Win (FKA Sister District)": "Voting Rights Org",
+  "Abortion Access Front": "Advocacy Org",
+  "Apiary for Practical Support": "Mutual Aid Network",
+  "Drag Story Hour": "Grassroots Network",
+  "Beyond Buckskin": "Business Directory",
+  "Buy From a Black Woman": "Business Directory",
+};
+// Returns the corrected role for a card currently tagged "Movement
+// Organization", or null if it should be left as-is.
+function reclassifiedMovementOrgRole(card: any): string | null {
+  if (!card || typeof card !== "object") return null;
+  if (card.authorRole !== "Movement Organization") return null;
+  const mapped = ROLE_BY_AUTHOR[String(card.authorName ?? "").trim()];
+  return mapped ?? null;
 }
 
 // ─── Seed data ────────────────────────────────────────────────────────────────
@@ -2288,13 +2537,13 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       console.log("Set boosts = 950 on action:1 (Spread the Word).");
     }
 
-    const orgsSeeded = await getMigrationFlag("seed:org-actions:v27");
+    const orgsSeeded = await getMigrationFlag("seed:org-actions:v28");
     if (!orgsSeeded) {
       // Mark the seed as done UP FRONT — if the request times out partway
       // through the 260-card loop, the next request still skips the loop
       // instead of dying again. The cards already written stay; missing ones
       // get filled in on the next version bump.
-      await setMigrationFlag("seed:org-actions:v27");
+      await setMigrationFlag("seed:org-actions:v28");
       let count = 0;
       for (const card of SEED_CARDS) {
         // Seed every card in SEED_CARDS (no longer skipping ids <1000).
@@ -2321,10 +2570,15 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           // should never send an approved card back to the pending queue.
           if (existing.adminApproved === true) merged.adminApproved = true;
         }
+        // Correct the generic "Movement Organization" catch-all to an accurate
+        // role for known authors. Done here (not just in the literals) so the
+        // seed stays the single source of truth and re-seeds self-heal.
+        const reRole = reclassifiedMovementOrgRole(merged);
+        if (reRole) merged.authorRole = reRole;
         await kv.set(`action:${card.id}`, merged);
         count++;
       }
-      console.log(`Re-seeded ${count} org-action cards (v25).`);
+      console.log(`Re-seeded ${count} org-action cards (v28).`);
     }
 
     // One-time migration: any pre-rename card still using `spotsUsed` gets a
@@ -3153,6 +3407,33 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       await setMigrationFlag("migration:moveon-role-normalize:v1");
       invalidateActionsCache();
       console.log(`MoveOn role-normalize migration: updated ${updated} cards to "${ROLE}".`);
+    }
+
+    // Reclassify the generic "Movement Organization" catch-all role. ~327 cards
+    // were bulk-tagged with it across imports; ROLE_BY_AUTHOR maps known authors
+    // to an accurate, concise role (see scripts/build-author-role-map.mjs). This
+    // pass covers cards already live in KV — including the ~60 inserted by older
+    // migration blocks that aren't in SEED_CARDS (the seed loop handles the
+    // re-seeded ones). Authors not in the map keep "Movement Organization".
+    const authorRoleReclassDone = await getMigrationFlag("migration:authorrole-reclassify:v1");
+    if (!authorRoleReclassDone) {
+      let updated = 0;
+      const reclass = async (key: string) => {
+        const c = await kv.get(key) as any;
+        const role = reclassifiedMovementOrgRole(c);
+        if (role) {
+          await kv.set(key, { ...c, authorRole: role });
+          updated++;
+        }
+      };
+      for (const c of (await kv.getByPrefix("action:")) as any[]) {
+        if (c && typeof c === "object" && typeof c.id === "number") await reclass(`action:${c.id}`);
+      }
+      const arUserIds = (await kv.get("user-action:ids") ?? []) as number[];
+      for (const id of arUserIds) await reclass(`user-action:${id}`);
+      await setMigrationFlag("migration:authorrole-reclassify:v1");
+      invalidateActionsCache();
+      console.log(`authorRole reclassify migration: updated ${updated} cards off "Movement Organization".`);
     }
 
     // Dedup the portland-seattle-yolo race: ids 2153/2154/2155 are duplicates
@@ -6170,7 +6451,7 @@ app.post("/make-server-9eb1ae04/admin/bulk-import", async (c) => {
           boosts: 0,
           spotsTotal: raw.spotsTotal ?? "Unlimited",
           authorName: String(raw.authorName ?? "Unknown").trim(),
-          authorRole: String(raw.authorRole ?? "Movement Organization").trim(),
+          authorRole: String(raw.authorRole ?? "Organization").trim(),
           synopsis: raw.synopsis ? String(raw.synopsis).trim() : undefined,
           targetUrl: targetUrl || undefined,
           topImageKey: null,
@@ -6379,7 +6660,10 @@ async function draftCardFromUrl(target: string): Promise<{ draft: any; refImageU
     `location (EXACTLY one of: ${CURATED_LOCATIONS.join(", ")} — use 'Remote' for online/from-anywhere actions, a US state for place-specific ones), ` +
     "isOnline (boolean — true if it can be done from anywhere/online), " +
     "targetUrl (the best link for taking the action; default to the page URL), " +
-    "authorName (the org or group behind it), authorRole (short, e.g. 'Movement Organization'), " +
+    "authorName (the org, group, outlet, or person behind it), " +
+    "authorRole (short, accurate descriptor of who that author is — e.g. 'Advocacy Org', 'Grassroots Network', " +
+    "'Independent Newsroom', 'Labor Union', 'Faith Group', 'Mutual Aid Network', 'Legal Aid Org', 'Independent Creator' — " +
+    "pick the one that actually fits; do NOT default to a generic catch-all like 'Movement Organization'), " +
     "toneOverride (object with integer 0-3 values for anger, comedy, subversion, hope, energy), " +
     "eventDate (YYYY-MM-DD if it's a specific dated event, else null). " +
     "If the page isn't a real action, still produce the best-effort card from what's there.";
@@ -6673,7 +6957,7 @@ app.post("/make-server-9eb1ae04/admin/cards/create", async (c) => {
       boosts: 0,
       spotsTotal: "Unlimited",
       authorName: String(raw.authorName ?? "Unknown").trim(),
-      authorRole: String(raw.authorRole ?? "Movement Organization").trim(),
+      authorRole: String(raw.authorRole ?? "Organization").trim(),
       authorLink: raw.authorLink ? String(raw.authorLink).trim() : undefined,
       targetUrl: targetUrl || undefined,
       topImageKey: null,

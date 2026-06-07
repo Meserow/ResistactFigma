@@ -73,20 +73,9 @@ export function HeroPills({ onMatchClick, onAskClick, onHowClick, hasMatchPrefs,
           </button>
         )}
         <SwipeCallout onSwipeClick={onSwipeClick} />
-        {onMatchClick && (
-          <button
-            onClick={onMatchClick}
-            className="shrink-0 inline-flex items-center gap-2 rounded-full bg-[#ed6624] px-4 py-1.5 font-['Poppins',sans-serif] shadow-md transition-all hover:bg-[#d35a1d] hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#ed6624]/40 focus:ring-offset-2"
-          >
-            <Sparkles size={14} strokeWidth={2.5} className="text-white" />
-            <span className="flex flex-col items-start text-left leading-tight whitespace-nowrap">
-              <span className="text-[13px] font-bold text-white">Set Act Preferences</span>
-              <span className="text-[10.5px] font-normal text-white/90 italic">
-                {hasMatchPrefs ? "Update your preferences." : "Your preferences stay saved"}
-              </span>
-            </span>
-          </button>
-        )}
+        {/* "Set Act Preferences" pill removed — preferences are now set by
+            picking categories on the feed and using "Save these categories"
+            in the feed banner. */}
         <button
           ref={(el) => { triggerRefs.current.how = el; }}
           onClick={() => onHowClick ? onHowClick() : setOpenModal("how")}

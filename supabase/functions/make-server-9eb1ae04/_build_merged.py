@@ -44,7 +44,7 @@ namespace = f"""
 // ─── KV namespace (inlined from kv_store.ts) ─────────────────────────────────
 const kvClient = () => createClient(
   Deno.env.get("SUPABASE_URL")!,
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  serviceRoleKey(),
 );
 
 {kv_local}

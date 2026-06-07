@@ -12,9 +12,23 @@ CREATE TABLE kv_store_9eb1ae04 (
 // This file provides a simple key-value interface for storing Figma Make data. It should be adequate for most small-scale use cases.
 import { createClient } from "jsr:@supabase/supabase-js@2.49.8";
 
+// Prefer the new-style secret key (SUPABASE_SECRET_KEYS, a JSON map keyed by
+// name); fall back to the legacy SUPABASE_SERVICE_ROLE_KEY while both coexist.
+// The legacy var stops working once legacy JWT-based API keys are disabled.
+const _serviceKey = () => {
+  const raw = Deno.env.get("SUPABASE_SECRET_KEYS");
+  if (raw) {
+    try {
+      const def = JSON.parse(raw)?.default;
+      if (typeof def === "string" && def) return def;
+    } catch { /* malformed — fall through to legacy */ }
+  }
+  return Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+};
+
 const client = () => createClient(
   Deno.env.get("SUPABASE_URL"),
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
+  _serviceKey(),
 );
 
 // Set stores a key-value pair in the database.

@@ -44,7 +44,7 @@ const MANIFEST_PATH = path.join(REPO_ROOT, "src", "app", "data", "cartoon-manife
 // coloring-book mismatch in the original sample run.
 const PROJECT_ID = "zkihnylrvdofdbnhmmoq";
 const PUBLIC_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpraWhueWxydmRvZmRibmhtbW9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNzczNTEsImV4cCI6MjA4ODY1MzM1MX0.gkm2fiQHlBrexo4FHcn-a-WH1QZ8ewabcEcL5rTZF-0";
+  "sb_publishable_leJ13K9-4bbJ4n9v_R68LA__A2GqGdx";
 const ACTIONS_URL = `https://${PROJECT_ID}.supabase.co/functions/v1/make-server-9eb1ae04/actions?limit=2000`;
 
 // How many cards to generate this run. Pass via env: COUNT=100 node ...

@@ -152,9 +152,11 @@ interface ActionCardProps {
    * "Spread the Word" modal. The parent records it (server-side for logged-in
    * users) and hides the pinned card from people who've already shared. */
   onSpreadShared?: () => void;
+  /** Horizontal swipe on this card's detail modal → enter swipe mode. */
+  onSwipeToDeck?: () => void;
 }
 
-function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPass, onEdit, onApprove, onInfoClick, isBoosted, isCompleted, isBookmarked, isPassed, canEdit, isPending, compact = false, accessToken, onCardUpdated, onSpreadShared }: ActionCardProps) {
+function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPass, onEdit, onApprove, onInfoClick, isBoosted, isCompleted, isBookmarked, isPassed, canEdit, isPending, compact = false, accessToken, onCardUpdated, onSpreadShared, onSwipeToDeck }: ActionCardProps) {
   const [shareOpen, setShareOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
@@ -320,11 +322,11 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
           // haven't asked the OS for reduced motion (vestibular safety).
           // hover:z-10 keeps the lifted card painting above its neighbors
           // in the grid rather than getting clipped at edges.
-          className={`resistact-card-shine resistact-banner-host transform-gpu cursor-pointer bg-white rounded-2xl flex flex-col overflow-hidden h-full transition-[transform,box-shadow,opacity] duration-200 ease-out hover:shadow-md motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10 ${
+          className={`resistact-card-shine resistact-banner-host transform-gpu cursor-pointer bg-white rounded-2xl flex flex-col overflow-hidden h-full transition-[transform,box-shadow,opacity] duration-200 ease-out hover:shadow-md motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] hover:z-10 ${
             // Pinned "Spread the Word" gets a hairline navy outline (and stays
             // full color); any other featured card uses the grid-wide gray
             // border + 85%→100%-on-hover rule.
-            "border-[0.75px] border-gray-400 opacity-95 hover:opacity-100"
+            "border-[0.75px] border-gray-400 hover:border-[#23297e] hover:ring-2 hover:ring-[#23297e] opacity-95 hover:opacity-100"
           }`}
           onClick={card.pinToTop ? () => setShareOpen(true) : () => setDetailsOpen(true)}
         >
@@ -333,7 +335,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
               top of the navy hero image, every 5.5s. Featured cards are the
               ones we want to draw the eye to — the shimmer says "look here"
               without flashing or strobing. */}
-          <div className={`resistact-anim-shimmer relative ${compact ? "h-[70px]" : "h-[106px]"} shrink-0 bg-[#23297e] flex items-center justify-center overflow-hidden`}>
+          <div className={`resistact-anim-shimmer relative ${compact ? "h-[70px]" : "h-[106px]"} shrink-0 bg-[#23297e] flex items-center justify-center overflow-hidden rounded-t-2xl`}>
             {effectiveTopImage
               ? <img src={effectiveTopImage} alt={card.title} loading="lazy" decoding="async" style={card.pinToTop ? { transform: "scale(1.01)" } : undefined} className={`${card.pinToTop ? "" : "resistact-banner-desat"} absolute inset-0 w-full h-full object-cover ${card.cartoonImageUrl ? "object-[center_20%]" : "object-top"}`} />
               : card.featuredIllustration
@@ -445,6 +447,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
             canEdit={canEdit}
             accessToken={accessToken}
             onCardUpdated={onCardUpdated}
+            onSwipeToDeck={onSwipeToDeck && (() => { setDetailsOpen(false); onSwipeToDeck(); })}
           />
         )}
         {flagOpen && (
@@ -467,7 +470,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
           end-to-end in the modal. */}
       <div
         onClick={() => setDetailsOpen(true)}
-        className={`resistact-banner-host transform-gpu cursor-pointer bg-white rounded-2xl border-[0.75px] border-gray-400 flex flex-col overflow-hidden h-full transition-[transform,box-shadow,opacity] duration-200 ease-out hover:shadow-md motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] motion-safe:hover:rotate-[0.3deg] hover:z-10 ${
+        className={`resistact-banner-host transform-gpu cursor-pointer bg-white rounded-2xl border-[0.75px] border-gray-400 hover:border-[#23297e] hover:ring-2 hover:ring-[#23297e] flex flex-col overflow-hidden h-full transition-[transform,box-shadow,opacity] duration-200 ease-out hover:shadow-md motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] hover:z-10 ${
           // Resting 95% opacity for every card, full color on hover — a calm,
           // browsable grid where the hovered card pops. `transition-all` above
           // covers the opacity tween so it eases in/out smoothly.
@@ -507,7 +510,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
           /* Compact (Quick Match preview) keeps the old banner-on-top
              layout — the preview is small enough that the horizontal
              split would feel cramped. */
-          <div className={`relative h-[70px] shrink-0 ${showTopImage && card.imageContain ? "bg-gray-50" : ""} ${!showTopImage ? "bg-[#fff8f3]" : ""}`}>
+          <div className={`relative h-[70px] shrink-0 overflow-hidden rounded-t-2xl ${showTopImage && card.imageContain ? "bg-gray-50" : ""} ${!showTopImage ? "bg-[#fff8f3]" : ""}`}>
             {showTopImage ? (
               <ImageWithFallback
                 src={effectiveTopImage}
@@ -525,7 +528,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
              time badge + bookmark/edit top-right, type tag top-left,
              location badge bottom-right. Category + title sit in the
              content area below. */
-          <div className={`relative h-[106px] shrink-0 ${showTopImage && card.imageContain ? "bg-gray-50" : ""} ${!showTopImage ? "bg-[#fff8f3]" : ""}`}>
+          <div className={`relative h-[106px] shrink-0 overflow-hidden rounded-t-2xl ${showTopImage && card.imageContain ? "bg-gray-50" : ""} ${!showTopImage ? "bg-[#fff8f3]" : ""}`}>
             {showTopImage ? (
               <ImageWithFallback
                 src={effectiveTopImage}
@@ -769,6 +772,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
           canEdit={canEdit}
           accessToken={accessToken}
           onCardUpdated={onCardUpdated}
+          onSwipeToDeck={onSwipeToDeck && (() => { setDetailsOpen(false); onSwipeToDeck(); })}
         />
       )}
       {flagOpen && (

@@ -2,7 +2,7 @@ import logoImg from "../../assets/resistact-logo-horizontal.webp";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import type { ReactNode } from "react";
 import { FACT_CARDS } from "../data/factCards";
-import { Bell, Heart, ChevronDown, Clock, Flag, Flame, Globe, Info, Loader2, LogOut, MapPin, Megaphone, Menu, MessageCircle, MessageSquare, Search, ShieldCheck, SlidersHorizontal, Sparkles, Tag, X, Zap } from "lucide-react";
+import { Bell, Heart, ChevronDown, Clock, Flag, Flame, Globe, Info, Loader2, LogOut, MapPin, Megaphone, Menu, MessageCircle, Search, ShieldCheck, SlidersHorizontal, Sparkles, Tag, X, Zap } from "lucide-react";
 import type { UserApproval } from "../lib/supabase";
 import { TierProgress } from "./TierProgress";
 import { getUserTier } from "../lib/tiers";
@@ -59,8 +59,6 @@ interface NavbarProps {
   /** Quick-actions toggle: when true, only show 5–10 min "quick win" cards. */
   quickActionsOnly?: boolean;
   onQuickActionsChange?: (v: boolean) => void;
-  textingOnly?: boolean;
-  onTextingChange?: (v: boolean) => void;
   sortBy?: "popular" | "newest" | "az";
   onSortChange?: (sort: "popular" | "newest" | "az") => void;
   onBookmarksClick?: () => void;
@@ -92,7 +90,7 @@ interface NavbarProps {
   completedCount?: number;
 }
 
-export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, isSearchPending = false, activeTab, onTabChange, heroSlot, hasHero = false, quickActionsOnly, onQuickActionsChange, textingOnly, onTextingChange, showDone, onShowDoneChange, completedCount, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick, onAskClick, onPendingSmacksClick, onPendingActsClick, onFlaggedActsClick, pendingActsCount, pendingSmacksCount, flagsCount = 0, pendingUsersCount = 0, onTierClick, smacksAvailableTags, smacksActiveTags, onSmacksTagToggle, onSmacksTagsClear, smacksSortBy, onSmacksSortChange, smacksIsAdmin }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
+export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, isSearchPending = false, activeTab, onTabChange, heroSlot, hasHero = false, quickActionsOnly, onQuickActionsChange, showDone, onShowDoneChange, completedCount, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick, onAskClick, onPendingSmacksClick, onPendingActsClick, onFlaggedActsClick, pendingActsCount, pendingSmacksCount, flagsCount = 0, pendingUsersCount = 0, onTierClick, smacksAvailableTags, smacksActiveTags, onSmacksTagToggle, onSmacksTagsClear, smacksSortBy, onSmacksSortChange, smacksIsAdmin }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
   // Acts filters in render order: Location dropdown first, Category pills second.
   // Used for "Clear all" and the mobile filter row that shows just the names.
   const ACTS_FILTER_OPTIONS: Record<string, string[]> = {
@@ -180,12 +178,12 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
 
   const totalActiveFilters = Object.values(activeFilters).reduce((sum, arr) => sum + arr.length, 0);
   const hasActiveSearch = searchQuery.trim().length > 0;
-  const totalActiveAll = totalActiveFilters + (hasActiveSearch ? 1 : 0) + (quickActionsOnly ? 1 : 0) + (textingOnly ? 1 : 0);
+  const totalActiveAll = totalActiveFilters + (hasActiveSearch ? 1 : 0) + (quickActionsOnly ? 1 : 0);
   // "Clear all" deliberately leaves Location (incl. Remote) in place — it's the
   // "where can I act?" cut people set once and keep — so the count/visibility of
   // the Clear-all button reflects only the filters it actually clears.
   const clearableFilters = Object.entries(activeFilters).reduce((sum, [k, arr]) => sum + (k === "Location" ? 0 : arr.length), 0);
-  const totalClearable = clearableFilters + (hasActiveSearch ? 1 : 0) + (quickActionsOnly ? 1 : 0) + (textingOnly ? 1 : 0);
+  const totalClearable = clearableFilters + (hasActiveSearch ? 1 : 0) + (quickActionsOnly ? 1 : 0);
 
   // ── Facts: distinct categories sorted alphabetically.
   //   First 5 show as inline pills; the rest go into a "More" dropdown.
@@ -216,15 +214,11 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
   const actsMoreOpen = openFilter === "acts-more";
   const actsMoreSelectedCount = actsOverflow.filter((c) => actsCatsSelected.includes(c)).length;
   const actsCategoryOpen = openFilter === "Category";
-  // The "Texting" filter is a special toggle (matches by title-regex AND the
-  // real "Texting" category), surfaced in alphabetical order alongside the
-  // category pills rather than dangling after Remote / 5-Min. "Texting" is now
-  // a real category, so it may already be in actsCats — dedupe so the pill
-  // renders exactly once, then the pill map below branches on it to render the
-  // toggle (not a plain category filter).
-  const actsPillItems = onTextingChange
-    ? Array.from(new Set([...actsCats, "Texting"])).sort()
-    : actsCats;
+  // "Texting" is an ordinary category filter, but it's a cross-cutting tag that
+  // should always be offered even when no currently-loaded card is stored under
+  // the literal "Texting" category — so we always include it (deduped) and let
+  // it render like every other category pill.
+  const actsPillItems = Array.from(new Set([...actsCats, "Texting"])).sort();
   const locOptions = actsLocations ?? [];
   const locSelected = activeFilters["Location"] ?? [];
   const locOpen = openFilter === "Location";
@@ -847,25 +841,6 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               {/* Category pills — every category as a wrapping pill row.
                   Sits after Location → Remote → 5 Minutes Max. */}
               {actsPillItems.map((option) => {
-                // Texting sentinel — render the special SMS-only toggle in its
-                // alphabetical slot instead of a category filter pill.
-                if (option === "Texting") {
-                  return (
-                    <button
-                      key="__texting__"
-                      onClick={() => onTextingChange?.(!textingOnly)}
-                      className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
-                        textingOnly
-                          ? "bg-[#2f6fa8] text-white border-[#2f6fa8]"
-                          : "bg-white text-gray-600 border-gray-200 hover:border-[#2f6fa8] hover:text-[#2f6fa8]"
-                      }`}
-                      title="Show only texting / SMS actions"
-                    >
-                      <MessageSquare size={11} className={textingOnly ? "text-white" : "text-gray-400"} />
-                      Texting
-                    </button>
-                  );
-                }
                 const selected = actsCatsSelected.includes(option);
                 const catColor = colorForCategory(option);
                 const CatIcon = iconForCategory(option);
@@ -873,14 +848,14 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                   <button
                     key={option}
                     onClick={() => toggleFilterOption("Category", option)}
-                    className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
+                    className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs transition-all whitespace-nowrap border ${
                       selected
-                        ? "text-white"
-                        : "bg-white text-gray-600 border-gray-200 hover:border-[#23297e] hover:text-[#23297e]"
+                        ? "bg-white font-semibold"
+                        : "bg-white text-gray-600 border-gray-200 font-medium hover:border-[#23297e] hover:text-[#23297e]"
                     }`}
-                    style={selected ? { background: catColor, borderColor: catColor } : undefined}
+                    style={selected ? { borderColor: catColor, color: catColor } : undefined}
                   >
-                    <CatIcon size={11} className={selected ? "text-white" : "text-gray-400"} />
+                    <CatIcon size={11} className={selected ? "shrink-0" : "shrink-0 text-gray-400"} style={selected ? { color: catColor } : undefined} />
                     {option}
                   </button>
                 );
@@ -1203,7 +1178,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                         phones (see the Category drawer below) to save horizontal
                         room — show a dot on the button when either is the active
                         filter and no categories are chosen. */}
-                    {(textingOnly || quickActionsOnly) && actsCatsSelected.length === 0 && (
+                    {quickActionsOnly && actsCatsSelected.length === 0 && (
                       <span className="w-1.5 h-1.5 rounded-full bg-[#ed6624] shrink-0" />
                     )}
                   </button>
@@ -1236,20 +1211,6 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                         Texting/SMS toggle lands in its alphabetical slot rather
                         than pinned at the top. */}
                     {actsPillItems.map((option) => {
-                      if (option === "Texting") {
-                        return (
-                          <label key="__texting__" className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">
-                            <input
-                              type="checkbox"
-                              checked={textingOnly}
-                              onChange={() => onTextingChange?.(!textingOnly)}
-                              className="accent-[#2f6fa8] w-3.5 h-3.5 rounded shrink-0"
-                            />
-                            <MessageSquare size={14} className="shrink-0 text-[#2f6fa8]" />
-                            <span className="font-['Poppins',sans-serif] text-sm text-gray-700">Texting / SMS only</span>
-                          </label>
-                        );
-                      }
                       const CatIcon = iconForCategory(option);
                       return (
                         <label key={option} className="flex items-center gap-2.5 px-4 py-2 cursor-pointer hover:bg-gray-50 transition-colors">

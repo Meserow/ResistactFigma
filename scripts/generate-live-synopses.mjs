@@ -30,7 +30,7 @@ const INDEX_PATH = path.join(__dirname, "..", "supabase", "functions", "make-ser
 
 const PROJECT_ID = "zkihnylrvdofdbnhmmoq";
 const PUBLIC_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpraWhueWxydmRvZmRibmhtbW9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNzczNTEsImV4cCI6MjA4ODY1MzM1MX0.gkm2fiQHlBrexo4FHcn-a-WH1QZ8ewabcEcL5rTZF-0";
+  "sb_publishable_leJ13K9-4bbJ4n9v_R68LA__A2GqGdx";
 
 const COUNT = Number(process.env.COUNT ?? "9999");
 const API_KEY = process.env.OPENAI_API_KEY;
