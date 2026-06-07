@@ -16,6 +16,21 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.61",
+    date: "2026-06-07",
+    title: "Fixed submitted Smacks not showing up",
+    sections: [
+      {
+        heading: "The Smacks",
+        items: [
+          "Fixed a bug where a Smack you submitted could silently never appear in The Smacks. New Smacks were being given ID numbers that clashed with the built-in ones and could land on an old \"hidden\" entry, which hid them from everyone.",
+          "Submitted Smacks now get their own clean ID numbers that can never collide with the built-in Smacks, so they show up reliably — and they're now properly editable, too.",
+          "Recovered the previously-missing Smacks that were affected and brought them back into The Smacks.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.60",
     date: "2026-06-07",
     title: "Matched-for-you banner now fits on one line",
