@@ -3785,6 +3785,15 @@ export default function App() {
           completedIds={[...completedCards]}
           boostedIds={[...boostedCards]}
           initialStep={matchInitialStep}
+          quickActionsOnly={quickActionsOnly}
+          onQuickActionsChange={setQuickActionsOnly}
+          remoteOn={(activeFilters["Location"] ?? []).includes("Remote")}
+          inPersonOn={(activeFilters["Location"] ?? []).includes("In Person")}
+          onLocationModeToggle={(mode) => setActiveFilters((prev) => {
+            const loc = prev["Location"] ?? [];
+            const next = loc.includes(mode) ? loc.filter((l) => l !== mode) : [...loc, mode];
+            return { ...prev, Location: next };
+          })}
           onClose={() => { setMatchOpen(false); setMatchInitialStep(0); }}
           onApply={(prefs) => {
             // Mirror Match Me's state into the Location pill so the
@@ -3798,7 +3807,12 @@ export default function App() {
             };
             setMatchPrefs(mirrored);
             savePreferences(mirrored);
-            setActiveFilters((prev) => ({ ...prev, Location: mirrored.locationFilter }));
+            setActiveFilters((prev) => {
+              // Preserve any Remote / In Person mode tokens the user toggled in
+              // the settings — only the state token is owned by `prefs.state`.
+              const modes = (prev.Location ?? []).filter((l) => l === "Remote" || l === "In Person");
+              return { ...prev, Location: [...modes, ...mirrored.locationFilter] };
+            });
             setMatchOpen(false);
             setStaggerKey((k) => k + 1);
             analytics.matchSet(mirrored.time, mirrored.tone);
@@ -3835,7 +3849,12 @@ export default function App() {
             };
             setMatchPrefs(mirrored);
             savePreferences(mirrored);
-            setActiveFilters((prev) => ({ ...prev, Location: mirrored.locationFilter }));
+            setActiveFilters((prev) => {
+              // Preserve any Remote / In Person mode tokens the user toggled in
+              // the settings — only the state token is owned by `prefs.state`.
+              const modes = (prev.Location ?? []).filter((l) => l === "Remote" || l === "In Person");
+              return { ...prev, Location: [...modes, ...mirrored.locationFilter] };
+            });
             setMatchOpen(false);
             analytics.matchSet(mirrored.time, mirrored.tone);
             setAuthModalOpen(true);
