@@ -16,6 +16,90 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.68",
+    date: "2026-06-07",
+    title: "Simpler, single-page match settings",
+    sections: [
+      {
+        heading: "Match settings",
+        items: [
+          "Streamlined the match settings to one page showing just what shapes your feed: Preferred Categories, Remote / In Person, 5 Mins Max, and your State.",
+          "Removed the tone sliders, the \"amplify groups\" step, and the time-commitment slider — matching no longer uses them, so they were only adding clutter.",
+          "Remote / In Person and 5 Mins Max now toggle right inside the settings (they update your feed live), instead of only living on the feed bar.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.67",
+    date: "2026-06-07",
+    title: "The Smacks page loads a lot faster",
+    sections: [
+      {
+        heading: "Faster Smacks",
+        items: [
+          "Three Smack images (the 'hair', 'Biden is not president', and 'rock the vote' graphics) had been saved at full lossless quality, weighing in around 2 MB each. We re-saved them at high quality but a fraction of the size — together they dropped from 5.9 MB to about 1 MB, so the page and the social-share previews load noticeably quicker. The pictures look the same.",
+          "Cleaned out several old image files that were no longer used anywhere on the site (about 6.5 MB of leftovers), making the whole site a little lighter to download.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.66",
+    date: "2026-06-07",
+    title: "A gentle nudge when you've been doomscrolling too long",
+    sections: [
+      {
+        heading: "Take a break",
+        items: [
+          "After 15 minutes on the site, a friendly check-in pops up reminding you that refreshing the feed doesn't change anything — but doing one real thing does.",
+          "From the check-in you can jump straight to saving Acts for later (or, if you're not signed in, join the Resistance so your picks are saved).",
+          "It only counts time you're actually looking at the page — minimized or background tabs don't add up — and it shows at most once a day.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.65",
+    date: "2026-06-07",
+    title: "Facts and Smacks cards get the same hover animation as Acts",
+    sections: [
+      {
+        heading: "The Facts & The Smacks",
+        items: [
+          "Fact and Smack cards now lift, scale up slightly, and pick up a navy outline when you hover over them — the same polished hover animation the Act cards already had.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.64",
+    date: "2026-06-07",
+    title: "No more flash of deleted Smacks on load",
+    sections: [
+      {
+        heading: "The Smacks",
+        items: [
+          "Fixed a flash where deleted or hidden Smacks briefly appeared when The Smacks page loaded, then disappeared a second or two later. They no longer show up at all.",
+          "The Smacks page now remembers which Smacks are hidden between visits, so the right set is shown the instant the page paints.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.63",
+    date: "2026-06-07",
+    title: "Smacks cards now have a defined border",
+    sections: [
+      {
+        heading: "The Smacks",
+        items: [
+          "Added a thin dark-grey border around each Smack card so they stand out more clearly against the page background.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.62",
     date: "2026-06-07",
     title: "More accurate 'who's behind this' labels on Acts",

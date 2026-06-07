@@ -53,7 +53,7 @@ export function FactCard({ card, onBoost, isBoosted, boostCount = 0 }: FactCardP
     .filter(Boolean);
 
   return (
-    <div className="bg-white rounded-2xl shadow-md overflow-hidden flex flex-col h-full border border-gray-100 hover:shadow-lg transition-shadow">
+    <div className="bg-white rounded-2xl shadow-md overflow-hidden flex flex-col h-full border border-gray-100 transform-gpu transition-[transform,box-shadow,opacity] duration-200 ease-out hover:shadow-lg hover:border-[#23297e] hover:ring-2 hover:ring-[#23297e] motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] hover:z-10">
 
       {/* Category image — short banner with backdrop-blur fill */}
       {image && (

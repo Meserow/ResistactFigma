@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, EyeOff, Flame, Laugh, Lock, MapPin, Sparkles, Sunrise, ThumbsDown, ThumbsUp, VenetianMask, X, Zap } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, EyeOff, Flame, Globe, Laugh, Lock, MapPin, Sparkles, Sunrise, ThumbsDown, ThumbsUp, VenetianMask, X, Zap } from "lucide-react";
 import logoImg from "../../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
 import type { LucideIcon } from "lucide-react";
 import { ToneRangeSlider } from "./ToneSlider";
@@ -108,6 +108,15 @@ interface MatchMeModalProps {
   boostedIds?: number[];
   /** Which wizard step to open on. 0 = tone/time/setting, 1 = groups. */
   initialStep?: 0 | 1;
+  /** "5 Mins Max" quick-action filter — lives in app state (not Preferences),
+   * mirrored here so the match settings can toggle it alongside the others. */
+  quickActionsOnly?: boolean;
+  onQuickActionsChange?: (v: boolean) => void;
+  /** Remote / In Person feed Location-mode tokens — also app state, not
+   * Preferences. Toggling updates the feed live. */
+  remoteOn?: boolean;
+  inPersonOn?: boolean;
+  onLocationModeToggle?: (mode: "Remote" | "In Person") => void;
 }
 
 // State picker options — actual US states only. "Online", "National", and
@@ -186,8 +195,11 @@ function ProgressDots({ step, total }: { step: number; total: number }) {
   );
 }
 
-export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJoinResistance, completedIds, boostedIds, initialStep = 0 }: MatchMeModalProps) {
-  const [step, setStep] = useState<Step>(initialStep);
+export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJoinResistance, completedIds, boostedIds, quickActionsOnly = false, onQuickActionsChange, remoteOn = false, inPersonOn = false, onLocationModeToggle }: MatchMeModalProps) {
+  // Single-page settings: categories, remote/in-person, 5 Mins Max, state.
+  // (The old tone-sliders + vulnerable-groups step was removed, so there's no
+  // step navigation anymore — `step` stays 0.)
+  const [step] = useState<Step>(0);
   const [prefs, setPrefs] = useState<Preferences>(() => loadPreferences() ?? DEFAULT_PREFERENCES);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -340,8 +352,6 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJo
     return [...top.slice(0, 2), bestLocal, ...top.slice(3)];
   }, [cards, prefs, carouselCtx, userCtx]);
 
-  function next() { setStep((s) => Math.min(1, (s + 1) as Step)); }
-  function prev() { setStep((s) => Math.max(0, (s - 1) as Step)); }
 
   // Scroll the modal card back to the top whenever the step changes. Using
   // useLayoutEffect (fires before paint) so the reset is invisible to the
@@ -387,124 +397,22 @@ export function MatchMeModal({ cards, onClose, onApply, isLoggedIn = false, onJo
             pinned footer. cardRef lives here so the scroll-to-top on step
             change resets only this div. */}
         <div ref={cardRef} className="flex-1 overflow-y-auto p-4 sm:p-5">
-          {step === 0 && (
-            <StepToneAndPreview
-              cards={cards}
-              prefs={prefs}
-              onPrefsChange={setPrefs}
-              matches={matches}
-              onNext={next}
-              onApply={() => handleApply(prefs)}
-              userCtx={userCtx}
-              step={step}
-              totalSteps={TOTAL_STEPS}
-            />
-          )}
-
-          {step === 1 && (
-            <div>
-              {/* ── Sharpen your matches — tone sliders (page 2 of the wizard).
-                  Moved here from step 0 so the first page stays focused on
-                  the fundamentals (time, location, categories) and the
-                  second page handles refinement (tone) + identity
-                  (vulnerable groups). ─────────────────────────────────── */}
-              <div className="mb-4">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <Sparkles size={12} strokeWidth={1.75} className="text-[#23297e] shrink-0" />
-                  <span className="font-['Poppins',sans-serif] text-xs font-bold uppercase tracking-wider text-gray-700">
-                    Sharpen your matches
-                  </span>
-                  <span className="font-['Poppins',sans-serif] text-[11.5px] text-gray-500">— dial in tone</span>
-                </div>
-                <div className="pl-5 grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-1">
-                  {(["anger", "comedy", "subversion", "hope", "energy"] as const).map((k) => {
-                    const { Icon, label, stops } = TONE_LABELS[k];
-                    const tone = prefs.tone;
-                    const stop = stops[tone[k]];
-                    return (
-                      <div key={k} className="flex flex-col gap-0">
-                        <div className="flex items-center gap-1.5 pl-1">
-                          <Icon size={12} strokeWidth={1.75} className="text-gray-500 shrink-0" />
-                          <span className="font-['Poppins',sans-serif] font-medium text-[12px] text-gray-800">
-                            {label}
-                          </span>
-                          <span className="font-['Poppins',sans-serif] text-[10.5px] text-gray-500 truncate">
-                            · <span className="font-medium text-[#ed6624]">{stop.label}</span> — {stop.desc}
-                          </span>
-                        </div>
-                        <div className="pl-5">
-                          <ToneRangeSlider
-                            value={tone[k]}
-                            onChange={(v) => setPrefs((p) => ({ ...p, tone: { ...p.tone, [k]: v } }))}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-              <StepGroups
-                value={prefs.vulnerableGroups}
-                onToggle={toggleGroup}
-                onClear={() => setPrefs((p) => ({ ...p, vulnerableGroups: [] }))}
-                focusDonations={prefs.focusDonations}
-                onFocusDonationsChange={(v) => setPrefs((p) => ({ ...p, focusDonations: v }))}
-                state={prefs.state}
-                onStateChange={(s) => setPrefs((p) => ({ ...p, state: s }))}
-                includeAnywhere={prefs.includeAnywhere}
-                onIncludeAnywhereChange={(v) => setPrefs((p) => ({ ...p, includeAnywhere: v }))}
-              />
-            </div>
-          )}
+          <StepToneAndPreview
+            cards={cards}
+            prefs={prefs}
+            onPrefsChange={setPrefs}
+            matches={matches}
+            onApply={() => handleApply(prefs)}
+            onJoinResistance={onJoinResistance ? () => onJoinResistance(prefs) : undefined}
+            isLoggedIn={isLoggedIn}
+            userCtx={userCtx}
+            quickActionsOnly={quickActionsOnly}
+            onQuickActionsChange={onQuickActionsChange}
+            remoteOn={remoteOn}
+            inPersonOn={inPersonOn}
+            onLocationModeToggle={onLocationModeToggle}
+          />
         </div>
-
-        {/* Step 1 footer — pinned outside the scroll area so it's always
-            visible and doesn't contribute to the scrollable height. */}
-        {step === 1 && (
-          <div className="shrink-0 flex items-start justify-between gap-4 border-t border-gray-200 px-4 sm:px-5 pt-4 pb-4">
-            <div className="flex items-center gap-4 pt-2.5">
-              <button
-                onClick={prev}
-                className="inline-flex items-center gap-1 font-['Poppins',sans-serif] text-sm font-medium text-gray-600 hover:text-[#23297e]"
-              >
-                <ChevronLeft size={16} /> Back
-              </button>
-              <ProgressDots step={step} total={TOTAL_STEPS} />
-            </div>
-            <div className="flex flex-col items-end gap-2 max-w-[440px]">
-              <div className="flex flex-col sm:flex-row items-stretch gap-2">
-                <button
-                  onClick={() => handleApply(prefs)}
-                  disabled={matches.length === 0}
-                  className="inline-flex flex-col items-start rounded-2xl border border-[#23297e] bg-white px-5 py-2 font-['Poppins',sans-serif] text-left text-[#23297e] hover:bg-[#23297e]/5 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap transition-colors"
-                >
-                  <span className="text-sm font-semibold leading-tight">
-                    Show me all my matches →
-                  </span>
-                  <span className="text-[11px] font-normal italic text-[#23297e]/70 leading-tight mt-0.5">
-                    No sign up required
-                  </span>
-                </button>
-                {!isLoggedIn && onJoinResistance && (
-                  <button
-                    onClick={() => onJoinResistance(prefs)}
-                    disabled={matches.length === 0}
-                    className="inline-flex flex-col items-start rounded-2xl bg-[#23297e] px-5 py-2 font-['Poppins',sans-serif] text-left text-white hover:bg-[#1a2060] disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap transition-colors"
-                  >
-                    <span className="inline-flex items-center gap-1.5 text-sm font-semibold leading-tight">
-                      <Flame size={14} strokeWidth={2.25} className="shrink-0" />
-                      #jointheresistance
-                    </span>
-                    <span className="text-[11px] font-normal italic text-white/80 leading-tight mt-0.5">
-                      Sign up to save your match settings.
-                    </span>
-                  </button>
-                )}
-              </div>
-              <PrivacyFootnote isLoggedIn={isLoggedIn} />
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -517,25 +425,30 @@ function StepToneAndPreview({
   prefs,
   onPrefsChange,
   matches,
-  onNext,
   onApply,
+  onJoinResistance,
+  isLoggedIn,
   userCtx,
-  step,
-  totalSteps,
+  quickActionsOnly,
+  onQuickActionsChange,
+  remoteOn,
+  inPersonOn,
+  onLocationModeToggle,
 }: {
   cards: ActionCardData[];
   prefs: Preferences;
   onPrefsChange: React.Dispatch<React.SetStateAction<Preferences>>;
   matches: ActionCardData[];
-  onNext: () => void;
   onApply: () => void;
+  onJoinResistance?: () => void;
+  isLoggedIn: boolean;
   userCtx: UserContext;
-  step: number;
-  totalSteps: number;
+  quickActionsOnly: boolean;
+  onQuickActionsChange?: (v: boolean) => void;
+  remoteOn: boolean;
+  inPersonOn: boolean;
+  onLocationModeToggle?: (mode: "Remote" | "In Person") => void;
 }) {
-  const tone = prefs.tone;
-  const setTone = (next: Preferences["tone"]) =>
-    onPrefsChange((p) => ({ ...p, tone: next }));
   // Track which result rows the user has flagged as a bad match this session.
   // We use this set both to (a) skip the flagged card when computing
   // replacement matches, and (b) gray-out the slot if no replacement exists.
@@ -718,49 +631,50 @@ function StepToneAndPreview({
         </p>
       </div>
 
-      {/* Time Commitment — header left-aligned flush with Location below
-          so the two rows visually anchor to the same x. Slider track keeps
-          its own pl-5 (line further down) so "Quick wins" / "All in" labels
-          sit cleanly in the slider's own padding zones. */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-1 mb-1">
-        {(() => {
-          const tIdx = timeIndex(prefs.time);
-          const tLevel = TIME_LEVELS[tIdx];
-          return (
-            <div className="sm:col-span-2 flex flex-col gap-0 mb-0">
-              <div className="flex items-center gap-1.5">
-                <Clock size={12} strokeWidth={1.75} className="text-gray-500 shrink-0" />
-                <span className="font-['Poppins',sans-serif] font-medium text-[12px] text-gray-800">
-                  Time Commitment
-                </span>
-                <span className="font-['Poppins',sans-serif] text-[10.5px] text-gray-500 truncate">
-                  · <span className="font-medium text-[#ed6624]">{tLevel.title}</span> — {tLevel.desc}
-                </span>
-              </div>
-              {/* Slider track starts at pl-5 — same offset as Location + tone sliders.
-                  "Quick wins" / "All in" sit in ToneRangeSlider's built-in px-16 padding
-                  zones so they don't shift the track left. */}
-              <div className="pl-5 relative">
-                <ToneRangeSlider
-                  value={tIdx}
-                  onChange={(v) => onPrefsChange((p) => ({ ...p, time: TIME_LEVELS[v].key }))}
-                  max={6}
-                />
-                <span className="absolute left-0 w-16 text-right top-1/2 -translate-y-1/2 font-['Poppins',sans-serif] text-[9px] text-gray-400 pointer-events-none">
-                  Quick wins
-                </span>
-                <span className="absolute right-0 w-16 pl-2 text-left top-1/2 -translate-y-1/2 font-['Poppins',sans-serif] text-[9px] text-gray-400 pointer-events-none">
-                  All in
-                </span>
-              </div>
-            </div>
-          );
-        })()}
+      {/* ── Setting & quick filters — Remote / In Person / 5 Mins Max ──────
+          These map to the feed's Location-mode tokens + the quick-action
+          filter (they live in app state, not Preferences), so toggling them
+          updates the feed live. */}
+      <div className="flex flex-wrap items-center gap-2 mb-2">
+        <button
+          type="button"
+          onClick={() => onLocationModeToggle?.("Remote")}
+          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-['Poppins',sans-serif] text-xs font-semibold transition-colors ${
+            remoteOn
+              ? "border-[#23297e] bg-[#23297e]/10 text-[#23297e]"
+              : "border-gray-300 bg-white text-gray-600 hover:border-[#23297e]/50"
+          }`}
+        >
+          <Globe size={12} strokeWidth={2} className="shrink-0" />
+          Remote
+        </button>
+        <button
+          type="button"
+          onClick={() => onLocationModeToggle?.("In Person")}
+          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-['Poppins',sans-serif] text-xs font-semibold transition-colors ${
+            inPersonOn
+              ? "border-[#23297e] bg-[#23297e]/10 text-[#23297e]"
+              : "border-gray-300 bg-white text-gray-600 hover:border-[#23297e]/50"
+          }`}
+        >
+          <MapPin size={12} strokeWidth={2} className="shrink-0" />
+          In Person
+        </button>
+        <button
+          type="button"
+          onClick={() => onQuickActionsChange?.(!quickActionsOnly)}
+          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 font-['Poppins',sans-serif] text-xs font-semibold transition-colors ${
+            quickActionsOnly
+              ? "border-[#5a3e9e] bg-[#5a3e9e]/10 text-[#5a3e9e]"
+              : "border-gray-300 bg-white text-gray-600 hover:border-[#5a3e9e]/50"
+          }`}
+        >
+          <Zap size={12} strokeWidth={2} className="shrink-0" fill={quickActionsOnly ? "currentColor" : "none"} />
+          5 Mins Max
+        </button>
       </div>
 
-      {/* ── Location & quick filters ──────────────────────────────────────
-          State dropdown + two quick-toggle pills sit on one row just above
-          the category chips. Replaced the 4-stop Location slider. */}
+      {/* ── Location: state dropdown ──────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 mt-2 mb-1">
         <div className="flex items-center gap-1.5">
           <MapPin size={12} strokeWidth={1.75} className="text-gray-500 shrink-0" />
@@ -1033,37 +947,36 @@ function StepToneAndPreview({
           );
         })()}
 
-        {/* Twin CTAs:
-         *   primary  → apply current prefs and dive into the full filtered feed
-         *   secondary → step 1 (vulnerable groups) to refine for who they are
-         * Both are orange because both are valid forward actions; the primary
-         * is solid (most users will tap this), the secondary is outline so it
-         * doesn't compete visually. */}
-        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2 mt-5">
-          <ProgressDots step={step} total={totalSteps} />
+        {/* Apply CTA — single page now (tone/groups step removed), so this
+         *  applies the current settings and dives into the filtered feed.
+         *  Logged-out users also get the join CTA to save their settings. */}
+        <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-2 mt-5">
           <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-2">
-            <button
-              onClick={onNext}
-              className="inline-flex flex-col items-center justify-center rounded-2xl border border-[#23297e] bg-white px-5 py-2 font-['Poppins',sans-serif] text-[#23297e] hover:bg-[#23297e]/5 transition-colors"
-            >
-              <span className="flex items-center gap-1.5 text-sm font-semibold leading-tight">
-                <Sparkles size={13} strokeWidth={2} />
-                Tell us more about you
-              </span>
-              <span className="text-[11px] font-normal italic text-[#23297e]/70 leading-tight mt-0.5">
-                Amplify groups you're standing with
-              </span>
-            </button>
+            {!isLoggedIn && onJoinResistance && (
+              <button
+                onClick={onJoinResistance}
+                disabled={matches.length === 0}
+                className="inline-flex flex-col items-center justify-center rounded-2xl border border-[#23297e] bg-white px-5 py-2 font-['Poppins',sans-serif] text-[#23297e] hover:bg-[#23297e]/5 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <span className="flex items-center gap-1.5 text-sm font-semibold leading-tight">
+                  <Flame size={13} strokeWidth={2.25} className="shrink-0" />
+                  #jointheresistance
+                </span>
+                <span className="text-[11px] font-normal italic text-[#23297e]/70 leading-tight mt-0.5">
+                  Sign up to save your settings
+                </span>
+              </button>
+            )}
             <button
               onClick={onApply}
               disabled={matches.length === 0}
               className="inline-flex flex-col items-center justify-center rounded-2xl bg-[#23297e] px-6 py-2 font-['Poppins',sans-serif] text-white shadow-sm hover:bg-[#1a2060] hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               <span className="flex items-center gap-1.5 text-sm font-semibold leading-tight">
-                These Matches Look Good!
+                Show me my matches
               </span>
               <span className="flex items-center gap-1 text-[11px] font-normal italic text-white/80 leading-tight mt-0.5">
-                Show Me More <ChevronRight size={12} strokeWidth={2} />
+                Apply these settings <ChevronRight size={12} strokeWidth={2} />
               </span>
             </button>
           </div>

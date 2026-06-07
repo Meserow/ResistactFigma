@@ -264,6 +264,10 @@ interface SmacksPageProps {
   receipts: ReceiptCard[];
   /** IDs the admin has permanently hidden — server-sourced, works across devices. */
   hiddenIds?: number[];
+  /** True once the hidden-id list is authoritative (cache hit or live sync
+   *  landed). Static smacks are held back until then so hidden/deleted ones
+   *  never flash in before suppression is known. */
+  ready?: boolean;
   searchQuery?: string;
   accessToken: string | null;
   approval: UserApproval | null;
@@ -286,7 +290,7 @@ interface SmacksPageProps {
   onSortByChange?: (s: "top" | "new" | "pending") => void;
 }
 
-export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds = [], searchQuery = "", accessToken, approval, onReceiptAdded, onReceiptDeleted, onReceiptApproved, onReceiptUpdated, pendingFilterVersion, onComplete, completedSmackIds, activeTags: activeTagsProp, onActiveTagsChange, sortBy: sortByProp, onSortByChange }: SmacksPageProps) {
+export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds = [], ready = true, searchQuery = "", accessToken, approval, onReceiptAdded, onReceiptDeleted, onReceiptApproved, onReceiptUpdated, pendingFilterVersion, onComplete, completedSmackIds, activeTags: activeTagsProp, onActiveTagsChange, sortBy: sortByProp, onSortByChange }: SmacksPageProps) {
   const isAdmin = approval?.isAdmin === true;
   const canSubmit = !!accessToken && (approval?.status === "approved");
 
@@ -297,11 +301,14 @@ export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds =
   // from KV, so it won't be in apiReceipts at all); applying the hidden list to
   // them was the bug that made a freshly created smack vanish when its id
   // happened to sit in the hidden set.
+  // Static smacks are held back until `ready` so a hidden/deleted one can't
+  // flash in before the suppression list is known. KV receipts are always safe
+  // to show (real, server-controlled records).
   const apiIds = new Set(apiReceipts.map((r) => r.id));
   const hiddenSet = new Set(serverHiddenIds);
   const receipts = [
     ...apiReceipts,
-    ...STATIC_SMACKS.filter((r) => !apiIds.has(r.id) && !hiddenSet.has(r.id)),
+    ...(ready ? STATIC_SMACKS.filter((r) => !apiIds.has(r.id) && !hiddenSet.has(r.id)) : []),
   ];
 
   // ── Tag filter ──────────────────────────────────────────────────────────────
@@ -1235,7 +1242,7 @@ function ReceiptTile({
   return (
     <>
     <div
-      className={`rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-all bg-white flex flex-col ${!receipt.adminApproved && isAdmin ? "ring-2 ring-red-400" : ""}`}
+      className={`rounded-2xl overflow-hidden border border-gray-600 bg-white flex flex-col transform-gpu transition-[transform,box-shadow,opacity] duration-200 ease-out shadow-md hover:shadow-lg hover:border-[#23297e] hover:ring-2 hover:ring-[#23297e] motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] hover:z-10 ${!receipt.adminApproved && isAdmin ? "ring-2 ring-red-400" : ""}`}
     >
       {/* Pending banner */}
       {!receipt.adminApproved && isAdmin && (

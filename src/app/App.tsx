@@ -18,6 +18,7 @@ import { FlagsAdminModal } from "./components/FlagsAdminModal";
 import { AskFlowModal } from "./components/AskFlowModal";
 import { JoinACTersModal } from "./components/JoinACTersModal";
 import { InfoModal } from "./components/InfoModal";
+import { TakeABreakModal } from "./components/TakeABreakModal";
 import { EditCardModal } from "./components/EditCardModal";
 import { CardDetailsModal } from "./components/CardDetailsModal";
 import { BookmarksPanel } from "./components/BookmarksPanel";
@@ -403,6 +404,45 @@ function writeCardsCache(rawCards: ServerCard[], total: number) {
   }
 }
 
+// ─── Smacks cache (receipts + hidden-id list) ────────────────────────────────
+// The Smacks feed paints STATIC_SMACKS from client code immediately, but the
+// `smacks:hidden` suppression list only arrives with the /receipts fetch a
+// couple seconds later — so hidden/deleted smacks would flash in and then
+// vanish. Caching the hidden list (and approved receipts) lets the first paint
+// apply suppression right away. Only APPROVED receipts are cached so a stale
+// cache can never flash pending/unapproved smacks to anyone.
+const SMACKS_CACHE_KEY = "resistact:smacks-cache:v1";
+const SMACKS_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h — live sync overrides anyway
+interface SmacksCachePayload { savedAt: number; receipts: ReceiptCard[]; hiddenIds: number[]; }
+function readSmacksCache(): { receipts: ReceiptCard[]; hiddenIds: number[] } | null {
+  try {
+    if (typeof localStorage === "undefined") return null;
+    const raw = localStorage.getItem(SMACKS_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as SmacksCachePayload;
+    if (!parsed?.savedAt || Date.now() - parsed.savedAt > SMACKS_CACHE_TTL_MS) return null;
+    const receipts = Array.isArray(parsed.receipts)
+      ? parsed.receipts.filter((r) => (r as any).adminApproved === true)
+      : [];
+    const hiddenIds = Array.isArray(parsed.hiddenIds) ? parsed.hiddenIds : [];
+    return { receipts, hiddenIds };
+  } catch {
+    return null;
+  }
+}
+function writeSmacksCache(receipts: ReceiptCard[], hiddenIds: number[]) {
+  try {
+    if (typeof localStorage === "undefined") return;
+    const approved = receipts.filter((r) => (r as any).adminApproved === true);
+    localStorage.setItem(
+      SMACKS_CACHE_KEY,
+      JSON.stringify({ savedAt: Date.now(), receipts: approved, hiddenIds } satisfies SmacksCachePayload),
+    );
+  } catch {
+    // Quota exceeded, private browsing, etc. — silently no-op.
+  }
+}
+
 // ─── Skeleton card ────────────────────────────────────────────────────────────
 function CardSkeleton() {
   return (
@@ -619,6 +659,11 @@ export default function App() {
   );
   const [scrollNudgeVisible, setScrollNudgeVisible] = useState(false);
   const scrollNudgeFired = useRef(false);
+  // "Take a break" doom-scroll check-in. Fires once after 15 minutes of ACTIVE
+  // time (hidden-tab time doesn't count), then snoozes itself for 24h so it
+  // never nags. The 15-minute mark is a nod to the meme it shows.
+  const [breakNudgeOpen, setBreakNudgeOpen] = useState(false);
+  const breakNudgeFired = useRef(false);
   // First-visit location auto-detect. When the visitor has no Location pill set,
   // we ask the server's /geo endpoint for a coarse IP→state guess so the feed
   // isn't full of out-of-state acts before they engage. A hit pre-sets the pill
@@ -759,8 +804,15 @@ export default function App() {
     const id = param ? parseInt(param, 10) : NaN;
     return isNaN(id) ? null : id;
   });
-  const [receipts, setReceipts] = useState<ReceiptCard[]>([]);
-  const [hiddenSmackIds, setHiddenSmackIds] = useState<number[]>([]);
+  // Hydrate receipts + hidden-id list from the localStorage cache so the very
+  // first paint already knows which static smacks to suppress (no flash of
+  // hidden/deleted ones). `smacksReady` is true on a cache hit and flips true
+  // once the live /receipts sync lands; until then we hold back the static
+  // smacks so none can render before suppression is known.
+  const smacksCacheHit = readSmacksCache();
+  const [receipts, setReceipts] = useState<ReceiptCard[]>(smacksCacheHit?.receipts ?? []);
+  const [hiddenSmackIds, setHiddenSmackIds] = useState<number[]>(smacksCacheHit?.hiddenIds ?? []);
+  const [smacksReady, setSmacksReady] = useState<boolean>(!!smacksCacheHit);
   // Derived once per `receipts` change so the navbar's chip rendering doesn't
   // recompute on every render. Must be declared AFTER `receipts` (temporal
   // dead zone — referencing receipts earlier crashed with "Cannot access
@@ -1554,6 +1606,56 @@ export default function App() {
     return () => clearTimeout(t);
   }, [scrollNudgeVisible]);
 
+  // ── "Take a break" nudge: 15 min of ACTIVE time → check-in modal ──
+  // Accumulate visible-tab time only (background tabs don't count toward the
+  // doom-scroll clock), fire once, and skip entirely if we already showed it in
+  // the last 24h. Empty deps: runs once for the page's lifetime.
+  useEffect(() => {
+    const SNOOZE_KEY = "resistact_break_nudge_snooze_until";
+    const ACTIVE_MS_TO_FIRE = 15 * 60 * 1000;
+    if (Date.now() < Number(localStorage.getItem(SNOOZE_KEY) || 0)) return;
+
+    let activeMs = 0;
+    let lastTick = Date.now();
+    const tick = () => {
+      const now = Date.now();
+      // Only count the elapsed slice when the tab was actually visible.
+      if (document.visibilityState === "visible") activeMs += now - lastTick;
+      lastTick = now;
+      if (activeMs >= ACTIVE_MS_TO_FIRE && !breakNudgeFired.current) {
+        breakNudgeFired.current = true;
+        setBreakNudgeOpen(true);
+        window.clearInterval(id);
+      }
+    };
+    // Reset the clock on every visibility flip so a throttled background tick
+    // can't bank a huge delta the moment we return to the foreground.
+    const onVisibility = () => { lastTick = Date.now(); };
+    document.addEventListener("visibilitychange", onVisibility);
+    const id = window.setInterval(tick, 30_000);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, []);
+
+  // Snooze the break nudge for 24h whenever it's closed — by the X, the
+  // backdrop, or after acting on it — so it shows at most once a day.
+  const snoozeBreakNudge = () => {
+    localStorage.setItem(
+      "resistact_break_nudge_snooze_until",
+      String(Date.now() + 24 * 60 * 60 * 1000),
+    );
+    setBreakNudgeOpen(false);
+  };
+  const handleBreakNudgePrimary = () => {
+    snoozeBreakNudge();
+    // Logged in → swipe deck to save Acts for later. Logged out → Join the
+    // Resistance so their picks actually persist.
+    if (approval) setSwipeOpen(true);
+    else setAuthModalOpen(true);
+  };
+
   // ── On mount: restore session + listen for OAuth redirects ──
   useEffect(() => {
     // Check for an existing session (including OAuth redirects)
@@ -1922,10 +2024,18 @@ export default function App() {
         if (!res.ok || cancelled) return;
         const data = await res.json();
         if (!cancelled) {
-          setReceipts(data.receipts ?? []);
-          setHiddenSmackIds(data.hiddenIds ?? []);
+          const nextReceipts = data.receipts ?? [];
+          const nextHidden = data.hiddenIds ?? [];
+          setReceipts(nextReceipts);
+          setHiddenSmackIds(nextHidden);
+          writeSmacksCache(nextReceipts, nextHidden);
         }
       } catch { /* non-critical */ }
+      finally {
+        // Mark ready even on failure so a network blip can't permanently hide
+        // the static smacks — worst case we fall back to the pre-sync render.
+        if (!cancelled) setSmacksReady(true);
+      }
     })();
     return () => { cancelled = true; };
   }, []);
@@ -2683,6 +2793,7 @@ export default function App() {
           <SmacksPage
             receipts={receipts}
             hiddenIds={hiddenSmackIds}
+            ready={smacksReady}
             searchQuery={deferredSearchQuery}
             accessToken={accessToken}
             approval={approval}
@@ -3572,6 +3683,15 @@ export default function App() {
         <InfoModal onClose={() => setInfoOpen(false)} />
       )}
 
+      {/* "Take a break" doom-scroll check-in (fires after 15 min active time) */}
+      {breakNudgeOpen && (
+        <TakeABreakModal
+          isLoggedIn={!!approval}
+          onPrimary={handleBreakNudgePrimary}
+          onClose={snoozeBreakNudge}
+        />
+      )}
+
       {/* Feedback modal */}
       {feedbackOpen && (
         <FeedbackModal
@@ -3665,6 +3785,15 @@ export default function App() {
           completedIds={[...completedCards]}
           boostedIds={[...boostedCards]}
           initialStep={matchInitialStep}
+          quickActionsOnly={quickActionsOnly}
+          onQuickActionsChange={setQuickActionsOnly}
+          remoteOn={(activeFilters["Location"] ?? []).includes("Remote")}
+          inPersonOn={(activeFilters["Location"] ?? []).includes("In Person")}
+          onLocationModeToggle={(mode) => setActiveFilters((prev) => {
+            const loc = prev["Location"] ?? [];
+            const next = loc.includes(mode) ? loc.filter((l) => l !== mode) : [...loc, mode];
+            return { ...prev, Location: next };
+          })}
           onClose={() => { setMatchOpen(false); setMatchInitialStep(0); }}
           onApply={(prefs) => {
             // Mirror Match Me's state into the Location pill so the
@@ -3678,7 +3807,12 @@ export default function App() {
             };
             setMatchPrefs(mirrored);
             savePreferences(mirrored);
-            setActiveFilters((prev) => ({ ...prev, Location: mirrored.locationFilter }));
+            setActiveFilters((prev) => {
+              // Preserve any Remote / In Person mode tokens the user toggled in
+              // the settings — only the state token is owned by `prefs.state`.
+              const modes = (prev.Location ?? []).filter((l) => l === "Remote" || l === "In Person");
+              return { ...prev, Location: [...modes, ...mirrored.locationFilter] };
+            });
             setMatchOpen(false);
             setStaggerKey((k) => k + 1);
             analytics.matchSet(mirrored.time, mirrored.tone);
@@ -3715,7 +3849,12 @@ export default function App() {
             };
             setMatchPrefs(mirrored);
             savePreferences(mirrored);
-            setActiveFilters((prev) => ({ ...prev, Location: mirrored.locationFilter }));
+            setActiveFilters((prev) => {
+              // Preserve any Remote / In Person mode tokens the user toggled in
+              // the settings — only the state token is owned by `prefs.state`.
+              const modes = (prev.Location ?? []).filter((l) => l === "Remote" || l === "In Person");
+              return { ...prev, Location: [...modes, ...mirrored.locationFilter] };
+            });
             setMatchOpen(false);
             analytics.matchSet(mirrored.time, mirrored.tone);
             setAuthModalOpen(true);
