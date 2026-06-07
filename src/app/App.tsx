@@ -403,6 +403,45 @@ function writeCardsCache(rawCards: ServerCard[], total: number) {
   }
 }
 
+// ─── Smacks cache (receipts + hidden-id list) ────────────────────────────────
+// The Smacks feed paints STATIC_SMACKS from client code immediately, but the
+// `smacks:hidden` suppression list only arrives with the /receipts fetch a
+// couple seconds later — so hidden/deleted smacks would flash in and then
+// vanish. Caching the hidden list (and approved receipts) lets the first paint
+// apply suppression right away. Only APPROVED receipts are cached so a stale
+// cache can never flash pending/unapproved smacks to anyone.
+const SMACKS_CACHE_KEY = "resistact:smacks-cache:v1";
+const SMACKS_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h — live sync overrides anyway
+interface SmacksCachePayload { savedAt: number; receipts: ReceiptCard[]; hiddenIds: number[]; }
+function readSmacksCache(): { receipts: ReceiptCard[]; hiddenIds: number[] } | null {
+  try {
+    if (typeof localStorage === "undefined") return null;
+    const raw = localStorage.getItem(SMACKS_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as SmacksCachePayload;
+    if (!parsed?.savedAt || Date.now() - parsed.savedAt > SMACKS_CACHE_TTL_MS) return null;
+    const receipts = Array.isArray(parsed.receipts)
+      ? parsed.receipts.filter((r) => (r as any).adminApproved === true)
+      : [];
+    const hiddenIds = Array.isArray(parsed.hiddenIds) ? parsed.hiddenIds : [];
+    return { receipts, hiddenIds };
+  } catch {
+    return null;
+  }
+}
+function writeSmacksCache(receipts: ReceiptCard[], hiddenIds: number[]) {
+  try {
+    if (typeof localStorage === "undefined") return;
+    const approved = receipts.filter((r) => (r as any).adminApproved === true);
+    localStorage.setItem(
+      SMACKS_CACHE_KEY,
+      JSON.stringify({ savedAt: Date.now(), receipts: approved, hiddenIds } satisfies SmacksCachePayload),
+    );
+  } catch {
+    // Quota exceeded, private browsing, etc. — silently no-op.
+  }
+}
+
 // ─── Skeleton card ────────────────────────────────────────────────────────────
 function CardSkeleton() {
   return (
@@ -759,8 +798,15 @@ export default function App() {
     const id = param ? parseInt(param, 10) : NaN;
     return isNaN(id) ? null : id;
   });
-  const [receipts, setReceipts] = useState<ReceiptCard[]>([]);
-  const [hiddenSmackIds, setHiddenSmackIds] = useState<number[]>([]);
+  // Hydrate receipts + hidden-id list from the localStorage cache so the very
+  // first paint already knows which static smacks to suppress (no flash of
+  // hidden/deleted ones). `smacksReady` is true on a cache hit and flips true
+  // once the live /receipts sync lands; until then we hold back the static
+  // smacks so none can render before suppression is known.
+  const smacksCacheHit = readSmacksCache();
+  const [receipts, setReceipts] = useState<ReceiptCard[]>(smacksCacheHit?.receipts ?? []);
+  const [hiddenSmackIds, setHiddenSmackIds] = useState<number[]>(smacksCacheHit?.hiddenIds ?? []);
+  const [smacksReady, setSmacksReady] = useState<boolean>(!!smacksCacheHit);
   // Derived once per `receipts` change so the navbar's chip rendering doesn't
   // recompute on every render. Must be declared AFTER `receipts` (temporal
   // dead zone — referencing receipts earlier crashed with "Cannot access
@@ -1922,10 +1968,18 @@ export default function App() {
         if (!res.ok || cancelled) return;
         const data = await res.json();
         if (!cancelled) {
-          setReceipts(data.receipts ?? []);
-          setHiddenSmackIds(data.hiddenIds ?? []);
+          const nextReceipts = data.receipts ?? [];
+          const nextHidden = data.hiddenIds ?? [];
+          setReceipts(nextReceipts);
+          setHiddenSmackIds(nextHidden);
+          writeSmacksCache(nextReceipts, nextHidden);
         }
       } catch { /* non-critical */ }
+      finally {
+        // Mark ready even on failure so a network blip can't permanently hide
+        // the static smacks — worst case we fall back to the pre-sync render.
+        if (!cancelled) setSmacksReady(true);
+      }
     })();
     return () => { cancelled = true; };
   }, []);
@@ -2683,6 +2737,7 @@ export default function App() {
           <SmacksPage
             receipts={receipts}
             hiddenIds={hiddenSmackIds}
+            ready={smacksReady}
             searchQuery={deferredSearchQuery}
             accessToken={accessToken}
             approval={approval}

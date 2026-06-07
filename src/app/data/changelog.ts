@@ -16,6 +16,33 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.64",
+    date: "2026-06-07",
+    title: "No more flash of deleted Smacks on load",
+    sections: [
+      {
+        heading: "The Smacks",
+        items: [
+          "Fixed a flash where deleted or hidden Smacks briefly appeared when The Smacks page loaded, then disappeared a second or two later. They no longer show up at all.",
+          "The Smacks page now remembers which Smacks are hidden between visits, so the right set is shown the instant the page paints.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.63",
+    date: "2026-06-07",
+    title: "Smacks cards now have a defined border",
+    sections: [
+      {
+        heading: "The Smacks",
+        items: [
+          "Added a thin dark-grey border around each Smack card so they stand out more clearly against the page background.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.62",
     date: "2026-06-07",
     title: "More accurate 'who's behind this' labels on Acts",
