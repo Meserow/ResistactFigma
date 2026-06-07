@@ -77,22 +77,22 @@ const clampTone = (v: unknown): number => Math.max(0, Math.min(3, Math.round(Num
 
 // ─── Category data ─────────────────────────────────────────────────────────────
 const CATEGORIES: { name: string; icon: LucideIcon; color: string }[] = [
-  { name: "Act of Kindness",            icon: Handshake,      color: "#127f05" },
+  { name: "Kindness",                   icon: Handshake,      color: "#127f05" },
   { name: "Amplify",                    icon: Volume2,        color: "#8a00e6" },
-  { name: "Art/Performance Art",        icon: Palette,        color: "#896312" },
+  { name: "Art",                        icon: Palette,        color: "#896312" },
   { name: "Boycott",                    icon: Ban,            color: "#23297e" },
   { name: "Crafting",                   icon: Hammer,         color: "#c34e00" },
-  { name: "Email Campaign",             icon: Mail,           color: "#e44b4b" },
+  { name: "Email",                      icon: Mail,           color: "#e44b4b" },
   { name: "Flash Mob",                  icon: Users,          color: "#ff00d5" },
   { name: "Funding",                    icon: DollarSign,     color: "#127f05" },
   { name: "Housing",                    icon: Home,           color: "#896312" },
-  { name: "Join a Group",               icon: HandHeart,      color: "#0891b2" },
+  { name: "Group",                      icon: HandHeart,      color: "#0891b2" },
   { name: "Labor",                      icon: HardHat,        color: "#127f05" },
-  { name: "Letter to Editor",           icon: Send,           color: "#c34e00" },
+  { name: "Writing",                    icon: Send,           color: "#c34e00" },
   { name: "Meeting",                    icon: Calendar,       color: "#23297e" },
   { name: "Mental Health",              icon: Brain,          color: "#ff00d5" },
   { name: "News Story",                 icon: Newspaper,      color: "#896312" },
-  { name: "Personal Commitment",        icon: Heart,          color: "#23297e" },
+  { name: "Commitment",                 icon: Heart,          color: "#23297e" },
   { name: "Petition",                   icon: PenLine,        color: "#05737f" },
   { name: "Prayer",                     icon: Sparkles,       color: "#8a00e6" },
   { name: "Professional Skills",        icon: Briefcase,      color: "#126d89" },
@@ -103,7 +103,6 @@ const CATEGORIES: { name: string; icon: LucideIcon; color: string }[] = [
   { name: "Training",                   icon: GraduationCap,  color: "#126d89" },
   { name: "Transportation",             icon: Bike,           color: "#126d89" },
   { name: "Volunteer",                  icon: HandHelping,    color: "#4a7c59" },
-  { name: "Other",                      icon: Lightbulb,      color: "#767574" },
 ];
 
 // ─── Types ─────────────────────────────────────────────────────────────────────

@@ -26,29 +26,29 @@ const SELECT_CLS = (val: string | null | undefined) =>
 // "Art Piece" intentionally NOT a separate option — it merges into
 // Art/Performance Art via normaliseCategory in App.tsx.
 const CATEGORY_OPTIONS: { label: string; color: string }[] = [
-  { label: "Act of Kindness",      color: "#127f05" },
+  { label: "Kindness",             color: "#127f05" },
   // Renamed from "Boost" June 2026 — collided with the 🔥 boost action.
   { label: "Amplify",              color: "#8a00e6" },
-  { label: "Art/Performance Art",  color: "#896312" },
+  { label: "Art",                  color: "#896312" },
   // Bird-Dog merged into Show Up (May 2026).
   { label: "Boycott",              color: "#23297e" },
   { label: "Crafting",             color: "#c34e00" },
-  { label: "Email Campaign",       color: "#e44b4b" },
+  { label: "Email",                color: "#e44b4b" },
   { label: "Flash Mob",            color: "#ff00d5" },
   { label: "Funding",              color: "#127f05" },
   { label: "Host",                 color: "#b45309" },
   { label: "Housing",              color: "#896312" },
   { label: "Irreverence",          color: "#ff00d5" },
-  { label: "Join a Group",         color: "#0891b2" },
+  { label: "Group",                color: "#0891b2" },
   { label: "Labor",                color: "#127f05" },
   // Learn merged into Training; Letter to Editor merged into Letter Writing (May 2026).
-  { label: "Letter Writing",       color: "#c34e00" },
+  { label: "Writing",              color: "#c34e00" },
   { label: "Meeting",              color: "#23297e" },
   { label: "Mental Health",        color: "#ff00d5" },
   { label: "News Story",           color: "#896312" },
-  { label: "Personal Commitment",  color: "#23297e" },
+  { label: "Commitment",           color: "#23297e" },
   { label: "Petition",             color: "#05737f" },
-  { label: "Phone Calling",        color: "#c2185b" },
+  { label: "Phoning",              color: "#c2185b" },
   { label: "Prayer",               color: "#8a00e6" },
   { label: "Professional Skills",  color: "#126d89" },
   { label: "Protest",              color: "#23297e" },
@@ -62,7 +62,6 @@ const CATEGORY_OPTIONS: { label: string; color: string }[] = [
   { label: "Video",                color: "#e44b4b" },
   { label: "Volunteer",            color: "#4a7c59" },
   { label: "Witness",              color: "#767574" },
-  { label: "Other",                color: "#767574" },
 ];
 
 /** Normalise legacy ALL-CAPS categories to their title-case equivalent. */

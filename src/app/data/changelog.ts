@@ -16,6 +16,34 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.22",
+    date: "2026-06-06",
+    title: "More short category names",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Shortened more category names: \"Letter Writing\" → \"Writing\", \"Act of Kindness\" → \"Kindness\", \"Art/Performance Art\" → \"Art\", \"Email Campaign\" → \"Email\", \"Phone Calling\" → \"Phoning\". Acts filed under the old names carry over automatically.",
+          "The selected-categories summary in the feed banner now reads \"Categories: …\".",
+          "Renamed the quick-action filter from \"5 Minutes Max\" to \"5 Mins Max\".",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.21",
+    date: "2026-06-06",
+    title: "Shorter category names",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Renamed two categories for brevity: \"Join a Group\" is now \"Group\" and \"Personal Commitment\" is now \"Commitment\". Acts filed under the old names carry over automatically.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.20",
     date: "2026-06-06",
     title: "Cleared out expired and dead-link Acts",
