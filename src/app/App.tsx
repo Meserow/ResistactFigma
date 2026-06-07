@@ -3074,9 +3074,9 @@ export default function App() {
                   </>
                 )}
 
-                {/* Result count — desktop only, mirrors the filtered/unfiltered
-                    banners' copy so the merged bar carries the same info. */}
-                {!isMobile && synced && !matchPrefs && (
+                {/* Result count — mirrors the filtered/unfiltered banners' copy
+                    so the merged bar carries the same info on every screen. */}
+                {synced && !matchPrefs && (
                   <>
                     <span className="text-[#ed6624]/40">•</span>
                     <p className="font-['Poppins',sans-serif] text-sm text-gray-600">
@@ -3108,11 +3108,11 @@ export default function App() {
               </div>
             )}
 
-            {/* Unfiltered banner — nudges users to try the match tool.
-                Also carries the Sort dropdown so the sort control lives
-                next to the live result count. Hidden on phones, where the
-                feed leads with the cards (and swipe) rather than this chrome. */}
-            {!geoBanner && !matchPrefs && !hasActiveFilters && activeTab === "acts" && synced && !isMobile && (
+            {/* Unfiltered banner — nudges users to try the match tool, and
+                carries the live result count plus the "Set your location"
+                picker. Stacks vertically on phones (flex-col) and sits inline
+                on wider screens (sm:flex-row). */}
+            {!geoBanner && !matchPrefs && !hasActiveFilters && activeTab === "acts" && synced && (
               <div className="mb-4 flex flex-col items-start gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                 <p className="font-['Poppins',sans-serif] text-sm text-gray-600">
                   {feedIsPersonalized ? (
@@ -3152,9 +3152,10 @@ export default function App() {
 
             {/* Filtered banner — shown when categories / search / location /
                 quick-actions filters are active (but no Match preferences).
-                Mirrors the unfiltered banner style; carries the Sort control.
-                Hidden on phones to match the unfiltered banner above. */}
-            {!geoBanner && !matchPrefs && hasActiveFilters && activeTab === "acts" && synced && !showPendingActsOnly && !isMobile && (() => {
+                Mirrors the unfiltered banner style; carries the count, the
+                location/mode callout, and the Save button. Stacks vertically
+                on phones (flex-col), inline on wider screens (sm:flex-row). */}
+            {!geoBanner && !matchPrefs && hasActiveFilters && activeTab === "acts" && synced && !showPendingActsOnly && (() => {
               // Surface the active mode + state(s) so the banner names what's being
               // filtered. "Remote"/"In Person" are modes, not places. When it's
               // PURELY remote (Remote on, In Person off) the feed isn't state-specific,

@@ -18,13 +18,14 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     version: "1.4.73",
     date: "2026-06-07",
-    title: "The acts counter now matches what you can actually see",
+    title: "A truer acts count, and the feed summary now shows on phones",
     sections: [
       {
         heading: "Your feed",
         items: [
           "The running \"N acts\" count in the footer now reflects only the acts that are actually viewable — acts whose event date has passed, that are missing an image, or that are still awaiting approval no longer pad the total. The number you see is the number you can browse.",
           "Admins still see (and count) acts pending approval, so the footer total matches their fuller view.",
+          "On phones, the feed summary at the top — the live act count and the location / \"Set your location\" picker — is now visible. It was previously desktop-only, so the welcome card looked cut off on mobile.",
         ],
       },
     ],
