@@ -313,34 +313,36 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               top nav stays cleaner. */}
         </div>
 
-        {/* ── Tab switcher: The Acts / The Facts / The Smacks ── */}
-        <div className="hidden md:flex items-center shrink-0 bg-gray-100 rounded-2xl p-1.5 gap-1">
+        {/* ── Tab switcher: The Acts / The Facts / The Smacks ──
+            Flat text tabs (no segmented-control background / active pill) —
+            the active tab is just orange, the rest dark grey. */}
+        <div className="hidden md:flex items-center shrink-0 gap-5">
           <button
             onClick={() => onTabChange("acts")}
-            className={`px-3 py-2.5 rounded-xl font-['Poppins',sans-serif] font-bold text-sm transition-all whitespace-nowrap ${
+            className={`py-1 font-['Poppins',sans-serif] font-bold text-[15px] transition-colors whitespace-nowrap ${
               activeTab === "acts"
-                ? "bg-white text-[#ed6624] shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
+                ? "text-[#ed6624]"
+                : "text-gray-800 hover:text-[#ed6624]"
             }`}
           >
             The Acts
           </button>
           <button
             onClick={() => onTabChange("facts")}
-            className={`px-3 py-2.5 rounded-xl font-['Poppins',sans-serif] font-bold text-sm transition-all whitespace-nowrap ${
+            className={`py-1 font-['Poppins',sans-serif] font-bold text-[15px] transition-colors whitespace-nowrap ${
               activeTab === "facts"
-                ? "bg-white text-[#ed6624] shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
+                ? "text-[#ed6624]"
+                : "text-gray-800 hover:text-[#ed6624]"
             }`}
           >
             The Facts
           </button>
           <button
             onClick={() => onTabChange("receipts")}
-            className={`px-3 py-2.5 rounded-xl font-['Poppins',sans-serif] font-bold text-sm transition-all whitespace-nowrap ${
+            className={`py-1 font-['Poppins',sans-serif] font-bold text-[15px] transition-colors whitespace-nowrap ${
               activeTab === "receipts"
-                ? "bg-white text-[#ed6624] shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
+                ? "text-[#ed6624]"
+                : "text-gray-800 hover:text-[#ed6624]"
             }`}
           >
             The Smacks
