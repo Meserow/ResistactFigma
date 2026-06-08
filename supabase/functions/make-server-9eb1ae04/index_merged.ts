@@ -448,6 +448,7 @@ const KNOWN_MIGRATION_FLAG_KEYS: readonly string[] = [
   "migration:admin-approved:v1",
   "migration:approved-without-image-cleanup:v1",
   "migration:authorrole-reclassify:v1",
+  "migration:authorrole-reclassify:v2",
   "migration:cancel-your-10min:v1",
   "migration:common-cause-actions:v1",
   "migration:creators-import-2026-05-batch2:v1",
@@ -519,6 +520,32 @@ async function getMigrationFlag(key: string): Promise<boolean> {
 async function setMigrationFlag(key: string): Promise<void> {
   await kv.set(key, true);
   migrationFlagCache.add(key);
+}
+
+// ── Receipt (smack) id allocation ────────────────────────────────────────────
+// Dynamic, user/admin-created receipts MUST get ids BELOW the static-smack
+// floor. Static smacks are hardcoded in the client (STATIC_SMACKS, ids >= 5000)
+// and the `smacks:hidden` suppression list exists only for those static cards.
+// Two interacting bugs once made fresh uploads invisible:
+//   1. the old allocator `max(receipt:ids)+1` had drifted into the 5000+ range
+//      (a bulk import seeded receipt:ids with static-range ids), so new
+//      receipts collided with — and shadowed — static smacks; and
+//   2. deleting a receipt parked its id in smacks:hidden, and because the old
+//      allocator could REUSE a freed id, a later upload would inherit a hidden
+//      id and be silently filtered out of the feed.
+// A monotonic counter (`receipt:seq`, never decremented) guarantees ids are
+// unique and never reused, and we hard-cap below the static floor.
+const STATIC_SMACK_FLOOR = 5000;
+async function allocateReceiptId(): Promise<number> {
+  const ids = ((await kv.get("receipt:ids")) ?? []) as number[];
+  const dynMax = ids.reduce((m, n) => (n < STATIC_SMACK_FLOOR && n > m ? n : m), 0);
+  const seq = ((await kv.get("receipt:seq")) ?? 0) as number;
+  const next = Math.max(seq, dynMax) + 1;
+  if (next >= STATIC_SMACK_FLOOR) {
+    throw new Error(`Receipt id space exhausted below ${STATIC_SMACK_FLOOR}`);
+  }
+  await kv.set("receipt:seq", next);
+  return next;
 }
 
 // PERF: in-process cache for the assembled /actions card list. Short TTL
@@ -754,6 +781,39 @@ const ROLE_BY_AUTHOR: Record<string, string> = {
   "Drag Story Hour": "Grassroots Network",
   "Beyond Buckskin": "Business Directory",
   "Buy From a Black Woman": "Business Directory",
+  // Authors surfaced from live harvested cards (not in the SEED_CARDS source
+  // sample) — added in the :v2 reclassify pass.
+  "Swing Left": "Grassroots Network",
+  "Third Act": "Advocacy Org",
+  "Mobilize.us": "Civic Tech Tool",
+  "Action Network": "Civic Tech Tool",
+  "Political Revolution": "Grassroots Network",
+  "50501 Joplin": "Grassroots Network",
+  "50501 Chicago": "Grassroots Network",
+  "50501 Joplin / Citizens Against Tyranny Network": "Grassroots Network",
+  "50501 / Indivisible Houston": "Grassroots Network",
+  "50501 Movement / Activist Handbook": "Grassroots Network",
+  "Viterbo Pallazola / 50501 affiliate": "Grassroots Network",
+  "Epstein Protest Walk DC": "Grassroots Network",
+  "Tesla Takedown / Dissent Pins": "Grassroots Network",
+  "Indivisible Long Beach": "Grassroots Network",
+  "Mesa Valley Indivisible": "Grassroots Network",
+  "Desert Democracy": "Grassroots Network",
+  "Indivisible San Francisco": "Grassroots Network",
+  "Indivisible Palo Alto Plus": "Grassroots Network",
+  "Indivisible North County San Diego": "Grassroots Network",
+  "Indivisible volunteer": "Grassroots Network",
+  "No Kings NYC": "Grassroots Network",
+  "No Kings DC": "Grassroots Network",
+  "Target Majority NYC": "Grassroots Network",
+  "ICE Out of LA coalition": "Immigrant Rights Org",
+  "Immigrant Legal Resource Center": "Legal Aid Org",
+  "Center for Reproductive Rights": "Legal Aid Org",
+  "Local Progress": "Advocacy Org",
+  "Nonviolence International": "Advocacy Org",
+  "Democratic Attorneys General Association": "Advocacy Org",
+  "Faith in Action": "Faith Group",
+  "MoveOn": "MoveOn.org Political Action",
 };
 // Returns the corrected role for a card currently tagged "Movement
 // Organization", or null if it should be left as-is.
@@ -2657,10 +2717,15 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
           // should never send an approved card back to the pending queue.
           if (existing.adminApproved === true) merged.adminApproved = true;
         }
+        // Correct the generic "Movement Organization" catch-all to an accurate
+        // role for known authors. Done here (not just in the literals) so the
+        // seed stays the single source of truth and re-seeds self-heal.
+        const reRole = reclassifiedMovementOrgRole(merged);
+        if (reRole) merged.authorRole = reRole;
         await kv.set(`action:${card.id}`, merged);
         count++;
       }
-      console.log(`Re-seeded ${count} org-action cards (v25).`);
+      console.log(`Re-seeded ${count} org-action cards (v28).`);
     }
 
     // One-time migration: any pre-rename card still using `spotsUsed` gets a
@@ -3489,6 +3554,33 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       await setMigrationFlag("migration:moveon-role-normalize:v1");
       invalidateActionsCache();
       console.log(`MoveOn role-normalize migration: updated ${updated} cards to "${ROLE}".`);
+    }
+
+    // Reclassify the generic "Movement Organization" catch-all role. ~327 cards
+    // were bulk-tagged with it across imports; ROLE_BY_AUTHOR maps known authors
+    // to an accurate, concise role (see scripts/build-author-role-map.mjs). This
+    // pass covers cards already live in KV — including the ~60 inserted by older
+    // migration blocks that aren't in SEED_CARDS (the seed loop handles the
+    // re-seeded ones). Authors not in the map keep "Movement Organization".
+    const authorRoleReclassDone = await getMigrationFlag("migration:authorrole-reclassify:v2");
+    if (!authorRoleReclassDone) {
+      let updated = 0;
+      const reclass = async (key: string) => {
+        const c = await kv.get(key) as any;
+        const role = reclassifiedMovementOrgRole(c);
+        if (role) {
+          await kv.set(key, { ...c, authorRole: role });
+          updated++;
+        }
+      };
+      for (const c of (await kv.getByPrefix("action:")) as any[]) {
+        if (c && typeof c === "object" && typeof c.id === "number") await reclass(`action:${c.id}`);
+      }
+      const arUserIds = (await kv.get("user-action:ids") ?? []) as number[];
+      for (const id of arUserIds) await reclass(`user-action:${id}`);
+      await setMigrationFlag("migration:authorrole-reclassify:v2");
+      invalidateActionsCache();
+      console.log(`authorRole reclassify migration: updated ${updated} cards off "Movement Organization".`);
     }
 
     // Dedup the portland-seattle-yolo race: ids 2153/2154/2155 are duplicates
@@ -8068,6 +8160,41 @@ app.get("/make-server-9eb1ae04/receipts", async (c) => {
       isAdmin = !!admin;
     }
 
+    // One-time: re-id any dynamic receipt that landed in the static-smack id
+    // range (>= 5000) down to a clean id below the floor. Those ids collided
+    // with hardcoded static smacks (shadowing them, breaking edit/share which
+    // key off `id < 5000`) and could sit in `smacks:hidden`, making freshly
+    // created smacks invisible. Moving them to fresh low ids un-hides them
+    // (the hidden list only holds >= 5000 ids), restores editability, and stops
+    // the shadowing. Ordered oldest-first so display order stays stable.
+    if (!(await getMigrationFlag("migration:receipts-reid-below-5000:v1"))) {
+      const ids = ((await kv.get("receipt:ids")) ?? []) as number[];
+      const collided = ids.filter((n) => n >= STATIC_SMACK_FLOOR);
+      if (collided.length > 0) {
+        let seq = Math.max(
+          ids.reduce((m, n) => (n < STATIC_SMACK_FLOOR && n > m ? n : m), 0),
+          ((await kv.get("receipt:seq")) ?? 0) as number,
+        );
+        const newIds = ids.filter((n) => n < STATIC_SMACK_FLOOR);
+        const recs: { oldId: number; rec: any }[] = [];
+        for (const oldId of collided) recs.push({ oldId, rec: (await kv.get(`receipt:${oldId}`)) as any });
+        recs.sort((a, b) => ((a.rec?.createdAt ?? "") as string).localeCompare((b.rec?.createdAt ?? "") as string));
+        let moved = 0;
+        for (const { oldId, rec } of recs) {
+          if (!rec || typeof rec !== "object") continue; // stale id, no record — drop
+          seq += 1;
+          await kv.set(`receipt:${seq}`, { ...rec, id: seq });
+          await kv.del(`receipt:${oldId}`);
+          newIds.push(seq);
+          moved++;
+        }
+        await kv.set("receipt:ids", newIds);
+        await kv.set("receipt:seq", seq);
+        console.log(`receipts-reid: moved ${moved} receipt(s) out of the >=${STATIC_SMACK_FLOOR} range; receipt:seq now ${seq}`);
+      }
+      await setMigrationFlag("migration:receipts-reid-below-5000:v1");
+    }
+
     const receiptIds = ((await kv.get("receipt:ids")) ?? []) as number[];
     const receipts: any[] = [];
     for (const id of receiptIds) {
@@ -8142,8 +8269,8 @@ app.post("/make-server-9eb1ae04/receipts/submit", async (c) => {
     }>();
     if (!body.imageUrl) return c.json({ error: "imageUrl is required" }, 400);
 
+    const newId = await allocateReceiptId();
     const ids = ((await kv.get("receipt:ids")) ?? []) as number[];
-    const newId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
     const receipt = {
       id: newId,
       title: body.title ?? "",
@@ -8183,9 +8310,9 @@ app.post("/make-server-9eb1ae04/admin/receipts/create", async (c) => {
 
     if (!body.imageUrl) return c.json({ error: "imageUrl is required" }, 400);
 
-    // Allocate a new ID
+    // Allocate a new ID below the static-smack floor (see allocateReceiptId).
+    const newId = await allocateReceiptId();
     const ids = ((await kv.get("receipt:ids")) ?? []) as number[];
-    const newId = ids.length > 0 ? Math.max(...ids) + 1 : 1;
     const receipt = {
       id: newId,
       title: body.title ?? "",
@@ -8305,10 +8432,13 @@ app.delete("/make-server-9eb1ae04/admin/receipts/:id", async (c) => {
     await kv.del(`receipt:${id}`);
     const ids = ((await kv.get("receipt:ids")) ?? []) as number[];
     await kv.set("receipt:ids", ids.filter((x) => x !== id));
-    // Also record in the persistent hidden set so the client suppresses it
-    // across all devices (same mechanism used for static/hardcoded smacks).
-    const hidden = ((await kv.get("smacks:hidden")) ?? []) as number[];
-    if (!hidden.includes(id)) await kv.set("smacks:hidden", [...hidden, id]);
+    // NOTE: we deliberately do NOT add this id to `smacks:hidden`. That list is
+    // only for hardcoded static smacks (id >= 5000) that can't be removed from
+    // KV. A KV receipt is genuinely deleted here, so it won't reappear — and
+    // parking its id in smacks:hidden was the bug that made a later upload
+    // (which reused the id) invisible. The monotonic allocator no longer reuses
+    // ids regardless, but keeping the hidden list static-only is the correct
+    // invariant.
     console.log(`Admin ${admin.record.name} deleted receipt #${id}`);
     return c.json({ ok: true });
   } catch (err) {

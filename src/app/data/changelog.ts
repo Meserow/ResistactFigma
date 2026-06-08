@@ -16,6 +16,19 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.75",
+    date: "2026-06-08",
+    title: "Cleaner card banners",
+    sections: [
+      {
+        heading: "Look & feel",
+        items: [
+          "A handful of action cards were showing their banner image letterboxed — shrunk to fit inside the frame with padding around it. Those now fill the card edge-to-edge like every other act, for a more consistent feed.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.73",
     date: "2026-06-07",
     title: "A truer acts count, now folded into your welcome",
@@ -40,6 +53,7 @@ export const CHANGELOG: ChangelogEntry[] = [
         items: [
           "The Acts / Facts / Smacks switcher is now clean text tabs — the active one in orange — instead of a grey segmented-control box.",
           "Swapped the order of the \"Swipe to Discover\" and \"My Saved Matches\" buttons in the hero.",
+          "Lightened the border on the Smacks cards for a cleaner look.",
         ],
       },
     ],

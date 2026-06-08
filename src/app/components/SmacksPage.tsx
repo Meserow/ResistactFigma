@@ -1242,7 +1242,7 @@ function ReceiptTile({
   return (
     <>
     <div
-      className={`rounded-2xl overflow-hidden border border-gray-600 bg-white flex flex-col transform-gpu transition-[transform,box-shadow,opacity] duration-200 ease-out shadow-md hover:shadow-lg hover:border-[#23297e] hover:ring-2 hover:ring-[#23297e] motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] hover:z-10 ${!receipt.adminApproved && isAdmin ? "ring-2 ring-red-400" : ""}`}
+      className={`rounded-2xl overflow-hidden border border-gray-200 bg-white flex flex-col transform-gpu transition-[transform,box-shadow,opacity] duration-200 ease-out shadow-md hover:shadow-lg hover:border-[#23297e] hover:ring-2 hover:ring-[#23297e] motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] hover:z-10 ${!receipt.adminApproved && isAdmin ? "ring-2 ring-red-400" : ""}`}
     >
       {/* Pending banner */}
       {!receipt.adminApproved && isAdmin && (
