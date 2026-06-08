@@ -7210,6 +7210,62 @@ app.post("/make-server-9eb1ae04/admin/bulk-update-time-commitment", async (c) =>
   }
 });
 
+// ─── POST /admin/bulk-set-cartoon — attach cartoon banner URLs to cards ───────
+// Token-gated (X-Admin-Import-Token) companion to bulk-import. Sets each card's
+// `cartoonImageUrl` to a Supabase Storage URL so the banner shows on prod
+// WITHOUT a frontend rebuild — resolveCard() in App.tsx prefers an https
+// cartoonImageUrl on the KV record over the compiled cartoon-manifest. Used by
+// the Mobilize art batch (cards 2412–2532) after webps are uploaded to storage.
+app.post("/make-server-9eb1ae04/admin/bulk-set-cartoon", async (c) => {
+  try {
+    const token = c.req.header("X-Admin-Import-Token");
+    const expected = Deno.env.get("ADMIN_IMPORT_TOKEN");
+    if (!expected) return c.json({ error: "ADMIN_IMPORT_TOKEN not configured on server" }, 500);
+    if (!token || token !== expected) return c.json({ error: "Forbidden" }, 403);
+
+    const body = await c.req.json<{ updates?: any[] }>();
+    const updates = Array.isArray(body.updates) ? body.updates : [];
+    if (updates.length === 0) return c.json({ error: "updates array required" }, 400);
+
+    const updated: number[] = [];
+    const notFound: number[] = [];
+    const errors: any[] = [];
+
+    for (const u of updates) {
+      try {
+        const id = Number(u.id);
+        const url = String(u.cartoonImageUrl ?? "").trim();
+        if (!Number.isFinite(id)) { errors.push({ id: u?.id, error: "id must be a number" }); continue; }
+        if (!/^https:\/\//.test(url)) { errors.push({ id, error: "cartoonImageUrl must be an https URL" }); continue; }
+
+        let cardKey = `action:${id}`;
+        let card = await kv.get(cardKey) as any;
+        if (!card) {
+          cardKey = `user-action:${id}`;
+          card = await kv.get(cardKey) as any;
+        }
+        if (!card) { notFound.push(id); continue; }
+
+        await kv.set(cardKey, {
+          ...card,
+          cartoonImageUrl: url,
+          updatedAt: new Date().toISOString(),
+          updatedBy: "bulk-set-cartoon",
+        });
+        updated.push(id);
+      } catch (rowErr) {
+        errors.push({ id: u?.id, error: String(rowErr) });
+      }
+    }
+
+    console.log(`bulk-set-cartoon: updated=${updated.length} notFound=${notFound.length} errors=${errors.length}`);
+    return c.json({ updated: updated.length, notFound, errors });
+  } catch (err) {
+    console.log("Bulk set cartoon error:", err);
+    return c.json({ error: `Bulk set cartoon failed: ${err}` }, 500);
+  }
+});
+
 // ─── POST /admin/flag-off-topic/:id — mark a card as not-on-topic ────────────
 app.post("/make-server-9eb1ae04/admin/flag-off-topic/:id", async (c) => {
   try {
