@@ -887,9 +887,21 @@ export default function App() {
     return () => window.removeEventListener("scroll", onScroll);
   }, [welcomeSeen, dismissWelcome]);
 
-  function handleFilterChange(filterName: string, selected: string[]) {
+  // `selected` is either the finished array (set/clear call sites) OR an updater
+  // that derives the next selection from the CURRENT one. Toggle pills pass the
+  // updater form so the add/remove decision runs against the freshest committed
+  // state — never a stale render-time snapshot — which is what previously let a
+  // quick second click (landing before the heavy feed recompute committed) read
+  // outdated state and silently no-op until a reload rebuilt filters from storage.
+  function handleFilterChange(
+    filterName: string,
+    selected: string[] | ((prev: string[]) => string[]),
+  ) {
     dismissWelcome();
-    setActiveFilters((prev) => ({ ...prev, [filterName]: selected }));
+    setActiveFilters((prev) => ({
+      ...prev,
+      [filterName]: typeof selected === "function" ? selected(prev[filterName] ?? []) : selected,
+    }));
   }
 
   function handleTabChange(tab: "facts" | "acts" | "receipts") {
@@ -899,6 +911,53 @@ export default function App() {
     setSearchQuery("");
     setQuickActionsOnly(false);
     if (tab !== "acts") setShowPendingActsOnly(false);
+  }
+
+  // ── Save / compare the live pill selection ────────────────────────────────
+  // "Save these filters" (filtered banner, no prefs yet) and "Save changes"
+  // (match banner, prefs already set so the user is editing a saved selection)
+  // both persist the SAME thing: the live Category + Location + "5 Mins Max"
+  // pills baked into the user's Preferences. Sharing one helper keeps the two
+  // buttons identical and lets the match banner re-offer a save whenever the
+  // pills drift from what's saved (otherwise, once prefs exist the only Save
+  // button — which lived in the filtered banner — never reappears).
+  function pillSelectionMatchesPrefs(prefs: Preferences | null): boolean {
+    if (!prefs) return false;
+    const sameSet = (a: string[], b: string[]) =>
+      a.length === b.length && [...a].sort().join(" ") === [...b].sort().join(" ");
+    return (
+      sameSet(activeFilters["Category"] ?? [], prefs.includedCategories ?? []) &&
+      sameSet(activeFilters["Location"] ?? [], prefs.locationFilter ?? []) &&
+      quickActionsOnly === (prefs.time === "5min")
+    );
+  }
+  function saveCurrentPillSelection() {
+    const locTokens = activeFilters["Location"] ?? [];
+    const activeCats = activeFilters["Category"] ?? [];
+    const inPersonOn = locTokens.includes("In Person");
+    const remoteOn = locTokens.includes("Remote");
+    // Pure-remote selections aren't state-specific, so don't pin a state.
+    const activeStates = remoteOn && !inPersonOn
+      ? []
+      : locTokens.filter((l) => l !== "Remote" && l !== "In Person");
+    const base = loadPreferences() ?? DEFAULT_PREFERENCES;
+    const next: Preferences = {
+      ...base,
+      includedCategories: activeCats,
+      state: activeStates[0] ?? base.state,
+      locationFilter: locTokens,
+      // Mirror "5 Mins Max" into the matcher's time bucket. With the toggle off,
+      // clear a previously-saved 5-min back to the default rather than leaving
+      // it stuck on.
+      time: quickActionsOnly
+        ? "5min"
+        : base.time === "5min" ? DEFAULT_PREFERENCES.time : base.time,
+    };
+    setMatchPrefs(next);
+    savePreferences(next);
+    if (accessToken) pushUserPreferences(accessToken, next);
+    setStaggerKey((k) => k + 1);
+    showToast(accessToken ? "Saved to your preferences" : "Saved — sign in to sync across devices");
   }
 
   // ── Apply filters client-side ──
@@ -1828,6 +1887,12 @@ export default function App() {
         // they should follow the account and apply on arrival.
         if ((remote.includedCategories?.length ?? 0) > 0) {
           setMatchPrefs(remote);
+          // Mirror the saved categories into the navbar Category pill (parallel
+          // to the Location seeding above) so this device's pill reflects them.
+          // Without it, a fresh device wakes up with matchPrefs carrying the
+          // categories but an empty Category pill — which the match banner's
+          // "Save changes" check would misread as an unsaved edit.
+          setActiveFilters((prev) => ({ ...prev, Category: remote.includedCategories }));
         }
       } else {
         const local = loadPreferences();
@@ -3390,6 +3455,17 @@ export default function App() {
                 is visible at a glance). */}
             {matchPrefs && (() => {
               const groupCount = matchPrefs.vulnerableGroups?.length ?? 0;
+              // Once prefs are saved this banner replaces the filtered banner —
+              // which is where the only Save button used to live. So re-offer a
+              // save here the moment the live pills (Category / Location / 5 Mins
+              // Max) drift from what's saved, otherwise edits can never be
+              // re-saved. Nothing to save when the pills are empty (use "Clear"
+              // to drop prefs entirely instead).
+              const hasSavablePills =
+                (activeFilters["Category"]?.length ?? 0) > 0 ||
+                (activeFilters["Location"]?.length ?? 0) > 0 ||
+                quickActionsOnly;
+              const showSaveChanges = hasSavablePills && !pillSelectionMatchesPrefs(matchPrefs);
               return (
                 <div className="mb-4 flex flex-col gap-2 rounded-lg border border-[#ed6624] bg-white px-4 py-2.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                   <div className="min-w-0 flex-1">
@@ -3503,6 +3579,21 @@ export default function App() {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 shrink-0 self-start">
+                    {/* Re-save after the pills have been changed away from the
+                        saved selection. Hidden when they still match (nothing to
+                        re-save). Uses the same persist path as the filtered
+                        banner's "Save these filters". */}
+                    {showSaveChanges && (
+                      <button
+                        type="button"
+                        onClick={saveCurrentPillSelection}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-[#ed6624] px-3 py-1.5 font-['Poppins',sans-serif] text-xs font-bold text-white transition-colors hover:bg-[#e07a28] whitespace-nowrap"
+                        title="Save your changed filters (categories, location, 5 Mins Max) to your preferences"
+                      >
+                        <Star size={12} fill="currentColor" />
+                        Save changes
+                      </button>
+                    )}
                     <button
                       onClick={() => setMatchOpen(true)}
                       className="font-['Poppins',sans-serif] text-xs font-semibold text-[#23297e] hover:underline"

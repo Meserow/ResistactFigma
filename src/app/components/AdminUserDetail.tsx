@@ -13,6 +13,7 @@ import { X, Loader2, ExternalLink } from "lucide-react";
 import { projectId } from "/utils/supabase/info";
 import type { UserApproval } from "../lib/supabase";
 import { getUserTier, TIERS } from "../lib/tiers";
+import { safeHref } from "../lib/safeUrl";
 import { TierIcon } from "./TierBadge";
 import { UserAvatar } from "./UserAvatar";
 
@@ -248,7 +249,7 @@ export function AdminUserDetail({ userId, accessToken, onClose }: AdminUserDetai
                       </div>
                       {item.targetUrl && (
                         <a
-                          href={item.targetUrl}
+                          href={safeHref(item.targetUrl)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="shrink-0 mt-1 p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-[#23297e]"

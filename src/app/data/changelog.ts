@@ -16,6 +16,60 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.79",
+    date: "2026-06-08",
+    title: "Filter pills apply instantly — no more reloading",
+    sections: [
+      {
+        heading: "Fixes",
+        items: [
+          "Tapping a filter pill (like Remote, In Person, or a category) sometimes did nothing until you reloaded the page — especially if you tapped a second pill quickly. Filters now apply right away, every time, and tapping two pills in a row reliably stacks both.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.78",
+    date: "2026-06-08",
+    title: "Save your filters again after you change them",
+    sections: [
+      {
+        heading: "Fixes",
+        items: [
+          "Once you'd saved your filter selections, changing them afterward gave you no way to re-save — the Save button never came back. Now, whenever your current filters drift from what you've saved, a \"Save changes\" button appears next to Edit and Clear so you can update your saved set in one tap.",
+          "On a new device, your saved categories now light up in the filter pills the way your location already did. Before, the \"Matched for you\" banner showed your categories but the pills above it sat unselected.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.77",
+    date: "2026-06-08",
+    title: "No more double \"I did this!\" button",
+    sections: [
+      {
+        heading: "Fixes",
+        items: [
+          "After you open an act and return to the tab, the detail popup asks if you'd like to mark it done. It was briefly showing two \"I did this!\" buttons at once — now you just see the single prompt.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.76",
+    date: "2026-06-08",
+    title: "The \"nice work\" pop-up now shows how close your next tier is",
+    sections: [
+      {
+        heading: "Your progress",
+        items: [
+          "When you mark an act done, the celebration used to show your running total but stopped short of telling you how much further to the next level. It now spells it out — e.g. \"Just 1 more action and you're an Ember\" — so the next rung always feels within reach.",
+          "Fixed the grammar so it reads \"an Ember\" / \"an Inferno\" instead of \"a Ember\".",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.75",
     date: "2026-06-08",
     title: "Cleaner card banners",

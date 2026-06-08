@@ -57,7 +57,7 @@ function celebrationCopy(prev: number, next: number) {
   if (!nextTier || actionsToNext == null) {
     nextLine = "You're at the top tier. Keep showing up — the movement needs you.";
   } else if (actionsToNext === 1) {
-    nextLine = `Just **1 more** action and you're a ${nextTier.name}.`;
+    nextLine = `Just **1 more** action and you're ${/^[aeiou]/i.test(nextTier.name) ? "an" : "a"} ${nextTier.name}.`;
   } else if (actionsToNext === 2) {
     nextLine = `**2 more** actions — that's tonight and tomorrow.`;
   } else if (actionsToNext <= 4) {
@@ -75,6 +75,21 @@ function celebrationCopy(prev: number, next: number) {
   }
 
   return { headline, kicker, nextLine, justLeveledUp, tier, nextTier, actionsToNext };
+}
+
+// ─── Inline emphasis — renders `**bold**` segments from the copy strings ─────
+// Copy like "**3 more** to Flame" carries the count we most want to pop; bold
+// (and tint) those segments so the "how far to go" number reads at a glance.
+function renderEmphasis(text: string, accent: string) {
+  return text.split(/\*\*(.+?)\*\*/g).map((seg, i) =>
+    i % 2 === 1 ? (
+      <strong key={i} className="font-extrabold" style={{ color: accent }}>
+        {seg}
+      </strong>
+    ) : (
+      <span key={i}>{seg}</span>
+    )
+  );
 }
 
 // ─── Count-up hook — animates an integer up to `target` over `durationMs` ────
@@ -558,6 +573,12 @@ export function CelebrationModal({ prevCount, newCount, onClose }: CelebrationMo
               {displayedCount === 1 ? "action total" : "actions total"}
             </span>
           </div>
+
+          {/* How far to the next tier — the whole point of the moment is to
+              make the next rung feel close and concrete. */}
+          <p className="mt-3 max-w-[18rem] font-['Poppins',sans-serif] text-sm leading-snug text-white/85">
+            {renderEmphasis(copy.nextLine, tier.glowColor)}
+          </p>
         </div>
       </div>
     </>

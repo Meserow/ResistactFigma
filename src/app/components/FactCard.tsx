@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ChevronDown, ChevronUp, ExternalLink, MessageSquare, MessageSquareQuote } from "lucide-react";
 import type { FactCard as FactCardData } from "../data/factCards";
 import { FactShareModal } from "./FactShareModal";
+import { safeHref } from "../lib/safeUrl";
 
 // ─── Category colors ──────────────────────────────────────────────────────────
 const CATEGORY_COLORS: Record<string, string> = {
@@ -193,7 +194,7 @@ export function FactCard({ card, onBoost, isBoosted, boostCount = 0 }: FactCardP
               ))}
               {card.sourceUrl && (
                 <a
-                  href={card.sourceUrl}
+                  href={safeHref(card.sourceUrl)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1 font-['Poppins',sans-serif] text-[10px] font-semibold mt-2 hover:underline"

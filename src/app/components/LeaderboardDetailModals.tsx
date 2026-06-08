@@ -3,6 +3,7 @@ import { X, ExternalLink, Flame, Tag, Copy, Check } from "lucide-react";
 import type { FactCard } from "../data/factCards";
 import type { ReceiptCard } from "./SmacksPage";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
+import { safeHref } from "../lib/safeUrl";
 
 // ─── Shared shell ─────────────────────────────────────────────────────────────
 // Backdrop + centered white card, matching the app's other modals (InfoModal,
@@ -70,7 +71,7 @@ export function FactDetailModal({ fact, boosts, onClose }: { fact: FactCard; boo
 
         {fact.sourceUrl && (
           <a
-            href={fact.sourceUrl}
+            href={safeHref(fact.sourceUrl)}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#23297e] hover:underline break-all"
@@ -144,7 +145,7 @@ export function SmackDetailModal({ smack, onClose }: { smack: ReceiptCard; onClo
 
         {smack.sourceUrl && (
           <a
-            href={smack.sourceUrl}
+            href={safeHref(smack.sourceUrl)}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#23297e] hover:underline break-all"

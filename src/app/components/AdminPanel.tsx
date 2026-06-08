@@ -15,6 +15,7 @@ import { projectId } from "/utils/supabase/info";
 import type { UserApproval } from "../lib/supabase";
 import { DEFAULT_CATEGORY_TONE, applyMatcherConfig, type Tone } from "../lib/matcher";
 import { LOCATION_OPTIONS } from "../lib/locations";
+import { safeHref } from "../lib/safeUrl";
 import { ToneRangeSlider } from "./ToneSlider";
 import { getUserTier } from "../lib/tiers";
 
@@ -1484,7 +1485,7 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
                           {/* Link */}
                           {card.targetUrl && (
                             <a
-                              href={card.targetUrl}
+                              href={safeHref(card.targetUrl)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1 mt-1.5 font-['Poppins',sans-serif] text-[11px] text-[#23297e] hover:underline"
@@ -1668,7 +1669,7 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
                         </p>
                         {card.targetUrl && (
                           <a
-                            href={card.targetUrl}
+                            href={safeHref(card.targetUrl)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="font-['Poppins',sans-serif] text-[11px] text-[#23297e] underline decoration-dotted truncate block max-w-full"
@@ -2234,7 +2235,7 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
                           </p>
                           <p className="font-['Poppins',sans-serif] text-xs text-gray-400 truncate">{b.authorName}</p>
                           <p className="font-['Poppins',sans-serif] text-[11px] text-gray-500 mt-0.5 truncate">
-                            <a href={b.targetUrl} target="_blank" rel="noopener noreferrer" className="font-mono underline decoration-dotted hover:text-[#23297e]">{b.targetUrl}</a>
+                            <a href={safeHref(b.targetUrl)} target="_blank" rel="noopener noreferrer" className="font-mono underline decoration-dotted hover:text-[#23297e]">{b.targetUrl}</a>
                             {b.adminApproved === false && (
                               <span className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-semibold uppercase tracking-wide">Pending</span>
                             )}

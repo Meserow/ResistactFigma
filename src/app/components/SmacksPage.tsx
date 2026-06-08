@@ -7,6 +7,7 @@ import { projectId, publicAnonKey } from "/utils/supabase/info";
 import type { UserApproval } from "../lib/supabase";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { analytics } from "../lib/analytics";
+import { safeHref } from "../lib/safeUrl";
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
 
@@ -1151,7 +1152,7 @@ export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds =
               {/* Source */}
               {(shareReceipt.sourceUrl || shareReceipt.sourceLabel) && (
                 <a
-                  href={shareReceipt.sourceUrl}
+                  href={safeHref(shareReceipt.sourceUrl)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 font-['Poppins',sans-serif] text-xs text-gray-500 hover:text-[#23297e] transition-colors"

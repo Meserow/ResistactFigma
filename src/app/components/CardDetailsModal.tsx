@@ -5,6 +5,7 @@ import type { ActionCardData } from "./ActionCard";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { CATEGORY_COLORS, CATEGORY_GROUPS, colorForCategory } from "../lib/categoryGroups";
 import { analytics } from "../lib/analytics";
+import { safeHref } from "../lib/safeUrl";
 import { projectId } from "/utils/supabase/info";
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
@@ -398,8 +399,11 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
           <div className="mt-6 flex flex-row items-stretch gap-2">
             {/* "I did this!" toggle — same color identity as the on-card pill
                 (teal when complete, light teal when idle). Shows the running
-                done count so users see the social proof + their own click. */}
-            {onComplete && (() => {
+                done count so users see the social proof + their own click.
+                Hidden while the return-from-action prompt is showing: in that
+                state the primary CTA already IS a "Mark this action: I did
+                this!" button, so rendering this too would double it up. */}
+            {onComplete && !showDonePrompt && (() => {
               const baseCount = card.completions ?? 0;
               const displayedCount = Math.max(baseCount, isCompleted ? 1 : 0);
               return (
@@ -444,7 +448,7 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
               </button>
             ) : link ? (
               <a
-                href={link}
+                href={safeHref(link)}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => {
