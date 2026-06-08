@@ -1,6 +1,7 @@
 import { memo, useEffect, useState } from "react";
 import { CheckCircle2, Clock, Globe, Heart, MapPin, Pencil, X } from "lucide-react";
 import { useAnimatedNumber } from "../lib/animations";
+import { safeHref } from "../lib/safeUrl";
 import { ShareModal } from "./ShareModal";
 import { SpreadTheWordModal } from "./SpreadTheWordModal";
 import { CardDetailsModal } from "./CardDetailsModal";
@@ -748,7 +749,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
                   </p>
                   {card.authorLink ? (
                     <a
-                      href={card.authorLink}
+                      href={safeHref(card.authorLink)}
                       className="font-['Poppins',sans-serif] text-[11px] text-[#23297e] underline truncate block hover:text-[#1a2060] leading-tight"
                     >
                       {card.authorRole}

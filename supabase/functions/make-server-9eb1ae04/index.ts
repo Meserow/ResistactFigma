@@ -320,6 +320,17 @@ async function appendUserActionCards(newCards: any[]): Promise<number[]> {
   return writtenIds;
 }
 
+// Counter deltas arrive on unauthenticated toggle endpoints (boost/complete).
+// Clamp to a single step so a caller can't inflate a tally with {delta: 1e9},
+// and reject non-finite values (NaN, strings) that would otherwise corrupt the
+// stored count via `Math.max(0, current + delta)`. Omitted delta stays +1,
+// matching the prior `delta ?? 1` default.
+function toggleDelta(raw: unknown): number {
+  const n = typeof raw === "number" ? raw : Number(raw);
+  if (!Number.isFinite(n)) return 1;
+  return n < 0 ? -1 : 1;
+}
+
 // Module-level flag: once per warm process, the /actions handler walks
 // every user-action:* record and reconciles user-action:ids. Cold-starts
 // align with deploys (the race window for migrations), so this catches
@@ -5677,10 +5688,13 @@ function validateSubmittedUrl(value: unknown, field: string): { ok: true } | { o
   // Allow site-relative paths.
   if (raw.startsWith("/") || raw.startsWith("./") || raw.startsWith("../")) return { ok: true };
 
-  // Anything with a scheme prefix must match the allowlist. Note: scheme
-  // matching is case-insensitive AND tolerates whitespace + tab control
-  // chars between letters ("java\tscript:") because some browsers do too.
-  const schemeMatch = raw.match(/^\s*([a-zA-Z][a-zA-Z0-9+.\-]*)\s*:/);
+  // Anything with a scheme prefix must match the allowlist. Browsers strip
+  // embedded C0 control chars (tab/newline/CR/null) and leading whitespace
+  // before parsing, so "java\tscript:alert(1)" actually executes as
+  // "javascript:". Detect the scheme on a copy with all chars <= 0x20 removed
+  // so smuggled control chars can't slip a disallowed scheme past the allowlist.
+  const collapsed = raw.replace(/[\u0000-\u0020]+/g, "");
+  const schemeMatch = collapsed.match(/^([a-zA-Z][a-zA-Z0-9+.\-]*):/);
   if (schemeMatch) {
     const scheme = schemeMatch[1].toLowerCase();
     const ALLOWED = new Set(["http", "https", "mailto", "sms", "tel"]);
@@ -5819,10 +5833,13 @@ app.post("/make-server-9eb1ae04/actions/create", async (c) => {
       amplifiesGroups: Array.isArray(amplifiesGroups) && amplifiesGroups.length > 0 ? amplifiesGroups : undefined,
     };
 
-    await kv.set(`user-action:${nextId}`, card);
-    await kv.set("user-action:ids", [...currentIds, nextId]);
+    // Race-safe insert: appendUserActionCards re-reads + commits the id index
+    // per card (and bumps card.id on collision), so concurrent submits can't
+    // clobber each other or drop an id. card.id is mutated in place if bumped,
+    // so the returned card reflects the real id.
+    const [placedId] = await appendUserActionCards([card]);
     invalidateActionsCache();
-    console.log(`User ${approval.name} created ASK #${nextId}: "${title}"${offTopic ? " [AUTO-FLAGGED: off-topic]" : ""}`);
+    console.log(`User ${approval.name} created ASK #${placedId}: "${title}"${offTopic ? " [AUTO-FLAGGED: off-topic]" : ""}`);
     return c.json({ card });
   } catch (err) {
     console.log("Create action error:", err);
@@ -5848,7 +5865,7 @@ app.post("/make-server-9eb1ae04/actions/:id/complete", async (c) => {
     }
 
     const current = typeof card.completions === "number" ? card.completions : 0;
-    card.completions = Math.max(0, current + (delta ?? 1));
+    card.completions = Math.max(0, current + toggleDelta(delta));
     await kv.set(`action:${id}`, card);
 
     // If a real user is signed in (anon-key tokens won't resolve to a user),
@@ -5865,7 +5882,7 @@ app.post("/make-server-9eb1ae04/actions/:id/complete", async (c) => {
       if (user) {
         attributedToUser = true;
         const userKey = `complete:${user.id}:${id}`;
-        if ((delta ?? 1) > 0) {
+        if (toggleDelta(delta) > 0) {
           await kv.set(userKey, {
             actionId: id,
             category: card.category ?? "OTHER",
@@ -5876,7 +5893,7 @@ app.post("/make-server-9eb1ae04/actions/:id/complete", async (c) => {
         }
       }
     }
-    if (!attributedToUser && (delta ?? 1) > 0) {
+    if (!attributedToUser && toggleDelta(delta) > 0) {
       // Timestamp-prefixed key so we can `like('anon:complete:%')` and
       // sort lexicographically (ISO-8601 sorts the same as chronological).
       // No userId — anon by definition. Decrement (delta < 0) is a no-op
@@ -6145,7 +6162,7 @@ app.post("/make-server-9eb1ae04/actions/:id/act", async (c) => {
     const current = (typeof card.boosts === "number" ? card.boosts
                    : typeof card.spotsUsed === "number" ? card.spotsUsed
                    : 0);
-    card.boosts = Math.max(0, current + (delta ?? 1));
+    card.boosts = Math.max(0, current + toggleDelta(delta));
     delete card.spotsUsed;
     await kv.set(`action:${id}`, card);
 
@@ -6155,7 +6172,7 @@ app.post("/make-server-9eb1ae04/actions/:id/act", async (c) => {
       const user = await getUser(token);
       if (user) {
         const boostKey = `boost:${user.id}:${id}`;
-        if ((delta ?? 1) > 0) {
+        if (toggleDelta(delta) > 0) {
           await kv.set(boostKey, { actionId: id, boostedAt: new Date().toISOString() });
         } else {
           await kv.del(boostKey);
@@ -6612,7 +6629,12 @@ app.post("/make-server-9eb1ae04/admin/bulk-import", async (c) => {
     }
 
     if (created.length > 0) {
-      await kv.set("user-action:ids", updatedIds);
+      // Race-safe index commit: re-read and union rather than overwriting with
+      // our snapshot, so a concurrent writer's ids aren't dropped (last-write-
+      // wins). Per-card records were already written above; this only
+      // reconciles the id index.
+      const liveNow = (await kv.get("user-action:ids") ?? []) as number[];
+      await kv.set("user-action:ids", Array.from(new Set([...liveNow, ...updatedIds])));
     }
 
     console.log(`bulk-import: created=${created.length} skipped=${skipped.length} errors=${errors.length} (source: ${body.sourceBatch ?? "co-work"})`);
@@ -7105,13 +7127,13 @@ app.post("/make-server-9eb1ae04/admin/cards/create", async (c) => {
       amplifiesGroups: Array.isArray(raw.amplifiesGroups) && raw.amplifiesGroups.length > 0 ? raw.amplifiesGroups : undefined,
     };
 
-    await kv.set(`user-action:${id}`, card);
-    await kv.set("user-action:ids", [...currentIds, id]);
+    // Race-safe insert via the shared helper (may bump card.id on collision).
+    const [placedId] = await appendUserActionCards([card]);
     if (targetUrl) {
-      await kv.set(`bulk-import:fp:${await bulkImportFingerprint(targetUrl, title)}`, { id, importedAt: card.createdAt, targetUrl: normalizeBulkImportUrl(targetUrl), title });
+      await kv.set(`bulk-import:fp:${await bulkImportFingerprint(targetUrl, title)}`, { id: placedId, importedAt: card.createdAt, targetUrl: normalizeBulkImportUrl(targetUrl), title });
     }
     invalidateActionsCache();
-    console.log(`Admin ${admin.record.name} created card #${id} via URL tool: "${title}"`);
+    console.log(`Admin ${admin.record.name} created card #${placedId} via URL tool: "${title}"`);
     return c.json({ card });
   } catch (err) {
     console.log("admin create card error:", err);
@@ -7185,6 +7207,62 @@ app.post("/make-server-9eb1ae04/admin/bulk-update-time-commitment", async (c) =>
   } catch (err) {
     console.log("Bulk update time error:", err);
     return c.json({ error: `Bulk update failed: ${err}` }, 500);
+  }
+});
+
+// ─── POST /admin/bulk-set-cartoon — attach cartoon banner URLs to cards ───────
+// Token-gated (X-Admin-Import-Token) companion to bulk-import. Sets each card's
+// `cartoonImageUrl` to a Supabase Storage URL so the banner shows on prod
+// WITHOUT a frontend rebuild — resolveCard() in App.tsx prefers an https
+// cartoonImageUrl on the KV record over the compiled cartoon-manifest. Used by
+// the Mobilize art batch (cards 2412–2532) after webps are uploaded to storage.
+app.post("/make-server-9eb1ae04/admin/bulk-set-cartoon", async (c) => {
+  try {
+    const token = c.req.header("X-Admin-Import-Token");
+    const expected = Deno.env.get("ADMIN_IMPORT_TOKEN");
+    if (!expected) return c.json({ error: "ADMIN_IMPORT_TOKEN not configured on server" }, 500);
+    if (!token || token !== expected) return c.json({ error: "Forbidden" }, 403);
+
+    const body = await c.req.json<{ updates?: any[] }>();
+    const updates = Array.isArray(body.updates) ? body.updates : [];
+    if (updates.length === 0) return c.json({ error: "updates array required" }, 400);
+
+    const updated: number[] = [];
+    const notFound: number[] = [];
+    const errors: any[] = [];
+
+    for (const u of updates) {
+      try {
+        const id = Number(u.id);
+        const url = String(u.cartoonImageUrl ?? "").trim();
+        if (!Number.isFinite(id)) { errors.push({ id: u?.id, error: "id must be a number" }); continue; }
+        if (!/^https:\/\//.test(url)) { errors.push({ id, error: "cartoonImageUrl must be an https URL" }); continue; }
+
+        let cardKey = `action:${id}`;
+        let card = await kv.get(cardKey) as any;
+        if (!card) {
+          cardKey = `user-action:${id}`;
+          card = await kv.get(cardKey) as any;
+        }
+        if (!card) { notFound.push(id); continue; }
+
+        await kv.set(cardKey, {
+          ...card,
+          cartoonImageUrl: url,
+          updatedAt: new Date().toISOString(),
+          updatedBy: "bulk-set-cartoon",
+        });
+        updated.push(id);
+      } catch (rowErr) {
+        errors.push({ id: u?.id, error: String(rowErr) });
+      }
+    }
+
+    console.log(`bulk-set-cartoon: updated=${updated.length} notFound=${notFound.length} errors=${errors.length}`);
+    return c.json({ updated: updated.length, notFound, errors });
+  } catch (err) {
+    console.log("Bulk set cartoon error:", err);
+    return c.json({ error: `Bulk set cartoon failed: ${err}` }, 500);
   }
 });
 
@@ -8111,10 +8189,11 @@ app.delete("/make-server-9eb1ae04/admin/flags/:id", async (c) => {
 app.post("/make-server-9eb1ae04/receipts/:id/boost", async (c) => {
   try {
     const id = Number(c.req.param("id"));
+    if (!Number.isFinite(id)) return c.json({ error: "Invalid id" }, 400);
     const { delta } = await c.req.json<{ delta: number }>();
     const receipt = (await kv.get(`receipt:${id}`)) as any;
     if (receipt) {
-      receipt.boosts = Math.max(0, (receipt.boosts ?? 0) + (delta ?? 1));
+      receipt.boosts = Math.max(0, (receipt.boosts ?? 0) + toggleDelta(delta));
       await kv.set(`receipt:${id}`, receipt);
       return c.json({ boosts: receipt.boosts });
     }
@@ -8123,7 +8202,7 @@ app.post("/make-server-9eb1ae04/receipts/:id/boost", async (c) => {
     // they still count toward engagement and the admin "Top Smacks" leaderboard.
     if (id >= 5000) {
       const tallies = ((await kv.get("smack:boosts")) ?? {}) as Record<string, number>;
-      tallies[id] = Math.max(0, (tallies[id] ?? 0) + (delta ?? 1));
+      tallies[id] = Math.max(0, (tallies[id] ?? 0) + toggleDelta(delta));
       await kv.set("smack:boosts", tallies);
       return c.json({ boosts: tallies[id] });
     }
@@ -8210,9 +8289,10 @@ app.get("/make-server-9eb1ae04/receipts", async (c) => {
 app.post("/make-server-9eb1ae04/facts/:id/boost", async (c) => {
   try {
     const id = Number(c.req.param("id"));
+    if (!Number.isFinite(id)) return c.json({ error: "Invalid id" }, 400);
     const { delta } = await c.req.json<{ delta: number }>();
     const tallies = ((await kv.get("fact:boosts")) ?? {}) as Record<string, number>;
-    tallies[id] = Math.max(0, (tallies[id] ?? 0) + (delta ?? 1));
+    tallies[id] = Math.max(0, (tallies[id] ?? 0) + toggleDelta(delta));
     await kv.set("fact:boosts", tallies);
     return c.json({ boosts: tallies[id] });
   } catch (err) {

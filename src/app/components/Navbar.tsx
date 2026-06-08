@@ -45,7 +45,10 @@ interface NavbarProps {
   activeFilters: Record<string, string[]>;
   actsCategories?: string[];
   actsLocations?: string[];
-  onFilterChange: (filterName: string, selected: string[]) => void;
+  // `selected` may be a finished array (set/clear) or an updater that toggles
+  // against the latest selection — toggle pills use the updater form so a fast
+  // second click can't compute against a stale snapshot. See handleFilterChange.
+  onFilterChange: (filterName: string, selected: string[] | ((prev: string[]) => string[])) => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
   isSearchPending?: boolean;
@@ -231,10 +234,11 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
   const remoteOn = locSelected.includes("Remote");
   const inPersonOn = locSelected.includes("In Person");
   const toggleLocationMode = (mode: "Remote" | "In Person") => {
-    const next = locSelected.includes(mode)
-      ? locSelected.filter((l) => l !== mode)
-      : [...locSelected, mode];
-    onFilterChange("Location", next);
+    // Toggle inside the updater (against the freshest selection), not against
+    // the render-time `locSelected` snapshot — avoids the lost-update race.
+    onFilterChange("Location", (cur) =>
+      cur.includes(mode) ? cur.filter((l) => l !== mode) : [...cur, mode],
+    );
   };
   // What the navy Location pill reads: the state name when exactly one is
   // picked, otherwise just "Location" (with a count badge for 2+).
@@ -252,15 +256,16 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
   }
 
   function toggleFilterOption(filterName: string, option: string) {
-    const current = activeFilters[filterName] ?? [];
-    const next = current.includes(option)
-      ? current.filter((s) => s !== option)
-      : [...current, option];
+    // Toggle inside the updater so the add/remove is computed from the latest
+    // committed selection, not the render-time `activeFilters` snapshot — a fast
+    // second click would otherwise read stale state and silently no-op.
     // Location: Remote is no longer a dropdown option — it has its own pill.
     // Picking a state and clicking the Remote pill compose naturally: the
     // matcher returns cards matching either ANY selected state OR (when
     // Remote is in the array) any isOnline / atHome card.
-    onFilterChange(filterName, next);
+    onFilterChange(filterName, (current) =>
+      current.includes(option) ? current.filter((s) => s !== option) : [...current, option],
+    );
   }
 
   // Wire up ResizeObservers so the pill limit recalculates whenever the
