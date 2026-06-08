@@ -58,6 +58,7 @@ export function HeroPills({ onMatchClick, onAskClick, onHowClick, hasMatchPrefs,
             </span>
           </button>
         )}
+        <SwipeCallout onSwipeClick={onSwipeClick} />
         {/* My Saved Matches — only appears once the user has saved acts, so it
             never shows an empty "0 saved" state. */}
         {onBookmarksClick && (bookmarkCount ?? 0) > 0 && (
@@ -72,7 +73,6 @@ export function HeroPills({ onMatchClick, onAskClick, onHowClick, hasMatchPrefs,
             </span>
           </button>
         )}
-        <SwipeCallout onSwipeClick={onSwipeClick} />
         {/* "Set Act Preferences" pill removed — preferences are now set by
             picking categories on the feed and using "Save these categories"
             in the feed banner. */}

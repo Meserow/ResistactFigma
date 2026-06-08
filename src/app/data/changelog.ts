@@ -35,6 +35,13 @@ export const CHANGELOG: ChangelogEntry[] = [
           "The \"You're here. That counts.\" welcome now bows out as soon as you start using the feed — scroll, filter, search, or switch tabs and it steps aside instead of lingering in the way. It still greets you when you first arrive.",
         ],
       },
+      {
+        heading: "Look & feel",
+        items: [
+          "The Acts / Facts / Smacks switcher is now clean text tabs — the active one in orange — instead of a grey segmented-control box.",
+          "Swapped the order of the \"Swipe to Discover\" and \"My Saved Matches\" buttons in the hero.",
+        ],
+      },
     ],
   },
   {
