@@ -5677,10 +5677,13 @@ function validateSubmittedUrl(value: unknown, field: string): { ok: true } | { o
   // Allow site-relative paths.
   if (raw.startsWith("/") || raw.startsWith("./") || raw.startsWith("../")) return { ok: true };
 
-  // Anything with a scheme prefix must match the allowlist. Note: scheme
-  // matching is case-insensitive AND tolerates whitespace + tab control
-  // chars between letters ("java\tscript:") because some browsers do too.
-  const schemeMatch = raw.match(/^\s*([a-zA-Z][a-zA-Z0-9+.\-]*)\s*:/);
+  // Anything with a scheme prefix must match the allowlist. Browsers strip
+  // embedded C0 control chars (tab/newline/CR/null) and leading whitespace
+  // before parsing, so "java\tscript:alert(1)" actually executes as
+  // "javascript:". Detect the scheme on a copy with all chars <= 0x20 removed
+  // so smuggled control chars can't slip a disallowed scheme past the allowlist.
+  const collapsed = raw.replace(/[\u0000-\u0020]+/g, "");
+  const schemeMatch = collapsed.match(/^([a-zA-Z][a-zA-Z0-9+.\-]*):/);
   if (schemeMatch) {
     const scheme = schemeMatch[1].toLowerCase();
     const ALLOWED = new Set(["http", "https", "mailto", "sms", "tel"]);
