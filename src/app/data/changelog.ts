@@ -16,6 +16,20 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.80",
+    date: "2026-06-08",
+    title: "\"I did this!\" now follows you across devices",
+    sections: [
+      {
+        heading: "Fixes",
+        items: [
+          "Acts you marked as done on one device now show as done when you sign in on another. Before, the completed state could look empty on a second computer even though your progress was safely saved to your account — we now pull it back in every time you sign in or your session refreshes.",
+          "If you tapped \"I did this!\" the instant a page finished loading, the completion could be recorded without being tied to your account (so it never synced). It's now always attributed to you when you're signed in.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.79",
     date: "2026-06-08",
     title: "Filter pills apply instantly — no more reloading",

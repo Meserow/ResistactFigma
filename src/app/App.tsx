@@ -1826,12 +1826,10 @@ export default function App() {
       if (session?.access_token) {
         setAccessToken(session.access_token);
         fetchApprovalStatus(session.access_token, session.user);
-        fetchMyCompletions(session.access_token);
-        fetchMyBoosts(session.access_token);
-        fetchMyBookmarks(session.access_token);
-        fetchMyPasses(session.access_token);
-        fetchMySpreadShared(session.access_token);
-        syncMatchPreferencesOnLogin(session.access_token);
+        // The per-user data fetches (completions, boosts, bookmarks, …) are
+        // driven by an effect keyed on accessToken below — that way they run
+        // for BOTH auth paths (getSession on mount AND this listener) and
+        // re-run when the token refreshes, instead of only firing here.
       } else {
         setAccessToken(null);
         setApproval(null);
@@ -1840,6 +1838,24 @@ export default function App() {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  // ── Pull the signed-in user's cross-device state whenever we have a token ──
+  // Keyed on accessToken so it covers every way a token can arrive: the
+  // getSession() restore on mount, the onAuthStateChange listener, and a
+  // background token refresh. Previously these only ran inside the auth
+  // listener, so a returning user restored via getSession() never had their
+  // completions/boosts merged in — making "I did this!" look undone on a
+  // second device even though it was recorded server-side.
+  useEffect(() => {
+    if (!accessToken) return;
+    fetchMyCompletions(accessToken);
+    fetchMyBoosts(accessToken);
+    fetchMyBookmarks(accessToken);
+    fetchMyPasses(accessToken);
+    fetchMySpreadShared(accessToken);
+    syncMatchPreferencesOnLogin(accessToken);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessToken]);
 
   // ── Remember this person across sign-outs ──
   // A lightweight name/email hint so the auth modal can recognize a returning
@@ -2457,8 +2473,19 @@ export default function App() {
     try {
       // Use the user's access token when signed in so the server can record
       // the completion against their account; falls back to the anon key.
-      const authHeader = accessToken
-        ? `Bearer ${accessToken}`
+      // If the accessToken state hasn't hydrated yet (e.g. a tap right after a
+      // session-restore on a fresh device), resolve it straight from the
+      // Supabase session so a logged-in user's completion is still attributed
+      // to them — otherwise it would land as an anonymous, un-syncable record.
+      let token = accessToken;
+      if (!token) {
+        try {
+          const { data } = await supabase.auth.getSession();
+          token = data.session?.access_token ?? null;
+        } catch { /* no session — genuinely anonymous, fall through */ }
+      }
+      const authHeader = token
+        ? `Bearer ${token}`
         : `Bearer ${publicAnonKey}`;
       const res = await fetch(`${API}/actions/${id}/complete`, {
         method: "POST",
@@ -2473,7 +2500,7 @@ export default function App() {
         setCards((prev) =>
           prev.map((c) => (c.id === id ? resolveCard(updated) : c))
         );
-        if (accessToken) fetchMyCompletions(accessToken);
+        if (token) fetchMyCompletions(token);
       }
     } catch (err) {
       console.error("Network error updating completion:", err);
