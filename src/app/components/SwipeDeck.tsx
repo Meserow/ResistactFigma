@@ -880,11 +880,11 @@ function SwipeCardFace({ card, onFlag }: { card: ActionCardData; onFlag?: () => 
     // Mirrors the card-details modal: rounded white panel, 3:2 banner with
     // category + location pills, full title and description, time meta.
     <div className="flex h-[calc(100dvh-312px)] sm:h-auto sm:max-h-[calc(100dvh-300px)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-      <div className={`relative w-full min-h-[180px] flex-1 sm:min-h-0 sm:flex-none sm:aspect-[3/2] ${card.imageContain ? "bg-gray-50" : "bg-[#23297e]"}`}>
+      <div className="relative w-full min-h-[180px] flex-1 sm:min-h-0 sm:flex-none sm:aspect-[3/2] bg-[#23297e]">
         <ImageWithFallback
           src={banner}
           alt=""
-          className={`h-full w-full ${card.imageContain ? "object-contain p-3" : "object-cover"}`}
+          className="h-full w-full object-cover"
           draggable={false}
         />
         {/* Top-right cluster: the time-commitment pill (when present) sits next

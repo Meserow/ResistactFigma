@@ -168,7 +168,6 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
   // empty field is non-destructive — see saveCard, which omits the image fields
   // when blank so it never wipes the card's existing image.
   const [topImageUrl,        setTopImageUrl]        = useState<string>(card.cartoonImageUrl ?? "");
-  const [imageContain,       setImageContain]       = useState<boolean>(card.imageContain === true);
   const [atHome,             setAtHome]             = useState<boolean>(card.atHome === true);
   const [highlighted, setHighlighted] = useState<boolean>((card as any).highlighted === true);
   const [eventDate,          setEventDate]          = useState<string>((card as any).eventDate ?? "");
@@ -376,7 +375,6 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
         ...(topImageUrl.trim()
           ? { topImageUrl: topImageUrl.trim(), cartoonImageUrl: topImageUrl.trim() }
           : {}),
-        imageContain,
         atHome,
         highlighted,
         eventDate:      eventDate.trim() || undefined,
@@ -683,14 +681,6 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
                 </button>
               )}
               <span className="font-['Poppins',sans-serif] text-[11px] text-gray-400">or paste a URL ↓</span>
-              <label className="ml-auto flex items-center gap-1.5 cursor-pointer select-none">
-                <input
-                  type="checkbox" checked={imageContain}
-                  onChange={(e) => setImageContain(e.target.checked)}
-                  className="w-3.5 h-3.5 rounded accent-[#ed6624]"
-                />
-                <span className="font-['Poppins',sans-serif] text-[11.5px] text-gray-500">Fit logo (don't crop)</span>
-              </label>
             </div>
             <div className="flex items-stretch gap-2">
               <input
@@ -862,7 +852,6 @@ export function EditCardModal({ card, accessToken, onClose, onSaved, isAdmin, on
           authorRole,
           authorLink:     authorLink.trim() || undefined,
           targetUrl:      targetUrl.trim() || (card as any).targetUrl,
-          imageContain,
           eventDate:      eventDate.trim() || undefined,
           // CardDetailsModal renders `cartoonImageUrl ?? topImage`; mirror the
           // edited header URL into both so the preview reflects unsaved image

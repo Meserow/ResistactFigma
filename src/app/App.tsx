@@ -85,7 +85,6 @@ interface ServerCard {
   authorAvatarUrl?: string | null;
   createdBy?: string;
   quickAction?: boolean;
-  imageContain?: boolean;
   adminApproved?: boolean;
   firstTimerFriendly?: boolean;
   /** Admin editorial pin: floats the card to the top of the feed (just below

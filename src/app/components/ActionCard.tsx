@@ -74,8 +74,6 @@ export interface ActionCardData {
    * even ahead of the matcher's score. Reserved for the canonical
    * "Spread the Word about ResistAct" pinned card. */
   pinToTop?: boolean;
-  /** When true, fit the top image inside the header (object-contain) instead of cropping. Use for logo-style art. */
-  imageContain?: boolean;
   /** False = awaiting admin review; true / undefined = visible to all users. */
   adminApproved?: boolean;
   /** Curated for "Today's Five" — actions that are <5 min, fun, easy, and
@@ -331,6 +329,20 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
     );
   }
 
+  // "Done" stamp — overlaid on the banner of an act the user has already
+  // completed. Paired with a 50% opacity dim on the whole card (and the
+  // completedLast sort that drops these to the bottom) so finished acts read
+  // as clearly retired without disappearing. pointer-events-none so it never
+  // intercepts the card's click target.
+  const doneStamp = isCompleted ? (
+    <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+      <div className="flex items-center gap-1.5 rounded-lg border-2 border-green-600 bg-white/85 px-3 py-1 -rotate-[11deg] shadow-sm">
+        <CheckCircle2 size={15} strokeWidth={2.5} className="text-green-600" />
+        <span className="font-['Poppins',sans-serif] font-extrabold text-[13px] uppercase tracking-[0.12em] text-green-600">Done</span>
+      </div>
+    </div>
+  ) : null;
+
   /* ── Featured (navy) card ─────────────────────────────── */
   if (card.isFeatured) {
     return (
@@ -344,8 +356,8 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
           className={`resistact-card-shine resistact-banner-host transform-gpu cursor-pointer bg-white rounded-2xl flex flex-col overflow-hidden h-full transition-[transform,box-shadow,opacity] duration-200 ease-out hover:shadow-md motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] hover:z-10 ${
             // Pinned "Spread the Word" gets a hairline navy outline (and stays
             // full color); any other featured card uses the grid-wide gray
-            // border + 85%→100%-on-hover rule.
-            "border-[0.75px] border-gray-400 hover:border-[#23297e] hover:ring-2 hover:ring-[#23297e] opacity-95 hover:opacity-100"
+            // border + 85%→100%-on-hover rule. Completed acts dim to 50%.
+            `border-[0.75px] border-gray-400 hover:border-[#23297e] hover:ring-2 hover:ring-[#23297e] ${isCompleted ? "opacity-50 hover:opacity-100" : "opacity-95 hover:opacity-100"}`
           }`}
           onClick={card.pinToTop ? () => setShareOpen(true) : () => setDetailsOpen(true)}
         >
@@ -359,6 +371,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
               ? <img src={effectiveTopImage} alt={card.title} loading="lazy" decoding="async" style={card.pinToTop ? { transform: "scale(1.01)" } : undefined} className={`${card.pinToTop ? "" : "resistact-banner-desat"} absolute inset-0 w-full h-full object-cover ${card.cartoonImageUrl ? "object-[center_20%]" : "object-top"}`} />
               : card.featuredIllustration
             }
+            {doneStamp}
             {!compact && (
               <div className="absolute top-2.5 right-3 flex items-center gap-1.5">
                 <TimeBadge light={true} />
@@ -492,8 +505,10 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
         className={`resistact-banner-host transform-gpu cursor-pointer bg-white rounded-2xl border-[0.75px] border-gray-400 hover:border-[#23297e] hover:ring-2 hover:ring-[#23297e] flex flex-col overflow-hidden h-full transition-[transform,box-shadow,opacity] duration-200 ease-out hover:shadow-md motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] hover:z-10 ${
           // Resting 95% opacity for every card, full color on hover — a calm,
           // browsable grid where the hovered card pops. `transition-all` above
-          // covers the opacity tween so it eases in/out smoothly.
-          "opacity-95 hover:opacity-100"
+          // covers the opacity tween so it eases in/out smoothly. Completed
+          // acts rest at 50% so they read as already-done (full color on hover
+          // so they're still legible/actionable).
+          isCompleted ? "opacity-50 hover:opacity-100" : "opacity-95 hover:opacity-100"
         } ${isPending ? "ring-2 ring-red-400" : ""}`}
       >
         {/* ── Admin: pending approval banner ── */}
@@ -529,17 +544,18 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
           /* Compact (Quick Match preview) keeps the old banner-on-top
              layout — the preview is small enough that the horizontal
              split would feel cramped. */
-          <div className={`relative h-[70px] shrink-0 overflow-hidden rounded-t-2xl ${showTopImage && card.imageContain ? "bg-gray-50" : ""} ${!showTopImage ? "bg-[#fff8f3]" : ""}`}>
+          <div className={`relative h-[70px] shrink-0 overflow-hidden rounded-t-2xl ${!showTopImage ? "bg-[#fff8f3]" : ""}`}>
             {showTopImage ? (
               <ImageWithFallback
                 src={effectiveTopImage}
                 alt={card.title}
-                className={`${card.pinToTop ? "" : "resistact-banner-desat"} w-full h-full ${card.imageContain ? "object-contain p-2" : `object-cover ${card.cartoonImageUrl ? "object-[center_20%]" : "object-top"}`}`}
+                className={`${card.pinToTop ? "" : "resistact-banner-desat"} w-full h-full object-cover ${card.cartoonImageUrl ? "object-[center_20%]" : "object-top"}`}
                 onError={() => setImageFailed(true)}
               />
             ) : (
               <img src={cardFallbackImg} alt="" aria-hidden="true" className="w-full h-full object-contain p-2" />
             )}
+            {doneStamp}
           </div>
         ) : (
           /* Non-compact: full-width banner on top (matches the Spread the
@@ -547,7 +563,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
              time badge + bookmark/edit top-right, type tag top-left,
              location badge bottom-right. Category + title sit in the
              content area below. */
-          <div className={`relative h-[106px] shrink-0 overflow-hidden rounded-t-2xl ${showTopImage && card.imageContain ? "bg-gray-50" : ""} ${!showTopImage ? "bg-[#fff8f3]" : ""}`}>
+          <div className={`relative h-[106px] shrink-0 overflow-hidden rounded-t-2xl ${!showTopImage ? "bg-[#fff8f3]" : ""}`}>
             {showTopImage ? (
               <ImageWithFallback
                 src={effectiveTopImage}
@@ -558,12 +574,13 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
                    center so heads stay in frame at the 4:1 card aspect.
                    For original photos (no cartoon), use object-top to keep
                    the legacy behavior. */
-                className={`${card.pinToTop ? "" : "resistact-banner-desat"} w-full h-full ${card.imageContain ? "object-contain p-2" : `object-cover ${card.cartoonImageUrl ? "[object-position:50%_15%]" : "object-top"}`}`}
+                className={`${card.pinToTop ? "" : "resistact-banner-desat"} w-full h-full object-cover ${card.cartoonImageUrl ? "[object-position:50%_15%]" : "object-top"}`}
                 onError={() => setImageFailed(true)}
               />
             ) : (
               <img src={cardFallbackImg} alt="" aria-hidden="true" className="w-full h-full object-contain p-4" />
             )}
+            {doneStamp}
             {/* Top-right: time pill. Admin edit pencil lives in the
                 details modal so the grid stays uncluttered. */}
             <div className="absolute top-2.5 right-3 flex items-center gap-1.5">

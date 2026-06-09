@@ -134,7 +134,6 @@ export function AskFlowModal({
   const [formVettingInfo,  setFormVettingInfo]  = useState("");
   const [formEventDate,    setFormEventDate]    = useState("");
   const [formImageUrl,     setFormImageUrl]     = useState("");
-  const [formImageContain, setFormImageContain] = useState(false);
   const [involvement,      setInvolvement]      = useState<TimeBucket>("30min");
   const [tone, setTone] = useState<ToneVec>({ anger: 1, comedy: 1, subversion: 1, hope: 1, energy: 1 });
   /** True once the user manually moves any tone slider — stops auto-sync from category. */
@@ -272,7 +271,6 @@ export function AskFlowModal({
             eventDate:      formEventDate.trim()    || undefined,
             spotsTotal:     "Unlimited",
             topImageUrl:    formImageUrl.trim()     || null,
-            imageContain:   formImageContain,
             toneOverride:   toneEdited ? tone : undefined,
             amplifiesGroups: amplifiesGroups.length > 0 ? amplifiesGroups : undefined,
           }),
