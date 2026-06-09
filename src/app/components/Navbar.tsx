@@ -387,17 +387,6 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               <Zap size={14} strokeWidth={2.5} className="text-gray-500 group-hover:text-[#ed6624]" />
               <span className="hidden 2xl:inline">About</span>
             </button>
-            {onMatchClick && (
-              <button
-                onClick={onMatchClick}
-                title="Refine Your Matches — your preferences stay saved"
-                aria-label="Refine Your Matches"
-                className="inline-flex items-center gap-1.5 rounded-full bg-[#ed6624] px-2.5 2xl:px-3.5 py-1.5 font-['Poppins',sans-serif] text-[13px] font-extrabold text-white shadow-sm ring-1 ring-[#ed6624] transition-all hover:bg-[#d35a1d] hover:shadow whitespace-nowrap"
-              >
-                <Sparkles size={15} strokeWidth={2.75} className="text-white" />
-                <span className="hidden 2xl:inline">Refine Matches</span>
-              </button>
-            )}
             {onAskClick && (
               <button
                 onClick={onAskClick}

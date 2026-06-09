@@ -16,6 +16,59 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.83",
+    date: "2026-06-08",
+    title: "Tidied up the top navigation",
+    sections: [
+      {
+        heading: "Improvements",
+        items: [
+          "Removed the \"Refine Matches\" button from the top navigation bar to keep the header clean. You can still refine your matches from the menu.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.82",
+    date: "2026-06-08",
+    title: "Acts you've done now carry a \"Done\" stamp",
+    sections: [
+      {
+        heading: "Improvements",
+        items: [
+          "Acts you've already completed now show a green \"Done\" stamp and fade to half opacity, so finished items are obvious at a glance. They still sort to the bottom of the feed, and brighten back to full color when you hover.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.81",
+    date: "2026-06-08",
+    title: "Card images always fill the frame",
+    sections: [
+      {
+        heading: "Fixes",
+        items: [
+          "Retired the old \"fit logo (don't crop)\" image option that occasionally left card art letterboxed with gray bars. Every card now crops its image to fill the banner cleanly, and the setting can no longer get switched on behind the scenes.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.80",
+    date: "2026-06-08",
+    title: "\"I did this!\" now follows you across devices",
+    sections: [
+      {
+        heading: "Fixes",
+        items: [
+          "Acts you marked as done on one device now show as done when you sign in on another. Before, the completed state could look empty on a second computer even though your progress was safely saved to your account — we now pull it back in every time you sign in or your session refreshes.",
+          "If you tapped \"I did this!\" the instant a page finished loading, the completion could be recorded without being tied to your account (so it never synced). It's now always attributed to you when you're signed in.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.79",
     date: "2026-06-08",
     title: "Filter pills apply instantly — no more reloading",

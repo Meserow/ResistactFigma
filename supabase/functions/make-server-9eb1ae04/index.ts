@@ -5765,7 +5765,12 @@ app.post("/make-server-9eb1ae04/actions/create", async (c) => {
       return c.json({ error: "Your account must be approved before posting." }, 403);
     }
 
-    const { title, synopsis, description, category, categoryColor, location, isOnline, spotsTotal, sponsor, link, targetUrl: targetUrlField, authorName: reqAuthorName, authorRole: reqAuthorRole, authorLink, vettingInfo, actionType, timeCommitment, quickAction, topImageUrl, imageContain, toneOverride, amplifiesGroups } =
+    // NOTE: `imageContain` ("Fit logo / don't crop") is deprecated — cartoon
+    // banners now fill the frame, so the letterbox treatment is no longer used.
+    // It is intentionally NOT destructured/stored here: even if a client (or an
+    // external tool) sends it, the server drops it so the dead flag can never
+    // reappear on a card. See also the strip in PUT /actions/:id.
+    const { title, synopsis, description, category, categoryColor, location, isOnline, spotsTotal, sponsor, link, targetUrl: targetUrlField, authorName: reqAuthorName, authorRole: reqAuthorRole, authorLink, vettingInfo, actionType, timeCommitment, quickAction, topImageUrl, toneOverride, amplifiesGroups } =
       await c.req.json<{
         title: string; synopsis?: string; description: string; category: string; categoryColor: string;
         location?: string; isOnline?: boolean; spotsTotal: number | "Unlimited";
@@ -5773,7 +5778,7 @@ app.post("/make-server-9eb1ae04/actions/create", async (c) => {
         authorName?: string; authorRole?: string; authorLink?: string;
         vettingInfo?: string; actionType?: string;
         timeCommitment?: string; quickAction?: boolean;
-        topImageUrl?: string | null; imageContain?: boolean;
+        topImageUrl?: string | null;
         toneOverride?: { anger?: number; comedy?: number; subversion?: number; care?: number; hope?: number; energy?: number };
         amplifiesGroups?: string[];
       }>();
@@ -5824,7 +5829,6 @@ app.post("/make-server-9eb1ae04/actions/create", async (c) => {
       authorAvatarKey: null,
       topImageKey: null,
       topImageUrl: topImageUrl || null,
-      imageContain: imageContain === true ? true : undefined,
       adminApproved: false,
       ...(offTopic ? { notOnTopic: true } : {}),
       createdAt: new Date().toISOString(),
@@ -6239,9 +6243,11 @@ app.put("/make-server-9eb1ae04/actions/:id", async (c) => {
     // the PUT endpoint has no such check — so accepting `adminApproved: true`
     // in a free-form edit body was a bypass for the image rule. Approval
     // must go through /admin/approve-action/:id only.
+    // `imageContain` ("Fit logo / don't crop") is deprecated — strip it from
+    // the incoming body so an edit can never (re)enable the letterbox flag.
     const { id: _id, createdBy: _createdBy, createdAt: _createdAt,
             authorAvatarKey: _avatarKey, topImageKey: _topImageKey,
-            adminApproved: _adminApproved,
+            adminApproved: _adminApproved, imageContain: _imageContain,
             boosts: bodyBoosts, ...safeUpdates } = body;
 
     const updated: any = {
@@ -6250,6 +6256,9 @@ app.put("/make-server-9eb1ae04/actions/:id", async (c) => {
       updatedAt: new Date().toISOString(),
       updatedBy: user.id,
     };
+    // Also clean any residual flag already stored on the card, so every edit
+    // self-heals a card that picked it up before this deprecation.
+    delete updated.imageContain;
     if (isAdmin && typeof bodyBoosts === "number") {
       updated.boosts = Math.max(0, Math.floor(bodyBoosts));
       delete updated.spotsUsed;

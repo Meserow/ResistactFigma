@@ -241,11 +241,11 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
         {/* Prefer the cartoonized banner if generated; fall back to the
             card's original topImage. Keeps the modal in sync with the grid. */}
         {(card.cartoonImageUrl || card.topImage) && (
-          <div className={`relative w-full aspect-[3/2] shrink-0 ${card.imageContain ? "bg-gray-50" : ""}`}>
+          <div className="relative w-full aspect-[3/2] shrink-0">
             <ImageWithFallback
               src={card.cartoonImageUrl ?? card.topImage}
               alt={card.title}
-              className={`w-full h-full ${card.imageContain ? "object-contain p-3" : "object-cover"}`}
+              className="w-full h-full object-cover"
             />
             {(card.isOnline || card.location) && (
               <div className="absolute bottom-3 right-3 flex items-center gap-1 bg-white/95 backdrop-blur-sm rounded-md px-2.5 py-1 shadow-sm">
