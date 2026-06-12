@@ -16,6 +16,35 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.85",
+    date: "2026-06-12",
+    title: "Matched results now follow your live location filter",
+    sections: [
+      {
+        heading: "Fixes",
+        items: [
+          "Changing your state with the location banner or Location filter now carries through to your matched feed. Before, matching could quietly keep using the state saved in your preferences — so someone who moved from California to Washington saw their Washington Acts hidden from \"Matched for you\" results.",
+          "Picking multiple states in the Location filter no longer hides state-specific Acts from matched results — all of your picked states now count.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.84",
+    date: "2026-06-12",
+    title: "Your location filter no longer vanishes — and category picks always show results",
+    sections: [
+      {
+        heading: "Fixes",
+        items: [
+          "Switching between The Acts, The Facts, and The Smacks no longer silently erases your location filter. Before, the feed could claim \"Showing Acts for your state\" while actually showing Acts from every state.",
+          "If a past visit lost your auto-detected state to that bug, the app now restores it automatically and shows the location banner again so you can confirm or change it.",
+          "Clicking a category (like Protest) after clearing your filters now always shows that category's Acts. Previously, saved Match preferences could invisibly veto every card in a category you'd just picked, leaving a wrongly empty feed.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.83",
     date: "2026-06-08",
     title: "Tidied up the top navigation",

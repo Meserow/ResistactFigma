@@ -906,7 +906,14 @@ export default function App() {
   function handleTabChange(tab: "facts" | "acts" | "receipts") {
     dismissWelcome();
     setActiveTab(tab);
-    setActiveFilters({});
+    // Reset the per-tab filters (Facts and Acts share the "Category" key, so a
+    // leftover Facts pick would silently filter Acts) — but Location SURVIVES,
+    // same as "Clear all": it's the "where can I act?" cut people set once,
+    // often via geo auto-detect. Wiping it here left the geo banner claiming
+    // "Showing Acts for <state>" over a fully unfiltered, every-state feed.
+    setActiveFilters((prev) =>
+      (prev.Location ?? []).length > 0 ? { Location: prev.Location } : {},
+    );
     setSearchQuery("");
     setQuickActionsOnly(false);
     if (tab !== "acts") setShowPendingActsOnly(false);
@@ -929,6 +936,21 @@ export default function App() {
       sameSet(activeFilters["Location"] ?? [], prefs.locationFilter ?? []) &&
       quickActionsOnly === (prefs.time === "5min")
     );
+  }
+  // True when the live Category pills differ from the saved match categories.
+  // The explicit pill click is fresher intent than stored prefs, so buildFeed
+  // skips match ranking for it (the saved-category / tone-extreme vetoes could
+  // otherwise zero out a category the user just clicked) — and the banners
+  // must show the plain "match your filters" chrome instead of "Matched for
+  // you", which would claim a ranking that didn't run. Empty pills, or pills
+  // that exactly mirror the saved categories (login sync seeds them that way),
+  // keep match mode.
+  function categoryPillsOverrideMatch(prefs: Preferences | null): boolean {
+    const cats = activeFilters["Category"] ?? [];
+    if (cats.length === 0 || !prefs) return false;
+    const saved = prefs.includedCategories ?? [];
+    return cats.length !== saved.length ||
+      [...cats].sort().join(" ") !== [...saved].sort().join(" ");
   }
   function saveCurrentPillSelection() {
     const locTokens = activeFilters["Location"] ?? [];
@@ -1414,7 +1436,40 @@ export default function App() {
     // would apply the 30%-of-top-score threshold and the time-bucket hard
     // caps — both of which can hide cards the user explicitly searched for.
     // Fall through to the normal Popular/AZ/Newest sort below instead.
-    if (matchPrefs && !deferredSearchQuery.trim()) {
+    //
+    // CATEGORY-PILL OVERRIDE: same principle as search. When the user has
+    // hand-picked category pills that DIFFER from the saved match categories,
+    // the click is fresher intent than the stored preferences — skip match
+    // ranking and fall through to the plain filter+sort path. Without this,
+    // score()'s hard vetoes (saved includedCategories, the tone-extreme
+    // filter — every PROTEST card is anger=3/energy=3 — and the 5-min time
+    // cap) intersect with the pill and can zero out a category the user just
+    // clicked ("Clear all" → tap "Protest" → 0 results, with 100+ protest
+    // cards live). Empty pills, or pills that exactly mirror the saved
+    // categories (the login sync seeds them that way), keep match ranking.
+    // (Logic shared with the banner chrome — see categoryPillsOverrideMatch.)
+    const pillCategoryOverride = categoryPillsOverrideMatch(matchPrefs);
+
+    if (matchPrefs && !deferredSearchQuery.trim() && !pillCategoryOverride) {
+      // LOCATION-PILL OVERRIDE: same principle as the category pills, but for
+      // state. applyGeoState and the geo banner's "Change" picker update only
+      // activeFilters.Location — never prefs.state — so the saved state can go
+      // stale (saved: California, live pill: Washington). score()'s state
+      // hard-veto would then zero out every Washington-pinned card that
+      // applyFilters just kept, leaving only location-agnostic cards in the
+      // match feed. When the live pill states disagree with the saved state,
+      // rank with prefs whose state follows the pill: one pill state → that
+      // state; multiple → first state with includeAnywhere, since the
+      // matcher's single-state contract can't express a multi-pick and
+      // applyFilters has already narrowed the pool to the picked states.
+      const pillStates = (activeFilters["Location"] ?? [])
+        .filter((l) => l !== "Remote" && l !== "In Person");
+      const rankPrefs: Preferences =
+        pillStates.length === 0 || (pillStates.length === 1 && pillStates[0] === matchPrefs.state)
+          ? matchPrefs
+          : pillStates.length === 1
+            ? { ...matchPrefs, state: pillStates[0] }
+            : { ...matchPrefs, state: pillStates[0], includeAnywhere: true };
       // Admins always see pending cards — pull them out so the score threshold
       // doesn't silently drop them, then append them after the ranked results.
       // Admin-only "still pending" set surfaced in their match feed. Apply the
@@ -1424,8 +1479,8 @@ export default function App() {
       const pendingForAdmin = isAdminUser
         ? filtered.filter((c) => {
             if (c.adminApproved !== false) return false;
-            if (!matchPrefs.includeAnywhere && matchPrefs.state) {
-              if (!cardIsLocalToState(c, matchPrefs.state) && !isLocationAgnostic(c)) {
+            if (!rankPrefs.includeAnywhere && rankPrefs.state) {
+              if (!cardIsLocalToState(c, rankPrefs.state) && !isLocationAgnostic(c)) {
                 return false;
               }
             }
@@ -1448,7 +1503,7 @@ export default function App() {
       }
 
       const userCtx: UserContext = { boostedIds: boostedCards };
-      const ranked = rankCards(rankable, matchPrefs, userCtx);
+      const ranked = rankCards(rankable, rankPrefs, userCtx);
       // Apply a score floor so only genuine matches surface. Score every card,
       // keep only those hitting ≥ 30% of the top card's score. This prevents
       // the "396 matches" problem where low-preference-overlap cards still pass
@@ -1456,9 +1511,9 @@ export default function App() {
       if (ranked.length > 0 || pendingForAdmin.length > 0) {
         const matched = ranked.length > 0
           ? (() => {
-              const topScore = scoreCard(ranked[0], matchPrefs, userCtx);
+              const topScore = scoreCard(ranked[0], rankPrefs, userCtx);
               const threshold = topScore * 0.30;
-              const thresholded = ranked.filter((c) => scoreCard(c, matchPrefs, userCtx) >= threshold);
+              const thresholded = ranked.filter((c) => scoreCard(c, rankPrefs, userCtx) >= threshold);
               // The Quick Match carousel shows up to 12 cards with no score
               // floor; the main feed must never return fewer results than the
               // modal did. If the 30% threshold is too aggressive (steep score
@@ -1666,7 +1721,34 @@ export default function App() {
     geoDetectFired.current = true;
     if (typeof localStorage === "undefined") return;
     // Already detected / dismissed / skipped on this device → never repeat.
-    if (localStorage.getItem(GEO_KEY)) return;
+    const storedGeoRaw = localStorage.getItem(GEO_KEY);
+    if (storedGeoRaw) {
+      // Self-heal for devices hit by the old tab-switch filter wipe (≤1.4.80):
+      // GEO_KEY says a state was detected, but the Location key is GONE from
+      // the pill filters entirely — only the wipe paths produced that shape (a
+      // deliberate uncheck leaves `Location: []` behind). Those devices were
+      // stuck unfiltered forever: pills persisted empty and GEO_KEY blocked
+      // re-detection. Re-apply the remembered state with the correctable
+      // banner; "Not you?" / dismiss work (and persist) exactly as on a
+      // fresh detection.
+      try {
+        const storedGeo = JSON.parse(storedGeoRaw) as { status?: string; state?: string };
+        if (
+          storedGeo?.status === "detected" &&
+          typeof storedGeo.state === "string" &&
+          GEO_STATE_OPTIONS.includes(storedGeo.state as typeof GEO_STATE_OPTIONS[number]) &&
+          !("Location" in (activeFiltersRef.current ?? {}))
+        ) {
+          const state = storedGeo.state;
+          setActiveFilters((prev) => ({
+            ...prev,
+            Location: [...(prev.Location ?? []).filter((l) => l === "Remote" || l === "In Person"), state],
+          }));
+          setGeoBanner({ kind: "detected", state });
+        }
+      } catch { /* malformed GEO_KEY — leave detection suppressed */ }
+      return;
+    }
     // User already told us where they are (restored pill) → record + skip.
     if (hasStateLocationPill()) {
       try { localStorage.setItem(GEO_KEY, JSON.stringify({ status: "skip" })); } catch {}
@@ -1708,6 +1790,21 @@ export default function App() {
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Keep the geo banner honest. It claims "Showing Acts for <state>", so if
+  // the Location filter no longer contains that state — any filter-wipe path,
+  // a manual uncheck in the Location dropdown — drop the banner instead of
+  // letting it advertise a filter that isn't applied. (This is the safety net
+  // behind the targeted fixes in handleTabChange etc.; GEO_KEY already
+  // recorded the detection, so nothing else needs persisting here.)
+  useEffect(() => {
+    if (
+      geoBanner?.kind === "detected" &&
+      !(activeFilters["Location"] ?? []).includes(geoBanner.state)
+    ) {
+      setGeoBanner(null);
+    }
+  }, [activeFilters, geoBanner]);
 
   // ── Scroll nudge — fires once after user scrolls past ~8 cards ──────────────
   // Points people at Swipe to Discover when the feed gets long. We deliberately
@@ -3067,7 +3164,14 @@ export default function App() {
                   <div className="text-center py-20">
                     <p className="font-['Poppins',sans-serif] text-gray-400 text-lg">No facts match your filters.</p>
                     <button
-                      onClick={() => { setActiveFilters({}); setSearchQuery(""); }}
+                      // Facts filters only — Location (used by Acts, not Facts)
+                      // survives, same as handleTabChange / the navbar Clear all.
+                      onClick={() => {
+                        setActiveFilters((prev) =>
+                          (prev.Location ?? []).length > 0 ? { Location: prev.Location } : {},
+                        );
+                        setSearchQuery("");
+                      }}
                       className="mt-3 font-['Poppins',sans-serif] text-sm text-[#23297e] hover:underline"
                     >
                       Clear all filters
@@ -3189,7 +3293,7 @@ export default function App() {
                     so the merged bar carries the same info on every screen.
                     Suppressed while the welcome card is up, since its headline
                     already states the count. */}
-                {synced && !matchPrefs && !welcomeShowing && (
+                {synced && (!matchPrefs || categoryPillsOverrideMatch(matchPrefs)) && !welcomeShowing && (
                   <>
                     <span className="text-[#ed6624]/40">•</span>
                     <p className="font-['Poppins',sans-serif] text-sm text-gray-600">
@@ -3272,7 +3376,7 @@ export default function App() {
                 Mirrors the unfiltered banner style; carries the count, the
                 location/mode callout, and the Save button. Stacks vertically
                 on phones (flex-col), inline on wider screens (sm:flex-row). */}
-            {!geoBanner && !matchPrefs && hasActiveFilters && activeTab === "acts" && synced && !showPendingActsOnly && (() => {
+            {!geoBanner && (!matchPrefs || categoryPillsOverrideMatch(matchPrefs)) && hasActiveFilters && activeTab === "acts" && synced && !showPendingActsOnly && (() => {
               // Surface the active mode + state(s) so the banner names what's being
               // filtered. "Remote"/"In Person" are modes, not places. When it's
               // PURELY remote (Remote on, In Person off) the feed isn't state-specific,
@@ -3479,7 +3583,7 @@ export default function App() {
                 Surfaces the user's actual settings as chips so they remember WHY
                 this set of cards is showing (and the total count, so the volume
                 is visible at a glance). */}
-            {matchPrefs && (() => {
+            {matchPrefs && !categoryPillsOverrideMatch(matchPrefs) && (() => {
               const groupCount = matchPrefs.vulnerableGroups?.length ?? 0;
               // Once prefs are saved this banner replaces the filtered banner —
               // which is where the only Save button used to live. So re-offer a
