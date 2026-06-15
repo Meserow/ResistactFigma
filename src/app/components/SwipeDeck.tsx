@@ -226,6 +226,10 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
   // state + a pending timer — that desync is what froze the deck after a few
   // swipes.
   const flyingRef = useRef<Dir | null>(null);
+  // Plays the one-time intro "demo swipe" wiggle (see effect below) exactly
+  // once per deck open, so the card teaches the left/right gesture without
+  // nagging on every new card.
+  const introPlayedRef = useRef(false);
 
   const SPRING = "transform 0.32s cubic-bezier(.2,.8,.2,1)";
 
@@ -248,6 +252,35 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
     dragXRef.current = 0;
     paint(0, 0, true);
   }, [index, paint]);
+
+  // ── One-time intro "demo swipe" ─────────────────────────────────────────────
+  // When the deck first opens, the top card gently sways RIGHT (toward the
+  // SAVE hint) then LEFT (toward the PASS hint) and settles back to center —
+  // a wordless demo that draws the eye to the instructions flanking the card,
+  // then gets out of the way. Plays once per open, skips for reduced-motion,
+  // and bails the instant the user grabs the card so it never fights a drag.
+  useEffect(() => {
+    if (introPlayedRef.current) return;
+    if (reduced || done || summaryOpen || view.length === 0 || index !== 0) return;
+    introPlayedRef.current = true;
+
+    const PEEK = 78; // below COMMIT_PX, so the demo never commits a swipe
+    const sway = (x: number, badge: Dir | null) => {
+      if (startRef.current || flyingRef.current) return; // user took over — stop
+      paint(x, 0, true);
+      const s = Math.min(1, Math.abs(x) / COMMIT_PX) * 0.6;
+      if (likeRef.current) likeRef.current.style.opacity = badge === "right" ? String(s) : "0";
+      if (nopeRef.current) nopeRef.current.style.opacity = badge === "left" ? String(s) : "0";
+    };
+
+    const timers = [
+      window.setTimeout(() => sway(PEEK, "right"), 550),
+      window.setTimeout(() => sway(0, null), 1000),
+      window.setTimeout(() => sway(-PEEK, "left"), 1320),
+      window.setTimeout(() => sway(0, null), 1780),
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, [reduced, done, summaryOpen, view.length, index, paint]);
 
   const commit = useCallback(
     (dir: Dir) => {
@@ -631,39 +664,9 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
         className="relative flex-1 flex items-center justify-center px-4 overflow-hidden select-none"
         onClick={(e) => { if (e.target === e.currentTarget) close(); }}
       >
-        {/* Wide-desktop hints — flank the card, vertically centered. */}
-        {!done && !summaryOpen && (
-          <>
-            {/* Anchor the side hints just outside the centered card (≤500px wide,
-                so ~250px each side of center at lg) instead of the screen edges,
-                so they sit right beside the card rather than way out at the
-                margins. The right-edge anchor lets the PASS hint grow leftward. */}
-            <button
-              type="button"
-              onClick={() => commit("left")}
-              aria-label="Pass on this act"
-              className="absolute right-[calc(50%+264px)] top-1/2 hidden -translate-y-1/2 items-center gap-1.5 whitespace-nowrap font-['Poppins',sans-serif] text-[13px] font-semibold text-gray-300 transition-opacity hover:opacity-80 active:opacity-60 lg:inline-flex"
-            >
-              <ArrowLeft size={15} strokeWidth={3} className="shrink-0 resistact-anim-nudge-left" />
-              Swipe left to PASS
-              <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-gray-300 text-gray-700">
-                <X size={10} strokeWidth={3.5} />
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => commit("right")}
-              aria-label="Save this act"
-              className="absolute left-[calc(50%+264px)] top-1/2 hidden -translate-y-1/2 items-center gap-1.5 whitespace-nowrap font-['Poppins',sans-serif] text-[13px] font-semibold text-gray-300 transition-opacity hover:opacity-80 active:opacity-60 lg:inline-flex"
-            >
-              <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-gray-300 text-gray-700">
-                <Heart size={9} fill="currentColor" />
-              </span>
-              Swipe right to SAVE
-              <ArrowRight size={15} strokeWidth={3} className="shrink-0 resistact-anim-nudge-right" />
-            </button>
-          </>
-        )}
+        {/* The wide-desktop side hints that used to flank the card were
+            removed — the one-time intro "demo swipe" wiggle plus the labeled
+            Pass / Save buttons below the card now teach the gesture. */}
         {summaryOpen ? (
           <div className="flex w-full max-w-sm flex-col items-center text-center text-white">
             <h2 className="font-['Poppins',sans-serif] text-2xl font-bold">Saved for later</h2>

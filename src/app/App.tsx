@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback, useDeferredValue, lazy, Suspense, Fragment } from "react";
-import { Wrench, Flame, Smile, VenetianMask, Sun, Zap, MapPin, Globe, Users, DollarSign, EyeOff, Loader2, Eye, X, LayoutList, Layers, Star } from "lucide-react";
+import { Wrench, Flame, Smile, VenetianMask, Sun, Zap, MapPin, Globe, Users, DollarSign, EyeOff, Loader2, Eye, X, Star, Heart } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { initAnalytics, analytics, disableAnalyticsForAdmin, clearAdminAnalyticsOptOut } from "./lib/analytics";
 import { GAMIFICATION_KEYFRAMES } from "./lib/animations";
@@ -32,6 +32,7 @@ import { LoggedInHero } from "./components/LoggedInHero";
 import { SignupBanner } from "./components/AccountPromos";
 import { MatchMeModal } from "./components/MatchMeModal";
 import { SwipeDeck } from "./components/SwipeDeck";
+import { SwipeCallout } from "./components/SwipeCallout";
 import { useIsMobile } from "./components/ui/use-mobile";
 // Lazy-loaded: the changelog data (~68 KB gzipped) is admin-only and rarely
 // opened, so it's code-split into its own chunk instead of riding in the main
@@ -930,7 +931,7 @@ export default function App() {
   function pillSelectionMatchesPrefs(prefs: Preferences | null): boolean {
     if (!prefs) return false;
     const sameSet = (a: string[], b: string[]) =>
-      a.length === b.length && [...a].sort().join(" ") === [...b].sort().join(" ");
+      a.length === b.length && [...a].sort().join("\u0000") === [...b].sort().join("\u0000");
     return (
       sameSet(activeFilters["Category"] ?? [], prefs.includedCategories ?? []) &&
       sameSet(activeFilters["Location"] ?? [], prefs.locationFilter ?? []) &&
@@ -950,7 +951,7 @@ export default function App() {
     if (cats.length === 0 || !prefs) return false;
     const saved = prefs.includedCategories ?? [];
     return cats.length !== saved.length ||
-      [...cats].sort().join(" ") !== [...saved].sort().join(" ");
+      [...cats].sort().join("\u0000") !== [...saved].sort().join("\u0000");
   }
   function saveCurrentPillSelection() {
     const locTokens = activeFilters["Location"] ?? [];
@@ -3008,6 +3009,9 @@ export default function App() {
         onAskClick={() => isImpersonating ? showToast("View-as is read-only") : setAskOpen(true)}
         onBookmarksClick={() => setBookmarksOpen(true)}
         bookmarkCount={effectiveBookmarked.size}
+        onSwipeClick={() => setSwipeOpen(true)}
+        swipeOpen={swipeOpen}
+        onSwipeOpenChange={setSwipeOpen}
         onFeedbackClick={() => setFeedbackOpen(true)}
         onMatchClick={() => setMatchOpen(true)}
         onTierClick={() => setTierModalOpen(true)}
@@ -3086,7 +3090,7 @@ export default function App() {
         </div>
       )}
 
-      <main className="px-4 md:px-8 pt-3 pb-20">
+      <main className="max-w-[1400px] mx-auto px-4 md:px-8 pt-3 pb-20">
         <ErrorBoundary>
         {activeTab === "receipts" ? (
           /* ── Receipts view ── */
@@ -3209,35 +3213,8 @@ export default function App() {
             const feedSig = feed.map((c) => c.id).join(",");
             return (
           <>
-            {/* Phone-only browse-mode toggle — sits just under the filter pills
-                and switches between the scrolling list and the swipe deck. It
-                replaces the old "Swipe to discover" buttons: tapping "Swipe"
-                opens the deck, and the deck's "Done" (or this toggle) returns
-                to the list. Desktop keeps the floating 🃏 button instead. */}
-            {isMobile && (
-              <div className="mb-4 flex items-center gap-1 p-1 rounded-xl bg-gray-100 font-['Poppins',sans-serif]">
-                <button
-                  onClick={() => setSwipeOpen(false)}
-                  aria-pressed={!swipeOpen}
-                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold transition-all ${
-                    !swipeOpen ? "bg-white text-[#23297e] shadow-sm" : "text-gray-500"
-                  }`}
-                >
-                  <LayoutList size={15} strokeWidth={2.5} />
-                  Scroll
-                </button>
-                <button
-                  onClick={() => setSwipeOpen(true)}
-                  aria-pressed={swipeOpen}
-                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-bold transition-all ${
-                    swipeOpen ? "bg-white text-[#ed6624] shadow-sm" : "text-gray-500"
-                  }`}
-                >
-                  <Layers size={15} strokeWidth={2.5} />
-                  Swipe
-                </button>
-              </div>
-            )}
+            {/* Phone Scroll/Swipe toggle moved up into the Navbar's mobile
+                filter bar, above the Category dropdown. */}
 
             {/* Feed-intro stack — the welcome greeting and whichever chrome
                 banner sits below it (geo / unfiltered / filtered / pending /
@@ -3361,12 +3338,6 @@ export default function App() {
                       ))}
                     </select>
                   </label>
-                  <button
-                    onClick={() => setSwipeOpen(true)}
-                    className="font-['Poppins',sans-serif] text-xs font-bold text-[#ed6624] hover:text-[#e07a28] hover:underline transition-colors whitespace-nowrap"
-                  >
-                    🃏 Try swipe mode! →
-                  </button>
                 </div>
               </div>
             )}
@@ -3387,9 +3358,6 @@ export default function App() {
               const pureRemote = remoteOn && !inPersonOn;
               const activeStates = pureRemote ? [] : locTokens.filter((l) => l !== "Remote" && l !== "In Person");
               const modeLabel = inPersonOn && remoteOn ? "In person + remote" : inPersonOn ? "In person" : "";
-              // Whether a location/mode callout renders before the count (so the
-              // count's leading "·" separator only shows when something precedes it).
-              const hasLeadingCallout = pureRemote || activeStates.length > 0 || !!modeLabel;
               const activeCats = activeFilters["Category"] ?? [];
               // "Save these…" persists the WHOLE feed selection — categories AND
               // the non-category filters: the In Person / Remote / state location
@@ -3400,7 +3368,7 @@ export default function App() {
               // this banner, so the saved baseline is whatever's on disk.
               const sameSet = (a: string[], b: string[]) =>
                 a.length === b.length &&
-                [...a].sort().join(" ") === [...b].sort().join(" ");
+                [...a].sort().join("\u0000") === [...b].sort().join("\u0000");
               const savedPrefs = loadPreferences();
               const alreadySaved = !!savedPrefs &&
                 sameSet(activeCats, savedPrefs.includedCategories ?? []) &&
@@ -3413,86 +3381,101 @@ export default function App() {
               const showSaveButton = hasSavable && !alreadySaved;
               return (
               <div className="mb-4 flex flex-col items-start gap-2 rounded-lg border border-[#23297e]/30 bg-white px-4 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-                <div className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1.5">
-                  {pureRemote ? (
-                    <span className="inline-flex items-center gap-1.5 font-['Poppins',sans-serif] text-[13px] text-gray-700">
-                      <Globe size={15} className="text-[#ed6624] shrink-0" strokeWidth={2.5} />
-                      <strong className="text-[#23297e]">Remote</strong> acts
-                    </span>
-                  ) : activeStates.length > 0 ? (
-                    <span className="inline-flex items-center gap-1.5 font-['Poppins',sans-serif] text-[13px] text-gray-700">
-                      <MapPin size={15} className="text-[#23297e] shrink-0" strokeWidth={2.5} />
-                      {modeLabel && <><span className="font-semibold text-gray-500">{modeLabel}</span><span aria-hidden className="text-gray-300">·</span></>}
-                      <strong className="text-[#23297e]">{activeStates.join(", ")}</strong>
-                      <span className="text-[11px] font-normal text-gray-400">+ nationwide</span>
-                      <button
-                        onClick={() => setGeoBanner({ kind: "prompt" })}
-                        className="font-['Poppins',sans-serif] text-[11px] font-semibold text-[#ed6624] hover:text-[#e07a28] hover:underline transition-colors whitespace-nowrap"
-                      >
-                        Change
-                      </button>
-                    </span>
-                  ) : modeLabel ? (
-                    <span className="inline-flex items-center gap-1.5 font-['Poppins',sans-serif] text-[13px] text-gray-700">
-                      <MapPin size={15} className="text-[#23297e] shrink-0" strokeWidth={2.5} />
-                      <strong className="text-[#23297e]">{modeLabel}</strong> acts
-                      <span className="text-gray-400">— anywhere</span>
-                      <button
-                        onClick={() => setGeoBanner({ kind: "prompt" })}
-                        className="font-['Poppins',sans-serif] text-[11px] font-semibold text-[#ed6624] hover:text-[#e07a28] hover:underline transition-colors whitespace-nowrap"
-                      >
-                        Pick a state
-                      </button>
-                    </span>
-                  ) : null}
-                  {/* Count — hidden while the welcome card is up (its headline
-                      already states the count); the location/mode callout stays. */}
-                  {!welcomeShowing && (
-                    <span className="font-['Poppins',sans-serif] text-[13px] text-gray-700">
-                      {hasLeadingCallout && <span aria-hidden className="mr-1.5 text-gray-300">·</span>}
-                      <strong className="text-[#23297e]">{displayedCards.length}</strong> {displayedCards.length === 1 ? "Act" : "Acts"}
-                    </span>
-                  )}
-                  {/* Active "5 Mins Max" filter — surfaced so the banner reflects it,
-                      matching the purple Zap of the pill that sets it. */}
-                  {quickActionsOnly && (
-                    <span className="inline-flex items-center gap-1 font-['Poppins',sans-serif] text-[12px] font-semibold text-[#5a3e9e]">
-                      <span aria-hidden className="text-gray-300">·</span>
-                      <Zap size={12} className="shrink-0" fill="currentColor" />
-                      5 mins max
-                    </span>
-                  )}
-                  {/* Selected categories — compact like the swipe deck: a dimmed,
-                      truncated "·"-joined list (full list in the tooltip) with a
-                      Clear link, rather than a loud row of colored chips. A divider
-                      sets them apart from the location/count text. */}
-                  {activeCats.length > 0 && (
-                    <>
-                      <span aria-hidden className="mx-1 hidden h-4 w-px shrink-0 bg-gray-300 sm:inline-block" />
-                      <span className="shrink-0 font-['Poppins',sans-serif] text-[12px] font-semibold text-gray-500">Categories:</span>
-                      {/* Phone: truncate to one line (space is tight). Desktop:
-                          there's room, so show every category — drop the cap and
-                          let the list wrap. */}
-                      <span
-                        className="min-w-0 max-w-[42ch] truncate sm:max-w-none sm:overflow-visible sm:whitespace-normal font-['Poppins',sans-serif] text-[12px] italic text-gray-500"
-                        title={[...activeCats].sort((a, b) => a.localeCompare(b)).join(", ")}
-                      >
-                        {[...activeCats].sort((a, b) => a.localeCompare(b)).join(" · ")}
+                <div className="flex min-w-0 flex-col gap-2">
+                  {/* Lead line: how many Acts, and where — the primary "what
+                      am I looking at" statement, count first and bold. */}
+                  {/* items-baseline + plain INLINE location text (not inline-flex,
+                      which would synthesize its own baseline and float the big
+                      count above the location). The map/globe icon is an
+                      inline-block nudged down so it centers on the 13px text
+                      while the words share the count's baseline. */}
+                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                    {!welcomeShowing && (
+                      <span className="font-['Poppins',sans-serif] text-[16px] font-extrabold text-[#23297e]">
+                        {displayedCards.length} {displayedCards.length === 1 ? "Act" : "Acts"}
                       </span>
+                    )}
+                    {pureRemote ? (
+                      <span className="font-['Poppins',sans-serif] text-[13px] text-gray-600">
+                        <Globe size={14} strokeWidth={2.5} className="mr-1 inline-block align-[-2px] text-[#ed6624]" />
+                        <strong className="font-semibold text-gray-800">Remote</strong>
+                      </span>
+                    ) : activeStates.length > 0 ? (
+                      <span className="font-['Poppins',sans-serif] text-[13px] text-gray-600">
+                        <MapPin size={14} strokeWidth={2.5} className="mr-1 inline-block align-[-2px] text-[#23297e]" />
+                        in {modeLabel && <span className="font-semibold text-gray-500">{modeLabel} · </span>}
+                        <strong className="font-semibold text-gray-800">{activeStates.join(", ")}</strong>{" "}
+                        <span className="text-[11px] text-gray-400">+ nationwide</span>{" "}
+                        <button
+                          onClick={() => setGeoBanner({ kind: "prompt" })}
+                          className="font-['Poppins',sans-serif] text-[11px] font-semibold text-[#ed6624] hover:text-[#e07a28] hover:underline transition-colors whitespace-nowrap"
+                        >
+                          Change
+                        </button>
+                      </span>
+                    ) : modeLabel ? (
+                      <span className="font-['Poppins',sans-serif] text-[13px] text-gray-600">
+                        <MapPin size={14} strokeWidth={2.5} className="mr-1 inline-block align-[-2px] text-[#23297e]" />
+                        <strong className="font-semibold text-gray-800">{modeLabel}</strong> <span className="text-gray-400">· anywhere</span>{" "}
+                        <button
+                          onClick={() => setGeoBanner({ kind: "prompt" })}
+                          className="font-['Poppins',sans-serif] text-[11px] font-semibold text-[#ed6624] hover:text-[#e07a28] hover:underline transition-colors whitespace-nowrap"
+                        >
+                          Pick a state
+                        </button>
+                      </span>
+                    ) : null}
+                  </div>
+                  {/* Active filters — each shown as a removable chip so it's
+                      obvious WHAT is narrowing the feed and how to undo it. */}
+                  {(activeCats.length > 0 || quickActionsOnly) && (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="font-['Poppins',sans-serif] text-[10px] font-bold uppercase tracking-wider text-gray-400">Filtered by</span>
+                      {quickActionsOnly && (
+                        <button
+                          type="button"
+                          onClick={() => setQuickActionsOnly(false)}
+                          title="Remove the 5-minute filter"
+                          className="inline-flex items-center gap-1 rounded-full bg-[#5a3e9e]/10 py-0.5 pl-2 pr-1.5 font-['Poppins',sans-serif] text-[12px] font-semibold text-[#5a3e9e] transition-colors hover:bg-[#5a3e9e]/20"
+                        >
+                          <Zap size={11} fill="currentColor" /> 5 min
+                          <X size={12} strokeWidth={2.5} className="opacity-60" />
+                        </button>
+                      )}
+                      {[...activeCats].sort((a, b) => a.localeCompare(b)).map((cat) => (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => setActiveFilters((prev) => {
+                            const remaining = (prev["Category"] ?? []).filter((c) => c !== cat);
+                            const next = { ...prev };
+                            if (remaining.length) next["Category"] = remaining; else delete next["Category"];
+                            return next;
+                          })}
+                          title={`Remove ${cat}`}
+                          className="inline-flex items-center gap-1 rounded-full bg-gray-100 py-0.5 pl-2.5 pr-1.5 font-['Poppins',sans-serif] text-[12px] font-medium text-gray-700 transition-colors hover:bg-gray-200"
+                        >
+                          {cat}
+                          <X size={12} strokeWidth={2.5} className="text-gray-400" />
+                        </button>
+                      ))}
                       <button
                         type="button"
-                        onClick={() => setActiveFilters((prev) => { const n = { ...prev }; delete n["Category"]; return n; })}
-                        className="shrink-0 font-['Poppins',sans-serif] text-[12px] font-semibold text-[#ed6624] underline underline-offset-2 transition-colors hover:text-[#e07a28]"
+                        onClick={() => { setActiveFilters((prev) => { const n = { ...prev }; delete n["Category"]; return n; }); setQuickActionsOnly(false); }}
+                        className="ml-0.5 font-['Poppins',sans-serif] text-[11px] font-semibold text-[#ed6624] underline underline-offset-2 transition-colors hover:text-[#e07a28]"
                       >
-                        Clear
+                        Clear all
                       </button>
-                    </>
+                    </div>
                   )}
                 </div>
+                {/* Right side: the contextual "Save this view" button when it
+                    applies. ("Swipe to Discover" + "My Saved Matches" moved to
+                    the footer.) */}
+                <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
                 {/* Save the selected categories into the user's preferences
                     (includedCategories) — persists, syncs to the account when
-                    signed in, and switches the feed to favor them. Replaces the
-                    old Sort control on the right of the banner. */}
+                    signed in, and switches the feed to favor them. */}
                 {showSaveButton && (
                   <button
                     type="button"
@@ -3517,13 +3500,14 @@ export default function App() {
                       setStaggerKey((k) => k + 1);
                       showToast(accessToken ? "Saved to your preferences" : "Saved — sign in to sync across devices");
                     }}
-                    className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-[#ed6624] px-3 py-1.5 font-['Poppins',sans-serif] text-xs font-bold text-white transition-colors hover:bg-[#e07a28] whitespace-nowrap"
+                    className="shrink-0 inline-flex h-6 items-center gap-1 rounded-full border border-[#ed6624] bg-white px-2 font-['Poppins',sans-serif] text-[11px] font-normal text-[#ed6624] transition-colors hover:bg-[#ed6624]/5 whitespace-nowrap"
                     title="Save these filters (categories, location, 5 Mins Max) to your preferences"
                   >
-                    <Star size={12} fill="currentColor" />
-                    {activeCats.length > 0 ? "Save these categories" : "Save these filters"}
+                    <Star size={10} fill="currentColor" />
+                    Save search
                   </button>
                 )}
+                </div>
               </div>
               );
             })()}
@@ -3743,7 +3727,7 @@ export default function App() {
             </div>
 
             {loading ? (
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
                 {Array.from({ length: 10 }).map((_, i) => <CardSkeleton key={i} />)}
               </div>
             ) : (
@@ -3751,7 +3735,7 @@ export default function App() {
             <FlipGrid
               signature={feedSig}
               forceKey={staggerKey}
-              className={`grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-6 transition-opacity duration-150 ${searchQuery !== deferredSearchQuery ? "opacity-50" : "opacity-100"}`}
+              className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 transition-opacity duration-150 ${searchQuery !== deferredSearchQuery ? "opacity-50" : "opacity-100"}`}
             >
               {/* While the full-screen swipe deck is open it covers the feed, so
                   we unmount the feed cards entirely — this both frees the ~18k
@@ -3849,63 +3833,42 @@ export default function App() {
               jumps back to The Acts (and scrolls to top). On the Acts tab
               itself it stays a plain label — clicking your current tab is a
               no-op, so we don't dress it up as a link. */}
-          {(() => {
-            const innerContent = (
-              <>
-                <div className="w-2 h-2 rounded-full bg-[#ed6624]" />
-                <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
-                  {/* Total acts VIEWABLE to this user — runs the eligibility gate
-                      (expired / imageless / unapproved removed for the public;
-                      admins still see unapproved + imageless). Not the navbar
-                      filtered count — that lives in the feed banner. */}
-                  <strong className="text-[#ed6624] font-bold">{synced ? eligibleActsCount : "—"}</strong>
-                  <span className="hidden md:inline">
-                    {" "}acts
-                    {synced && newActionsToday > 0 && ` (${newActionsToday} new today)`}
-                  </span>
-                </span>
-              </>
-            );
-            return activeTab === "acts" ? (
-              <div className="flex items-center gap-1.5 shrink-0">{innerContent}</div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => { handleTabChange("acts"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-                className="flex items-center gap-1.5 shrink-0 rounded-md px-1 -mx-1 hover:bg-[#ed6624]/10 transition-colors cursor-pointer"
-                title="Go to The Acts"
-              >
-                {innerContent}
-              </button>
-            );
-          })()}
-          {/* Center: a personalized greeting + streak for signed-in users (moved
-              here from the hero, where it competed with the logo), otherwise the
-              call-to-action tag. */}
-          {effectiveApproval ? (
-            <p className="font-['Poppins',sans-serif] text-center text-[12px] md:text-base leading-tight min-w-0 flex-1 font-bold text-[#23297e]">
-              {effectiveLoginStreak <= 1 ? "Welcome to the resistance" : "Welcome back to the resistance"}, {(effectiveApproval.name || "Resistor").split(/\s+/)[0]}.{" "}
-              <em className="italic font-bold text-[#ed6624] whitespace-nowrap">
-                {effectiveLoginStreak >= 7 && (
-                  <span className="resistact-anim-flicker mr-1 inline-block" aria-hidden title={`${effectiveLoginStreak}-day streak — keep it lit!`}>🔥</span>
-                )}
-                Day {effectiveLoginStreak}.
-              </em>
-            </p>
-          ) : (
-            <p className="font-['Poppins',sans-serif] text-center text-[12px] md:text-base leading-tight min-w-0 flex-1">
-              <strong className="font-bold text-[#23297e]">
-                Pick one. <span className="text-[#ed6624]">Do it.</span> Share it.
-              </strong>{" "}
-              {/* Break onto its own line on phones; stays inline on desktop. */}
-              <br className="md:hidden" aria-hidden />
-              <em className="italic font-bold text-[#ed6624]">Come back tomorrow.</em>
-            </p>
-          )}
-          {/* Right: facts + smacks counts — each is a button that jumps to
-              its tab and scrolls to the top, so the footer doubles as quick
-              nav between sections. */}
+          {/* Left: all three library counts grouped — acts + facts + smacks.
+              Each (except the current tab's acts count) is a button that jumps
+              to its tab and scrolls to top, so the footer doubles as quick nav.
+              On narrow screens the word labels drop to just the colored
+              numbers so everything stays on one line. */}
           <div className="flex items-center gap-2 md:gap-3 shrink-0">
+            {(() => {
+              const innerContent = (
+                <>
+                  <div className="w-2 h-2 rounded-full bg-[#ed6624]" />
+                  <span className="font-['Poppins',sans-serif] text-xs text-gray-500 whitespace-nowrap">
+                    {/* Total acts VIEWABLE to this user — runs the eligibility gate
+                        (expired / imageless / unapproved removed for the public;
+                        admins still see unapproved + imageless). Not the navbar
+                        filtered count — that lives in the feed banner. */}
+                    <strong className="text-[#ed6624] font-bold">{synced ? eligibleActsCount : "—"}</strong>
+                    <span className="hidden md:inline">
+                      {" "}acts
+                      {synced && newActionsToday > 0 && ` (${newActionsToday} new today)`}
+                    </span>
+                  </span>
+                </>
+              );
+              return activeTab === "acts" ? (
+                <div className="flex items-center gap-1.5">{innerContent}</div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => { handleTabChange("acts"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                  className="flex items-center gap-1.5 rounded-md px-1 -mx-1 hover:bg-[#ed6624]/10 transition-colors cursor-pointer"
+                  title="Go to The Acts"
+                >
+                  {innerContent}
+                </button>
+              );
+            })()}
             <button
               type="button"
               onClick={() => { handleTabChange("facts"); window.scrollTo({ top: 0, behavior: "smooth" }); }}
@@ -3929,6 +3892,51 @@ export default function App() {
               </span>
             </button>
           </div>
+          {/* Center: a personalized greeting + streak for signed-in users (moved
+              here from the hero, where it competed with the logo), otherwise the
+              call-to-action tag. */}
+          {effectiveApproval ? (
+            <p className="font-['Poppins',sans-serif] text-center text-[12px] md:text-base leading-tight min-w-0 flex-1 font-bold text-[#23297e]">
+              {effectiveLoginStreak <= 1 ? "Welcome to the resistance" : "Welcome back to the resistance"}, {(effectiveApproval.name || "Resistor").split(/\s+/)[0]}.{" "}
+              <em className="italic font-bold text-[#ed6624] whitespace-nowrap">
+                {effectiveLoginStreak >= 7 && (
+                  <span className="resistact-anim-flicker mr-1 inline-block" aria-hidden title={`${effectiveLoginStreak}-day streak — keep it lit!`}>🔥</span>
+                )}
+                Day {effectiveLoginStreak}.
+              </em>
+            </p>
+          ) : (
+            <p className="font-['Poppins',sans-serif] text-center text-[12px] md:text-base leading-tight min-w-0 flex-1">
+              <strong className="font-bold text-[#23297e]">
+                Pick one. <span className="text-[#ed6624]">Do it.</span> Share it.
+              </strong>{" "}
+              {/* Break onto its own line on phones; stays inline on desktop. */}
+              <br className="md:hidden" aria-hidden />
+              <em className="italic font-bold text-[#ed6624]">Come back tomorrow.</em>
+            </p>
+          )}
+          {/* Right: Swipe to Discover + My Saved Matches (moved here from the
+              feed banner). Acts-tab only — they're Acts browsing tools — and
+              desktop-only (the pills themselves are hidden below md), so the
+              mobile footer stays compact. */}
+          <div className="flex items-center justify-end gap-2 shrink-0">
+            {activeTab === "acts" && (
+              <>
+                <SwipeCallout onSwipeClick={() => setSwipeOpen(true)} />
+                {effectiveBookmarked.size > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setBookmarksOpen(true)}
+                    title="View your saved Acts"
+                    className="hidden md:inline-flex h-8 shrink-0 items-center gap-2 rounded-full border border-[#ed6624] bg-[#ed6624]/5 px-3 font-['Poppins',sans-serif] transition-colors hover:bg-[#ed6624]/10"
+                  >
+                    <Heart size={14} strokeWidth={2.5} fill="#ed6624" className="text-[#ed6624]" />
+                    <span className="text-[13px] font-bold text-[#ed6624] whitespace-nowrap">My Saved Matches</span>
+                  </button>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -3938,6 +3946,7 @@ export default function App() {
         <SignupBanner
           onLoginClick={() => setAuthModalOpen(true)}
           onDismiss={() => setSignupBannerDismissed(true)}
+          onSwipeClick={activeTab === "acts" ? () => setSwipeOpen(true) : undefined}
         />
       )}
 
