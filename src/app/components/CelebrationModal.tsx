@@ -199,17 +199,27 @@ function ExplosiveFireworks({
       { left: "72%", top: "34%", delay: 260, color: palette[5], count: 18 },
     ];
 
-    // Tier-up burst — slightly fuller, still one calm wave (no storm).
+    // Tier-up burst — a full firework SHOW: three waves of shells across the
+    // whole viewport. Reaching a new tier is rare and earned, so it should feel
+    // an order of magnitude bigger than a single "I did this" pop.
     const tierUpOrigins = [
-      { left: "50%", top: "42%", delay: 0,   color: tierColor,  count: 38 },
-      { left: "24%", top: "30%", delay: 150, color: palette[0], count: 26 },
-      { left: "76%", top: "30%", delay: 280, color: palette[3], count: 26 },
-      { left: "36%", top: "58%", delay: 420, color: palette[2], count: 20 },
-      { left: "64%", top: "58%", delay: 540, color: palette[5], count: 20 },
+      // Wave 1 — the hero burst behind the badge.
+      { left: "50%", top: "40%", delay: 0,    color: tierColor,  count: 54 },
+      { left: "22%", top: "30%", delay: 120,  color: palette[0], count: 38 },
+      { left: "78%", top: "30%", delay: 240,  color: palette[3], count: 38 },
+      // Wave 2 — flanking shells lower and wider.
+      { left: "34%", top: "56%", delay: 460,  color: palette[2], count: 34 },
+      { left: "66%", top: "56%", delay: 600,  color: palette[5], count: 34 },
+      { left: "12%", top: "46%", delay: 760,  color: palette[7], count: 30 },
+      { left: "88%", top: "46%", delay: 880,  color: palette[6], count: 30 },
+      // Wave 3 — a final finale volley high across the top.
+      { left: "44%", top: "22%", delay: 1120, color: palette[2], count: 40 },
+      { left: "60%", top: "26%", delay: 1260, color: tierColor,  count: 40 },
+      { left: "30%", top: "20%", delay: 1400, color: palette[9], count: 32 },
     ];
 
     const burstOrigins = justLeveledUp ? tierUpOrigins : regularOrigins;
-    const maxDist = justLeveledUp ? 460 : 340;
+    const maxDist = justLeveledUp ? 560 : 340;
 
     const bursts = burstOrigins.map((o, bi) => ({
       ...o,
@@ -238,7 +248,7 @@ function ExplosiveFireworks({
 
     // Confetti rain — falls from above the viewport, drifts sideways. More
     // pieces (and longer fall) on tier-up.
-    const confettiCount = justLeveledUp ? 80 : 34;
+    const confettiCount = justLeveledUp ? 240 : 34;
     const shapes = justLeveledUp
       ? ["circle","square","star","circle","square"]
       : ["circle","square","bar"];
@@ -246,7 +256,7 @@ function ExplosiveFireworks({
       const left  = rand(0, 100);              // viewport %
       const drift = rand(-150, 150);           // horizontal drift in px
       const dur   = rand(justLeveledUp ? 2600 : 2200, justLeveledUp ? 4200 : 3400);
-      const delay = rand(0, justLeveledUp ? 1300 : 800);
+      const delay = rand(0, justLeveledUp ? 1700 : 800);
       const size  = rand(justLeveledUp ? 9 : 6, justLeveledUp ? 18 : 12);
       const color = palette[Math.floor(Math.random() * palette.length)];
       const spin  = (Math.random() < 0.5 ? -1 : 1) * rand(360, 1080);
@@ -257,11 +267,26 @@ function ExplosiveFireworks({
     return { bursts, confetti };
   }, [tierColor, justLeveledUp]);
 
-  // Shockwave delays — kept minimal so the moment stays calm.
-  const shockwaveDelays = justLeveledUp ? [0, 220] : [0];
+  // Shockwave delays — a single calm ring for a regular completion; a rolling
+  // series of concussive rings (one per firework wave) for a tier-up.
+  const shockwaveDelays = justLeveledUp ? [0, 220, 480, 780, 1140, 1300] : [0];
 
   return (
     <div className="fixed inset-0 z-[125] pointer-events-none overflow-hidden">
+      {/* Tier-up only: brief full-screen color pulses, one per firework wave,
+          so the whole viewport flares with the tier color — the "I just won"
+          beat a single completion never gets. */}
+      {justLeveledUp && [0, 480, 1120].map((delay, i) => (
+        <div
+          key={`flash-${delay}`}
+          className="celebration-screenflash absolute inset-0"
+          style={{
+            background: `radial-gradient(circle at 50% 40%, ${glowColor}${i === 0 ? "66" : "44"}, transparent 70%)`,
+            animationDelay: `${delay}ms`,
+          }}
+        />
+      ))}
+
       {/* Shockwave rings — concentric pulses centered on the main burst. */}
       <div className="absolute" style={{ left: "50%", top: "44%" }}>
         {shockwaveDelays.map((delay, idx) => (
@@ -488,7 +513,7 @@ export function CelebrationModal({ prevCount, newCount, onClose }: CelebrationMo
   // own. Tier-ups linger a little longer so the bigger celebration can play.
   // Tap-outside and Esc still close it sooner.
   useEffect(() => {
-    const t = window.setTimeout(onClose, copy.justLeveledUp ? 3200 : 2000);
+    const t = window.setTimeout(onClose, copy.justLeveledUp ? 4600 : 2000);
     return () => window.clearTimeout(t);
   }, [onClose, copy.justLeveledUp]);
 

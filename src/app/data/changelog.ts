@@ -16,6 +16,27 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.100",
+    date: "2026-06-15",
+    title: "Acts-done counter fix and a bigger level-up celebration",
+    sections: [
+      {
+        heading: "Fixes",
+        items: [
+          "Your \"acts done\" count and tier now always match across devices. Before, marking an act you'd already completed could make the counter look stuck or briefly show a level-up that didn't really stick — so you might see one tier on your iPad and another on your computer. The count now follows what the server actually recorded.",
+          "Acts you've already marked done no longer reappear in My Matches, so you won't accidentally re-mark something that's already counted.",
+          "Re-marking an act you've already finished now shows a quiet \"You'd already marked this one done\" note instead of a celebration.",
+        ],
+      },
+      {
+        heading: "Design",
+        items: [
+          "Reaching a new tier is now a much bigger moment — three waves of fireworks across the whole screen, rolling shockwaves, a confetti storm, and tier-colored flashes — clearly grander than the little pop you get for a single act.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.99",
     date: "2026-06-14",
     title: "Filter row and footer tidy-ups",
