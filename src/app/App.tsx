@@ -4075,7 +4075,10 @@ export default function App() {
 
       {/* Info / About modal */}
       {infoOpen && (
-        <InfoModal onClose={() => setInfoOpen(false)} />
+        <InfoModal
+          onClose={() => setInfoOpen(false)}
+          onContact={() => { setInfoOpen(false); setFeedbackOpen(true); }}
+        />
       )}
 
       {/* "Take a break" doom-scroll check-in (fires after 15 min active time) */}

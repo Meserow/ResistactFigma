@@ -39,35 +39,36 @@ export function SignupBanner({ onLoginClick, onDismiss, onSwipeClick }: { onLogi
     // Takes over the bottom footer slot for logged-out users (the white tagline
     // footer is hidden while this shows). Adapts to phones — the longer copy
     // collapses so the message + Join button still fit on one row.
-    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-[#1a1f63] bg-[#23297e] shadow-[0_-1px_3px_rgba(0,0,0,0.15)]">
-      <div className="flex items-center justify-between gap-3 px-4 py-2.5 text-white md:px-6">
+    <div className="fixed inset-x-0 bottom-0 z-30 border-t border-gray-200 bg-white shadow-[0_-1px_3px_rgba(0,0,0,0.08)]">
+      <div className="flex items-center justify-between gap-3 px-4 py-2.5 text-[#23297e] md:px-6">
         <div className="flex min-w-0 items-center gap-3">
-          {/* Swipe to Discover — same entry point logged-in users get in the
-              tagline footer, surfaced here on the LEFT so logged-out visitors
-              can jump into the deck too. Desktop-only (the pill hides below md). */}
-          {onSwipeClick && <SwipeCallout onSwipeClick={onSwipeClick} />}
-          {/* One paragraph (not two stacked) so the copy flows and wraps to at
-              most 2 lines — "Stay anonymous…" sits right after "…sync across
-              devices." instead of forcing its own third line. */}
-          <p className="min-w-0 font-['Poppins',sans-serif] text-[13px] leading-snug md:text-sm">
-            <span className="font-bold">You're browsing anonymously.</span>{" "}
-            <span className="hidden text-white/85 sm:inline">Create a free account to save your progress, earn tiers, and sync across devices.</span>{" "}
-            <span className="hidden italic text-white/60 sm:inline">Stay anonymous if you like — no tracking, no spam.</span>
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
+          {/* Join The Resistance — primary CTA, on the LEFT (swapped with the
+              Swipe pill). */}
           <button
             onClick={onLoginClick}
-            className="inline-flex items-center gap-1.5 rounded-full bg-[#ed6624] px-3.5 pb-1.5 pt-2 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#c2521b]"
+            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-[#ed6624] px-3.5 font-['Poppins',sans-serif] text-sm font-bold text-white transition-colors hover:bg-[#c2521b]"
           >
             <Flame size={14} strokeWidth={2.25} />
             <span className="hidden sm:inline">Join The Resistance</span>
             <span className="sm:hidden">Join</span>
           </button>
+          {/* One paragraph (not two stacked) so the copy flows and wraps to at
+              most 2 lines — "Stay anonymous…" sits right after "…sync across
+              devices." instead of forcing its own third line. */}
+          <p className="min-w-0 font-['Poppins',sans-serif] text-[13px] leading-snug md:text-sm">
+            <span className="font-bold">You're browsing anonymously.</span>{" "}
+            <span className="hidden text-gray-600 sm:inline">Create a free account to save your progress, earn tiers, and sync across devices.</span>{" "}
+            <span className="hidden italic text-gray-400 sm:inline">Stay anonymous if you like — no tracking, no spam.</span>
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {/* Swipe to Discover — now on the RIGHT (swapped with Join). Desktop
+              only; the pill hides below md. */}
+          {onSwipeClick && <SwipeCallout onSwipeClick={onSwipeClick} />}
           <button
             onClick={onDismiss}
             aria-label="Dismiss"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/15 hover:text-white"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
           >
             <X size={16} />
           </button>
