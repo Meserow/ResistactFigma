@@ -5987,6 +5987,14 @@ app.post("/make-server-9eb1ae04/actions/:id/complete", async (c) => {
     // when or which acts the unsigned-in folks are actually doing.
     const token = c.req.header("Authorization")?.split(" ")[1];
     let attributedToUser = false;
+    // The signed-in user's authoritative, deduplicated completion total AFTER
+    // this toggle. The client uses this — not an optimistic +1 — to drive the
+    // tier badge and the celebration, so re-marking an already-completed act
+    // (which overwrites the same `complete:` key and does NOT change the count)
+    // can never inflate the count or trigger a phantom tier-up. Null for
+    // anonymous callers (they have no per-user record; the client dedups
+    // locally via its completedCards Set instead).
+    let myTotal: number | null = null;
     if (token) {
       const user = await getUser(token);
       if (user) {
@@ -6001,6 +6009,9 @@ app.post("/make-server-9eb1ae04/actions/:id/complete", async (c) => {
         } else {
           await kv.del(userKey);
         }
+        // Recount distinct completions for the authoritative total.
+        const records = (await kv.getByPrefix(`complete:${user.id}:`)) as any[];
+        myTotal = records?.length ?? 0;
       }
     }
     if (!attributedToUser && toggleDelta(delta) > 0) {
@@ -6019,7 +6030,7 @@ app.post("/make-server-9eb1ae04/actions/:id/complete", async (c) => {
       });
     }
 
-    return c.json({ card });
+    return c.json({ card, myTotal });
   } catch (err) {
     console.log("Error updating completion count:", err);
     return c.json({ error: `Failed to update completion: ${err}` }, 500);

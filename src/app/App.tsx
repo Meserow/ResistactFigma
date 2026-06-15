@@ -2050,7 +2050,7 @@ export default function App() {
       const res = await fetch(`${API}/me/completions`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) return;
+      if (!res.ok) return null;
       const data = await res.json();
       setMyCompletions(data);
       // Merge server-known completions into the optimistic local set so the
@@ -2063,8 +2063,10 @@ export default function App() {
           return next;
         });
       }
+      return data as { total: number; byCategory: Record<string, number>; completedIds: number[] };
     } catch (err) {
       console.error("Could not fetch completions:", err);
+      return null;
     }
   }
 
@@ -2550,13 +2552,11 @@ export default function App() {
         : c)
     );
 
-    // Fireworks for a fresh completion — never on un-do. Use the optimistic
-    // bump (prevTotal + 1) so the modal pops immediately; the server-side
-    // count syncs back in the background and overrides if it disagrees.
     if (delta === 1) {
-      setCelebration({ prev: prevTotal, next: prevTotal + 1 });
-      // Analytics: fire only on a fresh completion. Pulls the card from the
-      // current state map so we know the category at click-time.
+      // Analytics + signals fire on the optimistic completion. The celebration
+      // itself is deferred until the server confirms the new authoritative
+      // total (below) so a re-mark of an already-completed act can't trigger a
+      // phantom tier-up.
       const card = cards.find((c) => c.id === id);
       analytics.actionCompleted(id, card?.category);
       logSignal(id, "did"); // strongest "For You" signal — they actually did it
@@ -2593,11 +2593,41 @@ export default function App() {
         const text = await res.text();
         console.error(`Completion update failed for card ${id}: ${text}`);
       } else {
-        const { card: updated } = await res.json();
+        const { card: updated, myTotal } = await res.json();
         setCards((prev) =>
           prev.map((c) => (c.id === id ? resolveCard(updated) : c))
         );
-        if (token) fetchMyCompletions(token);
+
+        if (token) {
+          // Signed in: trust the server's deduplicated total. The complete
+          // endpoint returns it directly (`myTotal`); if we're talking to an
+          // older deploy that doesn't yet, fall back to re-fetching the
+          // scoreboard so we still get an authoritative number.
+          let authTotal = typeof myTotal === "number" ? myTotal : null;
+          if (authTotal == null) {
+            const fresh = await fetchMyCompletions(token);
+            authTotal = fresh?.total ?? null;
+          } else {
+            // Patch the badge immediately so the tier reflects truth, then
+            // sync the full scoreboard (byCategory / completedIds) in the bg.
+            setMyCompletions((prev) => (prev ? { ...prev, total: authTotal! } : prev));
+            fetchMyCompletions(token);
+          }
+          // Celebrate only when the authoritative total actually CLIMBED.
+          // A re-mark of an already-completed act leaves the total unchanged —
+          // no fireworks, no phantom tier-up. We tell the user why instead.
+          if (delta === 1 && authTotal != null) {
+            if (authTotal > prevTotal) {
+              setCelebration({ prev: prevTotal, next: authTotal });
+            } else if (authTotal === prevTotal) {
+              showToast("You'd already marked this one done. ✓");
+            }
+          }
+        } else if (delta === 1) {
+          // Anonymous: completedCards (a Set) is the only record and is already
+          // deduped, so a fresh local completion is genuinely +1.
+          setCelebration({ prev: prevTotal, next: prevTotal + 1 });
+        }
       }
     } catch (err) {
       console.error("Network error updating completion:", err);
@@ -4004,6 +4034,7 @@ export default function App() {
         <BookmarksPanel
           cards={cards}
           bookmarkedIds={bookmarkedCards}
+          completedIds={effectiveCompleted}
           onBookmark={handleBookmark}
           onClose={() => setBookmarksOpen(false)}
           isLoggedIn={!!approval}

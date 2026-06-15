@@ -8,6 +8,11 @@ import cardFallbackImg from "../../assets/resistact-card-fallback.webp";
 interface BookmarksPanelProps {
   cards: ActionCardData[];
   bookmarkedIds: Set<number>;
+  /** Acts the user has already marked done. Completing an act normally
+   *  un-saves it, but a cross-device sync gap (or acts completed before that
+   *  behavior shipped) can leave a done act sitting in the saved list. Filter
+   *  them out here so the user can't re-mark something already counted. */
+  completedIds: Set<number>;
   onBookmark: (id: number) => void;
   onClose: () => void;
   isLoggedIn: boolean;
@@ -17,8 +22,8 @@ interface BookmarksPanelProps {
   onOpenCard: (card: ActionCardData) => void;
 }
 
-export function BookmarksPanel({ cards, bookmarkedIds, onBookmark, onClose, isLoggedIn, onLoginClick, onOpenCard }: BookmarksPanelProps) {
-  const bookmarked = cards.filter((c) => bookmarkedIds.has(c.id));
+export function BookmarksPanel({ cards, bookmarkedIds, completedIds, onBookmark, onClose, isLoggedIn, onLoginClick, onOpenCard }: BookmarksPanelProps) {
+  const bookmarked = cards.filter((c) => bookmarkedIds.has(c.id) && !completedIds.has(c.id));
 
   return createPortal(
     <div
