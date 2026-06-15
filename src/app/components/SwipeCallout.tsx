@@ -14,13 +14,10 @@ export function SwipeCallout({ onSwipeClick }: { onSwipeClick?: () => void }) {
     <button
       onClick={onSwipeClick}
       title="Swipe through acts one at a time"
-      className="group hidden md:inline-flex items-center gap-3 rounded-full border border-[#d6541a] bg-gradient-to-r from-[#ed6624] to-[#f5853f] px-4 py-1.5 shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg hover:from-[#e25a1c] hover:to-[#f07a2e]"
+      className="group hidden md:inline-flex h-8 items-center gap-2 rounded-full border border-[#d6541a] bg-gradient-to-r from-[#ed6624] to-[#f5853f] px-3 shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg hover:from-[#e25a1c] hover:to-[#f07a2e]"
     >
       <SwipeCardStack />
-      <span className="flex flex-col items-start text-left leading-tight whitespace-nowrap">
-        <span className="text-[13px] font-extrabold text-white">Swipe to Discover</span>
-        <span className="text-[10.5px] font-medium italic text-white/85">Flip through acts one at a time</span>
-      </span>
+      <span className="text-[13px] font-extrabold text-white whitespace-nowrap">Swipe to Discover</span>
       <ChevronRight size={16} className="text-white/80 transition-all group-hover:translate-x-0.5 group-hover:text-white" />
     </button>
   );

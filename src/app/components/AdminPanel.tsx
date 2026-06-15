@@ -59,7 +59,14 @@ interface AdminPanelProps {
 }
 
 type TabFilter = "active" | "pending" | "approved" | "rejected" | "all";
-type PanelMode = "cards" | "users" | "nourl" | "noimage" | "matcher" | "online" | "bigimages" | "brokenimages" | "sameurl" | "newcard" | "siteupdate" | "topacts" | "topfacts" | "topsmacks";
+type PanelMode = "cards" | "users" | "nourl" | "noimage" | "notime" | "matcher" | "online" | "bigimages" | "brokenimages" | "sameurl" | "newcard" | "siteupdate" | "topacts" | "topfacts" | "topsmacks";
+
+// Time-commitment values an admin can assign from the "Missing time" page.
+// Kept in sync with EditCardModal's TIME_OPTIONS labels so the picker can
+// never store a value the card UI doesn't recognize.
+const TIME_COMMITMENT_OPTIONS = [
+  "< 5 minutes", "5–10 minutes", "~30 minutes", "1–3 hours", "Full day", "Ongoing",
+];
 
 // Category labels + colors for the "Create from URL" form's dropdown. Mirrors
 // EditCardModal's CATEGORY_OPTIONS so a created card gets the right pill color.
@@ -438,6 +445,14 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
   const [noImageLoading, setNoImageLoading] = useState(false);
   const [noImageError, setNoImageError] = useState<string | null>(null);
 
+  // ── No-time cards state (approved cards with no timeCommitment) ──────────────
+  const [noTimeCards, setNoTimeCards] = useState<PendingCard[]>([]);
+  const [noTimeLoading, setNoTimeLoading] = useState(false);
+  const [noTimeError, setNoTimeError] = useState<string | null>(null);
+  /** Per-card draft of the time value the admin picked but hasn't saved. */
+  const [timeEdits, setTimeEdits] = useState<Record<number, string>>({});
+  const [timeSaving, setTimeSaving] = useState<number | null>(null);
+
   // ── Online-now state ─────────────────────────────────────────────────────────
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const [onlineLoading, setOnlineLoading] = useState(false);
@@ -702,6 +717,42 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
     }
   }
 
+  async function fetchNoTimeCards() {
+    setNoTimeLoading(true);
+    setNoTimeError(null);
+    try {
+      const res = await fetch(`${API}/admin/actions/no-url?filter=time`, { headers: authHeaders });
+      const data = await res.json();
+      if (!res.ok) { setNoTimeError(data.error ?? "Failed to load cards."); return; }
+      setNoTimeCards(data.cards ?? []);
+      setTimeEdits({});
+    } catch {
+      setNoTimeError("Network error loading cards.");
+    } finally {
+      setNoTimeLoading(false);
+    }
+  }
+
+  async function handleSaveTime(id: number) {
+    const timeCommitment = (timeEdits[id] ?? "").trim();
+    if (!timeCommitment) return;
+    setTimeSaving(id);
+    try {
+      const res = await fetch(`${API}/actions/${id}`, {
+        method: "PUT",
+        headers: authHeaders,
+        body: JSON.stringify({ timeCommitment }),
+      });
+      if (!res.ok) { const d = await res.json(); alert(d.error ?? "Save failed"); return; }
+      setNoTimeCards((prev) => prev.filter((c) => c.id !== id));
+      setTimeEdits((prev) => { const n = { ...prev }; delete n[id]; return n; });
+    } catch {
+      alert("Network error saving time.");
+    } finally {
+      setTimeSaving(null);
+    }
+  }
+
   async function fetchOnlineUsers() {
     setOnlineLoading(true);
     setOnlineError(null);
@@ -833,6 +884,7 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
   useEffect(() => { if (mode === "users" && users.length === 0) fetchUsers(); }, [mode]);
   useEffect(() => { if (mode === "nourl" && noUrlCards.length === 0 && !noUrlLoading) fetchNoUrlCards(); }, [mode]);
   useEffect(() => { if (mode === "noimage" && noImageCards.length === 0 && !noImageLoading) fetchNoImageCards(); }, [mode]);
+  useEffect(() => { if (mode === "notime" && noTimeCards.length === 0 && !noTimeLoading) fetchNoTimeCards(); }, [mode]);
   // Online tab: fetch once when the tab opens. No auto-refresh — the
   // user said it's wasteful to repoll every 30s when they're just glancing
   // at it. Hitting the Refresh button in the header re-fetches on demand.
@@ -1116,17 +1168,17 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
               <div>
                 <p className="font-['Poppins',sans-serif] font-bold text-gray-900 text-base leading-tight">Admin Panel</p>
                 <p className="font-['Poppins',sans-serif] text-gray-400 text-xs">
-                  {mode === "users" ? "Manage user approvals" : mode === "newcard" ? "Build an Act from a URL with AI" : mode === "siteupdate" ? "Global 'site updating' banner" : mode === "nourl" ? "Approved cards with no action link" : mode === "noimage" ? "Approved cards with no image" : mode === "online" ? "Users active in the last 7 days" : mode === "bigimages" ? "Stored images over 500 KB — optimize to shrink" : mode === "brokenimages" ? "Cards whose topImageUrl 404s — needs re-upload" : mode === "sameurl" ? "Cards where action URL = author link — bulk-import default" : mode === "topacts" ? "Acts ranked by completions (most done first)" : mode === "topfacts" ? "Facts ranked by boosts (most boosted first)" : mode === "topsmacks" ? "Smacks ranked by boosts (most boosted first)" : "Review submitted actions"}
+                  {mode === "users" ? "Manage user approvals" : mode === "newcard" ? "Build an Act from a URL with AI" : mode === "siteupdate" ? "Global 'site updating' banner" : mode === "nourl" ? "Approved cards with no action link" : mode === "noimage" ? "Approved cards with no image" : mode === "notime" ? "Approved cards with no time estimate" : mode === "online" ? "Users active in the last 7 days" : mode === "bigimages" ? "Stored images over 500 KB — optimize to shrink" : mode === "brokenimages" ? "Cards whose topImageUrl 404s — needs re-upload" : mode === "sameurl" ? "Cards where action URL = author link — bulk-import default" : mode === "topacts" ? "Acts ranked by completions (most done first)" : mode === "topfacts" ? "Facts ranked by boosts (most boosted first)" : mode === "topsmacks" ? "Smacks ranked by boosts (most boosted first)" : "Review submitted actions"}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={mode === "users" ? fetchUsers : mode === "nourl" ? fetchNoUrlCards : mode === "noimage" ? fetchNoImageCards : mode === "online" ? fetchOnlineUsers : mode === "bigimages" ? fetchBigImages : mode === "brokenimages" ? fetchBrokenImages : mode === "sameurl" ? fetchSameUrlCards : mode === "topacts" ? fetchTopActs : mode === "topfacts" ? fetchTopFacts : mode === "topsmacks" ? fetchTopSmacks : fetchPendingCards}
-                disabled={mode === "users" ? loading : mode === "nourl" ? noUrlLoading : mode === "noimage" ? noImageLoading : mode === "online" ? onlineLoading : mode === "bigimages" ? bigImagesLoading : mode === "brokenimages" ? brokenLoading : mode === "sameurl" ? sameUrlLoading : mode === "topacts" ? topActsLoading : mode === "topfacts" ? topFactsLoading : mode === "topsmacks" ? topSmacksLoading : cardsLoading}
+                onClick={mode === "users" ? fetchUsers : mode === "nourl" ? fetchNoUrlCards : mode === "noimage" ? fetchNoImageCards : mode === "notime" ? fetchNoTimeCards : mode === "online" ? fetchOnlineUsers : mode === "bigimages" ? fetchBigImages : mode === "brokenimages" ? fetchBrokenImages : mode === "sameurl" ? fetchSameUrlCards : mode === "topacts" ? fetchTopActs : mode === "topfacts" ? fetchTopFacts : mode === "topsmacks" ? fetchTopSmacks : fetchPendingCards}
+                disabled={mode === "users" ? loading : mode === "nourl" ? noUrlLoading : mode === "noimage" ? noImageLoading : mode === "notime" ? noTimeLoading : mode === "online" ? onlineLoading : mode === "bigimages" ? bigImagesLoading : mode === "brokenimages" ? brokenLoading : mode === "sameurl" ? sameUrlLoading : mode === "topacts" ? topActsLoading : mode === "topfacts" ? topFactsLoading : mode === "topsmacks" ? topSmacksLoading : cardsLoading}
                 className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-40"
               >
-                <RefreshCw size={15} className={(mode === "users" ? loading : mode === "nourl" ? noUrlLoading : mode === "noimage" ? noImageLoading : mode === "online" ? onlineLoading : mode === "bigimages" ? bigImagesLoading : mode === "brokenimages" ? brokenLoading : mode === "sameurl" ? sameUrlLoading : mode === "topacts" ? topActsLoading : mode === "topfacts" ? topFactsLoading : mode === "topsmacks" ? topSmacksLoading : cardsLoading) ? "animate-spin" : ""} />
+                <RefreshCw size={15} className={(mode === "users" ? loading : mode === "nourl" ? noUrlLoading : mode === "noimage" ? noImageLoading : mode === "notime" ? noTimeLoading : mode === "online" ? onlineLoading : mode === "bigimages" ? bigImagesLoading : mode === "brokenimages" ? brokenLoading : mode === "sameurl" ? sameUrlLoading : mode === "topacts" ? topActsLoading : mode === "topfacts" ? topFactsLoading : mode === "topsmacks" ? topSmacksLoading : cardsLoading) ? "animate-spin" : ""} />
               </button>
               <button
                 onClick={onClose}
@@ -1145,6 +1197,7 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
               { value: "cards",        label: "Cards",            Icon: FileText,      badge: !cardsLoading && pendingCardsCount > 0 ? String(pendingCardsCount) : undefined },
               { value: "nourl",        label: "Missing URL",      Icon: Link2,         badge: noUrlCards.length > 0 ? String(noUrlCards.length) : undefined },
               { value: "noimage",      label: "Missing Image",    Icon: ImageIcon,     badge: noImageCards.length > 0 ? String(noImageCards.length) : undefined },
+              { value: "notime",       label: "Missing Time",     Icon: Clock,         badge: noTimeCards.length > 0 ? String(noTimeCards.length) : undefined },
               { value: "online",       label: "Online",           Icon: Activity,      badge: onlineUsers.length > 0 ? String(onlineUsers.length) : undefined },
               { value: "topacts",      label: "Top Acts",         Icon: BarChart3 },
               { value: "topfacts",     label: "Top Facts",        Icon: Lightbulb },
@@ -1682,6 +1735,83 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
                         </p>
                       </li>
                     ))}
+                  </ul>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* ── NO-TIME mode ────────────────────────────────────────────────────────── */}
+          {mode === "notime" && (
+            <>
+              <div className="px-5 py-3 border-b border-gray-100 shrink-0">
+                <p className="font-['Poppins',sans-serif] text-xs text-gray-500">
+                  {noTimeCards.length === 0 && !noTimeLoading
+                    ? "All approved cards have a time estimate."
+                    : `${noTimeCards.length} approved card${noTimeCards.length !== 1 ? "s" : ""} missing a time estimate`}
+                </p>
+              </div>
+
+              <div className="flex-1 overflow-y-auto">
+                {noTimeLoading ? (
+                  <div className="flex items-center justify-center h-40">
+                    <Loader2 size={24} className="animate-spin text-[#23297e]" />
+                  </div>
+                ) : noTimeError ? (
+                  <div className="p-5 text-center">
+                    <p className="font-['Poppins',sans-serif] text-sm text-red-500">{noTimeError}</p>
+                    <button onClick={fetchNoTimeCards} className="mt-3 text-xs text-[#23297e] underline font-['Poppins',sans-serif]">Retry</button>
+                  </div>
+                ) : noTimeCards.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-40 gap-2">
+                    <CheckCircle2 size={28} className="text-green-200" />
+                    <p className="font-['Poppins',sans-serif] text-sm text-gray-400">All cards have a time estimate!</p>
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-gray-50">
+                    {noTimeCards.map((card) => {
+                      const isSaving = timeSaving === card.id;
+                      const draft = timeEdits[card.id] ?? "";
+                      return (
+                        <li key={card.id} className="px-5 py-4 hover:bg-gray-50/60 transition-colors">
+                          <div className="flex items-start gap-2 mb-2">
+                            <span
+                              className="text-[10px] font-bold font-['Poppins',sans-serif] uppercase tracking-wider px-1.5 py-0.5 rounded-md text-white shrink-0 mt-0.5"
+                              style={{ background: card.categoryColor }}
+                            >
+                              {card.category}
+                            </span>
+                            <p className="font-['Poppins',sans-serif] font-semibold text-gray-900 text-sm leading-snug">
+                              {card.title}
+                            </p>
+                          </div>
+                          <p className="font-['Poppins',sans-serif] text-[11px] text-gray-400 mb-2 line-clamp-2">
+                            {card.description}
+                          </p>
+                          {/* Time picker + save — labels match the card UI exactly. */}
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={draft}
+                              onChange={(e) => setTimeEdits((prev) => ({ ...prev, [card.id]: e.target.value }))}
+                              className="flex-1 min-w-0 px-3 py-1.5 text-xs font-['Poppins',sans-serif] border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#23297e] focus:border-transparent bg-white text-gray-700"
+                            >
+                              <option value="" disabled>Pick a time estimate…</option>
+                              {TIME_COMMITMENT_OPTIONS.map((label) => (
+                                <option key={label} value={label}>{label}</option>
+                              ))}
+                            </select>
+                            <button
+                              onClick={() => handleSaveTime(card.id)}
+                              disabled={!draft.trim() || isSaving}
+                              className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-[#23297e] hover:bg-[#1a2060] text-white rounded-lg font-['Poppins',sans-serif] font-semibold text-xs transition-colors disabled:opacity-40"
+                            >
+                              {isSaving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+                              Save
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>

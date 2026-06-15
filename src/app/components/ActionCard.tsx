@@ -8,6 +8,7 @@ import { CardDetailsModal } from "./CardDetailsModal";
 import { FlagCardModal } from "./FlagCardModal";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import cardFallbackImg from "../../assets/resistact-card-fallback.webp";
+import fistImg from "../../assets/resistact-fist.png";
 import { colorForCategory } from "../lib/categoryGroups";
 
 // Hand-authored subtitle shown ONLY on the pinned "Spread the Word" hero card
@@ -220,11 +221,12 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
   // is single digits). If/when the data grows and boost counts rise into
   // the tens, this should drift upward so the flicker stays meaningful.
   const HOT_BOOST_THRESHOLD = 5;
-  // Boost / done stats, rendered as a frosted pill overlaid on the banner's
-  // lower-left (mirrors the location badge at lower-right). Hidden entirely
-  // when both counts are zero — a brand-new act shows a clean banner. Hooks
-  // run before the early return so hook order stays stable.
-  function BannerStatsPill() {
+  // Boost / done stats. On banner layouts (featured / compact) it renders as
+  // a frosted pill overlaid on the banner's lower-left; with `inline` it
+  // renders in normal flow (used by the standard card's meta row, where the
+  // banner no longer exists). Hidden entirely when there's nothing to show.
+  // Hooks run before the early return so hook order stays stable.
+  function BannerStatsPill({ inline = false }: { inline?: boolean }) {
     const boostCount = card.boosts ?? 0;
     const showBoost = !card.pinToTop && boostCount > 0;
     const showDone = effectiveCount > 0;
@@ -241,57 +243,74 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
     const animatedDones = useAnimatedNumber(effectiveCount);
     const isHotBoost = boostCount >= HOT_BOOST_THRESHOLD;
     if (!showBoost && !showDone && !showHeart && !showPass) return null;
-    // Two SEPARATE frosted chips at the banner's bottom-left: a personal
-    // save/pass pill (heart + pass-X marker) and, beside it, the public
-    // boost/done counts pill — so "your action" reads as distinct from "the
-    // crowd's tallies". Each chip self-hides when it has nothing to show.
+    const heartBtn = showHeart && (
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onBookmark?.(card.id); }}
+        aria-label={isBookmarked ? "Remove from saved" : "Save this act"}
+        aria-pressed={isBookmarked}
+        title={isBookmarked ? "Saved — tap to remove" : "Save this act"}
+        className={`inline-flex items-center transition-colors ${isBookmarked ? "text-[#ed6624]" : "text-gray-400 hover:text-[#ed6624]"}`}
+      >
+        <Heart size={13} strokeWidth={2.5} fill={isBookmarked ? "currentColor" : "none"} />
+      </button>
+    );
+    const passBtn = showPass && (
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onPass?.(card.id); }}
+        aria-label={isPassed ? "Undo pass" : "Pass — not for me"}
+        aria-pressed={isPassed}
+        title={isPassed ? "Passed — tap to undo" : "Pass — hide this from my feed"}
+        className={`inline-flex items-center transition-colors ${isPassed ? "text-cyan-500" : "text-gray-400 hover:text-cyan-500"}`}
+      >
+        <X size={14} strokeWidth={isPassed ? 3.5 : 2.5} />
+      </button>
+    );
+    const boostStat = showBoost && (
+      <span className="inline-flex items-center gap-1 text-gray-600 font-['Poppins',sans-serif] font-medium text-[11px] whitespace-nowrap">
+        <span aria-hidden className={isHotBoost ? "resistact-anim-flicker inline-block" : "inline-block"}>🔥</span>
+        <span>{animatedBoosts.toLocaleString()}</span>
+      </span>
+    );
+    // Done badge: brand teal-green (#0d8c6e — same identity as the
+    // "I did this!" pill inside the modal) so the checkmark reads
+    // as a positive signal at a glance, not as a neutral metric.
+    const doneStat = showDone && (
+      <span className="inline-flex items-center gap-1 text-[#0d8c6e] font-['Poppins',sans-serif] font-medium text-[11px] whitespace-nowrap">
+        <span aria-hidden>✓</span>
+        <span className="text-[#0d8c6e]/80">{animatedDones.toLocaleString()}</span>
+      </span>
+    );
+    // Inline (standard card's meta row): everything shares ONE flat chip —
+    // heart + pass marker + boost/done counts — so the row stays a single
+    // compact height instead of a circle next to a pill.
+    if (inline) {
+      return (
+        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-md px-2 py-0.5">
+          {heartBtn}
+          {passBtn}
+          {boostStat}
+          {doneStat}
+        </div>
+      );
+    }
+    // Banner overlay (featured / compact): two SEPARATE frosted chips at the
+    // banner's bottom-left — a personal save/pass pill and, beside it, the
+    // public boost/done counts pill — so "your action" reads as distinct from
+    // "the crowd's tallies". Each chip self-hides when it has nothing to show.
     return (
       <div className="absolute bottom-2 left-3 flex items-center gap-1.5">
         {(showHeart || showPass) && (
           <div className={`flex items-center justify-center bg-white/95 backdrop-blur-sm shadow-sm ${showHeart && showPass ? "gap-2 rounded-full px-2.5 py-1" : "h-7 w-7 rounded-full"}`}>
-            {showHeart && (
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); onBookmark?.(card.id); }}
-                aria-label={isBookmarked ? "Remove from saved" : "Save this act"}
-                aria-pressed={isBookmarked}
-                title={isBookmarked ? "Saved — tap to remove" : "Save this act"}
-                className={`inline-flex items-center transition-colors ${isBookmarked ? "text-[#ed6624]" : "text-gray-400 hover:text-[#ed6624]"}`}
-              >
-                <Heart size={13} strokeWidth={2.5} fill={isBookmarked ? "currentColor" : "none"} />
-              </button>
-            )}
-            {showPass && (
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); onPass?.(card.id); }}
-                aria-label={isPassed ? "Undo pass" : "Pass — not for me"}
-                aria-pressed={isPassed}
-                title={isPassed ? "Passed — tap to undo" : "Pass — hide this from my feed"}
-                className={`inline-flex items-center transition-colors ${isPassed ? "text-cyan-500" : "text-gray-400 hover:text-cyan-500"}`}
-              >
-                <X size={14} strokeWidth={isPassed ? 3.5 : 2.5} />
-              </button>
-            )}
+            {heartBtn}
+            {passBtn}
           </div>
         )}
         {(showBoost || showDone) && (
           <div className="flex items-center gap-2 bg-white/95 backdrop-blur-sm rounded-md px-2 py-0.5 shadow-sm">
-            {showBoost && (
-              <span className="inline-flex items-center gap-1 text-gray-600 font-['Poppins',sans-serif] font-medium text-[11px] whitespace-nowrap">
-                <span aria-hidden className={isHotBoost ? "resistact-anim-flicker inline-block" : "inline-block"}>🔥</span>
-                <span>{animatedBoosts.toLocaleString()}</span>
-              </span>
-            )}
-            {showDone && (
-              // Done badge: brand teal-green (#0d8c6e — same identity as the
-              // "I did this!" pill inside the modal) so the checkmark reads
-              // as a positive signal at a glance, not as a neutral metric.
-              <span className="inline-flex items-center gap-1 text-[#0d8c6e] font-['Poppins',sans-serif] font-medium text-[11px] whitespace-nowrap">
-                <span aria-hidden>✓</span>
-                <span className="text-[#0d8c6e]/80">{animatedDones.toLocaleString()}</span>
-              </span>
-            )}
+            {boostStat}
+            {doneStat}
           </div>
         )}
       </div>
@@ -343,8 +362,138 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
     </div>
   ) : null;
 
+  /* ── Title + optional subtitle (standard card) ──────────
+     Shared by the compact banner-on-top layout (inside the content column)
+     and the non-compact header row (beside the square thumbnail).
+     Subtitle source (in priority order):
+       1. card.synopsis if hand-authored — gives editorial control
+          over what shows below the title.
+       2. Title split: if the title contains " — " em-dash or
+          ": " colon, the part after becomes the subtitle.
+            "Headline — location / scope" → drops em-dash
+            "Topic: Detail"               → keeps colon on head
+          When both are present, splits on whichever appears
+          first so the head stays the natural opening phrase.
+       3. Nothing — no subtitle row renders.
+     Description is intentionally NOT used as a fallback;
+     auto-derived summaries read worse than no subtitle. */
+  const titleBlock = (() => {
+    const t = card.title;
+    const emDashIdx = t.indexOf(" — ");
+    const colonIdx = t.indexOf(": ");
+    let head = t;
+    const synopsis = (card.synopsis ?? "").trim();
+    let tail = synopsis;
+    // True when the subtitle came from a synopsis (hand-authored
+    // or generated) vs a title split — we add an ellipsis only
+    // to synopses, since title splits are already complete phrases.
+    const tailFromSynopsis = tail.length > 0;
+    if (!tail) {
+      const colonFirst =
+        colonIdx >= 0 && (emDashIdx < 0 || colonIdx < emDashIdx);
+      const emDashFirst =
+        emDashIdx >= 0 && (colonIdx < 0 || emDashIdx < colonIdx);
+      if (colonFirst) {
+        // Strip the trailing colon from the head — dangling ":"
+        // reads as broken punctuation when the subtitle below
+        // already separates the two phrases visually.
+        const proposedHead = t.slice(0, colonIdx);
+        const headMeaningful =
+          proposedHead.length >= 8 && /\s/.test(proposedHead);
+        if (headMeaningful) {
+          head = proposedHead;
+          tail = t.slice(colonIdx + 2);
+        }
+      } else if (emDashFirst) {
+        head = t.slice(0, emDashIdx);
+        tail = t.slice(emDashIdx + 3);
+      }
+
+      // ── Swap head and tail when the head is a boilerplate
+      //    "verb + audience" phrase ("Tell Congress", "Call your
+      //    Senators", "Email Republican Reps", "Urge Your State
+      //    Legislators") and the tail carries the specific ask.
+      //    Without this, a wall of "Tell Congress" cards all look
+      //    identical at a glance — the meat sits in the subordinate
+      //    line. With the swap, the specific bill / topic becomes
+      //    the prominent title and the contact verb shrinks to the
+      //    subtitle, which reads like a news headline. ─────────
+      if (tail) {
+        const VERB_STARTS = /^(tell|call|email|urge|ask|write|sign)\b/i;
+        const headIsBoilerplate =
+          VERB_STARTS.test(head) && tail.length > head.length;
+        if (headIsBoilerplate) {
+          const swap = head;
+          head = tail;
+          tail = swap;
+        }
+      }
+    }
+    // Append a soft ellipsis on synopsis subtitles — visual cue
+    // that there's more to read inside the modal. Title-split
+    // subtitles read as complete phrases and don't need it.
+    const displayedTail =
+      tail && tailFromSynopsis && !/[.…!?]$/.test(tail)
+        ? tail + "…"
+        : tail;
+    return (
+      <h3 className={`font-['Poppins',sans-serif] font-bold text-gray-900 leading-snug ${compact ? "text-[13px]" : "text-[15px]"}`}>
+        {head}
+        {tail && (
+          // Subtitle styling deliberately more distinct from the head
+          // than before: smaller, lighter gray, italic, and a bigger
+          // vertical gap. Previously the subtitle read as natural
+          // line-wrap because the visual delta was too small.
+          <span className={`font-normal italic text-gray-400 leading-snug line-clamp-2 ${compact ? "text-[11px] mt-1" : "text-[12px] mt-1.5"}`}>
+            {displayedTail}
+          </span>
+        )}
+      </h3>
+    );
+  })();
+
   /* ── Featured (navy) card ─────────────────────────────── */
   if (card.isFeatured) {
+    /* Pinned "Spread the Word" hero in the full feed: instead of the old
+       top art banner, it now wears the ResistAct fist as a left-side spine
+       that fades into the share-prompt text — matching the standard cards'
+       new spine treatment. The act's own art moves into the share modal. */
+    if (card.pinToTop && !compact) {
+      return (
+        <>
+          <div
+            onClick={() => setShareOpen(true)}
+            className="resistact-card-shine resistact-banner-host relative transform-gpu cursor-pointer bg-white rounded-2xl border-[0.75px] border-gray-400 hover:border-[#23297e] hover:ring-2 hover:ring-[#23297e] flex flex-col overflow-hidden h-full transition-[transform,box-shadow,opacity] duration-200 ease-out hover:shadow-md motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] hover:z-10 opacity-95 hover:opacity-100"
+          >
+            {/* Fist-logo spine on the left, fading into the card body. */}
+            <div className="pointer-events-none absolute inset-y-0 left-0 z-0 w-[20%]" aria-hidden="true">
+              <img
+                src={fistImg}
+                alt=""
+                className="h-full w-full object-cover object-center"
+                style={{ WebkitMaskImage: "linear-gradient(to right, #000 55%, transparent 100%)", maskImage: "linear-gradient(to right, #000 55%, transparent 100%)" }}
+              />
+            </div>
+            {/* Flame, top-right corner. */}
+            <div className="absolute top-2.5 right-3 z-20">
+              <span aria-hidden className="resistact-anim-flicker inline-block text-[15px]">🔥</span>
+            </div>
+            {/* Content — right of the fist spine. */}
+            <div className="relative z-10 flex flex-1 flex-col gap-2 pl-[22%] pr-5 pb-3 pt-3">
+              <h3 className="font-['Poppins',sans-serif] font-bold leading-snug text-[15px] text-[#23297e] pr-6">
+                {card.title}
+              </h3>
+              <p className="font-['Poppins',sans-serif] not-italic text-gray-500 text-[12px] leading-snug flex-1 overflow-hidden">
+                {SPREAD_THE_WORD_SUBTITLE}
+              </p>
+            </div>
+          </div>
+          {shareOpen && (
+            <SpreadTheWordModal artUrl={effectiveTopImage} onClose={() => setShareOpen(false)} onShared={onSpreadShared} />
+          )}
+        </>
+      );
+    }
     return (
       <>
         <div
@@ -445,16 +594,17 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
                 the full body. */}
             {!card.pinToTop && (
               <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-100">
-                <CategoryPill />
-                <div className="flex items-center gap-2.5 min-w-0 justify-end">
-                  <div className="min-w-0 text-right">
-                    <p className="font-['Poppins',sans-serif] font-semibold text-[12px] text-gray-800 truncate leading-tight">{card.authorName}</p>
-                    <p className="font-['Poppins',sans-serif] text-[11px] text-gray-400 truncate leading-tight">{card.authorRole}</p>
-                  </div>
+                {/* Author left, category right — mirrors the standard card. */}
+                <div className="flex items-center gap-2.5 min-w-0">
                   {card.authorAvatar && (
                     <ImageWithFallback src={card.authorAvatar} alt={card.authorName} className="w-8 h-8 rounded-full object-cover ring-1 ring-gray-200 shrink-0" />
                   )}
+                  <div className="min-w-0">
+                    <p className="font-['Poppins',sans-serif] font-semibold text-[12px] text-gray-800 truncate leading-tight">{card.authorName}</p>
+                    <p className="font-['Poppins',sans-serif] text-[11px] text-gray-400 truncate leading-tight">{card.authorRole}</p>
+                  </div>
                 </div>
+                <CategoryPill />
               </div>
             )}
           </div>
@@ -502,7 +652,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
           end-to-end in the modal. */}
       <div
         onClick={() => setDetailsOpen(true)}
-        className={`resistact-banner-host transform-gpu cursor-pointer bg-white rounded-2xl border-[0.75px] border-gray-400 hover:border-[#23297e] hover:ring-2 hover:ring-[#23297e] flex flex-col overflow-hidden h-full transition-[transform,box-shadow,opacity] duration-200 ease-out hover:shadow-md motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] hover:z-10 ${
+        className={`resistact-banner-host relative transform-gpu cursor-pointer bg-white rounded-2xl border-[0.75px] border-gray-400 hover:border-[#23297e] hover:ring-2 hover:ring-[#23297e] flex flex-col overflow-hidden h-full transition-[transform,box-shadow,opacity] duration-200 ease-out hover:shadow-md motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] hover:z-10 ${
           // Resting 95% opacity for every card, full color on hover — a calm,
           // browsable grid where the hovered card pops. `transition-all` above
           // covers the opacity tween so it eases in/out smoothly. Completed
@@ -511,6 +661,9 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
           isCompleted ? "opacity-50 hover:opacity-100" : "opacity-95 hover:opacity-100"
         } ${isPending ? "ring-2 ring-red-400" : ""}`}
       >
+        {/* Done stamp — with the banner gone, the stamp overlays the whole
+            card (root is relative). Compact keeps it on its banner. */}
+        {!compact && doneStamp}
         {/* ── Admin: pending approval banner ── */}
         {isPending && !compact && (
           <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-red-50 border-b border-red-200 shrink-0">
@@ -558,70 +711,42 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
             {doneStamp}
           </div>
         ) : (
-          /* Non-compact: full-width banner on top (matches the Spread the
-             Word featured card's silhouette). Overlays back on the image:
-             time badge + bookmark/edit top-right, type tag top-left,
-             location badge bottom-right. Category + title sit in the
-             content area below. */
-          <div className={`relative h-[106px] shrink-0 overflow-hidden rounded-t-2xl ${!showTopImage ? "bg-[#fff8f3]" : ""}`}>
-            {showTopImage ? (
-              <ImageWithFallback
-                src={effectiveTopImage}
-                alt={card.title}
-                /* Cartoonized banners are 3:2 with the subject's head
-                   typically painted in the upper portion. Object-position
-                   50% 15% slides the visible window slightly up from
-                   center so heads stay in frame at the 4:1 card aspect.
-                   For original photos (no cartoon), use object-top to keep
-                   the legacy behavior. */
-                className={`${card.pinToTop ? "" : "resistact-banner-desat"} w-full h-full object-cover ${card.cartoonImageUrl ? "[object-position:50%_15%]" : "object-top"}`}
-                onError={() => setImageFailed(true)}
-              />
-            ) : (
-              <img src={cardFallbackImg} alt="" aria-hidden="true" className="w-full h-full object-contain p-4" />
+          /* Non-compact: the cartoon runs full-height down the LEFT side of
+             the card as a "spine", then fades out toward the center via a
+             right-edge gradient mask so it dissolves into the white text
+             area. Card content (time, title, meta, footer) sits in a column
+             to the right (see the content block's conditional left padding).
+             The heart/boost/done chip floats in the top-right corner above
+             the spine. No image → no spine, and the content uses normal
+             left padding instead. */
+          <>
+            {showTopImage && (
+              <div className="pointer-events-none absolute inset-y-0 left-0 z-0 w-[20%]" aria-hidden="true">
+                <ImageWithFallback
+                  src={effectiveTopImage}
+                  alt=""
+                  className={`${card.pinToTop ? "" : "resistact-banner-desat"} h-full w-full object-cover ${card.cartoonImageUrl ? "" : "object-top"}`}
+                  /* Right-edge fade: fully opaque through ~58% of the band's
+                     width, then dissolves to transparent so the cartoon melts
+                     into the white card body where the text begins. */
+                  style={{ WebkitMaskImage: "linear-gradient(to right, #000 58%, transparent 100%)", maskImage: "linear-gradient(to right, #000 58%, transparent 100%)" }}
+                  onError={() => setImageFailed(true)}
+                />
+              </div>
             )}
-            {doneStamp}
-            {/* Top-right: time pill. Admin edit pencil lives in the
-                details modal so the grid stays uncluttered. */}
-            <div className="absolute top-2.5 right-3 flex items-center gap-1.5">
-              <TimeBadge light={showTopImage} />
+            {/* Heart + boost/done chip — top-right corner, above the spine. */}
+            <div className="absolute top-2.5 right-3 z-20">
+              <BannerStatsPill inline />
             </div>
-
-            {/* Type tag on top-left of the banner. */}
-            {card.typeTag && (
-              <div className="absolute top-2.5 left-3 bg-white/90 backdrop-blur-sm border border-[#fb00ff] rounded-lg px-2.5 py-0.5">
-                <span className="font-['Poppins',sans-serif] font-bold text-[11px] text-[#fc20ff]">{card.typeTag}</span>
-              </div>
-            )}
-
-            {/* Location badge bottom-right. Capped to 55% width with
-                truncation so long location strings don't overrun the
-                banner. */}
-            {(card.isOnline || card.location) && (
-              <div className="absolute bottom-2 right-3 max-w-[55%] flex items-center gap-1 bg-white/95 backdrop-blur-sm rounded-md px-2 py-0.5 shadow-sm">
-                {card.location
-                  ? <>
-                      <MapPin size={11} className="text-gray-700 shrink-0" />
-                      <span className="font-['Poppins',sans-serif] text-[11px] text-gray-700 truncate">{card.location}</span>
-                      {card.isOnline && <Globe size={11} className="text-gray-700 shrink-0" aria-label="also doable remotely" />}
-                    </>
-                  : <><Globe size={11} className="text-gray-700 shrink-0" /><span className="font-['Poppins',sans-serif] text-[11px] text-gray-700 truncate">Online</span></>
-                }
-              </div>
-            )}
-
-            {/* Boost/done stats pill — bottom-left of the banner. Moved here
-                from the card footer; the category pill took its old spot.
-                Self-hides when both counts are zero. */}
-            <BannerStatsPill />
-          </div>
+          </>
         )}
 
-        {/* Content */}
-        <div className={`relative flex flex-col flex-1 ${compact ? "gap-1 px-3 pb-2 pt-1.5" : "gap-2 px-5 pb-3 pt-3"}`}>
+        {/* Content. Non-compact: left padding clears the cartoon spine when
+            an image is present (pl-[22%]); otherwise normal padding. z-10 so
+            text paints above the faded spine. */}
+        <div className={`relative z-10 flex flex-col flex-1 ${compact ? "gap-1 px-3 pb-2 pt-1.5" : `gap-2 pr-5 pb-3 pt-3 ${showTopImage ? "pl-[22%]" : "pl-5"}`}`}>
           {/* Category — only renders in compact (Quick Match preview)
-              mode here. Non-compact moved the category onto a pill
-              overlay on the banner's bottom-left. */}
+              mode here. Non-compact shows it as a pill in the footer. */}
           {compact && (
             <span
               className="font-['Poppins',sans-serif] font-bold tracking-wider uppercase text-[10px]"
@@ -631,96 +756,32 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
             </span>
           )}
 
-          {/* Title — full content-area width since the controls (bookmark,
-              edit) are overlaid on the banner image now, not in the content
-              area. */}
-          {/* Title with optional subtitle.
-              Subtitle source (in priority order):
-                1. card.synopsis if hand-authored — gives editorial control
-                   over what shows below the title.
-                2. Title split: if the title contains " — " em-dash or
-                   ": " colon, the part after becomes the subtitle.
-                     "Headline — location / scope" → drops em-dash
-                     "Topic: Detail"               → keeps colon on head
-                   When both are present, splits on whichever appears
-                   first so the head stays the natural opening phrase.
-                3. Nothing — no subtitle row renders.
-              Description is intentionally NOT used as a fallback;
-              auto-derived summaries read worse than no subtitle. */}
-          {(() => {
-            const t = card.title;
-            const emDashIdx = t.indexOf(" — ");
-            const colonIdx = t.indexOf(": ");
-            let head = t;
-            const synopsis = (card.synopsis ?? "").trim();
-            let tail = synopsis;
-            // True when the subtitle came from a synopsis (hand-authored
-            // or generated) vs a title split — we add an ellipsis only
-            // to synopses, since title splits are already complete phrases.
-            const tailFromSynopsis = tail.length > 0;
-            if (!tail) {
-              const colonFirst =
-                colonIdx >= 0 && (emDashIdx < 0 || colonIdx < emDashIdx);
-              const emDashFirst =
-                emDashIdx >= 0 && (colonIdx < 0 || emDashIdx < colonIdx);
-              if (colonFirst) {
-                // Strip the trailing colon from the head — dangling ":"
-                // reads as broken punctuation when the subtitle below
-                // already separates the two phrases visually.
-                const proposedHead = t.slice(0, colonIdx);
-                const headMeaningful =
-                  proposedHead.length >= 8 && /\s/.test(proposedHead);
-                if (headMeaningful) {
-                  head = proposedHead;
-                  tail = t.slice(colonIdx + 2);
-                }
-              } else if (emDashFirst) {
-                head = t.slice(0, emDashIdx);
-                tail = t.slice(emDashIdx + 3);
-              }
+          {/* Title — compact renders it bare; non-compact wraps the time
+              badge + title together at the top of the content column, with
+              right padding so the first lines clear the top-right chip. */}
+          {compact && titleBlock}
+          {!compact && (
+            <div className="pr-12">
+              {card.timeCommitment && (
+                <div className="mb-1">
+                  <TimeBadge light={false} />
+                </div>
+              )}
+              {titleBlock}
+            </div>
+          )}
 
-              // ── Swap head and tail when the head is a boilerplate
-              //    "verb + audience" phrase ("Tell Congress", "Call your
-              //    Senators", "Email Republican Reps", "Urge Your State
-              //    Legislators") and the tail carries the specific ask.
-              //    Without this, a wall of "Tell Congress" cards all look
-              //    identical at a glance — the meat sits in the subordinate
-              //    line. With the swap, the specific bill / topic becomes
-              //    the prominent title and the contact verb shrinks to the
-              //    subtitle, which reads like a news headline. ─────────
-              if (tail) {
-                const VERB_STARTS = /^(tell|call|email|urge|ask|write|sign)\b/i;
-                const headIsBoilerplate =
-                  VERB_STARTS.test(head) && tail.length > head.length;
-                if (headIsBoilerplate) {
-                  const swap = head;
-                  head = tail;
-                  tail = swap;
-                }
-              }
-            }
-            // Append a soft ellipsis on synopsis subtitles — visual cue
-            // that there's more to read inside the modal. Title-split
-            // subtitles read as complete phrases and don't need it.
-            const displayedTail =
-              tail && tailFromSynopsis && !/[.…!?]$/.test(tail)
-                ? tail + "…"
-                : tail;
-            return (
-              <h3 className={`font-['Poppins',sans-serif] font-bold text-gray-900 leading-snug ${compact ? "text-[13px]" : "text-[15px]"}`}>
-                {head}
-                {tail && (
-                  // Subtitle styling deliberately more distinct from the head
-                  // than before: smaller, lighter gray, italic, and a bigger
-                  // vertical gap. Previously the subtitle read as natural
-                  // line-wrap because the visual delta was too small.
-                  <span className={`font-normal italic text-gray-400 leading-snug line-clamp-2 ${compact ? "text-[11px] mt-1" : "text-[12px] mt-1.5"}`}>
-                    {displayedTail}
-                  </span>
-                )}
-              </h3>
-            );
-          })()}
+          {/* Meta row — just the type tag now. The time badge sits above the
+              title, the heart/boost/done chip in the upper-right corner, and
+              the location in the footer beside the category pill. Skipped
+              entirely when empty so it doesn't add a blank gap. */}
+          {!compact && card.typeTag && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="inline-flex items-center bg-white border border-[#fb00ff] rounded-lg px-2.5 py-0.5 font-['Poppins',sans-serif] font-bold text-[11px] text-[#fc20ff]">
+                {card.typeTag}
+              </span>
+            </div>
+          )}
 
           {/* Compact-only description preview — the user's only look at the
               card before deciding in Quick Match. */}
@@ -756,11 +817,16 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
               mode (Quick Match preview is too small for this density). */}
           {!compact && (
             <div className="flex items-center justify-between gap-3 pt-1 border-t border-gray-100">
-              <CategoryPill />
-
-              {/* Author */}
-              <div className="flex items-center gap-2.5 min-w-0 justify-end">
-                <div className="min-w-0 text-right">
+              {/* Author — left side (swapped with the category pill). */}
+              <div className="flex items-center gap-2.5 min-w-0">
+                {card.authorAvatar && (
+                  <ImageWithFallback
+                    src={card.authorAvatar}
+                    alt={card.authorName}
+                    className="rounded-full object-cover ring-1 ring-gray-200 shrink-0 w-8 h-8"
+                  />
+                )}
+                <div className="min-w-0">
                   <p className="font-['Poppins',sans-serif] font-semibold text-[12px] text-gray-800 truncate leading-tight">
                     {card.authorName}
                   </p>
@@ -777,13 +843,24 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
                     </p>
                   )}
                 </div>
-                {card.authorAvatar && (
-                  <ImageWithFallback
-                    src={card.authorAvatar}
-                    alt={card.authorName}
-                    className="rounded-full object-cover ring-1 ring-gray-200 shrink-0 w-8 h-8"
-                  />
+              </div>
+
+              {/* Location + category — right side. Location is capped so a
+                  long state list can't crowd out the pill. */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                {(card.isOnline || card.location) && (
+                  <span className="inline-flex max-w-[110px] items-center gap-1 bg-gray-100 rounded-md px-2 py-0.5">
+                    {card.location
+                      ? <>
+                          <MapPin size={11} className="text-gray-700 shrink-0" />
+                          <span className="font-['Poppins',sans-serif] text-[11px] text-gray-700 truncate">{card.location}</span>
+                          {card.isOnline && <Globe size={11} className="text-gray-700 shrink-0" aria-label="also doable remotely" />}
+                        </>
+                      : <><Globe size={11} className="text-gray-700 shrink-0" /><span className="font-['Poppins',sans-serif] text-[11px] text-gray-700 truncate">Online</span></>
+                    }
+                  </span>
                 )}
+                <CategoryPill />
               </div>
             </div>
           )}

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { X, Zap, Sparkles, Megaphone, Heart } from "lucide-react";
-import { SwipeCallout } from "./SwipeCallout";
+import { X, Zap } from "lucide-react";
 
 interface HeroPillsProps {
   onMatchClick?: () => void;
@@ -43,53 +42,9 @@ export function HeroPills({ onMatchClick, onAskClick, onHowClick, hasMatchPrefs,
 
   return (
     <>
-      {/* Phones get these actions in the hamburger menu instead (see Navbar);
-          hidden here below md so the hero stays compact on small screens. */}
-      <div className="hidden md:flex flex-wrap lg:flex-nowrap justify-center gap-2">
-        {onAskClick && (
-          <button
-            onClick={onAskClick}
-            className="shrink-0 inline-flex items-center gap-2 rounded-full border border-[#23297e] bg-white px-4 py-1.5 font-['Poppins',sans-serif] transition-colors hover:bg-[#23297e]/5"
-          >
-            <Megaphone size={14} strokeWidth={2.5} className="text-[#23297e]" />
-            <span className="flex flex-col items-start text-left leading-tight whitespace-nowrap">
-              <span className="text-[13px] font-bold text-[#23297e]">Add an Act!</span>
-              <span className="text-[10.5px] font-normal text-[#23297e]/70 italic">Find people to do a great idea!</span>
-            </span>
-          </button>
-        )}
-        <SwipeCallout onSwipeClick={onSwipeClick} />
-        {/* My Saved Matches — only appears once the user has saved acts, so it
-            never shows an empty "0 saved" state. */}
-        {onBookmarksClick && (bookmarkCount ?? 0) > 0 && (
-          <button
-            onClick={onBookmarksClick}
-            className="shrink-0 inline-flex items-center gap-2 rounded-full border border-[#ed6624] bg-[#ed6624]/5 px-4 py-1.5 font-['Poppins',sans-serif] transition-colors hover:bg-[#ed6624]/10"
-          >
-            <Heart size={14} strokeWidth={2.5} fill="#ed6624" className="text-[#ed6624]" />
-            <span className="flex flex-col items-start text-left leading-tight whitespace-nowrap">
-              <span className="text-[13px] font-bold text-[#ed6624]">My Saved Matches</span>
-              <span className="text-[10.5px] font-normal text-[#ed6624]/70 italic">{bookmarkCount} act{bookmarkCount === 1 ? "" : "s"} saved</span>
-            </span>
-          </button>
-        )}
-        {/* "Set Act Preferences" pill removed — preferences are now set by
-            picking categories on the feed and using "Save these categories"
-            in the feed banner. */}
-        <button
-          ref={(el) => { triggerRefs.current.how = el; }}
-          onClick={() => onHowClick ? onHowClick() : setOpenModal("how")}
-          aria-haspopup="dialog"
-          aria-expanded={openModal === "how"}
-          className="shrink-0 inline-flex items-center gap-2 rounded-full border border-gray-400 px-4 py-1.5 font-['Poppins',sans-serif] transition-colors hover:border-[#23297e] hover:bg-[#23297e]/5 hover:text-[#23297e] group"
-        >
-          <Zap size={14} strokeWidth={2.5} className="text-gray-600 group-hover:text-[#23297e]" />
-          <span className="flex flex-col items-start text-left leading-tight whitespace-nowrap">
-            <span className="text-[13px] font-bold text-gray-600 group-hover:text-[#23297e]">About ResistAct</span>
-            <span className="text-[10.5px] font-normal text-gray-400 italic group-hover:text-[#23297e]/70">What is this site about?</span>
-          </span>
-        </button>
-      </div>
+      {/* The hero pill row is gone: "Add an Act!" lives in the user dropdown,
+          "About" in the top nav, and "Swipe to Discover" / "My Saved Matches"
+          to the right of the search. Nothing renders here now. */}
 
       {openModal === "how" && (
         <HeroModal onClose={closeAndRestore} title="About" titleId="hero-modal-how" accentColor="#23297e" icon={<Zap size={20} strokeWidth={2} />}>

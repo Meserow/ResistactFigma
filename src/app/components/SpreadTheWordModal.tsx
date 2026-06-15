@@ -124,7 +124,7 @@ function buildPlatforms(siteUrl: string) {
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export function SpreadTheWordModal({ onClose, onShared }: { onClose: () => void; onShared?: () => void }) {
+export function SpreadTheWordModal({ onClose, onShared, artUrl }: { onClose: () => void; onShared?: () => void; artUrl?: string }) {
   const siteUrl = window.location.origin;
   const platforms = buildPlatforms(siteUrl);
 
@@ -247,6 +247,16 @@ export function SpreadTheWordModal({ onClose, onShared }: { onClose: () => void;
             pinned below, so the primary action is always reachable even when
             the modal is taller than a phone viewport. */}
         <div className="flex-1 overflow-y-auto">
+        {/* Act art — moved here from the pinned "Spread the Word" feed card,
+            which now shows the ResistAct fist instead. */}
+        {artUrl && (
+          <img
+            src={artUrl}
+            alt=""
+            aria-hidden="true"
+            className="w-full h-[180px] object-cover"
+          />
+        )}
         {/* Intro copy */}
         <div className="px-5 pt-3 pb-1.5">
           <p className="font-['Poppins',sans-serif] text-[12.5px] text-gray-700 leading-snug">

@@ -16,6 +16,216 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.97",
+    date: "2026-06-14",
+    title: "Phone menu tidy-up and a lighter Save button",
+    sections: [
+      {
+        heading: "Mobile",
+        items: [
+          "The Acts / Facts / Smacks switcher moved into the hamburger menu on phones, so the bar below the header is just filters now.",
+          "The Scroll / Swipe toggle now sits at the top of that bar, above the Category filter.",
+        ],
+      },
+      {
+        heading: "Design",
+        items: [
+          "The search box placeholder is now simply \"Search…\".",
+          "Made the \"Save these filters\" button smaller and lighter so it sits quietly in the bar.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.96",
+    date: "2026-06-14",
+    title: "Mobile search fix and a few footer tweaks",
+    sections: [
+      {
+        heading: "Design",
+        items: [
+          "The search box placeholder now fits on phones (shows a short \"Search…\").",
+          "\"Swipe to Discover\" now also shows for logged-out visitors — on the left side of the bottom \"browsing anonymously\" bar.",
+          "The \"Save these filters\" button is now white with an orange outline instead of solid orange.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.95",
+    date: "2026-06-14",
+    title: "Simpler filters and a reorganized footer",
+    sections: [
+      {
+        heading: "Design",
+        items: [
+          "Removed the \"In Person\" and \"Remote\" filter buttons — the feed already shows every act by default, so they were redundant. You can still narrow by location with the location picker.",
+          "The bottom bar now groups the acts, facts, and smacks counts together on the left, with \"Swipe to Discover\" and \"My Saved Matches\" on the right.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.94",
+    date: "2026-06-14",
+    title: "A clearer filter bar and swipe-deck polish",
+    sections: [
+      {
+        heading: "Design",
+        items: [
+          "The bar below the filters is easier to read: it leads with the result count and location, then shows your active filters as removable chips you can clear one at a time.",
+          "The swipe deck now plays a quick one-time demo — the card nudges right then left — so the save/pass directions are clear, and the extra side labels were removed for a cleaner view.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.93",
+    date: "2026-06-13",
+    title: "Roomier feed and a cleaner Spread the Word card",
+    sections: [
+      {
+        heading: "Design",
+        items: [
+          "Gave the Acts feed a lot more breathing room — bigger cards with more space between them, so the grid feels calmer and less crowded.",
+          "The pinned \"Spread the Word\" card now wears the ResistAct fist down its left side like the other cards; its illustration moved into the share popup that opens when you click it.",
+          "Trimmed the \"Swipe to Discover\" and \"My Saved Matches\" buttons down to a single clean label.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.92",
+    date: "2026-06-13",
+    title: "New card look and a tidier filter banner",
+    sections: [
+      {
+        heading: "Design",
+        items: [
+          "Act cards have a new look — the cartoon art now runs down the left edge of the card and softly fades into the text, instead of sitting in a corner thumbnail.",
+          "\"Swipe to Discover\" and \"My Saved Matches\" now live together in the banner just below the filter pills, alongside the \"Save these filters\" button — so all your browsing tools are in one place.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.91",
+    date: "2026-06-13",
+    title: "More time estimates filled in by category",
+    sections: [
+      {
+        heading: "Content",
+        items: [
+          "Boost and Petition Acts that were missing a time estimate now show \"< 5 minutes,\" and Boycott Acts that were missing one now show \"~30 minutes.\" Acts that already had a time were left as they were.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.90",
+    date: "2026-06-13",
+    title: "Snappier hero, cleaner nav, and Protest time estimates",
+    sections: [
+      {
+        heading: "Design",
+        items: [
+          "The opening hero animation is quicker now — the intro lines and logo reveal land in about half the time.",
+          "\"Swipe to Discover\" and \"My Saved Matches\" moved up to the top nav, just right of the search box.",
+          "Tidied the hero by removing its button row (those actions now live in the nav and your account menu).",
+        ],
+      },
+      {
+        heading: "Content",
+        items: [
+          "Protest Acts that were missing a time estimate now show \"1–3 hours.\" Acts that already had a time were left as they were.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.89",
+    date: "2026-06-13",
+    title: "Tidier top navigation",
+    sections: [
+      {
+        heading: "Design",
+        items: [
+          "\"About\" now lives in the top nav right after The Smacks, so it's always one click away.",
+          "\"Add an Act\" moved into your account menu (the dropdown under your avatar) when you're signed in. You can still add an Act from the hero buttons and the mobile menu.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.88",
+    date: "2026-06-13",
+    title: "Time estimates filled in for Represent and Letter Writing Acts",
+    sections: [
+      {
+        heading: "Content",
+        items: [
+          "Represent Acts that were missing a time estimate now show \"< 5 minutes,\" and Letter Writing Acts that were missing one now show \"~30 minutes.\" Acts that already had a time stayed as they were.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.87",
+    date: "2026-06-12",
+    title: "Admin: find and fix Acts missing a time estimate",
+    sections: [
+      {
+        heading: "Admin",
+        items: [
+          "Added a \"Missing Time\" page to the admin portal that lists every live Act with no time estimate set, with a badge count next to it. Pick an estimate from the dropdown and hit Save — the Act drops off the list once fixed, just like the Missing URL page.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.86",
+    date: "2026-06-12",
+    title: "A tidier Acts feed: square art thumbnails",
+    sections: [
+      {
+        heading: "Design",
+        items: [
+          "Act cards got a new look — the cartoon art now sits as a tall thumbnail in the card's top corner, right next to the title, instead of as a wide banner across the top. Cards are shorter, so more Acts fit on your screen at once.",
+          "The badges that used to float on the banner found new homes: the save-heart, boost, and done counts share one chip in the card's top-right corner, the time badge sits above the title, and the location sits at the bottom beside the category pill. The author moved to the bottom-left corner.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.85",
+    date: "2026-06-12",
+    title: "Matched results now follow your live location filter",
+    sections: [
+      {
+        heading: "Fixes",
+        items: [
+          "Changing your state with the location banner or Location filter now carries through to your matched feed. Before, matching could quietly keep using the state saved in your preferences — so someone who moved from California to Washington saw their Washington Acts hidden from \"Matched for you\" results.",
+          "Picking multiple states in the Location filter no longer hides state-specific Acts from matched results — all of your picked states now count.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.84",
+    date: "2026-06-12",
+    title: "Your location filter no longer vanishes — and category picks always show results",
+    sections: [
+      {
+        heading: "Fixes",
+        items: [
+          "Switching between The Acts, The Facts, and The Smacks no longer silently erases your location filter. Before, the feed could claim \"Showing Acts for your state\" while actually showing Acts from every state.",
+          "If a past visit lost your auto-detected state to that bug, the app now restores it automatically and shows the location banner again so you can confirm or change it.",
+          "Clicking a category (like Protest) after clearing your filters now always shows that category's Acts. Previously, saved Match preferences could invisibly veto every card in a category you'd just picked, leaving a wrongly empty feed.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.83",
     date: "2026-06-08",
     title: "Tidied up the top navigation",

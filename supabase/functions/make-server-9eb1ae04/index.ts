@@ -384,6 +384,8 @@ const KNOWN_MIGRATION_FLAG_KEYS: readonly string[] = [
   "migration:approved-without-image-cleanup:v1",
   "migration:authorrole-reclassify:v1",
   "migration:authorrole-reclassify:v2",
+  "migration:boost-boycott-petition-times:v1",
+  "migration:boost-to-amplify-category:v1",
   "migration:cancel-your-10min:v1",
   "migration:common-cause-actions:v1",
   "migration:creators-import-2026-05-batch2:v1",
@@ -404,6 +406,8 @@ const KNOWN_MIGRATION_FLAG_KEYS: readonly string[] = [
   "migration:nourl-review:v1",
   "migration:petitions-10min:v1",
   "migration:portland-seattle-yolo-import-2026-05:v1",
+  "migration:protest-blank-time-1to3:v1",
+  "migration:represent-letter-times:v1",
   "migration:reset-boosts:v1",
   "migration:resistbot-citizens-united:v1",
   "migration:resistbot-citizens-united:v2",
@@ -1480,8 +1484,9 @@ app.get("/make-server-9eb1ae04/admin/actions/no-url", async (c) => {
 
     // ?filter=url   → only cards missing targetUrl
     // ?filter=image → only cards missing all image fields
-    // (default)     → both (legacy behaviour, kept for backwards compat)
-    const filter = c.req.query("filter") ?? "all"; // "url" | "image" | "all"
+    // ?filter=time  → only cards missing a timeCommitment
+    // (default)     → url + image (legacy behaviour, kept for backwards compat)
+    const filter = c.req.query("filter") ?? "all"; // "url" | "image" | "time" | "all"
 
     // A card has an image if any image field is set. cartoonImageUrl may still
     // carry the pre-CDN local path (/cartoon-banners/card-N.webp) in KV, but
@@ -1495,8 +1500,11 @@ app.get("/make-server-9eb1ae04/admin/actions/no-url", async (c) => {
       if (card.adminApproved !== true) return false;
       const noUrl   = !card.targetUrl;
       const noImage = !hasImage(card);
+      // A blank string or whitespace counts as "no time set" too.
+      const noTime  = !card.timeCommitment || !String(card.timeCommitment).trim();
       if (filter === "url")   return noUrl;
       if (filter === "image") return noImage;
+      if (filter === "time")  return noTime;
       return noUrl || noImage; // "all"
     };
 
@@ -2906,6 +2914,104 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       }
       await setMigrationFlag("migration:petitions-10min:v1");
       console.log(`Petitions 10-min migration: updated ${updated} cards.`);
+    }
+
+    // One-time editorial pass on time estimates by category — fills in BLANKS
+    // only, leaving any card that already has a time set untouched:
+    //   • REPRESENT      → "< 5 minutes" (quick "contact your rep" style asks)
+    //   • LETTER WRITING → "~30 minutes"
+    // Category match is case-insensitive/trimmed to catch both
+    // "Represent"/"REPRESENT" and "LETTER WRITING"/"Letter Writing". Touches
+    // org seeds (action:*) and admin/user cards (user-action:*).
+    const representLetterTimesDone = await getMigrationFlag("migration:represent-letter-times:v1");
+    if (!representLetterTimesDone) {
+      let repUpdated = 0, letterUpdated = 0;
+      for (const prefix of ["action:", "user-action:"]) {
+        for (const c of (await kv.getByPrefix(prefix)) as any[]) {
+          if (!c || typeof c !== "object" || typeof c.id !== "number") continue;
+          // Skip cards that already carry a time — only blanks get filled.
+          if (c.timeCommitment && String(c.timeCommitment).trim()) continue;
+          const cat = String(c.category ?? "").trim().toLowerCase();
+          if (cat === "represent") {
+            await kv.set(`${prefix}${c.id}`, { ...c, timeCommitment: "< 5 minutes" });
+            repUpdated++;
+          } else if (cat === "letter writing") {
+            await kv.set(`${prefix}${c.id}`, { ...c, timeCommitment: "~30 minutes" });
+            letterUpdated++;
+          }
+        }
+      }
+      await setMigrationFlag("migration:represent-letter-times:v1");
+      console.log(`Represent/Letter-Writing time migration: ${repUpdated} Represent → "< 5 minutes", ${letterUpdated} Letter Writing → "~30 minutes" (blanks only).`);
+    }
+
+    // One-time: PROTEST cards with no time estimate get "1–3 hours" (a rally /
+    // march is the canonical multi-hour commitment). Blanks only — any card
+    // that already has a time keeps it. Category match is case-insensitive.
+    const protestTimeDone = await getMigrationFlag("migration:protest-blank-time-1to3:v1");
+    if (!protestTimeDone) {
+      let updated = 0;
+      for (const prefix of ["action:", "user-action:"]) {
+        for (const c of (await kv.getByPrefix(prefix)) as any[]) {
+          if (!c || typeof c !== "object" || typeof c.id !== "number") continue;
+          if (c.timeCommitment && String(c.timeCommitment).trim()) continue; // blanks only
+          if (String(c.category ?? "").trim().toLowerCase() !== "protest") continue;
+          await kv.set(`${prefix}${c.id}`, { ...c, timeCommitment: "1–3 hours" });
+          updated++;
+        }
+      }
+      await setMigrationFlag("migration:protest-blank-time-1to3:v1");
+      console.log(`Protest blank-time migration: ${updated} Protest cards → "1–3 hours".`);
+    }
+
+    // One-time blanks-only time pass on three more categories:
+    //   • BOOST    → "< 5 minutes"  (quick amplify/share asks)
+    //   • BOYCOTT  → "~30 minutes"
+    //   • PETITION → "< 5 minutes"
+    // Only fills cards with no timeCommitment; existing times are kept.
+    // Category match is case-insensitive/trimmed.
+    const boostBoycottPetitionDone = await getMigrationFlag("migration:boost-boycott-petition-times:v1");
+    if (!boostBoycottPetitionDone) {
+      let boost = 0, boycott = 0, petition = 0;
+      for (const prefix of ["action:", "user-action:"]) {
+        for (const c of (await kv.getByPrefix(prefix)) as any[]) {
+          if (!c || typeof c !== "object" || typeof c.id !== "number") continue;
+          if (c.timeCommitment && String(c.timeCommitment).trim()) continue; // blanks only
+          const cat = String(c.category ?? "").trim().toLowerCase();
+          if (cat === "boost") {
+            await kv.set(`${prefix}${c.id}`, { ...c, timeCommitment: "< 5 minutes" });
+            boost++;
+          } else if (cat === "boycott") {
+            await kv.set(`${prefix}${c.id}`, { ...c, timeCommitment: "~30 minutes" });
+            boycott++;
+          } else if (cat === "petition") {
+            await kv.set(`${prefix}${c.id}`, { ...c, timeCommitment: "< 5 minutes" });
+            petition++;
+          }
+        }
+      }
+      await setMigrationFlag("migration:boost-boycott-petition-times:v1");
+      console.log(`Boost/Boycott/Petition blank-time migration: ${boost} Boost → "< 5 minutes", ${boycott} Boycott → "~30 minutes", ${petition} Petition → "< 5 minutes".`);
+    }
+
+    // One-time data cleanup: the "Boost" category was renamed to "Amplify"
+    // (June 2026) and the client folds "Boost"/"BOOST" → "Amplify" at render
+    // time via CATEGORY_ALIASES. This rewrites the STORED value so KV matches
+    // what users see (admin views, raw queries, etc. read "Amplify" too).
+    // Category match is case-insensitive; categoryColor is left as-is.
+    const boostToAmplifyDone = await getMigrationFlag("migration:boost-to-amplify-category:v1");
+    if (!boostToAmplifyDone) {
+      let updated = 0;
+      for (const prefix of ["action:", "user-action:"]) {
+        for (const c of (await kv.getByPrefix(prefix)) as any[]) {
+          if (!c || typeof c !== "object" || typeof c.id !== "number") continue;
+          if (String(c.category ?? "").trim().toLowerCase() !== "boost") continue;
+          await kv.set(`${prefix}${c.id}`, { ...c, category: "Amplify" });
+          updated++;
+        }
+      }
+      await setMigrationFlag("migration:boost-to-amplify-category:v1");
+      console.log(`Boost→Amplify category migration: rewrote ${updated} stored categories.`);
     }
 
     // One-time: move a curated set of direct-service volunteering Acts into
