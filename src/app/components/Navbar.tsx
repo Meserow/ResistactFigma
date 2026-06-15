@@ -582,7 +582,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               )}
               <button
                 onClick={onLoginClick}
-                className="resistact-anim-shimmer inline-flex flex-col items-start rounded-2xl bg-[#23297e] px-4 py-1.5 text-left font-['Poppins',sans-serif] text-white hover:bg-[#1a1f63] transition-colors"
+                className="resistact-anim-shimmer inline-flex flex-col items-start rounded-2xl bg-[#ed6624] px-4 py-1.5 text-left font-['Poppins',sans-serif] text-white hover:bg-[#c2521b] transition-colors"
               >
                 <span className="inline-flex items-center gap-1.5 text-sm font-semibold leading-tight">
                   <Flame size={14} strokeWidth={2.25} className="shrink-0" />
@@ -594,17 +594,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               </button>
             </>
           )}
-          {onFeedbackClick && (
-            <button
-              onClick={onFeedbackClick}
-              aria-label="Contact us"
-              title="Contact us — questions, feedback, or report a problem"
-              className="inline-flex flex-col items-center justify-center gap-0.5 px-1.5 py-1 font-['Poppins',sans-serif] text-[#ed6624] hover:text-[#c2521b] transition-colors shrink-0"
-            >
-              <MessageCircle size={17} fill="currentColor" strokeWidth={0} />
-              <span className="text-[10px] font-bold leading-none">Contact Us</span>
-            </button>
-          )}
+          {/* "Contact Us" moved into the About modal (see InfoModal). */}
         </div>
 
         {/* Mobile menu toggle */}
@@ -791,27 +781,8 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                   feed shows all acts (remote + in-person), which is the default
                   we want. State is still chosen via the feed banner's location
                   picker / "Change". */}
-              {/* 5 Mins Max pill — toggles the quickAction-only filter, on the
-                  LEFT of the divider. */}
-              {onQuickActionsChange && (
-                <button
-                  onClick={() => onQuickActionsChange(!quickActionsOnly)}
-                  className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
-                    quickActionsOnly
-                      ? "bg-[#5a3e9e] text-white border-[#5a3e9e]"
-                      : "bg-white text-gray-600 border-gray-200 hover:border-[#5a3e9e] hover:text-[#5a3e9e]"
-                  }`}
-                  title="Show only actions that take 5 minutes or less"
-                >
-                  <Zap size={11} className={quickActionsOnly ? "text-white" : "text-gray-400"} fill={quickActionsOnly ? "#ffffff" : "none"} />
-                  5 Mins Max
-                </button>
-              )}
-              {/* Divider — separates the persistent left-side filters (In Person /
-                  Remote / 5 Mins Max) from the category pills that "Clear all" resets. */}
-              <span aria-hidden className="mx-1 h-5 w-px self-center shrink-0 bg-gray-300" />
               {/* Category pills — every category as a wrapping pill row.
-                  Sits after Location → Remote → 5 Minutes Max. */}
+                  "5 Mins Max" follows at the END (divider + pill, see below). */}
               {actsPillItems.map((option) => {
                 const selected = actsCatsSelected.includes(option);
                 const catColor = colorForCategory(option);
@@ -834,6 +805,25 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               })}
               {/* Texting pill now renders inline in its alphabetical slot among
                   the category pills above (see the actsPillItems map). */}
+              {/* Divider + "5 Mins Max" — the quick-time filter now sits at the
+                  END of the pill row, set off from the category pills by a line. */}
+              {onQuickActionsChange && (
+                <>
+                  <span aria-hidden className="mx-1 h-5 w-px self-center shrink-0 bg-gray-300" />
+                  <button
+                    onClick={() => onQuickActionsChange(!quickActionsOnly)}
+                    className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
+                      quickActionsOnly
+                        ? "bg-[#5a3e9e] text-white border-[#5a3e9e]"
+                        : "bg-white text-gray-600 border-gray-200 hover:border-[#5a3e9e] hover:text-[#5a3e9e]"
+                    }`}
+                    title="Show only actions that take 5 minutes or less"
+                  >
+                    <Zap size={11} className={quickActionsOnly ? "text-white" : "text-gray-400"} fill={quickActionsOnly ? "#ffffff" : "none"} />
+                    5 Mins Max
+                  </button>
+                </>
+              )}
             </div>
 
             {/* Mobile: dropdown (existing behavior preserved) */}

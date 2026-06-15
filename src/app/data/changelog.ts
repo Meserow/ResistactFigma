@@ -16,6 +16,35 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.99",
+    date: "2026-06-14",
+    title: "Filter row and footer tidy-ups",
+    sections: [
+      {
+        heading: "Design",
+        items: [
+          "\"5 Mins Max\" moved to the end of the filter row, set off from the category pills by a divider.",
+          "The bottom bar for logged-out visitors is now white with navy text (the Join and Swipe buttons are unchanged).",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.98",
+    date: "2026-06-14",
+    title: "Contact Us in the About panel, crisper logo",
+    sections: [
+      {
+        heading: "Design",
+        items: [
+          "\"Contact Us\" moved off the top bar into the About panel, as a clear button — questions, feedback, or reporting a problem all go there.",
+          "The fist logo on the pinned \"Spread the Word\" card is now sharp instead of blurry.",
+          "Tidied the bottom bar for logged-out visitors: the Join and Swipe buttons are the same height, Swipe is now cyan, and they sit on opposite ends.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.97",
     date: "2026-06-14",
     title: "Phone menu tidy-up and a lighter Save button",

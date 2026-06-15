@@ -1,13 +1,16 @@
-import { X, Zap, Shield, Users, Flame, BookOpen } from "lucide-react";
+import { X, Zap, Shield, Users, Flame, BookOpen, MessageCircle } from "lucide-react";
 import logoImg from "../../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
 import { TIERS } from "../lib/tiers";
 import { TierIcon } from "./TierBadge";
 
 interface InfoModalProps {
   onClose: () => void;
+  /** Opens the contact / feedback flow. Moved here from the top nav — rendered
+   *  as a prominent button at the bottom of the modal's text column. */
+  onContact?: () => void;
 }
 
-export function InfoModal({ onClose }: InfoModalProps) {
+export function InfoModal({ onClose, onContact }: InfoModalProps) {
   return (
     <div
       className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
@@ -94,6 +97,19 @@ export function InfoModal({ onClose }: InfoModalProps) {
                 </p>
               </div>
             </div>
+
+            {/* Contact Us — moved here from the top nav. Full-width orange CTA
+                so it's clearly noticeable. Questions, feedback, or report a
+                problem all route through the same feedback flow. */}
+            {onContact && (
+              <button
+                onClick={onContact}
+                className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#ed6624] px-5 py-3 font-['Poppins',sans-serif] text-[15px] font-bold text-white shadow-sm transition-colors hover:bg-[#c2521b]"
+              >
+                <MessageCircle size={18} strokeWidth={2.5} />
+                Contact Us
+              </button>
+            )}
           </div>
 
           {/* Right — photo with tier ladder overlaid on the legs */}

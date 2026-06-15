@@ -8,7 +8,7 @@ import { CardDetailsModal } from "./CardDetailsModal";
 import { FlagCardModal } from "./FlagCardModal";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import cardFallbackImg from "../../assets/resistact-card-fallback.webp";
-import fistImg from "../../assets/resistact-fist.png";
+import fistImg from "../../assets/resistact-fist.webp";
 import { colorForCategory } from "../lib/categoryGroups";
 
 // Hand-authored subtitle shown ONLY on the pinned "Spread the Word" hero card
