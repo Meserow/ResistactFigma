@@ -2,7 +2,7 @@ import logoImg from "../../assets/resistact-logo-horizontal.webp";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import type { ReactNode } from "react";
 import { FACT_CARDS } from "../data/factCards";
-import { Bell, Heart, ChevronDown, Clock, Flag, Flame, Globe, Info, Loader2, LogOut, MapPin, Megaphone, Menu, MessageCircle, Search, ShieldCheck, SlidersHorizontal, Sparkles, Tag, X, Zap } from "lucide-react";
+import { Bell, Heart, ChevronDown, Clock, Flag, Flame, Info, Layers, LayoutList, Loader2, LogOut, Megaphone, Menu, MessageCircle, Search, ShieldCheck, SlidersHorizontal, Sparkles, Tag, X, Zap } from "lucide-react";
 import type { UserApproval } from "../lib/supabase";
 import { TierProgress } from "./TierProgress";
 import { getUserTier } from "../lib/tiers";
@@ -66,6 +66,12 @@ interface NavbarProps {
   onSortChange?: (sort: "foryou" | "popular" | "newest" | "az") => void;
   onBookmarksClick?: () => void;
   bookmarkCount?: number;
+  /** Opens Swipe (Discover) mode — drives the "Swipe to Discover" nav pill. */
+  onSwipeClick?: () => void;
+  /** Current Scroll/Swipe state + setter — drives the phone Scroll|Swipe toggle
+   *  that sits above the Category filter row on mobile. */
+  swipeOpen?: boolean;
+  onSwipeOpenChange?: (open: boolean) => void;
   onFeedbackClick?: () => void;
   onMatchClick?: () => void;
   /** "Add an Act!" — opens the Ask/Add-an-Act flow (mirrors the hero pill). */
@@ -93,7 +99,7 @@ interface NavbarProps {
   completedCount?: number;
 }
 
-export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, isSearchPending = false, activeTab, onTabChange, heroSlot, hasHero = false, quickActionsOnly, onQuickActionsChange, showDone, onShowDoneChange, completedCount, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onFeedbackClick, onMatchClick, onAskClick, onPendingSmacksClick, onPendingActsClick, onFlaggedActsClick, pendingActsCount, pendingSmacksCount, flagsCount = 0, pendingUsersCount = 0, onTierClick, smacksAvailableTags, smacksActiveTags, onSmacksTagToggle, onSmacksTagsClear, smacksSortBy, onSmacksSortChange, smacksIsAdmin }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
+export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, isSearchPending = false, activeTab, onTabChange, heroSlot, hasHero = false, quickActionsOnly, onQuickActionsChange, showDone, onShowDoneChange, completedCount, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onSwipeClick, swipeOpen = false, onSwipeOpenChange, onFeedbackClick, onMatchClick, onAskClick, onPendingSmacksClick, onPendingActsClick, onFlaggedActsClick, pendingActsCount, pendingSmacksCount, flagsCount = 0, pendingUsersCount = 0, onTierClick, smacksAvailableTags, smacksActiveTags, onSmacksTagToggle, onSmacksTagsClear, smacksSortBy, onSmacksSortChange, smacksIsAdmin }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
   // Acts filters in render order: Location dropdown first, Category pills second.
   // Used for "Clear all" and the mobile filter row that shows just the names.
   const ACTS_FILTER_OPTIONS: Record<string, string[]> = {
@@ -228,18 +234,9 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
   // Selected states (excludes the "Remote"/"In Person" mode tokens, which are
   // toggles, not places).
   const locStates = locSelected.filter((l) => l !== "Remote" && l !== "In Person");
-  // The two online-axis modes. They're INDEPENDENT toggles: each flips its own
-  // token without touching the other, so both can be on at once (= show both
-  // in-person and remote acts). State tokens persist either way.
-  const remoteOn = locSelected.includes("Remote");
-  const inPersonOn = locSelected.includes("In Person");
-  const toggleLocationMode = (mode: "Remote" | "In Person") => {
-    // Toggle inside the updater (against the freshest selection), not against
-    // the render-time `locSelected` snapshot — avoids the lost-update race.
-    onFilterChange("Location", (cur) =>
-      cur.includes(mode) ? cur.filter((l) => l !== mode) : [...cur, mode],
-    );
-  };
+  // (In Person / Remote mode toggles were removed from the UI — with neither
+  // set, the feed shows all acts. State tokens are still set via the location
+  // picker, and locStates strips any legacy mode tokens out.)
   // What the navy Location pill reads: the state name when exactly one is
   // picked, otherwise just "Location" (with a count badge for 2+).
   const locLabel = locStates.length === 1 ? locStates[0] : "Location";
@@ -352,6 +349,16 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
           >
             The Smacks
           </button>
+          {/* About — not a tab (doesn't change activeTab); opens the info
+              modal. Styled like the inactive tabs so it reads as part of the
+              same nav group, sitting right after The Smacks. */}
+          <button
+            onClick={onInfoClick}
+            title="About — what is this site about?"
+            className="py-1 font-['Poppins',sans-serif] font-bold text-[15px] transition-colors whitespace-nowrap text-gray-800 hover:text-[#ed6624]"
+          >
+            About
+          </button>
         </div>
 
         {/* Search + Ask + Act + About */}
@@ -366,40 +373,24 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder={activeTab === "facts" ? "Search facts by topic or claim…" : activeTab === "receipts" ? "Search The Smacks…" : "Search Resistance Acts…"}
-              className="w-full pl-11 pr-4 py-2.5 bg-white border border-gray-300 rounded-xl font-['Poppins',sans-serif] text-base text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#23297e] focus:border-transparent"
+              placeholder="Search…"
+              /* Placeholder shrinks on phones so the longer "Search Resistance
+                 Acts…" string fits the narrow box; the input's own text stays
+                 16px so iOS doesn't zoom in on focus. */
+              className="w-full pl-11 pr-4 py-2.5 bg-white border border-gray-300 rounded-xl font-['Poppins',sans-serif] text-base text-gray-700 placeholder-gray-400 placeholder:text-[13px] md:placeholder:text-base focus:outline-none focus:ring-2 focus:ring-[#23297e] focus:border-transparent"
             />
           </div>
 
+          {/* "Swipe to Discover" and "My Saved Matches" both moved to the
+              banner below the filter pills. The search row is just the search
+              box now. */}
+
         </div>
 
-        {/* ── Scroll-revealed action cluster — takes over the hero pills' role
-            once the hero collapses on scroll (Acts tab only). Hidden while the
-            hero is fully expanded; fades in via --hero-collapse. ── */}
-        {hasHero && (
-          <div className="scroll-reveal hidden xl:flex items-center gap-2 shrink-0">
-            <button
-              onClick={onInfoClick}
-              title="About — what is this site about?"
-              aria-label="About"
-              className="inline-flex items-center gap-1.5 rounded-full border border-gray-300 px-2.5 2xl:px-3 py-1.5 font-['Poppins',sans-serif] text-[13px] font-bold text-gray-600 transition-colors hover:border-[#ed6624] hover:bg-[#ed6624]/5 hover:text-[#ed6624] whitespace-nowrap group"
-            >
-              <Zap size={14} strokeWidth={2.5} className="text-gray-500 group-hover:text-[#ed6624]" />
-              <span className="hidden 2xl:inline">About</span>
-            </button>
-            {onAskClick && (
-              <button
-                onClick={onAskClick}
-                title="Add an Act — find people to do a great idea"
-                aria-label="Add an Act"
-                className="inline-flex items-center gap-1.5 rounded-full border border-[#23297e] bg-white px-2.5 2xl:px-3 py-1.5 font-['Poppins',sans-serif] text-[13px] font-bold text-[#23297e] transition-colors hover:bg-[#23297e]/5 whitespace-nowrap"
-              >
-                <Megaphone size={14} strokeWidth={2.5} className="text-[#23297e]" />
-                <span className="hidden 2xl:inline">Add an Act</span>
-              </button>
-            )}
-          </div>
-        )}
+        {/* About now lives in the tab group (next to The Smacks) and "Add an
+            Act" moved into the logged-in user dropdown, so the old
+            scroll-revealed desktop action cluster is gone. Anonymous users
+            still reach "Add an Act!" via the hero pill and the mobile menu. */}
 
         {/* ── Auth / User section ── */}
         <div className="hidden md:flex items-center gap-3 shrink-0 ml-1">
@@ -507,6 +498,15 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                       <SlidersHorizontal size={15} />
                       My Match Settings
                     </button>
+                    {onAskClick && (
+                      <button
+                        onClick={() => { setDropdownOpen(false); onAskClick(); }}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-['Poppins',sans-serif] font-medium text-[#23297e] hover:bg-gray-50 transition-colors"
+                      >
+                        <Megaphone size={15} />
+                        Add an Act
+                      </button>
+                    )}
                     {isAdmin && !!pendingActsCount && (
                       <button
                         onClick={() => { setDropdownOpen(false); onPendingActsClick?.(); }}
@@ -787,36 +787,12 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                 being a simple toggle. "Where can I act?" is the most
                 useful first cut at the feed, so it sits at the front. */}
             <div className="hidden sm:flex flex-1 min-w-0 flex-wrap items-center gap-y-1.5 gap-x-1">
-              {/* In Person / Remote — a segmented button group of two independent
-                  toggles; both can be on (= in-person + remote). The state itself
-                  is auto-detected and chosen via the feed banner, not here. */}
-              <div className="shrink-0 inline-flex items-center overflow-hidden rounded-full border border-gray-200">
-                <button
-                  onClick={() => toggleLocationMode("In Person")}
-                  aria-pressed={inPersonOn}
-                  className={`flex items-center gap-1 px-2.5 py-1 font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap ${
-                    inPersonOn ? "bg-[#23297e] text-white" : "bg-white text-gray-600 hover:text-[#23297e]"
-                  }`}
-                  title="Show in-person actions"
-                >
-                  <MapPin size={11} className={inPersonOn ? "text-white" : "text-gray-400"} />
-                  In Person
-                </button>
-                <span aria-hidden className="h-5 w-px shrink-0 bg-gray-200" />
-                <button
-                  onClick={() => toggleLocationMode("Remote")}
-                  aria-pressed={remoteOn}
-                  className={`flex items-center gap-1 px-2.5 py-1 font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap ${
-                    remoteOn ? "bg-[#ed6624] text-white" : "bg-white text-gray-600 hover:text-[#ed6624]"
-                  }`}
-                  title="Show remote actions (doable from anywhere)"
-                >
-                  <Globe size={11} className={remoteOn ? "text-white" : "text-gray-400"} />
-                  Remote
-                </button>
-              </div>
-              {/* 5 Mins Max pill — toggles the quickAction-only filter. Clustered
-                  with Location + Remote on the LEFT of the divider. */}
+              {/* In Person / Remote toggles removed — with neither selected the
+                  feed shows all acts (remote + in-person), which is the default
+                  we want. State is still chosen via the feed banner's location
+                  picker / "Change". */}
+              {/* 5 Mins Max pill — toggles the quickAction-only filter, on the
+                  LEFT of the divider. */}
               {onQuickActionsChange && (
                 <button
                   onClick={() => onQuickActionsChange(!quickActionsOnly)}
@@ -920,38 +896,39 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
         {/* Right group removed — "Clear all" lives inside the chip row now. */}
       </div>
 
-      {/* ── Mobile persistent tab + filter bar — sticks below top bar ── */}
+      {/* ── Mobile persistent filter bar — sticks below top bar. The Acts /
+          Facts / Smacks tab switcher moved into the hamburger menu, so this
+          bar now carries just the per-tab filter row. ── */}
       <div ref={mobileFilterBarRef} className="sticky z-30 md:hidden border-t border-gray-100 bg-[#f7f7f7]" style={{ top: topBarHeight }}>
-        {/* Tab switcher — always visible */}
-        <div className="px-4 pt-2 pb-1.5">
-          <div className="flex items-center bg-gray-200 rounded-xl p-1 gap-0.5">
-            <button
-              onClick={() => onTabChange("acts")}
-              className={`flex-1 py-2 rounded-lg font-['Poppins',sans-serif] font-bold text-xs transition-all ${
-                activeTab === "acts" ? "bg-white text-[#ed6624] shadow-sm" : "text-gray-500"
-              }`}
-            >
-              The Acts
-            </button>
-            <button
-              onClick={() => onTabChange("facts")}
-              className={`flex-1 py-2 rounded-lg font-['Poppins',sans-serif] font-bold text-xs transition-all ${
-                activeTab === "facts" ? "bg-white text-[#ed6624] shadow-sm" : "text-gray-500"
-              }`}
-            >
-              The Facts
-            </button>
-            <button
-              onClick={() => onTabChange("receipts")}
-              className={`flex-1 py-2 rounded-lg font-['Poppins',sans-serif] font-bold text-xs transition-all ${
-                activeTab === "receipts" ? "bg-white text-[#ed6624] shadow-sm" : "text-gray-500"
-              }`}
-            >
-              The Smacks
-            </button>
+        {/* Scroll / Swipe toggle — Acts only, sits ABOVE the Category filter
+            row. Switches the feed between the scrolling list and the swipe
+            deck (the deck's "Done" returns to the list). */}
+        {activeTab === "acts" && onSwipeOpenChange && (
+          <div className="px-4 pt-2 pb-1">
+            <div className="flex items-center gap-1 p-1 rounded-xl bg-gray-200 font-['Poppins',sans-serif]">
+              <button
+                onClick={() => onSwipeOpenChange(false)}
+                aria-pressed={!swipeOpen}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  !swipeOpen ? "bg-white text-[#23297e] shadow-sm" : "text-gray-500"
+                }`}
+              >
+                <LayoutList size={14} strokeWidth={2.5} />
+                Scroll
+              </button>
+              <button
+                onClick={() => onSwipeOpenChange(true)}
+                aria-pressed={swipeOpen}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  swipeOpen ? "bg-white text-[#ed6624] shadow-sm" : "text-gray-500"
+                }`}
+              >
+                <Layers size={14} strokeWidth={2.5} />
+                Swipe
+              </button>
+            </div>
           </div>
-        </div>
-
+        )}
         {/* Filter row — Smacks: tag chips + Top/New/Pending sort;
             Facts: single Category dropdown; Acts: scrollable dropdown buttons. */}
         {activeTab === "receipts" ? (
@@ -1125,33 +1102,9 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                     the Location dropdown (below), keeping this row short.
                     Centered on phones. */}
                 <div className="flex flex-wrap justify-center gap-1.5">
-                  {/* In Person / Remote — segmented button group of two independent
-                      toggles; both can be on. State is auto-detected and chosen via
-                      the feed banner, so there's no state dropdown here anymore. */}
-                  <div className="shrink-0 inline-flex items-center overflow-hidden rounded-full border border-gray-200">
-                    <button
-                      onClick={() => toggleLocationMode("In Person")}
-                      aria-pressed={inPersonOn}
-                      className={`flex items-center gap-1 px-3 py-1 text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap ${
-                        inPersonOn ? "bg-[#23297e] text-white" : "bg-white text-gray-600"
-                      }`}
-                    >
-                      <MapPin size={11} />
-                      In Person
-                    </button>
-                    <span aria-hidden className="h-5 w-px shrink-0 bg-gray-200" />
-                    <button
-                      onClick={() => toggleLocationMode("Remote")}
-                      aria-pressed={remoteOn}
-                      className={`flex items-center gap-1 px-3 py-1 text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap ${
-                        remoteOn ? "bg-[#ed6624] text-white" : "bg-white text-gray-600"
-                      }`}
-                    >
-                      <Globe size={11} />
-                      Remote
-                    </button>
-                  </div>
-
+                  {/* In Person / Remote toggles removed — neither selected means
+                      the feed shows all acts (remote + in-person). State is set
+                      via the feed banner's location picker. */}
                   {/* Category button — "5 Min Max" now lives inside this
                       dropdown on phones (see the Category drawer below) to
                       keep the filter row short. */}
@@ -1311,6 +1264,37 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               </button>
             </div>
           )}
+
+          {/* Section switcher — The Acts / The Facts / The Smacks. Moved here
+              from the sticky bar so the bar stays just a filter row on phones. */}
+          <div className="px-5 py-3 border-b border-gray-100">
+            <div className="flex items-center bg-gray-100 rounded-xl p-1 gap-0.5">
+              <button
+                onClick={() => { setMobileMenuOpen(false); onTabChange("acts"); }}
+                className={`flex-1 py-2 rounded-lg font-['Poppins',sans-serif] font-bold text-xs transition-all ${
+                  activeTab === "acts" ? "bg-white text-[#ed6624] shadow-sm" : "text-gray-500"
+                }`}
+              >
+                The Acts
+              </button>
+              <button
+                onClick={() => { setMobileMenuOpen(false); onTabChange("facts"); }}
+                className={`flex-1 py-2 rounded-lg font-['Poppins',sans-serif] font-bold text-xs transition-all ${
+                  activeTab === "facts" ? "bg-white text-[#ed6624] shadow-sm" : "text-gray-500"
+                }`}
+              >
+                The Facts
+              </button>
+              <button
+                onClick={() => { setMobileMenuOpen(false); onTabChange("receipts"); }}
+                className={`flex-1 py-2 rounded-lg font-['Poppins',sans-serif] font-bold text-xs transition-all ${
+                  activeTab === "receipts" ? "bg-white text-[#ed6624] shadow-sm" : "text-gray-500"
+                }`}
+              >
+                The Smacks
+              </button>
+            </div>
+          </div>
 
           {/* Everything else — plain text rows, separated by hairlines so the
               menu reads as a list, not a stack of buttons. */}

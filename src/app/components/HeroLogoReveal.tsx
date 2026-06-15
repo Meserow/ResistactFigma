@@ -9,7 +9,7 @@ import { prefersReducedMotion } from "../lib/animations";
 //   Phase 1: dark line stays; orange handwritten "But what can one person
 //            do?" slides in from the left, slightly tilted, below.
 //   Phase 2: both lines are replaced by the ResistAct logo, which pops in.
-const PHASE_DURATIONS_MS = [1500, 2400];
+const PHASE_DURATIONS_MS = [900, 1400];
 
 interface HeroLogoRevealProps {
   /** Fired once the logo has popped in (phase 2 reached). */
@@ -82,15 +82,15 @@ export function HeroLogoReveal({ onResolved }: HeroLogoRevealProps) {
           100% { opacity: 1; transform: scale(1); }
         }
         .hero-line-fade-in {
-          animation: hero-line-fade-in 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+          animation: hero-line-fade-in 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
         }
         .hero-orange-slide-in {
-          animation: hero-orange-slide-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+          animation: hero-orange-slide-in 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
           transform-origin: center;
           display: inline-block;
         }
         .hero-logo-pop {
-          animation: hero-logo-pop 520ms cubic-bezier(0.22, 1.6, 0.36, 1) both;
+          animation: hero-logo-pop 340ms cubic-bezier(0.22, 1.6, 0.36, 1) both;
         }
         @media (prefers-reduced-motion: reduce) {
           .hero-line-fade-in,
