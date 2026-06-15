@@ -904,7 +904,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
             row. Switches the feed between the scrolling list and the swipe
             deck (the deck's "Done" returns to the list). */}
         {activeTab === "acts" && onSwipeOpenChange && (
-          <div className="px-4 pt-2 pb-1">
+          <div className="px-4 pt-2.5 pb-3">
             <div className="flex items-center gap-1 p-1 rounded-xl bg-gray-200 font-['Poppins',sans-serif]">
               <button
                 onClick={() => onSwipeOpenChange(false)}
@@ -1096,7 +1096,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
             const locMobileOpen = openFilter === "acts-loc-mobile";
             const catMobileOpen = openFilter === "acts-cat-mobile";
             return (
-              <div className="px-4 pb-2">
+              <div className="px-4 pb-1">
                 {/* Wrap to a second row instead of scrolling sideways if the
                     pills don't fit on one line. "Remote Only" now lives inside
                     the Location dropdown (below), keeping this row short.
@@ -1110,7 +1110,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                       keep the filter row short. */}
                   <button
                     onClick={() => setOpenFilter(catMobileOpen ? null : "acts-cat-mobile")}
-                    className={`shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-['Poppins',sans-serif] font-medium transition-all whitespace-nowrap border ${
+                    className={`w-full flex items-center justify-center gap-1.5 px-4 py-3 rounded-xl text-sm font-['Poppins',sans-serif] font-semibold transition-all whitespace-nowrap border ${
                       actsCatsSelected.length > 0
                         ? "bg-[#23297e] text-white border-[#23297e]"
                         : "bg-white text-gray-600 border-gray-200"
@@ -1118,11 +1118,11 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                   >
                     Category
                     {actsCatsSelected.length > 0 && (
-                      <span className="w-4 h-4 rounded-full bg-[#ed6624] text-white text-[9px] flex items-center justify-center font-bold shrink-0">
+                      <span className="w-5 h-5 rounded-full bg-[#ed6624] text-white text-[11px] flex items-center justify-center font-bold shrink-0">
                         {actsCatsSelected.length}
                       </span>
                     )}
-                    <ChevronDown size={11} className={catMobileOpen ? "rotate-180" : ""} />
+                    <ChevronDown size={16} className={catMobileOpen ? "rotate-180" : ""} />
                     {/* "Texting" and "5 Min Max" live inside this dropdown on
                         phones (see the Category drawer below) to save horizontal
                         room — show a dot on the button when either is the active

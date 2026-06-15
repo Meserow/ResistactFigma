@@ -3090,7 +3090,7 @@ export default function App() {
         </div>
       )}
 
-      <main className="max-w-[1400px] mx-auto px-4 md:px-8 pt-3 pb-20">
+      <main className="max-w-[1400px] mx-auto px-4 md:px-8 pt-1.5 md:pt-3 pb-20">
         <ErrorBoundary>
         {activeTab === "receipts" ? (
           /* ── Receipts view ── */
@@ -3727,7 +3727,7 @@ export default function App() {
             </div>
 
             {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-10">
                 {Array.from({ length: 10 }).map((_, i) => <CardSkeleton key={i} />)}
               </div>
             ) : (
@@ -3735,7 +3735,7 @@ export default function App() {
             <FlipGrid
               signature={feedSig}
               forceKey={staggerKey}
-              className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 transition-opacity duration-150 ${searchQuery !== deferredSearchQuery ? "opacity-50" : "opacity-100"}`}
+              className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-10 transition-opacity duration-150 ${searchQuery !== deferredSearchQuery ? "opacity-50" : "opacity-100"}`}
             >
               {/* While the full-screen swipe deck is open it covers the feed, so
                   we unmount the feed cards entirely — this both frees the ~18k
