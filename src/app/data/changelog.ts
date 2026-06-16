@@ -26,6 +26,7 @@ export const CHANGELOG: ChangelogEntry[] = [
           "Your \"acts done\" count and tier now always match across devices. Before, marking an act you'd already completed could make the counter look stuck or briefly show a level-up that didn't really stick — so you might see one tier on your iPad and another on your computer. The count now follows what the server actually recorded.",
           "Acts you've already marked done no longer reappear in My Matches, so you won't accidentally re-mark something that's already counted.",
           "Re-marking an act you've already finished now shows a quiet \"You'd already marked this one done\" note instead of a celebration.",
+          "Acts you've marked done now reliably sink to the bottom of your feed when \"Show Done\" is on. Before, a finished act that was featured, in-person, or a nearby event could jump back up to the top.",
         ],
       },
       {
