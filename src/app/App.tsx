@@ -1388,20 +1388,28 @@ export default function App() {
       const usedIds = new Set<number>();
       for (const c of pinnedAlwaysShow) if (typeof c.id === "number") usedIds.add(c.id);
 
+      // Completed acts must never be rescued INTO a lift band — completedLast
+      // already sank them to the tail of `arr`, and only the unconditional
+      // pinToTop band (Spread the Word, never completable) is allowed to
+      // override that. Without this guard a finished act that happens to be
+      // admin-highlighted, in-person, or a local upcoming event jumps back to
+      // the top of the feed, contradicting the "done sinks to the bottom" rule.
+      const liftable = (c: ActionCardData) => typeof c.id === "number" && !completedCards.has(c.id);
+
       const localBand = hasStateLocation
-        ? localUpcomingCards.filter((c) => typeof c.id === "number" && !usedIds.has(c.id))
+        ? localUpcomingCards.filter((c) => liftable(c) && !usedIds.has(c.id!))
         : [];
       for (const c of localBand) usedIds.add(c.id!);
 
       const inPersonBand = hasStateLocation
         ? arr.filter(
-            (c) => !c.pinToTop && typeof c.id === "number" && !usedIds.has(c.id) && !isLocationAgnostic(c),
+            (c) => !c.pinToTop && liftable(c) && !usedIds.has(c.id!) && !isLocationAgnostic(c),
           )
         : [];
       for (const c of inPersonBand) usedIds.add(c.id!);
 
       const highlightBand = arr.filter(
-        (c) => c.highlighted && !c.pinToTop && typeof c.id === "number" && !usedIds.has(c.id),
+        (c) => c.highlighted && !c.pinToTop && liftable(c) && !usedIds.has(c.id!),
       );
       for (const c of highlightBand) usedIds.add(c.id!);
 
