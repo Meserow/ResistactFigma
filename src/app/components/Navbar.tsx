@@ -228,6 +228,35 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
   // the literal "Texting" category — so we always include it (deduped) and let
   // it render like every other category pill.
   const actsPillItems = Array.from(new Set([...actsCats, "Texting"])).sort();
+  // Split the category pills into two roughly equal halves so the desktop
+  // filter row renders as two balanced rows instead of a packed first row and a
+  // sparse second one. (Plain flex-wrap fills row 1 to capacity before
+  // wrapping, which left row 2 with just a handful of pills.) "5 Mins Max"
+  // trails the end of row 2.
+  const actsPillSplit = Math.ceil(actsPillItems.length / 2);
+  const actsPillRow1 = actsPillItems.slice(0, actsPillSplit);
+  const actsPillRow2 = actsPillItems.slice(actsPillSplit);
+  // Shared renderer for a single category pill — used by both desktop rows.
+  const renderCatPill = (option: string) => {
+    const selected = actsCatsSelected.includes(option);
+    const catColor = colorForCategory(option);
+    const CatIcon = iconForCategory(option);
+    return (
+      <button
+        key={option}
+        onClick={() => toggleFilterOption("Category", option)}
+        className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs transition-all whitespace-nowrap border ${
+          selected
+            ? "bg-white font-semibold"
+            : "bg-white text-gray-600 border-gray-200 font-medium hover:border-[#23297e] hover:text-[#23297e]"
+        }`}
+        style={selected ? { borderColor: catColor, color: catColor } : undefined}
+      >
+        <CatIcon size={11} className={selected ? "shrink-0" : "shrink-0 text-gray-400"} style={selected ? { color: catColor } : undefined} />
+        {option}
+      </button>
+    );
+  };
   const locOptions = actsLocations ?? [];
   const locSelected = activeFilters["Location"] ?? [];
   const locOpen = openFilter === "Location";
@@ -776,54 +805,24 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                 continuous filter row — but it opens a dropdown instead of
                 being a simple toggle. "Where can I act?" is the most
                 useful first cut at the feed, so it sits at the front. */}
-            <div className="hidden sm:flex flex-1 min-w-0 flex-wrap items-center gap-y-1.5 gap-x-1">
+            <div className="hidden sm:flex sm:flex-col flex-1 min-w-0 gap-y-1.5">
               {/* In Person / Remote toggles removed — with neither selected the
                   feed shows all acts (remote + in-person), which is the default
                   we want. State is still chosen via the feed banner's location
                   picker / "Change". */}
-              {/* Category pills — every category as a wrapping pill row.
-                  "5 Mins Max" follows at the END (divider + pill, see below). */}
-              {actsPillItems.map((option) => {
-                const selected = actsCatsSelected.includes(option);
-                const catColor = colorForCategory(option);
-                const CatIcon = iconForCategory(option);
-                return (
-                  <button
-                    key={option}
-                    onClick={() => toggleFilterOption("Category", option)}
-                    className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs transition-all whitespace-nowrap border ${
-                      selected
-                        ? "bg-white font-semibold"
-                        : "bg-white text-gray-600 border-gray-200 font-medium hover:border-[#23297e] hover:text-[#23297e]"
-                    }`}
-                    style={selected ? { borderColor: catColor, color: catColor } : undefined}
-                  >
-                    <CatIcon size={11} className={selected ? "shrink-0" : "shrink-0 text-gray-400"} style={selected ? { color: catColor } : undefined} />
-                    {option}
-                  </button>
-                );
-              })}
-              {/* Texting pill now renders inline in its alphabetical slot among
-                  the category pills above (see the actsPillItems map). */}
-              {/* Divider + "5 Mins Max" — the quick-time filter now sits at the
-                  END of the pill row, set off from the category pills by a line. */}
-              {onQuickActionsChange && (
-                <>
-                  <span aria-hidden className="mx-1 h-5 w-px self-center shrink-0 bg-gray-300" />
-                  <button
-                    onClick={() => onQuickActionsChange(!quickActionsOnly)}
-                    className={`shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full font-['Poppins',sans-serif] text-xs font-medium transition-all whitespace-nowrap border ${
-                      quickActionsOnly
-                        ? "bg-[#5a3e9e] text-white border-[#5a3e9e]"
-                        : "bg-white text-gray-600 border-gray-200 hover:border-[#5a3e9e] hover:text-[#5a3e9e]"
-                    }`}
-                    title="Show only actions that take 5 minutes or less"
-                  >
-                    <Zap size={11} className={quickActionsOnly ? "text-white" : "text-gray-400"} fill={quickActionsOnly ? "#ffffff" : "none"} />
-                    5 Mins Max
-                  </button>
-                </>
-              )}
+              {/* Category pills, split into two roughly equal rows so the filter
+                  bar stays balanced (was: one full row + a sparse second row)
+                  and centered. The "5 Mins Max" quick-time filter no longer
+                  lives here — it moved into the feed's welcome banner (logged
+                  out) and the tagline footer (logged in) so it never forces a
+                  stray third row. Each row wraps within itself if it ever
+                  overflows further. */}
+              <div className="flex flex-wrap items-center justify-center gap-y-1.5 gap-x-1">
+                {actsPillRow1.map(renderCatPill)}
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-y-1.5 gap-x-1">
+                {actsPillRow2.map(renderCatPill)}
+              </div>
             </div>
 
             {/* Mobile: dropdown (existing behavior preserved) */}

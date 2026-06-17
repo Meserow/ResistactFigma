@@ -16,6 +16,46 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.102",
+    date: "2026-06-03",
+    title: "Tidier filter row, and a friendlier way to find quick acts",
+    sections: [
+      {
+        heading: "Filter row",
+        items: [
+          "The category filter buttons are now centered and split evenly across two rows, so the row stays balanced and no longer spills onto a stray third line on some screens.",
+          "The \"5 Mins Max\" button moved out of the filter row — see below for where it went.",
+        ],
+      },
+      {
+        heading: "Short on time?",
+        items: [
+          "When you're not signed in, the welcome banner now offers a one-tap \"Swamped today?\" link that filters the feed to acts you can finish in under 5 minutes (and a matching link to show everything again).",
+          "When you're signed in, that same offer sits in the bottom bar next to your streak: \"Swamped today, show only acts that take 5 minutes max.\"",
+        ],
+      },
+      {
+        heading: "Saving your view",
+        items: [
+          "Browsing without an account? Next to \"Save search\" there's now a \"Login to save changes to all your devices\" button, so it's clear how to keep your filters synced everywhere instead of just on this device.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.101",
+    date: "2026-06-03",
+    title: "Balanced the category filter rows on desktop",
+    sections: [
+      {
+        heading: "Design",
+        items: [
+          "The category filter buttons at the top of the feed now split evenly across two rows on desktop, instead of cramming everything into a full first row with just a few buttons stranded on a sparse second row. \"5 Mins Max\" still sits at the end.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.100",
     date: "2026-06-15",
     title: "Acts-done counter fix and a bigger level-up celebration",
