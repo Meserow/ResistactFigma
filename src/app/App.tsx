@@ -3269,7 +3269,7 @@ export default function App() {
                 Warm vs. cold-start copy keys off whether the feed is actually
                 personalized yet. Shown once per device, then dismissed for good. */}
             {!welcomeSeen && activeTab === "acts" && synced && (
-              <WelcomeHero personalized={feedIsPersonalized} signedIn={!!accessToken} count={displayedCards.length} filtered={hasActiveFilters} onDismiss={dismissWelcome} />
+              <WelcomeHero personalized={feedIsPersonalized} signedIn={!!accessToken} count={displayedCards.length} filtered={hasActiveFilters} quickActionsOnly={quickActionsOnly} onQuickActions={setQuickActionsOnly} onDismiss={dismissWelcome} />
             )}
 
             {/* Geo banner — first-visit location auto-detect, MERGED with the
@@ -3511,6 +3511,20 @@ export default function App() {
                     applies. ("Swipe to Discover" + "My Saved Matches" moved to
                     the footer.) */}
                 <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                {/* Anonymous visitors: a "Save search" only persists to this
+                    device. Offer to log in so the saved view syncs everywhere.
+                    Sits FIRST (left of "Save search") as the primary nudge, only
+                    when there's something to save and the user isn't signed in. */}
+                {showSaveButton && !accessToken && (
+                  <button
+                    type="button"
+                    onClick={() => setAuthModalOpen(true)}
+                    className="shrink-0 inline-flex h-6 items-center gap-1 rounded-full border border-[#23297e] bg-white px-2.5 font-['Poppins',sans-serif] text-[11px] font-semibold text-[#23297e] transition-colors hover:bg-[#23297e]/5 whitespace-nowrap"
+                    title="Create a free account or log in to sync your saved filters across all your devices"
+                  >
+                    Login to save changes to all your devices
+                  </button>
+                )}
                 {/* Save the selected categories into the user's preferences
                     (includedCategories) — persists, syncs to the account when
                     signed in, and switches the feed to favor them. */}
@@ -3934,15 +3948,49 @@ export default function App() {
               here from the hero, where it competed with the logo), otherwise the
               call-to-action tag. */}
           {effectiveApproval ? (
-            <p className="font-['Poppins',sans-serif] text-center text-[12px] md:text-base leading-tight min-w-0 flex-1 font-bold text-[#23297e]">
-              {effectiveLoginStreak <= 1 ? "Welcome to the resistance" : "Welcome back to the resistance"}, {(effectiveApproval.name || "Resistor").split(/\s+/)[0]}.{" "}
-              <em className="italic font-bold text-[#ed6624] whitespace-nowrap">
-                {effectiveLoginStreak >= 7 && (
-                  <span className="resistact-anim-flicker mr-1 inline-block" aria-hidden title={`${effectiveLoginStreak}-day streak — keep it lit!`}>🔥</span>
-                )}
-                Day {effectiveLoginStreak}.
-              </em>
-            </p>
+            <div className="min-w-0 flex-1 flex flex-col items-center gap-0.5">
+              <p className="font-['Poppins',sans-serif] text-center text-[12px] md:text-base leading-tight font-bold text-[#23297e]">
+                {effectiveLoginStreak <= 1 ? "Welcome to the resistance" : "Welcome back to the resistance"}, {(effectiveApproval.name || "Resistor").split(/\s+/)[0]}.{" "}
+                <em className="italic font-bold text-[#ed6624] whitespace-nowrap">
+                  {effectiveLoginStreak >= 7 && (
+                    <span className="resistact-anim-flicker mr-1 inline-block" aria-hidden title={`${effectiveLoginStreak}-day streak — keep it lit!`}>🔥</span>
+                  )}
+                  Day {effectiveLoginStreak}.
+                </em>
+              </p>
+              {/* "Swamped today?" quick-acts invite — signed-in version, paired
+                  with the greeting. (Logged-out visitors get the same offer in
+                  the welcome banner.) Acts tab only, since the 5-min filter only
+                  shapes the Acts feed. */}
+              {activeTab === "acts" && (
+                <p className="font-['Poppins',sans-serif] text-center text-[11px] md:text-[13px] leading-tight text-gray-500">
+                  {quickActionsOnly ? (
+                    <>
+                      Showing only acts that take 5 minutes max.{" "}
+                      <button
+                        type="button"
+                        onClick={() => setQuickActionsOnly(false)}
+                        className="font-semibold text-[#ed6624] underline underline-offset-2 transition-colors hover:text-[#e07a28]"
+                      >
+                        Show all acts.
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      Swamped today, show only acts that take{" "}
+                      <button
+                        type="button"
+                        onClick={() => setQuickActionsOnly(true)}
+                        className="font-semibold text-[#ed6624] underline underline-offset-2 transition-colors hover:text-[#e07a28]"
+                      >
+                        5 minutes max
+                      </button>
+                      .
+                    </>
+                  )}
+                </p>
+              )}
+            </div>
           ) : (
             <p className="font-['Poppins',sans-serif] text-center text-[12px] md:text-base leading-tight min-w-0 flex-1">
               <strong className="font-bold text-[#23297e]">
