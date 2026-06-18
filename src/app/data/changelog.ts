@@ -16,6 +16,32 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.104",
+    date: "2026-06-03",
+    title: "Category filter wraps cleanly again",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "Fixed the category filter buttons stranding a lone pill (\"Mental Health\") on its own line. The buttons now wrap evenly across centered rows as the category list grows.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.103",
+    date: "2026-06-03",
+    title: "\"5 minutes max\" nudge moves to a toast",
+    sections: [
+      {
+        heading: "The Acts",
+        items: [
+          "The \"Swamped today? Show only acts that take 5 minutes max\" prompt is no longer crammed into the footer (signed-in) or the welcome banner (logged-out). For everyone, it now appears as a small navy toast centered at the bottom of the screen — at most once a day, dismissible, with the same one-tap shortcut to the quick filter.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.102",
     date: "2026-06-03",
     title: "Tidier filter row, and a friendlier way to find quick acts",

@@ -49,37 +49,9 @@ export function WelcomeHero({
         {filtered ? " — matching your filters" : " — unfiltered"}.
       </>
     ) : null;
-  // "Swamped today?" quick-acts invite — logged-out only, appended INLINE to the
-  // end of the intro copy so it reads as one continuous sentence at the same
-  // size as the body text (not a separate line). Signed-in users get the same
-  // offer in the tagline footer instead, so we never double it up. Toggles the
-  // "5 Mins Max" filter the pill row used to own.
-  const swampedInline =
-    !signedIn && onQuickActions ? (
-      quickActionsOnly ? (
-        <>
-          {" "}Showing only acts you can do in under 5 minutes.{" "}
-          <button
-            type="button"
-            onClick={() => onQuickActions(false)}
-            className="font-semibold text-[#ed6624] underline underline-offset-2 transition-colors hover:text-[#e07a28]"
-          >
-            Show all acts.
-          </button>
-        </>
-      ) : (
-        <>
-          {" "}Swamped today?{" "}
-          <button
-            type="button"
-            onClick={() => onQuickActions(true)}
-            className="font-semibold text-[#ed6624] underline underline-offset-2 transition-colors hover:text-[#e07a28]"
-          >
-            Let me know if you want me to filter to actions you can take that will be under 5 minutes!
-          </button>
-        </>
-      )
-    ) : null;
+  // The "Swamped today? → 5 minutes max" invite used to be appended inline here
+  // for logged-out visitors. It now shows as a navy toast at the bottom of the
+  // screen (App-level quickNudgeOpen), the same one signed-in users get.
   return (
     <div className="relative mb-4 overflow-hidden rounded-xl border border-[#ed6624]/30 bg-gradient-to-r from-[#ed6624]/[0.08] via-white to-[#23297e]/[0.05] px-4 py-3.5 sm:px-5">
       {/* Warm accent rail */}
@@ -95,7 +67,7 @@ export function WelcomeHero({
                 Welcome back, Resister!
               </p>
               <p className="mt-0.5 font-['Poppins',sans-serif] text-[13px] leading-snug text-gray-700">
-                This feed is yours — we've ranked today's acts around what you've been into. New acts daily; keep doing small things.{swampedInline}
+                This feed is yours — we've ranked today's acts around what you've been into. New acts daily; keep doing small things.
               </p>
             </>
           ) : (
@@ -107,7 +79,7 @@ export function WelcomeHero({
                 {/* "No account, no tracking" is the anonymous-first pitch — it
                     only makes sense to logged-out visitors. Signed-in users
                     already have an account, so we drop that clause for them. */}
-                This feed is yours to shape. Filter using the buttons above, and then boost, save for later, or do a few acts now and the results will start tuning themselves to you — {signedIn ? "" : "no account, no tracking, "}just your corner of the resistance.{swampedInline}
+                This feed is yours to shape. Filter using the buttons above, and then boost, save for later, or do a few acts now and the results will start tuning themselves to you — {signedIn ? "" : "no account, no tracking, "}just your corner of the resistance.
               </p>
             </>
           )}

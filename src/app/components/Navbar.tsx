@@ -228,15 +228,7 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
   // the literal "Texting" category — so we always include it (deduped) and let
   // it render like every other category pill.
   const actsPillItems = Array.from(new Set([...actsCats, "Texting"])).sort();
-  // Split the category pills into two roughly equal halves so the desktop
-  // filter row renders as two balanced rows instead of a packed first row and a
-  // sparse second one. (Plain flex-wrap fills row 1 to capacity before
-  // wrapping, which left row 2 with just a handful of pills.) "5 Mins Max"
-  // trails the end of row 2.
-  const actsPillSplit = Math.ceil(actsPillItems.length / 2);
-  const actsPillRow1 = actsPillItems.slice(0, actsPillSplit);
-  const actsPillRow2 = actsPillItems.slice(actsPillSplit);
-  // Shared renderer for a single category pill — used by both desktop rows.
+  // Shared renderer for a single category pill.
   const renderCatPill = (option: string) => {
     const selected = actsCatsSelected.includes(option);
     const catColor = colorForCategory(option);
@@ -810,18 +802,13 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                   feed shows all acts (remote + in-person), which is the default
                   we want. State is still chosen via the feed banner's location
                   picker / "Change". */}
-              {/* Category pills, split into two roughly equal rows so the filter
-                  bar stays balanced (was: one full row + a sparse second row)
-                  and centered. The "5 Mins Max" quick-time filter no longer
-                  lives here — it moved into the feed's welcome banner (logged
-                  out) and the tagline footer (logged in) so it never forces a
-                  stray third row. Each row wraps within itself if it ever
-                  overflows further. */}
+              {/* Category pills in ONE centered flex-wrap. A fixed two-row
+                  count-split was tried before, but once the category list grew it
+                  stranded a lone pill ("Mental Health") on its own middle line.
+                  Natural wrapping with justify-center keeps every row centered and
+                  can never orphan a single pill mid-row. */}
               <div className="flex flex-wrap items-center justify-center gap-y-1.5 gap-x-1">
-                {actsPillRow1.map(renderCatPill)}
-              </div>
-              <div className="flex flex-wrap items-center justify-center gap-y-1.5 gap-x-1">
-                {actsPillRow2.map(renderCatPill)}
+                {actsPillItems.map(renderCatPill)}
               </div>
             </div>
 

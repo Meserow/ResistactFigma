@@ -690,6 +690,9 @@ export default function App() {
   const [staggerKey, setStaggerKey] = useState(0);
   const [editCardId, setEditCardId] = useState<number | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  // "Swamped today?" 5-min nudge — moved out of the footer (where it added a
+  // third line) into a transient, dismissible toast shown at most once a day.
+  const [quickNudgeOpen, setQuickNudgeOpen] = useState(false);
 
   function showToast(msg: string) {
     setToastMessage(msg);
@@ -1181,6 +1184,29 @@ export default function App() {
   // ordering is: declare the constants first, then the functions that
   // close over them.
   const todayISO = new Date().toISOString().slice(0, 10);
+
+  // Surface the "Swamped today? → 5 minutes max" invite as a toast at most once
+  // per day, on the Acts tab when the quick filter isn't already on — for BOTH
+  // signed-in and logged-out visitors. (Replaces the old always-on footer line
+  // for signed-in users and the inline welcome-banner version for logged-out.)
+  useEffect(() => {
+    if (activeTab !== "acts" || quickActionsOnly) return;
+    let lastShown = "";
+    try { lastShown = localStorage.getItem("resistact_quicknudge_date") || ""; } catch {}
+    if (lastShown === todayISO) return;
+    const t = window.setTimeout(() => {
+      setQuickNudgeOpen(true);
+      try { localStorage.setItem("resistact_quicknudge_date", todayISO); } catch {}
+    }, 1200);
+    return () => window.clearTimeout(t);
+  }, [activeTab, quickActionsOnly, todayISO]);
+
+  // Auto-dismiss the nudge after a few seconds so it behaves like a toast.
+  useEffect(() => {
+    if (!quickNudgeOpen) return;
+    const t = window.setTimeout(() => setQuickNudgeOpen(false), 8000);
+    return () => window.clearTimeout(t);
+  }, [quickNudgeOpen]);
 
   // Count of acts created today (UTC). Surfaced as a parenthetical next to
   // the total acts count in the persistent footer ("701 acts (1 new today)").
@@ -3958,38 +3984,9 @@ export default function App() {
                   Day {effectiveLoginStreak}.
                 </em>
               </p>
-              {/* "Swamped today?" quick-acts invite — signed-in version, paired
-                  with the greeting. (Logged-out visitors get the same offer in
-                  the welcome banner.) Acts tab only, since the 5-min filter only
-                  shapes the Acts feed. */}
-              {activeTab === "acts" && (
-                <p className="font-['Poppins',sans-serif] text-center text-[11px] md:text-[13px] leading-tight text-gray-500">
-                  {quickActionsOnly ? (
-                    <>
-                      Showing only acts that take 5 minutes max.{" "}
-                      <button
-                        type="button"
-                        onClick={() => setQuickActionsOnly(false)}
-                        className="font-semibold text-[#ed6624] underline underline-offset-2 transition-colors hover:text-[#e07a28]"
-                      >
-                        Show all acts.
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      Swamped today, show only acts that take{" "}
-                      <button
-                        type="button"
-                        onClick={() => setQuickActionsOnly(true)}
-                        className="font-semibold text-[#ed6624] underline underline-offset-2 transition-colors hover:text-[#e07a28]"
-                      >
-                        5 minutes max
-                      </button>
-                      .
-                    </>
-                  )}
-                </p>
-              )}
+              {/* The "Swamped today? → 5 minutes max" invite used to live here as a
+                  second line, but it made the footer three rows tall. It's now a
+                  once-a-day toast (see quickNudgeOpen). */}
             </div>
           ) : (
             <p className="font-['Poppins',sans-serif] text-center text-[12px] md:text-base leading-tight min-w-0 flex-1">
@@ -4392,6 +4389,36 @@ export default function App() {
       {toastMessage && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] bg-gray-900 text-white px-4 py-2.5 rounded-xl shadow-lg font-['Poppins',sans-serif] text-sm font-medium pointer-events-none">
           {toastMessage}
+        </div>
+      )}
+
+      {/* "Swamped today?" quick-acts nudge — interactive toast (the "5 minutes
+          max" link applies the quick filter). Sits just above the generic toast
+          slot so they don't collide. */}
+      {quickNudgeOpen && (
+        <div
+          role="status"
+          className="fixed bottom-20 left-1/2 z-[100] flex max-w-[92vw] -translate-x-1/2 items-center gap-3 rounded-xl bg-[#23297e] px-4 py-2.5 text-white shadow-lg font-['Poppins',sans-serif] text-sm font-medium"
+        >
+          <span className="leading-snug">
+            Swamped today? Show only acts that take{" "}
+            <button
+              type="button"
+              onClick={() => { setQuickActionsOnly(true); setQuickNudgeOpen(false); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+              className="font-bold text-[#ffb27a] underline underline-offset-2 transition-colors hover:text-white"
+            >
+              5 minutes max
+            </button>
+            .
+          </span>
+          <button
+            type="button"
+            onClick={() => setQuickNudgeOpen(false)}
+            aria-label="Dismiss"
+            className="-mr-1 shrink-0 rounded-full p-0.5 text-white/60 transition-colors hover:bg-white/15 hover:text-white"
+          >
+            <X size={15} />
+          </button>
         </div>
       )}
 
