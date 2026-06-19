@@ -168,8 +168,10 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
       // second submit so autofill or typos don't silently trigger account creation.
       if (isCredErr && name.trim()) {
         if (!pendingSignUp) {
+          // Not an error for new users — show a friendly "confirm to create"
+          // banner (driven by pendingSignUp) instead of a red password error.
           setPendingSignUp(true);
-          setError("Incorrect password. If you're new here, click Continue again to create your account.");
+          setError(null);
           resetCaptcha();
           return;
         }
@@ -197,7 +199,7 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
 
       // Credentials wrong, no name → nudge them to fill in name if new
       if (isCredErr) {
-        setError("Incorrect password. New here? Enter your name above to create your account.");
+        setError("That didn't match. New here? Add your name above and we'll create your account. Already a member? Double-check your password.");
       } else {
         setError(signInErr.message);
       }
@@ -454,6 +456,15 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
           </label>
         )}
 
+        {pendingSignUp && !error && (
+          <div className="font-['Poppins',sans-serif] rounded-xl bg-[#ed6624]/10 border border-[#ed6624]/25 px-3.5 py-3">
+            <p className="text-[13px] font-bold text-[#23297e]">Looks like you're new here 👋</p>
+            <p className="mt-0.5 text-[12.5px] text-gray-600 leading-snug">
+              No account exists for this email yet. Tap <span className="font-semibold text-[#c2521b]">Create my account</span> below to finish signing up.
+            </p>
+          </div>
+        )}
+
         {error && (
           <p className="font-['Poppins',sans-serif] text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
             {error}
@@ -466,7 +477,7 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
           className="w-full py-3 bg-[#ed6624] hover:bg-[#c2521b] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-bold text-sm rounded-full transition-colors flex items-center justify-center gap-2 mt-1"
         >
           {loading && <Loader2 size={16} className="animate-spin" />}
-          Continue
+          {pendingSignUp ? "Create my account" : "Continue"}
           {!loading && <ArrowRight size={16} />}
         </button>
       </form>
