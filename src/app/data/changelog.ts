@@ -16,6 +16,20 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.105",
+    date: "2026-06-19",
+    title: "Signing up is no longer mistaken for a password error",
+    sections: [
+      {
+        heading: "Joining",
+        items: [
+          "New members no longer see a scary red \"Incorrect password\" message when creating an account. The first Continue now shows a friendly \"Looks like you're new here 👋 — no account exists for this email yet\" prompt, and the button changes to \"Create my account\" so the next step is obvious.",
+          "Softened the sign-in error for people who don't fill in a name, so it points returning members to check their password and invites new folks to add their name — instead of just saying the password was wrong.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.104",
     date: "2026-06-03",
     title: "Category filter wraps cleanly again",
