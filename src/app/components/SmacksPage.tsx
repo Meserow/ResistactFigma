@@ -1359,7 +1359,7 @@ function ReceiptTile({
               >No</button>
             </div>
           ) : (
-            <div className="absolute top-2 left-2 z-10 flex items-center gap-1.5">
+            <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5">
               {isEditable && (
                 <button
                   type="button"
