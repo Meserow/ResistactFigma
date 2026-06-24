@@ -6771,6 +6771,77 @@ app.post("/make-server-9eb1ae04/admin/bulk-import", async (c) => {
   }
 });
 
+// ─── POST /admin/bulk-update-urls — update targetUrl for existing items ───────
+// Auth: static admin token (X-Admin-Import-Token), same as bulk-import.
+// Updates targetUrl field for existing items by ID.
+app.post("/make-server-9eb1ae04/admin/bulk-update-urls", async (c) => {
+  try {
+    const token = c.req.header("X-Admin-Import-Token");
+    const expected = Deno.env.get("ADMIN_IMPORT_TOKEN");
+    if (!expected) return c.json({ error: "ADMIN_IMPORT_TOKEN not configured on server" }, 500);
+    if (!token || token !== expected) return c.json({ error: "Forbidden" }, 403);
+
+    const body = await c.req.json<{ updates?: Array<{ id: number; targetUrl: string }> }>();
+    const updates = Array.isArray(body.updates) ? body.updates : [];
+    if (updates.length === 0) return c.json({ error: "updates array required" }, 400);
+
+    const updated: { id: number; title: string }[] = [];
+    const notFound: { id: number; reason: string }[] = [];
+    const errors: { id: number; error: string }[] = [];
+
+    for (const { id, targetUrl } of updates) {
+      try {
+        const cardIdStr = String(id).trim();
+        if (!cardIdStr) {
+          errors.push({ id, error: "id required" });
+          continue;
+        }
+
+        // Validate URL
+        if (targetUrl) {
+          const check = validateSubmittedUrl(targetUrl, "targetUrl");
+          if (!check.ok) {
+            errors.push({ id, error: `Invalid URL: ${check.reason}` });
+            continue;
+          }
+        }
+
+        // Try user-action first, then seed action
+        let cardKey = `user-action:${id}`;
+        let card = await kv.get(cardKey) as any;
+        if (!card) {
+          cardKey = `action:${id}`;
+          card = await kv.get(cardKey) as any;
+        }
+        if (!card) {
+          notFound.push({ id, reason: "card not found" });
+          continue;
+        }
+
+        // Update the card
+        const updatedCard = { ...card, targetUrl: targetUrl || undefined, updatedAt: new Date().toISOString() };
+        await kv.set(cardKey, updatedCard);
+        updated.push({ id, title: card.title });
+
+        // Update fingerprint if URL is set
+        if (targetUrl) {
+          const fp = await bulkImportFingerprint(targetUrl, card.title);
+          await kv.set(`bulk-import:fp:${fp}`, { id, importedAt: updatedCard.updatedAt, targetUrl: normalizeBulkImportUrl(targetUrl), title: card.title });
+        }
+      } catch (rowErr) {
+        errors.push({ id, error: String(rowErr) });
+      }
+    }
+
+    invalidateActionsCache();
+    console.log(`bulk-update-urls: updated=${updated.length} notFound=${notFound.length} errors=${errors.length}`);
+    return c.json({ updated, notFound, errors });
+  } catch (err) {
+    console.log("Bulk update URLs error:", err);
+    return c.json({ error: `Bulk update failed: ${err}` }, 500);
+  }
+});
+
 // ─── Admin "Create Card from URL" — AI-assisted card builder ─────────────────
 // Three admin-only (JWT) endpoints powering the AdminPanel "Create from URL"
 // mode: draft fields from a URL (gpt-4o-mini), generate a cartoon banner
