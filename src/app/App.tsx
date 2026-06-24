@@ -246,7 +246,14 @@ function resolveCard(raw: ServerCard): ActionCardData {
     cartoonImageUrl: raw.pinToTop
       ? undefined
       : ((typeof raw.cartoonImageUrl === "string" && /^https:\/\//.test(raw.cartoonImageUrl))
-          ? raw.cartoonImageUrl
+          // Live-flow cartoons live in Supabase storage and are now stored at
+          // the model's native 1536px (no crude edge-function downscale), so
+          // serve them through the render transform: a smoothly-resampled webp
+          // sized for the largest place the banner shows (the ~720px modal),
+          // which the feed grid reuses and CSS-shrinks. Keeps edges crisp while
+          // staying far lighter than the raw PNG. Non-storage URLs (local
+          // /cartoon-banners/*.webp masters) pass through unchanged.
+          ? (storageRenderUrl(raw.cartoonImageUrl, 1024) ?? raw.cartoonImageUrl)
           : (cartoonUrlFor(raw.id) ?? raw.cartoonImageUrl ?? undefined)),
     // Synopsis (card subtitle): server value wins, then local manifest
     // fallback so we can ship subtitle copy without an Edge Function
