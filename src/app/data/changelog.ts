@@ -16,6 +16,20 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.111",
+    date: "2026-06-25",
+    title: "Meet the humans behind ResistAct",
+    sections: [
+      {
+        heading: "New",
+        items: [
+          "Added a founders page so you can meet the people who built this — open it from the “Meet the humans behind ResistAct” link at the bottom of the About panel, complete with photos and bios.",
+          "Founder bios now link out to LinkedIn, Meserow Design, and press coverage from the campaign trail.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.107",
     date: "2026-06-24",
     title: "Sharper, lighter card art",

@@ -21,6 +21,7 @@ import { FlagsAdminModal } from "./components/FlagsAdminModal";
 import { AskFlowModal } from "./components/AskFlowModal";
 import { JoinACTersModal } from "./components/JoinACTersModal";
 import { InfoModal } from "./components/InfoModal";
+import { FoundersModal } from "./components/FoundersModal";
 import { TakeABreakModal } from "./components/TakeABreakModal";
 import { EditCardModal } from "./components/EditCardModal";
 import { CardDetailsModal } from "./components/CardDetailsModal";
@@ -658,6 +659,7 @@ export default function App() {
   // instead of jumping straight out to the act's external link.
   const [detailCardId, setDetailCardId] = useState<number | null>(null);
   const [infoOpen, setInfoOpen] = useState(false);
+  const [foundersOpen, setFoundersOpen] = useState(false);
   const [actOpen, setActOpen] = useState(false);
   const [changelogOpen, setChangelogOpen] = useState(false);
   const [tierModalOpen, setTierModalOpen] = useState(false);
@@ -4169,7 +4171,13 @@ export default function App() {
         <InfoModal
           onClose={() => setInfoOpen(false)}
           onContact={() => { setInfoOpen(false); setFeedbackOpen(true); }}
+          onFounders={() => { setInfoOpen(false); setFoundersOpen(true); }}
         />
+      )}
+
+      {/* Founders / "humans behind ResistAct" bios */}
+      {foundersOpen && (
+        <FoundersModal onClose={() => setFoundersOpen(false)} />
       )}
 
       {/* "Take a break" doom-scroll check-in (fires after 15 min active time) */}

@@ -1,4 +1,4 @@
-import { X, Zap, Shield, Users, Flame, BookOpen, MessageCircle } from "lucide-react";
+import { X, Zap, Shield, Users, Flame, BookOpen, MessageCircle, Heart } from "lucide-react";
 import logoImg from "../../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
 import { TIERS } from "../lib/tiers";
 import { TierIcon } from "./TierBadge";
@@ -8,9 +8,12 @@ interface InfoModalProps {
   /** Opens the contact / feedback flow. Moved here from the top nav — rendered
    *  as a prominent button at the bottom of the modal's text column. */
   onContact?: () => void;
+  /** Opens the founders / about-the-team modal. Rendered as a secondary text
+   *  link beneath the Contact Us button. */
+  onFounders?: () => void;
 }
 
-export function InfoModal({ onClose, onContact }: InfoModalProps) {
+export function InfoModal({ onClose, onContact, onFounders }: InfoModalProps) {
   return (
     <div
       className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
@@ -108,6 +111,17 @@ export function InfoModal({ onClose, onContact }: InfoModalProps) {
               >
                 <MessageCircle size={18} strokeWidth={2.5} />
                 Contact Us
+              </button>
+            )}
+
+            {/* Meet the founders — secondary link to the team / bio modal. */}
+            {onFounders && (
+              <button
+                onClick={onFounders}
+                className="mt-3 inline-flex w-full items-center justify-center gap-2 font-['Poppins',sans-serif] text-[13px] font-semibold text-[#23297e] transition-colors hover:text-[#ed6624]"
+              >
+                <Heart size={15} strokeWidth={2.5} />
+                Meet the humans behind ResistAct
               </button>
             )}
           </div>
