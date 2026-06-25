@@ -53,9 +53,12 @@ const COUNT = Number(process.env.COUNT ?? "100");
 // Quality tier for gpt-image-1. Pass via env: QUALITY=medium node ...
 // Options: "low" (~$0.02/image), "medium" (~$0.06/image), "high" (~$0.25/image),
 // or "auto" (model picks — defaults to high for landscape sizes). Defaults
-// to "medium" here because the run that used "high" hit $0.60/image after
-// /edits input image tokens were added — way more than we expected.
-const QUALITY = process.env.QUALITY ?? "medium";
+// to "low": a low/medium/high side-by-side on this flat comic style showed
+// low holds up — clean faces and linework at our display sizes (416px grid,
+// 720px modal) — while the medium→high gain is marginal. low is ~4× cheaper
+// to generate AND ~2.5× lighter as a stored webp (71 KB vs 178 KB), which
+// also helps the feed. Bump to medium only if a real batch disappoints.
+const QUALITY = process.env.QUALITY ?? "low";
 
 // Optional category filter. Pass via env: CATEGORY="Art/Performance Art" node ...
 // Case-insensitive substring match against each card's category. Useful for

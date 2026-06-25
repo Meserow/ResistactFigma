@@ -16,6 +16,35 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.111",
+    date: "2026-06-25",
+    title: "Meet the humans behind ResistAct",
+    sections: [
+      {
+        heading: "New",
+        items: [
+          "Added a founders page so you can meet the people who built this — open it from the “Meet the humans behind ResistAct” link at the bottom of the About panel, complete with photos and bios.",
+          "Founder bios now link out to LinkedIn, Meserow Design, and press coverage from the campaign trail.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.107",
+    date: "2026-06-24",
+    title: "Sharper, lighter card art",
+    sections: [
+      {
+        heading: "Under the hood",
+        items: [
+          "Fixed a behind-the-scenes step that was roughening the edges of freshly generated card banners — new card art now comes out clean and crisp instead of jagged.",
+          "Card banners are now served at a size matched to where they appear, so they look sharp in the card pop-up while keeping the feed quick to load.",
+          "Card cartoon banners are also now generated at a lighter image-quality setting. At the sizes banners actually appear, it looks the same as before — but it's about 4× cheaper to produce.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.105",
     date: "2026-06-19",
     title: "Signing up is no longer mistaken for a password error",

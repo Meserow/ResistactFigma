@@ -7062,7 +7062,10 @@ async function generateCartoon(opts: { title: string; description?: string; refI
     form.append("model", "gpt-image-1");
     form.append("prompt", CARTOON_STYLE_PROMPT);
     form.append("size", "1536x1024");
-    form.append("quality", "medium");
+    // low matches the batch script (generate-card-art.mjs): a low/medium/high
+    // comparison on this flat comic style showed low holds up at our display
+    // sizes — ~4× cheaper to generate and lighter to store.
+    form.append("quality", "low");
     form.append("n", "1");
     form.append("image", new Blob([refPng], { type: "image/png" }), "ref.png");
     const r = await fetch("https://api.openai.com/v1/images/edits", {
@@ -7076,20 +7079,20 @@ async function generateCartoon(opts: { title: string; description?: string; refI
     const r = await fetch("https://api.openai.com/v1/images/generations", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-      body: JSON.stringify({ model: "gpt-image-1", prompt, size: "1536x1024", quality: "medium", n: 1 }),
+      body: JSON.stringify({ model: "gpt-image-1", prompt, size: "1536x1024", quality: "low", n: 1 }),
     });
     if (!r.ok) throw new Error(`Image generation failed: ${(await r.text()).slice(0, 300)}`);
     b64 = (await r.json())?.data?.[0]?.b64_json;
   }
   if (!b64) throw new Error("No image returned by the model. Try again or tweak the text.");
 
-  // Downscale the 1536px PNG before storing (render endpoint resizes again at
-  // serve time). Reuse the upload pattern from /actions/upload-image.
-  let bytes: Uint8Array = b64ToBytes(b64);
-  try {
-    const img = await Image.decode(bytes);
-    if (img.width > RECOMPRESS_MAX_WIDTH) bytes = await img.resize(RECOMPRESS_MAX_WIDTH, Image.RESIZE_AUTO).encode();
-  } catch (_e) { /* store as-is */ }
+  // Store the model's native 1536px PNG as-is — do NOT downscale here.
+  // ImageScript's resize is a crude resampler that aliases the crisp comic
+  // linework into jagged, stair-stepped edges. The frontend serves this master
+  // through the Supabase render transform (storageRenderUrl) at a per-context
+  // width, so the clean high-res master never goes over the wire raw and the
+  // transform's good resampling keeps edges smooth.
+  const bytes: Uint8Array = b64ToBytes(b64);
 
   const supabase = adminClient();
   const BUCKET = "action-images";

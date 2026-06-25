@@ -21,6 +21,7 @@ import { FlagsAdminModal } from "./components/FlagsAdminModal";
 import { AskFlowModal } from "./components/AskFlowModal";
 import { JoinACTersModal } from "./components/JoinACTersModal";
 import { InfoModal } from "./components/InfoModal";
+import { FoundersModal } from "./components/FoundersModal";
 import { TakeABreakModal } from "./components/TakeABreakModal";
 import { EditCardModal } from "./components/EditCardModal";
 import { CardDetailsModal } from "./components/CardDetailsModal";
@@ -246,7 +247,14 @@ function resolveCard(raw: ServerCard): ActionCardData {
     cartoonImageUrl: raw.pinToTop
       ? undefined
       : ((typeof raw.cartoonImageUrl === "string" && /^https:\/\//.test(raw.cartoonImageUrl))
-          ? raw.cartoonImageUrl
+          // Live-flow cartoons live in Supabase storage and are now stored at
+          // the model's native 1536px (no crude edge-function downscale), so
+          // serve them through the render transform: a smoothly-resampled webp
+          // sized for the largest place the banner shows (the ~720px modal),
+          // which the feed grid reuses and CSS-shrinks. Keeps edges crisp while
+          // staying far lighter than the raw PNG. Non-storage URLs (local
+          // /cartoon-banners/*.webp masters) pass through unchanged.
+          ? (storageRenderUrl(raw.cartoonImageUrl, 1024) ?? raw.cartoonImageUrl)
           : (cartoonUrlFor(raw.id) ?? raw.cartoonImageUrl ?? undefined)),
     // Synopsis (card subtitle): server value wins, then local manifest
     // fallback so we can ship subtitle copy without an Edge Function
@@ -651,6 +659,7 @@ export default function App() {
   // instead of jumping straight out to the act's external link.
   const [detailCardId, setDetailCardId] = useState<number | null>(null);
   const [infoOpen, setInfoOpen] = useState(false);
+  const [foundersOpen, setFoundersOpen] = useState(false);
   const [actOpen, setActOpen] = useState(false);
   const [changelogOpen, setChangelogOpen] = useState(false);
   const [tierModalOpen, setTierModalOpen] = useState(false);
@@ -4162,7 +4171,13 @@ export default function App() {
         <InfoModal
           onClose={() => setInfoOpen(false)}
           onContact={() => { setInfoOpen(false); setFeedbackOpen(true); }}
+          onFounders={() => { setInfoOpen(false); setFoundersOpen(true); }}
         />
+      )}
+
+      {/* Founders / "humans behind ResistAct" bios */}
+      {foundersOpen && (
+        <FoundersModal onClose={() => setFoundersOpen(false)} />
       )}
 
       {/* "Take a break" doom-scroll check-in (fires after 15 min active time) */}
