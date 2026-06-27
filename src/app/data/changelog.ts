@@ -16,6 +16,21 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.112",
+    date: "2026-06-27",
+    title: "Automatic quality checks on new cards",
+    sections: [
+      {
+        heading: "Admin",
+        items: [
+          "New cards are now automatically quality-checked before they reach the review queue: we verify the action link actually works, that the page matches what the card's title promises, and that the listed time commitment fits the action type.",
+          "Each pending card now shows a QA badge (pass / warn / fail) with specific reasons, so reviewers can spot broken links and mismatches at a glance.",
+          "Obvious time-commitment mistakes (like a petition marked as a half-day task) are auto-corrected to a sensible default, with the change noted on the card.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.111",
     date: "2026-06-25",
     title: "Meet the humans behind ResistAct",

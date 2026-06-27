@@ -265,8 +265,30 @@ interface PendingCard {
   notOnTopic?: boolean;
   firstTimerFriendly?: boolean;
   highlighted?: boolean;
+  timeCommitment?: string;
+  qaReport?: QaReport;
   _store?: string;
 }
+
+// Pre-approval QA results, written by tools/qa_pending_cards.py via
+// POST /admin/qa/update. One verdict per check plus an overall status.
+interface QaCheck { status: "pass" | "warn" | "fail" | "skip"; detail?: string; }
+interface QaReport {
+  status: "pass" | "warn" | "fail" | "skip";
+  checkedAt?: string;
+  checks?: { link?: QaCheck; relevance?: QaCheck; time?: QaCheck };
+  autoFixes?: Array<{ field: string; from?: string; to?: string }>;
+}
+
+const QA_BADGE_STYLE: Record<string, string> = {
+  pass: "text-emerald-700 bg-emerald-50 border-emerald-200",
+  warn: "text-amber-700 bg-amber-50 border-amber-300",
+  fail: "text-red-700 bg-red-50 border-red-300",
+  skip: "text-gray-500 bg-gray-50 border-gray-200",
+};
+const QA_DOT: Record<string, string> = {
+  pass: "bg-emerald-500", warn: "bg-amber-500", fail: "bg-red-500", skip: "bg-gray-300",
+};
 
 // ── Resolve a card's display image: explicit URL > imageKey lookup > undefined ─
 function resolveImage(card: PendingCard, imageMap?: Record<string, string>): string | undefined {
@@ -1520,6 +1542,16 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
                                     LINK = HOMEPAGE
                                   </span>
                                 )}
+                                {/* Pre-approval QA verdict (link / relevance / time) */}
+                                {card.qaReport && card.qaReport.status !== "skip" && (
+                                  <span
+                                    className={`inline-flex items-center gap-1 text-[10px] font-bold font-['Poppins',sans-serif] uppercase tracking-wider px-1.5 py-0.5 rounded-md border ${QA_BADGE_STYLE[card.qaReport.status] ?? QA_BADGE_STYLE.skip}`}
+                                    title={`QA ${card.qaReport.checkedAt ? "checked " + card.qaReport.checkedAt : ""}`}
+                                  >
+                                    <ShieldCheck size={9} />
+                                    QA: {card.qaReport.status}
+                                  </span>
+                                )}
                               </div>
                               <p className="font-['Poppins',sans-serif] font-semibold text-gray-900 text-sm leading-tight line-clamp-2">
                                 {card.title}
@@ -1546,6 +1578,30 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
                               <ExternalLink size={10} />
                               <span className="truncate max-w-[240px]">{card.targetUrl}</span>
                             </a>
+                          )}
+
+                          {/* QA details — per-check reasons, shown when QA flagged anything */}
+                          {card.qaReport && card.qaReport.status !== "skip" && card.qaReport.status !== "pass" && (
+                            <div className="mt-2 rounded-md border border-gray-100 bg-gray-50/70 px-2.5 py-1.5 space-y-0.5">
+                              {(["link", "relevance", "time"] as const).map((k) => {
+                                const chk = card.qaReport?.checks?.[k];
+                                if (!chk || chk.status === "skip") return null;
+                                return (
+                                  <div key={k} className="flex items-start gap-1.5 text-[11px] font-['Poppins',sans-serif] text-gray-600">
+                                    <span className={`mt-1 w-1.5 h-1.5 rounded-full shrink-0 ${QA_DOT[chk.status] ?? QA_DOT.skip}`} />
+                                    <span className="font-semibold uppercase tracking-wide text-gray-400 w-14 shrink-0">{k}</span>
+                                    <span className="min-w-0">{chk.detail}</span>
+                                  </div>
+                                );
+                              })}
+                              {card.qaReport.autoFixes?.map((fx, i) => (
+                                <div key={`fx${i}`} className="flex items-start gap-1.5 text-[11px] font-['Poppins',sans-serif] text-emerald-700">
+                                  <span className="mt-1 w-1.5 h-1.5 rounded-full shrink-0 bg-emerald-500" />
+                                  <span className="font-semibold uppercase tracking-wide w-14 shrink-0">fixed</span>
+                                  <span className="min-w-0">{fx.field}: {fx.from || "∅"} → {fx.to}</span>
+                                </div>
+                              ))}
+                            </div>
                           )}
 
                           {/* Action buttons */}
