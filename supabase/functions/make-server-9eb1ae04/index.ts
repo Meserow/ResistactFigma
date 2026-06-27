@@ -6443,12 +6443,33 @@ app.post("/make-server-9eb1ae04/admin/approve-action/:id", async (c) => {
     }
     if (!card) return c.json({ error: `Card ${id} not found` }, 404);
 
+    // Generate the branded cartoon banner AT APPROVAL TIME. Harvested cards land
+    // pending with no cartoon (art is the expensive step, so we only spend it on
+    // cards you actually approve). On approval, if the card has no cartoon yet,
+    // generate one with gpt-image-1 (using the source image as reference when
+    // present). This also satisfies the image gate below.
+    if (!card.cartoonImageUrl) {
+      try {
+        const art = await generateCartoon({
+          title: card.title,
+          description: card.description || card.synopsis,
+          refImageUrl: card.topImageUrl,
+        });
+        card.cartoonImageUrl = art.url;
+        console.log(`Generated cartoon on approval for #${id} (${art.mode})`);
+      } catch (e) {
+        console.log(`Cartoon gen failed on approval for #${id}: ${e}`);
+        // Fall through — the image gate below still applies (a source image may
+        // already satisfy it; otherwise approval is blocked as before).
+      }
+    }
+
     // Hard rule: a card cannot be approved without an image. Imageless cards
-    // render as half-blank tiles in the public feed and look broken — admins
-    // must upload one before they can flip approval on.
+    // render as half-blank tiles in the public feed and look broken — so if
+    // cartoon generation failed AND there's no source image, block approval.
     const hasImage = Boolean(card.topImageUrl) || Boolean(card.topImageKey) || Boolean(card.topImage) || Boolean(card.cartoonImageUrl);
     if (!hasImage) {
-      return c.json({ error: "Card has no image. Upload a header image before approving." }, 400);
+      return c.json({ error: "Card has no image and cartoon generation failed — try again, or upload a header image before approving." }, 400);
     }
 
     // Defense-in-depth: even if dirty URLs slipped past create-time validation
@@ -7173,8 +7194,17 @@ app.post("/make-server-9eb1ae04/admin/cards/generate-subtitle", async (c) => {
 // ─── POST /admin/cards/generate-image — make a cartoon banner ─────────────────
 app.post("/make-server-9eb1ae04/admin/cards/generate-image", async (c) => {
   try {
-    const admin = await requireAdmin(c.req.header("Authorization")?.split(" ")[1]);
-    if (!admin) return c.json({ error: "Forbidden" }, 403);
+    // Auth: shared ADMIN_IMPORT_TOKEN (headless nightly art-gen — same token as
+    // bulk-import) OR an admin user login (the AdminPanel add-card modal).
+    const importToken = c.req.header("X-Admin-Import-Token");
+    const expectedToken = Deno.env.get("ADMIN_IMPORT_TOKEN");
+    const viaToken = !!expectedToken && importToken === expectedToken;
+    let actorName = "import-token";
+    if (!viaToken) {
+      const admin = await requireAdmin(c.req.header("Authorization")?.split(" ")[1]);
+      if (!admin) return c.json({ error: "Forbidden" }, 403);
+      actorName = admin.record.name;
+    }
 
     const { title, description, refImageUrl } = await c.req.json<{ title?: string; description?: string; refImageUrl?: string }>();
     if (!title?.trim()) return c.json({ error: "title required" }, 400);
@@ -7185,7 +7215,7 @@ app.post("/make-server-9eb1ae04/admin/cards/generate-image", async (c) => {
     } catch (e) {
       return c.json({ error: String((e as Error)?.message ?? e) }, 502);
     }
-    console.log(`Admin ${admin.record.name} generated a cartoon (${out.mode})`);
+    console.log(`${actorName} generated a cartoon (${out.mode})`);
     return c.json({ url: out.url });
   } catch (err) {
     console.log("generate-image error:", err);
