@@ -59,7 +59,7 @@ interface AdminPanelProps {
 }
 
 type TabFilter = "active" | "pending" | "approved" | "rejected" | "all";
-type PanelMode = "cards" | "users" | "nourl" | "noimage" | "notime" | "matcher" | "online" | "bigimages" | "brokenimages" | "sameurl" | "newcard" | "siteupdate" | "topacts" | "topfacts" | "topsmacks";
+type PanelMode = "cards" | "users" | "nourl" | "noimage" | "notime" | "matcher" | "online" | "bigimages" | "brokenimages" | "sameurl" | "newcard" | "siteupdate" | "topacts" | "topfacts" | "topsmacks" | "autoapproved";
 
 // Time-commitment values an admin can assign from the "Missing time" page.
 // Kept in sync with EditCardModal's TIME_OPTIONS labels so the picker can
@@ -262,6 +262,10 @@ interface PendingCard {
   createdAt?: string;
   createdBy?: string;
   adminApproved?: boolean;
+  autoApproved?: boolean;
+  autoApprovedAt?: string;
+  approvedAt?: string;
+  cartoonImageUrl?: string | null;
   notOnTopic?: boolean;
   firstTimerFriendly?: boolean;
   highlighted?: boolean;
@@ -446,6 +450,8 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
 
   // ── Cards state ──────────────────────────────────────────────────────────────
   const [pendingCards, setPendingCards] = useState<PendingCard[]>([]);
+  const [autoApprovedCards, setAutoApprovedCards] = useState<PendingCard[]>([]);
+  const [autoApprovedLoading, setAutoApprovedLoading] = useState(false);
   const [cardsLoading, setCardsLoading] = useState(false);
   const [cardsError, setCardsError] = useState<string | null>(null);
   const [cardActionLoading, setCardActionLoading] = useState<number | null>(null);
@@ -907,6 +913,7 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
   useEffect(() => { if (mode === "nourl" && noUrlCards.length === 0 && !noUrlLoading) fetchNoUrlCards(); }, [mode]);
   useEffect(() => { if (mode === "noimage" && noImageCards.length === 0 && !noImageLoading) fetchNoImageCards(); }, [mode]);
   useEffect(() => { if (mode === "notime" && noTimeCards.length === 0 && !noTimeLoading) fetchNoTimeCards(); }, [mode]);
+  useEffect(() => { if (mode === "autoapproved" && autoApprovedCards.length === 0 && !autoApprovedLoading) fetchAutoApprovedCards(); }, [mode]);
   // Online tab: fetch once when the tab opens. No auto-refresh — the
   // user said it's wasteful to repoll every 30s when they're just glancing
   // at it. Hitting the Refresh button in the header re-fetches on demand.
@@ -1135,7 +1142,36 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
       const res = await fetch(`${API}/actions/${id}`, { method: "DELETE", headers: authHeaders });
       if (!res.ok) { const d = await res.json(); alert(d.error); return; }
       setPendingCards((prev) => prev.filter((c) => c.id !== id));
+      setAutoApprovedCards((prev) => prev.filter((c) => c.id !== id));
       onCardChanged?.(id, "deleted");
+    } finally {
+      setCardActionLoading(null);
+    }
+  }
+
+  // ── Auto-approved audit: cards the headless approver published (autoApproved) ──
+  async function fetchAutoApprovedCards() {
+    setAutoApprovedLoading(true);
+    try {
+      const res = await fetch(`${API}/actions?limit=2000`, { headers: authHeaders });
+      const data = await res.json();
+      const all: PendingCard[] = Array.isArray(data) ? data : (data.cards ?? data.actions ?? []);
+      const auto = all
+        .filter((c) => c.autoApproved === true)
+        .sort((a, b) => String(b.autoApprovedAt ?? b.approvedAt ?? "").localeCompare(String(a.autoApprovedAt ?? a.approvedAt ?? "")));
+      setAutoApprovedCards(auto);
+    } finally {
+      setAutoApprovedLoading(false);
+    }
+  }
+
+  // Reverse a bad auto-approval: send the card back to the pending queue.
+  async function handleUnapproveCard(id: number) {
+    setCardActionLoading(id);
+    try {
+      const res = await fetch(`${API}/admin/unapprove-action/${id}`, { method: "POST", headers: authHeaders });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); alert(d.error ?? "Un-approve failed"); return; }
+      setAutoApprovedCards((prev) => prev.filter((c) => c.id !== id));
     } finally {
       setCardActionLoading(null);
     }
@@ -1220,6 +1256,7 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
               { value: "nourl",        label: "Missing URL",      Icon: Link2,         badge: noUrlCards.length > 0 ? String(noUrlCards.length) : undefined },
               { value: "noimage",      label: "Missing Image",    Icon: ImageIcon,     badge: noImageCards.length > 0 ? String(noImageCards.length) : undefined },
               { value: "notime",       label: "Missing Time",     Icon: Clock,         badge: noTimeCards.length > 0 ? String(noTimeCards.length) : undefined },
+              { value: "autoapproved", label: "Auto-approved",    Icon: CheckCircle2,  badge: autoApprovedCards.length > 0 ? String(autoApprovedCards.length) : undefined },
               { value: "online",       label: "Online",           Icon: Activity,      badge: onlineUsers.length > 0 ? String(onlineUsers.length) : undefined },
               { value: "topacts",      label: "Top Acts",         Icon: BarChart3 },
               { value: "topfacts",     label: "Top Facts",        Icon: Lightbulb },
@@ -1646,6 +1683,83 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
                               className="flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg font-['Poppins',sans-serif] font-semibold text-xs text-red-600 transition-colors disabled:opacity-50"
                             >
                               {isActing ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={13} />}
+                              Delete
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            </>
+          )}
+
+          {/* ── AUTO-APPROVED mode (audit of what the bot published) ───────────────── */}
+          {mode === "autoapproved" && (
+            <>
+              <div className="px-5 py-3 border-b border-gray-100 shrink-0 flex items-center justify-between gap-3">
+                <p className="font-['Poppins',sans-serif] text-xs text-gray-500">
+                  Cards the auto-approver published — passed link + relevance QA, not a dup, not expired. Review and un-approve any that slipped through.
+                </p>
+                <button
+                  type="button"
+                  onClick={fetchAutoApprovedCards}
+                  disabled={autoApprovedLoading}
+                  className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold text-[#23297e] hover:bg-[#23297e]/5 rounded-md px-2 py-1"
+                >
+                  <RefreshCw size={14} className={autoApprovedLoading ? "animate-spin" : ""} />
+                  Refresh
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto px-5 py-3">
+                {autoApprovedLoading && autoApprovedCards.length === 0 ? (
+                  <p className="text-sm text-gray-400 font-['Poppins',sans-serif]">Loading…</p>
+                ) : autoApprovedCards.length === 0 ? (
+                  <p className="text-sm text-gray-400 font-['Poppins',sans-serif]">No auto-approved cards yet.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {autoApprovedCards.map((card) => {
+                      const isActing = cardActionLoading === card.id;
+                      return (
+                        <li key={card.id} className="flex items-start gap-3 border border-gray-100 rounded-lg p-3">
+                          {card.cartoonImageUrl && (
+                            <img src={card.cartoonImageUrl} alt="" className="w-16 h-12 object-cover rounded-md shrink-0" />
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">{card.category}</span>
+                              {card.qaReport && (
+                                <span className={`inline-flex items-center text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md border ${QA_BADGE_STYLE[card.qaReport.status] ?? QA_BADGE_STYLE.skip}`}>
+                                  QA: {card.qaReport.status}
+                                </span>
+                              )}
+                              <span className="text-[10px] text-gray-400">
+                                #{card.id}{card.autoApprovedAt ? ` · ${card.autoApprovedAt.slice(0, 10)}` : ""}
+                              </span>
+                            </div>
+                            <p className="font-['Poppins',sans-serif] text-sm font-medium text-gray-800 truncate">{card.title}</p>
+                            {card.targetUrl && (
+                              <a href={card.targetUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-[#23297e] hover:underline truncate inline-flex items-center gap-1">
+                                <ExternalLink size={11} /> {card.targetUrl}
+                              </a>
+                            )}
+                          </div>
+                          <div className="flex flex-col gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleUnapproveCard(card.id)}
+                              disabled={isActing}
+                              className="text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-md px-2 py-1 disabled:opacity-50"
+                            >
+                              Un-approve
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteCard(card.id)}
+                              disabled={isActing}
+                              className="text-xs font-semibold text-red-600 hover:bg-red-50 border border-red-100 rounded-md px-2 py-1 disabled:opacity-50"
+                            >
                               Delete
                             </button>
                           </div>

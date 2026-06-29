@@ -6428,9 +6428,19 @@ app.get("/make-server-9eb1ae04/admin/actions/pending", async (c) => {
 // ─── POST /admin/approve-action/:id — approve a card ─────────────────────────
 app.post("/make-server-9eb1ae04/admin/approve-action/:id", async (c) => {
   try {
-    const token = c.req.header("Authorization")?.split(" ")[1];
-    const admin = await requireAdmin(token);
-    if (!admin) return c.json({ error: "Forbidden" }, 403);
+    // Auth: admin login (AdminPanel) OR the shared ADMIN_IMPORT_TOKEN (the
+    // headless approve_pending_cards routine). Either may approve.
+    const importToken = c.req.header("X-Admin-Import-Token");
+    const expectedToken = Deno.env.get("ADMIN_IMPORT_TOKEN");
+    const viaToken = !!expectedToken && importToken === expectedToken;
+    let approverId = "import-token";
+    let approverName = "import-token";
+    if (!viaToken) {
+      const admin = await requireAdmin(c.req.header("Authorization")?.split(" ")[1]);
+      if (!admin) return c.json({ error: "Forbidden" }, 403);
+      approverId = admin.user.id;
+      approverName = admin.record.name;
+    }
 
     const id = Number(c.req.param("id"));
 
@@ -6481,17 +6491,60 @@ app.post("/make-server-9eb1ae04/admin/approve-action/:id", async (c) => {
     }
 
     card.adminApproved = true;
-    card.approvedBy = admin.user.id;
+    card.approvedBy = approverId;
     card.approvedAt = new Date().toISOString();
+    // Flag bot-approvals so the AdminPanel can surface an audit view of exactly
+    // what the auto-approver published (human approvals via the panel won't set
+    // this). The qaReport that justified it is already on the card.
+    if (viaToken) {
+      card.autoApproved = true;
+      card.autoApprovedAt = card.approvedAt;
+    }
     // Approval implies the admin disagrees with any off-topic signal — clear
     // it so the card doesn't carry a stale "NOT ON TOPIC" badge into live.
     if (card.notOnTopic) delete card.notOnTopic;
     await kv.set(cardKey, card);
     invalidateActionsCache();
-    console.log(`Admin ${admin.record.name} approved card #${id}: "${card.title}"`);
+    console.log(`${approverName} approved card #${id}: "${card.title}"`);
     return c.json({ card });
   } catch (err) {
     return c.json({ error: `Approval failed: ${err}` }, 500);
+  }
+});
+
+// ─── POST /admin/unapprove-action/:id — send an approved card back to pending ─
+// Used by the AdminPanel "Auto-approved" audit view to reverse a bad bot
+// approval. Auth: admin login OR the shared ADMIN_IMPORT_TOKEN.
+app.post("/make-server-9eb1ae04/admin/unapprove-action/:id", async (c) => {
+  try {
+    const importToken = c.req.header("X-Admin-Import-Token");
+    const expectedToken = Deno.env.get("ADMIN_IMPORT_TOKEN");
+    const viaToken = !!expectedToken && importToken === expectedToken;
+    let actor = "import-token";
+    if (!viaToken) {
+      const admin = await requireAdmin(c.req.header("Authorization")?.split(" ")[1]);
+      if (!admin) return c.json({ error: "Forbidden" }, 403);
+      actor = admin.record.name;
+    }
+    const id = Number(c.req.param("id"));
+    let cardKey = `action:${id}`;
+    let card = await kv.get(cardKey) as any;
+    if (!card) {
+      cardKey = `user-action:${id}`;
+      card = await kv.get(cardKey) as any;
+    }
+    if (!card) return c.json({ error: `Card ${id} not found` }, 404);
+    card.adminApproved = false;
+    delete card.autoApproved;
+    delete card.autoApprovedAt;
+    card.updatedAt = new Date().toISOString();
+    card.updatedBy = "unapprove";
+    await kv.set(cardKey, card);
+    invalidateActionsCache();
+    console.log(`${actor} un-approved card #${id}: "${card.title}"`);
+    return c.json({ card });
+  } catch (err) {
+    return c.json({ error: `Un-approve failed: ${err}` }, 500);
   }
 });
 
