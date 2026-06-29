@@ -6863,6 +6863,60 @@ app.post("/make-server-9eb1ae04/admin/bulk-update-urls", async (c) => {
   }
 });
 
+// ─── POST /admin/qa/update — stamp pre-approval QA results onto cards ─────────
+// Called by tools/qa_pending_cards.py (the nightly QA gate). Token-authed with
+// the shared ADMIN_IMPORT_TOKEN (no admin JWT needed). Writes a `qaReport`
+// object onto each pending card and, when the QA step auto-fixed a value
+// (currently only timeCommitment), applies that too. The AdminPanel renders
+// pass/warn/fail badges from qaReport. Non-destructive: only sets these fields.
+app.post("/make-server-9eb1ae04/admin/qa/update", async (c) => {
+  try {
+    const token = c.req.header("X-Admin-Import-Token");
+    const expected = Deno.env.get("ADMIN_IMPORT_TOKEN");
+    if (!expected) return c.json({ error: "ADMIN_IMPORT_TOKEN not configured on server" }, 500);
+    if (!token || token !== expected) return c.json({ error: "Forbidden" }, 403);
+
+    const body = await c.req.json<{
+      updates?: Array<{ id: number; qaReport?: unknown; timeCommitment?: string }>;
+    }>();
+    const updates = Array.isArray(body.updates) ? body.updates : [];
+    if (updates.length === 0) return c.json({ error: "updates array required" }, 400);
+
+    const updated: { id: number; status?: string }[] = [];
+    const notFound: { id: number }[] = [];
+    const errors: { id: number; error: string }[] = [];
+
+    for (const { id, qaReport, timeCommitment } of updates) {
+      try {
+        let cardKey = `user-action:${id}`;
+        let card = await kv.get(cardKey) as any;
+        if (!card) {
+          cardKey = `action:${id}`;
+          card = await kv.get(cardKey) as any;
+        }
+        if (!card) { notFound.push({ id }); continue; }
+
+        const next: any = { ...card, updatedAt: new Date().toISOString() };
+        if (qaReport !== undefined) next.qaReport = qaReport;
+        if (typeof timeCommitment === "string" && timeCommitment.trim()) {
+          next.timeCommitment = timeCommitment.trim();
+        }
+        await kv.set(cardKey, next);
+        updated.push({ id, status: (qaReport as any)?.status });
+      } catch (rowErr) {
+        errors.push({ id, error: String(rowErr) });
+      }
+    }
+
+    invalidateActionsCache();
+    console.log(`qa/update: updated=${updated.length} notFound=${notFound.length} errors=${errors.length}`);
+    return c.json({ updated, notFound, errors });
+  } catch (err) {
+    console.log("QA update error:", err);
+    return c.json({ error: `QA update failed: ${err}` }, 500);
+  }
+});
+
 // ─── Admin "Create Card from URL" — AI-assisted card builder ─────────────────
 // Three admin-only (JWT) endpoints powering the AdminPanel "Create from URL"
 // mode: draft fields from a URL (gpt-4o-mini), generate a cartoon banner
@@ -7083,10 +7137,11 @@ async function generateCartoon(opts: { title: string; description?: string; refI
     form.append("model", "gpt-image-1");
     form.append("prompt", CARTOON_STYLE_PROMPT);
     form.append("size", "1536x1024");
-    // low matches the batch script (generate-card-art.mjs): a low/medium/high
-    // comparison on this flat comic style showed low holds up at our display
-    // sizes — ~4× cheaper to generate and lighter to store.
-    form.append("quality", "low");
+    // "high" — admins flagged "low" as visibly soft/low-res on the card. Art
+    // quality is worth the extra cost here (generation is admin-gated and the
+    // member path is daily-capped), and the crisp master serves down cleanly
+    // through the render transform.
+    form.append("quality", "high");
     form.append("n", "1");
     form.append("image", new Blob([refPng], { type: "image/png" }), "ref.png");
     const r = await fetch("https://api.openai.com/v1/images/edits", {
@@ -7100,7 +7155,7 @@ async function generateCartoon(opts: { title: string; description?: string; refI
     const r = await fetch("https://api.openai.com/v1/images/generations", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-      body: JSON.stringify({ model: "gpt-image-1", prompt, size: "1536x1024", quality: "low", n: 1 }),
+      body: JSON.stringify({ model: "gpt-image-1", prompt, size: "1536x1024", quality: "high", n: 1 }),
     });
     if (!r.ok) throw new Error(`Image generation failed: ${(await r.text()).slice(0, 300)}`);
     b64 = (await r.json())?.data?.[0]?.b64_json;
@@ -8442,6 +8497,34 @@ app.post("/make-server-9eb1ae04/receipts/:id/boost", async (c) => {
   }
 });
 
+// ─── POST /receipts/:id/share — record a share (no auth; counts each share) ──
+// Unlike boost (a per-user toggle), a share is a one-way action and most
+// sharers are anonymous, so this is a simple increment-only tally — the
+// in-app companion to the GA "share" event. Mirrors the boost storage shape:
+// KV receipts carry a `shares` field; static smacks (id ≥ 5000) tally in the
+// single `smack:shares` aggregate.
+app.post("/make-server-9eb1ae04/receipts/:id/share", async (c) => {
+  try {
+    const id = Number(c.req.param("id"));
+    if (!Number.isFinite(id)) return c.json({ error: "Invalid id" }, 400);
+    const receipt = (await kv.get(`receipt:${id}`)) as any;
+    if (receipt) {
+      receipt.shares = Math.max(0, (receipt.shares ?? 0) + 1);
+      await kv.set(`receipt:${id}`, receipt);
+      return c.json({ shares: receipt.shares });
+    }
+    if (id >= 5000) {
+      const tallies = ((await kv.get("smack:shares")) ?? {}) as Record<string, number>;
+      tallies[id] = Math.max(0, (tallies[id] ?? 0) + 1);
+      await kv.set("smack:shares", tallies);
+      return c.json({ shares: tallies[id] });
+    }
+    return c.json({ error: `Receipt ${id} not found` }, 404);
+  } catch (err) {
+    return c.json({ error: `Share count failed: ${err}` }, 500);
+  }
+});
+
 // ─── GET /receipts — public list of approved receipts (admin sees all) ───────
 app.get("/make-server-9eb1ae04/receipts", async (c) => {
   try {
@@ -8505,7 +8588,10 @@ app.get("/make-server-9eb1ae04/receipts", async (c) => {
     // receipts carry their own `boosts` field; this fills in the rest so the
     // admin "Top Smacks" leaderboard reflects every smack.
     const staticBoosts = ((await kv.get("smack:boosts")) ?? {}) as Record<string, number>;
-    return c.json({ receipts, hiddenIds, staticBoosts });
+    // Share tallies for static smacks, same shape as staticBoosts. KV receipts
+    // carry their own `shares` field.
+    const staticShares = ((await kv.get("smack:shares")) ?? {}) as Record<string, number>;
+    return c.json({ receipts, hiddenIds, staticBoosts, staticShares });
   } catch (err) {
     return c.json({ error: `Failed to fetch receipts: ${err}` }, 500);
   }

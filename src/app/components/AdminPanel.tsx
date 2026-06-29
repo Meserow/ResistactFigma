@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { X, CheckCircle2, XCircle, Clock, Users, ShieldCheck, Loader2, RefreshCw, FileText, Trash2, Calendar, ExternalLink, ImageIcon, Upload, ZoomIn, AlertTriangle, Sliders, RotateCcw, Save, Eye, Flame, Laugh, VenetianMask, Heart, Sunrise, Zap, Link2, Pencil, BarChart3, Lightbulb, MessageSquare, Plus, Activity, Wrench, ChevronDown } from "lucide-react";
+import { X, CheckCircle2, XCircle, Clock, Users, ShieldCheck, Loader2, RefreshCw, FileText, Trash2, Calendar, ExternalLink, ImageIcon, Upload, ZoomIn, AlertTriangle, Sliders, RotateCcw, Save, Eye, Flame, Laugh, VenetianMask, Heart, Sunrise, Zap, Link2, Pencil, BarChart3, Lightbulb, MessageSquare, Plus, Activity, Wrench, ChevronDown, Share2 } from "lucide-react";
 import { CardDetailsModal } from "./CardDetailsModal";
 import { EditCardModal } from "./EditCardModal";
 import { AdminUserDetail } from "./AdminUserDetail";
@@ -207,6 +207,8 @@ interface TopSmack {
   tags: string[];
   /** 🔥 boost count. Sort key. */
   boosts: number;
+  /** Share count (in-app tally; counts share actions since this shipped). */
+  shares: number;
   /** true for hardcoded STATIC_SMACKS (id ≥ 5000), false for KV receipts. */
   isStatic: boolean;
   /** false = still in the admin review queue (KV receipts only). */
@@ -265,8 +267,30 @@ interface PendingCard {
   notOnTopic?: boolean;
   firstTimerFriendly?: boolean;
   highlighted?: boolean;
+  timeCommitment?: string;
+  qaReport?: QaReport;
   _store?: string;
 }
+
+// Pre-approval QA results, written by tools/qa_pending_cards.py via
+// POST /admin/qa/update. One verdict per check plus an overall status.
+interface QaCheck { status: "pass" | "warn" | "fail" | "skip"; detail?: string; }
+interface QaReport {
+  status: "pass" | "warn" | "fail" | "skip";
+  checkedAt?: string;
+  checks?: { link?: QaCheck; relevance?: QaCheck; time?: QaCheck };
+  autoFixes?: Array<{ field: string; from?: string; to?: string }>;
+}
+
+const QA_BADGE_STYLE: Record<string, string> = {
+  pass: "text-emerald-700 bg-emerald-50 border-emerald-200",
+  warn: "text-amber-700 bg-amber-50 border-amber-300",
+  fail: "text-red-700 bg-red-50 border-red-300",
+  skip: "text-gray-500 bg-gray-50 border-gray-200",
+};
+const QA_DOT: Record<string, string> = {
+  pass: "bg-emerald-500", warn: "bg-amber-500", fail: "bg-red-500", skip: "bg-gray-300",
+};
 
 // ── Resolve a card's display image: explicit URL > imageKey lookup > undefined ─
 function resolveImage(card: PendingCard, imageMap?: Record<string, string>): string | undefined {
@@ -1029,6 +1053,7 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
       const data = await res.json();
       if (!res.ok) { setTopSmacksError(data.error ?? "Failed to load smacks."); return; }
       const staticBoosts = (data.staticBoosts ?? {}) as Record<string, number>;
+      const staticShares = (data.staticShares ?? {}) as Record<string, number>;
       // Keep the full objects around so a click can open the detail modal.
       const rawMap: Record<number, ReceiptCard> = {};
       const kvRows: TopSmack[] = (data.receipts ?? []).map((r: any) => {
@@ -1038,6 +1063,7 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
           title: r.title || r.caption || `Smack #${r.id}`,
           tags: Array.isArray(r.tags) ? r.tags : [],
           boosts: Number(r.boosts) || 0,
+          shares: Number(r.shares) || 0,
           isStatic: false,
           adminApproved: r.adminApproved,
         };
@@ -1052,11 +1078,13 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
             title: s.title || s.caption || `Smack #${s.id}`,
             tags: Array.isArray(s.tags) ? s.tags : [],
             boosts: Number(staticBoosts[s.id]) || 0,
+            shares: Number(staticShares[s.id]) || 0,
             isStatic: true,
             adminApproved: true,
           };
         });
-      const ranked = [...kvRows, ...staticRows].sort((a, b) => b.boosts - a.boosts || a.id - b.id);
+      // Rank by shares first (the new signal), then boosts, then id.
+      const ranked = [...kvRows, ...staticRows].sort((a, b) => b.shares - a.shares || b.boosts - a.boosts || a.id - b.id);
       setTopSmacksRaw(rawMap);
       setTopSmacks(ranked);
     } catch {
@@ -1520,6 +1548,16 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
                                     LINK = HOMEPAGE
                                   </span>
                                 )}
+                                {/* Pre-approval QA verdict (link / relevance / time) */}
+                                {card.qaReport && card.qaReport.status !== "skip" && (
+                                  <span
+                                    className={`inline-flex items-center gap-1 text-[10px] font-bold font-['Poppins',sans-serif] uppercase tracking-wider px-1.5 py-0.5 rounded-md border ${QA_BADGE_STYLE[card.qaReport.status] ?? QA_BADGE_STYLE.skip}`}
+                                    title={`QA ${card.qaReport.checkedAt ? "checked " + card.qaReport.checkedAt : ""}`}
+                                  >
+                                    <ShieldCheck size={9} />
+                                    QA: {card.qaReport.status}
+                                  </span>
+                                )}
                               </div>
                               <p className="font-['Poppins',sans-serif] font-semibold text-gray-900 text-sm leading-tight line-clamp-2">
                                 {card.title}
@@ -1546,6 +1584,30 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
                               <ExternalLink size={10} />
                               <span className="truncate max-w-[240px]">{card.targetUrl}</span>
                             </a>
+                          )}
+
+                          {/* QA details — per-check reasons, shown when QA flagged anything */}
+                          {card.qaReport && card.qaReport.status !== "skip" && card.qaReport.status !== "pass" && (
+                            <div className="mt-2 rounded-md border border-gray-100 bg-gray-50/70 px-2.5 py-1.5 space-y-0.5">
+                              {(["link", "relevance", "time"] as const).map((k) => {
+                                const chk = card.qaReport?.checks?.[k];
+                                if (!chk || chk.status === "skip") return null;
+                                return (
+                                  <div key={k} className="flex items-start gap-1.5 text-[11px] font-['Poppins',sans-serif] text-gray-600">
+                                    <span className={`mt-1 w-1.5 h-1.5 rounded-full shrink-0 ${QA_DOT[chk.status] ?? QA_DOT.skip}`} />
+                                    <span className="font-semibold uppercase tracking-wide text-gray-400 w-14 shrink-0">{k}</span>
+                                    <span className="min-w-0">{chk.detail}</span>
+                                  </div>
+                                );
+                              })}
+                              {card.qaReport.autoFixes?.map((fx, i) => (
+                                <div key={`fx${i}`} className="flex items-start gap-1.5 text-[11px] font-['Poppins',sans-serif] text-emerald-700">
+                                  <span className="mt-1 w-1.5 h-1.5 rounded-full shrink-0 bg-emerald-500" />
+                                  <span className="font-semibold uppercase tracking-wide w-14 shrink-0">fixed</span>
+                                  <span className="min-w-0">{fx.field}: {fx.from || "∅"} → {fx.to}</span>
+                                </div>
+                              ))}
+                            </div>
                           )}
 
                           {/* Action buttons */}
@@ -2550,7 +2612,8 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
 
           {mode === "topsmacks" && (() => {
             const totalBoosts = topSmacks.reduce((s, r) => s + r.boosts, 0);
-            const withBoosts = topSmacks.filter((r) => r.boosts > 0).length;
+            const totalShares = topSmacks.reduce((s, r) => s + r.shares, 0);
+            const withShares = topSmacks.filter((r) => r.shares > 0).length;
             return (
             <>
               <div className="px-5 py-3 border-b border-gray-100 shrink-0">
@@ -2559,8 +2622,9 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
                     ? "Loading…"
                     : topSmacks.length === 0
                       ? "No smacks found."
-                      : `${topSmacks.length} smack${topSmacks.length !== 1 ? "s" : ""} · ${totalBoosts.toLocaleString()} boost${totalBoosts !== 1 ? "s" : ""} · ${withBoosts} with at least one boost`}
+                      : `${topSmacks.length} smack${topSmacks.length !== 1 ? "s" : ""} · ${totalShares.toLocaleString()} share${totalShares !== 1 ? "s" : ""} (${withShares} shared) · ${totalBoosts.toLocaleString()} boost${totalBoosts !== 1 ? "s" : ""}`}
                 </p>
+                <p className="mt-0.5 font-['Poppins',sans-serif] text-[10px] text-gray-400">Ranked by shares. Share counts started accruing when this shipped (no historical backfill).</p>
               </div>
 
               <div className="flex-1 overflow-y-auto">
@@ -2612,6 +2676,15 @@ export function AdminPanel({ accessToken, onClose, imageMap, onImpersonate, onCa
                             )}
                           </div>
                         </div>
+                        <span
+                          className={`shrink-0 inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-['Poppins',sans-serif] text-[11px] font-bold ${
+                            r.shares > 0 ? "bg-[#23297e]/10 text-[#23297e]" : "bg-gray-50 text-gray-400"
+                          }`}
+                          title={`${r.shares.toLocaleString()} share${r.shares !== 1 ? "s" : ""}`}
+                        >
+                          <Share2 size={11} />
+                          {r.shares.toLocaleString()}
+                        </span>
                         <span
                           className={`shrink-0 inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-['Poppins',sans-serif] text-[11px] font-bold ${
                             r.boosts > 0 ? "bg-amber-50 text-amber-600" : "bg-gray-50 text-gray-400"

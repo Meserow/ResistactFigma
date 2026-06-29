@@ -351,6 +351,16 @@ export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds =
   function trackShare(id: number, method: string) {
     analytics.shareClicked(method, "smack", id);
     markShared(id);
+    // Persist an in-app share tally (companion to the GA event) so the admin
+    // "Top Smacks" leaderboard can rank by shares. Fire-and-forget; the anon
+    // key satisfies the gateway (the handler itself is anonymous).
+    fetch(`${API}/receipts/${id}/share`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${publicAnonKey}`,
+      },
+    }).catch(() => {});
   }
 
   const [copyImageState, setCopyImageState] = useState<"idle" | "copying" | "done">("idle");
