@@ -6428,9 +6428,19 @@ app.get("/make-server-9eb1ae04/admin/actions/pending", async (c) => {
 // ─── POST /admin/approve-action/:id — approve a card ─────────────────────────
 app.post("/make-server-9eb1ae04/admin/approve-action/:id", async (c) => {
   try {
-    const token = c.req.header("Authorization")?.split(" ")[1];
-    const admin = await requireAdmin(token);
-    if (!admin) return c.json({ error: "Forbidden" }, 403);
+    // Auth: admin login (AdminPanel) OR the shared ADMIN_IMPORT_TOKEN (the
+    // headless approve_pending_cards routine). Either may approve.
+    const importToken = c.req.header("X-Admin-Import-Token");
+    const expectedToken = Deno.env.get("ADMIN_IMPORT_TOKEN");
+    const viaToken = !!expectedToken && importToken === expectedToken;
+    let approverId = "import-token";
+    let approverName = "import-token";
+    if (!viaToken) {
+      const admin = await requireAdmin(c.req.header("Authorization")?.split(" ")[1]);
+      if (!admin) return c.json({ error: "Forbidden" }, 403);
+      approverId = admin.user.id;
+      approverName = admin.record.name;
+    }
 
     const id = Number(c.req.param("id"));
 
@@ -6481,17 +6491,60 @@ app.post("/make-server-9eb1ae04/admin/approve-action/:id", async (c) => {
     }
 
     card.adminApproved = true;
-    card.approvedBy = admin.user.id;
+    card.approvedBy = approverId;
     card.approvedAt = new Date().toISOString();
+    // Flag bot-approvals so the AdminPanel can surface an audit view of exactly
+    // what the auto-approver published (human approvals via the panel won't set
+    // this). The qaReport that justified it is already on the card.
+    if (viaToken) {
+      card.autoApproved = true;
+      card.autoApprovedAt = card.approvedAt;
+    }
     // Approval implies the admin disagrees with any off-topic signal — clear
     // it so the card doesn't carry a stale "NOT ON TOPIC" badge into live.
     if (card.notOnTopic) delete card.notOnTopic;
     await kv.set(cardKey, card);
     invalidateActionsCache();
-    console.log(`Admin ${admin.record.name} approved card #${id}: "${card.title}"`);
+    console.log(`${approverName} approved card #${id}: "${card.title}"`);
     return c.json({ card });
   } catch (err) {
     return c.json({ error: `Approval failed: ${err}` }, 500);
+  }
+});
+
+// ─── POST /admin/unapprove-action/:id — send an approved card back to pending ─
+// Used by the AdminPanel "Auto-approved" audit view to reverse a bad bot
+// approval. Auth: admin login OR the shared ADMIN_IMPORT_TOKEN.
+app.post("/make-server-9eb1ae04/admin/unapprove-action/:id", async (c) => {
+  try {
+    const importToken = c.req.header("X-Admin-Import-Token");
+    const expectedToken = Deno.env.get("ADMIN_IMPORT_TOKEN");
+    const viaToken = !!expectedToken && importToken === expectedToken;
+    let actor = "import-token";
+    if (!viaToken) {
+      const admin = await requireAdmin(c.req.header("Authorization")?.split(" ")[1]);
+      if (!admin) return c.json({ error: "Forbidden" }, 403);
+      actor = admin.record.name;
+    }
+    const id = Number(c.req.param("id"));
+    let cardKey = `action:${id}`;
+    let card = await kv.get(cardKey) as any;
+    if (!card) {
+      cardKey = `user-action:${id}`;
+      card = await kv.get(cardKey) as any;
+    }
+    if (!card) return c.json({ error: `Card ${id} not found` }, 404);
+    card.adminApproved = false;
+    delete card.autoApproved;
+    delete card.autoApprovedAt;
+    card.updatedAt = new Date().toISOString();
+    card.updatedBy = "unapprove";
+    await kv.set(cardKey, card);
+    invalidateActionsCache();
+    console.log(`${actor} un-approved card #${id}: "${card.title}"`);
+    return c.json({ card });
+  } catch (err) {
+    return c.json({ error: `Un-approve failed: ${err}` }, 500);
   }
 });
 
@@ -7111,11 +7164,15 @@ async function draftCardFromUrl(target: string): Promise<{ draft: any; refImageU
  * cartoon banner. Prefers the cheaper text-to-image path; only uses the source
  * page's art (image-to-image) when the card text alone isn't concrete enough to
  * draw from. Uploads to storage and returns { url, mode }, or throws. */
-async function generateCartoon(opts: { title: string; description?: string; refImageUrl?: string }): Promise<{ url: string; mode: string }> {
+async function generateCartoon(opts: { title: string; description?: string; refImageUrl?: string; quality?: string }): Promise<{ url: string; mode: string }> {
   const key = Deno.env.get("OPENAI_API_KEY");
   if (!key) throw new Error("OPENAI_API_KEY not configured on server");
   const t = opts.title.trim();
   const d = (opts.description ?? "").trim();
+  // gpt-image-1 "low" garbles sign text + linework (e.g. "DEFEND DEMOCRACY" →
+  // "DEFEND ROMIA BESH1S"). "medium" renders legible slogans at banner sizes.
+  // Callers override: admin modal = "high", auto-approve/member = "medium".
+  const quality = opts.quality ?? "medium";
 
   const { sufficient, scene } = await judgeTextSufficiency(t, d);
 
@@ -7137,11 +7194,7 @@ async function generateCartoon(opts: { title: string; description?: string; refI
     form.append("model", "gpt-image-1");
     form.append("prompt", CARTOON_STYLE_PROMPT);
     form.append("size", "1536x1024");
-    // "high" — admins flagged "low" as visibly soft/low-res on the card. Art
-    // quality is worth the extra cost here (generation is admin-gated and the
-    // member path is daily-capped), and the crisp master serves down cleanly
-    // through the render transform.
-    form.append("quality", "high");
+    form.append("quality", quality);
     form.append("n", "1");
     form.append("image", new Blob([refPng], { type: "image/png" }), "ref.png");
     const r = await fetch("https://api.openai.com/v1/images/edits", {
@@ -7155,7 +7208,7 @@ async function generateCartoon(opts: { title: string; description?: string; refI
     const r = await fetch("https://api.openai.com/v1/images/generations", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-      body: JSON.stringify({ model: "gpt-image-1", prompt, size: "1536x1024", quality: "high", n: 1 }),
+      body: JSON.stringify({ model: "gpt-image-1", prompt, size: "1536x1024", quality, n: 1 }),
     });
     if (!r.ok) throw new Error(`Image generation failed: ${(await r.text()).slice(0, 300)}`);
     b64 = (await r.json())?.data?.[0]?.b64_json;
@@ -7266,7 +7319,8 @@ app.post("/make-server-9eb1ae04/admin/cards/generate-image", async (c) => {
 
     let out: { url: string; mode: string };
     try {
-      out = await generateCartoon({ title, description, refImageUrl });
+      // Admin "Generate cartoon" button: highest quality (one-off, hands-on).
+      out = await generateCartoon({ title, description, refImageUrl, quality: "high" });
     } catch (e) {
       return c.json({ error: String((e as Error)?.message ?? e) }, 502);
     }
