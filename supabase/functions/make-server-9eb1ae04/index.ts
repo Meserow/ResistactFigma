@@ -7164,11 +7164,15 @@ async function draftCardFromUrl(target: string): Promise<{ draft: any; refImageU
  * cartoon banner. Prefers the cheaper text-to-image path; only uses the source
  * page's art (image-to-image) when the card text alone isn't concrete enough to
  * draw from. Uploads to storage and returns { url, mode }, or throws. */
-async function generateCartoon(opts: { title: string; description?: string; refImageUrl?: string }): Promise<{ url: string; mode: string }> {
+async function generateCartoon(opts: { title: string; description?: string; refImageUrl?: string; quality?: string }): Promise<{ url: string; mode: string }> {
   const key = Deno.env.get("OPENAI_API_KEY");
   if (!key) throw new Error("OPENAI_API_KEY not configured on server");
   const t = opts.title.trim();
   const d = (opts.description ?? "").trim();
+  // gpt-image-1 "low" garbles sign text + linework (e.g. "DEFEND DEMOCRACY" →
+  // "DEFEND ROMIA BESH1S"). "medium" renders legible slogans at banner sizes.
+  // Callers override: admin modal = "high", auto-approve/member = "medium".
+  const quality = opts.quality ?? "medium";
 
   const { sufficient, scene } = await judgeTextSufficiency(t, d);
 
@@ -7190,10 +7194,7 @@ async function generateCartoon(opts: { title: string; description?: string; refI
     form.append("model", "gpt-image-1");
     form.append("prompt", CARTOON_STYLE_PROMPT);
     form.append("size", "1536x1024");
-    // low matches the batch script (generate-card-art.mjs): a low/medium/high
-    // comparison on this flat comic style showed low holds up at our display
-    // sizes — ~4× cheaper to generate and lighter to store.
-    form.append("quality", "low");
+    form.append("quality", quality);
     form.append("n", "1");
     form.append("image", new Blob([refPng], { type: "image/png" }), "ref.png");
     const r = await fetch("https://api.openai.com/v1/images/edits", {
@@ -7207,7 +7208,7 @@ async function generateCartoon(opts: { title: string; description?: string; refI
     const r = await fetch("https://api.openai.com/v1/images/generations", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-      body: JSON.stringify({ model: "gpt-image-1", prompt, size: "1536x1024", quality: "low", n: 1 }),
+      body: JSON.stringify({ model: "gpt-image-1", prompt, size: "1536x1024", quality, n: 1 }),
     });
     if (!r.ok) throw new Error(`Image generation failed: ${(await r.text()).slice(0, 300)}`);
     b64 = (await r.json())?.data?.[0]?.b64_json;
@@ -7318,7 +7319,8 @@ app.post("/make-server-9eb1ae04/admin/cards/generate-image", async (c) => {
 
     let out: { url: string; mode: string };
     try {
-      out = await generateCartoon({ title, description, refImageUrl });
+      // Admin "Generate cartoon" button: highest quality (one-off, hands-on).
+      out = await generateCartoon({ title, description, refImageUrl, quality: "high" });
     } catch (e) {
       return c.json({ error: String((e as Error)?.message ?? e) }, 502);
     }
