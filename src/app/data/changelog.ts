@@ -16,6 +16,20 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.113",
+    date: "2026-06-27",
+    title: "Sharper, reliably anti-Trump card art",
+    sections: [
+      {
+        heading: "Admin",
+        items: [
+          "Generated card banners are now created at high resolution instead of the previous low setting — no more soft, blurry art.",
+          "The image generator has a hard anti-Trump rule baked in: it never depicts anyone supporting or wearing pro-Trump gear, and only shows Trump/MAGA in a clearly oppositional context.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.112",
     date: "2026-06-27",
     title: "Automatic quality checks on new cards",

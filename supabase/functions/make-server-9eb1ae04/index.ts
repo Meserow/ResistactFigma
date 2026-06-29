@@ -8551,6 +8551,34 @@ app.post("/make-server-9eb1ae04/receipts/:id/boost", async (c) => {
   }
 });
 
+// ─── POST /receipts/:id/share — record a share (no auth; counts each share) ──
+// Unlike boost (a per-user toggle), a share is a one-way action and most
+// sharers are anonymous, so this is a simple increment-only tally — the
+// in-app companion to the GA "share" event. Mirrors the boost storage shape:
+// KV receipts carry a `shares` field; static smacks (id ≥ 5000) tally in the
+// single `smack:shares` aggregate.
+app.post("/make-server-9eb1ae04/receipts/:id/share", async (c) => {
+  try {
+    const id = Number(c.req.param("id"));
+    if (!Number.isFinite(id)) return c.json({ error: "Invalid id" }, 400);
+    const receipt = (await kv.get(`receipt:${id}`)) as any;
+    if (receipt) {
+      receipt.shares = Math.max(0, (receipt.shares ?? 0) + 1);
+      await kv.set(`receipt:${id}`, receipt);
+      return c.json({ shares: receipt.shares });
+    }
+    if (id >= 5000) {
+      const tallies = ((await kv.get("smack:shares")) ?? {}) as Record<string, number>;
+      tallies[id] = Math.max(0, (tallies[id] ?? 0) + 1);
+      await kv.set("smack:shares", tallies);
+      return c.json({ shares: tallies[id] });
+    }
+    return c.json({ error: `Receipt ${id} not found` }, 404);
+  } catch (err) {
+    return c.json({ error: `Share count failed: ${err}` }, 500);
+  }
+});
+
 // ─── GET /receipts — public list of approved receipts (admin sees all) ───────
 app.get("/make-server-9eb1ae04/receipts", async (c) => {
   try {
@@ -8614,7 +8642,10 @@ app.get("/make-server-9eb1ae04/receipts", async (c) => {
     // receipts carry their own `boosts` field; this fills in the rest so the
     // admin "Top Smacks" leaderboard reflects every smack.
     const staticBoosts = ((await kv.get("smack:boosts")) ?? {}) as Record<string, number>;
-    return c.json({ receipts, hiddenIds, staticBoosts });
+    // Share tallies for static smacks, same shape as staticBoosts. KV receipts
+    // carry their own `shares` field.
+    const staticShares = ((await kv.get("smack:shares")) ?? {}) as Record<string, number>;
+    return c.json({ receipts, hiddenIds, staticBoosts, staticShares });
   } catch (err) {
     return c.json({ error: `Failed to fetch receipts: ${err}` }, 500);
   }
