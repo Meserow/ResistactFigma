@@ -357,6 +357,8 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
               {onBoost && (
                 <button
                   onClick={() => onBoost(card.id)}
+                  title={isBoosted ? "Boosted — tap to undo. Boosting pushes an act higher so more people see it." : "Boost — push this act higher so more people see it"}
+                  aria-label={isBoosted ? "Remove boost" : "Boost — push this act higher so more people see it"}
                   className={`inline-flex items-center gap-1 rounded-full px-3 py-1 font-['Poppins',sans-serif] text-[12px] font-bold transition-colors ${
                     isBoosted
                       ? "bg-[#ed6624]/80 text-white hover:bg-[#ed6624]"
@@ -409,6 +411,8 @@ export function CardDetailsModal({ card, onClose, onShare, onComplete, isComplet
               return (
                 <button
                   onClick={() => onComplete(card.id)}
+                  title={isCompleted ? "You marked this done — tap to undo" : "Mark that you did this act"}
+                  aria-label={isCompleted ? "Mark not done" : "Mark that you did this act"}
                   className={`flex-1 inline-flex justify-center items-center gap-1 rounded-full px-3 py-2.5 font-['Poppins',sans-serif] text-[13px] font-bold transition-colors ${
                     isCompleted
                       ? "bg-[#0d8c6e] text-white hover:bg-[#0a7159]"

@@ -413,6 +413,7 @@ const KNOWN_MIGRATION_FLAG_KEYS: readonly string[] = [
   "migration:resistbot-citizens-united:v2",
   "migration:restore-lost-batch1:v1",
   "migration:restore-tom-morello:v1",
+  "migration:strip-render-image-urls:v1",
   "migration:tsv-batch-2026-05-17:v1",
   "migration:user-cards:v1",
   "seed:ellen:v1",
@@ -3548,6 +3549,62 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       console.log(`Fixed Yarn Sisters URL on card 2130.`);
     }
 
+    // Strip Supabase image-transform ("render") URLs baked into stored card
+    // values. Some cards were saved with topImageUrl/cartoonImageUrl pointing at
+    // /storage/v1/render/image/public/... which counts every distinct image
+    // against the Pro plan's 100-transforms/cycle cap (we hit 249/100). The app
+    // already rewrites these to raw object URLs at display time, but any consumer
+    // that reads the stored value directly (OG tags, share pages, crawlers) still
+    // hits the transform route. Rewrite render URLs to the raw object path at the
+    // source so the data itself is clean. Scans seed + user cards, every string
+    // field, recursively.
+    const stripRenderUrlsDone = await getMigrationFlag("migration:strip-render-image-urls:v1");
+    if (!stripRenderUrlsDone) {
+      const RENDER_SEG = "/storage/v1/render/image/public/";
+      const OBJECT_SEG = "/storage/v1/object/public/";
+      const rewriteUrl = (s: string): string => {
+        const j = s.indexOf(RENDER_SEG);
+        if (j === -1) return s;
+        const obj = s.slice(j + RENDER_SEG.length).split("?")[0];
+        return s.slice(0, j) + OBJECT_SEG + obj;
+      };
+      // Recursively rewrite render URLs in any string field; returns [newVal, changed].
+      const scrub = (val: any): [any, boolean] => {
+        if (typeof val === "string") {
+          if (val.includes(RENDER_SEG)) return [rewriteUrl(val), true];
+          return [val, false];
+        }
+        if (Array.isArray(val)) {
+          let changed = false;
+          const out = val.map((x) => { const [nv, ch] = scrub(x); if (ch) changed = true; return nv; });
+          return [changed ? out : val, changed];
+        }
+        if (val && typeof val === "object") {
+          let changed = false;
+          const out: Record<string, any> = {};
+          for (const [k, v] of Object.entries(val)) { const [nv, ch] = scrub(v); if (ch) changed = true; out[k] = nv; }
+          return [changed ? out : val, changed];
+        }
+        return [val, false];
+      };
+      let scanned = 0;
+      let updated = 0;
+      const fixKey = async (key: string) => {
+        const c = await kv.get(key) as any;
+        if (!c || typeof c !== "object") return;
+        scanned++;
+        const [next, changed] = scrub(c);
+        if (changed) { await kv.set(key, next); updated++; }
+      };
+      for (const c of (await kv.getByPrefix("action:")) as any[]) {
+        if (c && typeof c === "object" && typeof c.id === "number") await fixKey(`action:${c.id}`);
+      }
+      const srUserIds = (await kv.get("user-action:ids") ?? []) as number[];
+      for (const id of srUserIds) await fixKey(`user-action:${id}`);
+      await setMigrationFlag("migration:strip-render-image-urls:v1");
+      console.log(`Stripped render-transform URLs: scanned ${scanned}, updated ${updated} cards.`);
+    }
+
     // MoveOn cards listed a generic "Movement Organization" role. The actual
     // entity behind these petitions is "MoveOn.org Political Action" — use it
     // as the role so the attribution is accurate. Scans seed + user cards and
@@ -6394,9 +6451,19 @@ app.put("/make-server-9eb1ae04/actions/:id", async (c) => {
 // ─── GET /admin/actions/pending — cards awaiting approval ────────────────────
 app.get("/make-server-9eb1ae04/admin/actions/pending", async (c) => {
   try {
-    const token = c.req.header("Authorization")?.split(" ")[1];
-    const admin = await requireAdmin(token);
-    if (!admin) return c.json({ error: "Forbidden" }, 403);
+    // Auth: admin login (AdminPanel) OR the shared ADMIN_IMPORT_TOKEN — the
+    // nightly QA gate (tools/qa_pending_cards.py) needs the pending list
+    // headlessly, same dual-auth pattern as approve-action below.
+    const importToken = c.req.header("X-Admin-Import-Token");
+    const expectedToken = Deno.env.get("ADMIN_IMPORT_TOKEN");
+    const viaToken = !!expectedToken && importToken === expectedToken;
+    let requesterName = "import-token";
+    if (!viaToken) {
+      const token = c.req.header("Authorization")?.split(" ")[1];
+      const admin = await requireAdmin(token);
+      if (!admin) return c.json({ error: "Forbidden" }, 403);
+      requesterName = admin.record.name;
+    }
 
     const pending: any[] = [];
 
@@ -6417,7 +6484,7 @@ app.get("/make-server-9eb1ae04/admin/actions/pending", async (c) => {
     }
 
     pending.sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
-    console.log(`Admin ${admin.record.name} fetched ${pending.length} pending cards.`);
+    console.log(`${requesterName} fetched ${pending.length} pending cards.`);
     return c.json({ cards: pending });
   } catch (err) {
     console.log("Pending actions error:", err);
@@ -6838,10 +6905,54 @@ app.post("/make-server-9eb1ae04/admin/bulk-import", async (c) => {
     }
 
     console.log(`bulk-import: created=${created.length} skipped=${skipped.length} errors=${errors.length} (source: ${body.sourceBatch ?? "co-work"})`);
+
+    // Persist a per-batch audit report. Previously errors/skips existed ONLY in
+    // this HTTP response — if the caller's stdout was lost (detached scheduled
+    // run), so was any record of what got rejected. Best-effort: a report
+    // write failure must never fail an import that already landed.
+    try {
+      const at = new Date().toISOString();
+      await kv.set(`bulk-import:report:${at}`, {
+        at,
+        sourceBatch: body.sourceBatch ?? "co-work",
+        received: cards.length,
+        createdCount: created.length,
+        created,
+        skipped,
+        errors,
+      });
+    } catch (repErr) {
+      console.log("bulk-import: report persist failed:", repErr);
+    }
+
     return c.json({ created, skipped, errors });
   } catch (err) {
     console.log("Bulk import error:", err);
     return c.json({ error: `Bulk import failed: ${err}` }, 500);
+  }
+});
+
+// ─── GET /admin/import-reports — recent bulk-import batch audit reports ───────
+// Returns the per-batch reports persisted by /admin/bulk-import, newest first,
+// so rejected/skipped entries can be reviewed after the fact instead of living
+// only in the importer's stdout. Auth: admin login OR the shared token.
+app.get("/make-server-9eb1ae04/admin/import-reports", async (c) => {
+  try {
+    const importToken = c.req.header("X-Admin-Import-Token");
+    const expectedToken = Deno.env.get("ADMIN_IMPORT_TOKEN");
+    const viaToken = !!expectedToken && importToken === expectedToken;
+    if (!viaToken) {
+      const admin = await requireAdmin(c.req.header("Authorization")?.split(" ")[1]);
+      if (!admin) return c.json({ error: "Forbidden" }, 403);
+    }
+    const limit = Math.min(100, Math.max(1, Number(c.req.query("limit")) || 20));
+    const reports = ((await kv.getByPrefix("bulk-import:report:")) as any[])
+      .filter((r) => r && typeof r === "object")
+      .sort((a, b) => String(b.at ?? "").localeCompare(String(a.at ?? "")))
+      .slice(0, limit);
+    return c.json({ reports });
+  } catch (err) {
+    return c.json({ error: `Failed to fetch import reports: ${err}` }, 500);
   }
 });
 
@@ -7319,8 +7430,8 @@ app.post("/make-server-9eb1ae04/admin/cards/generate-image", async (c) => {
 
     let out: { url: string; mode: string };
     try {
-      // Admin "Generate cartoon" button: highest quality (one-off, hands-on).
-      out = await generateCartoon({ title, description, refImageUrl, quality: "high" });
+      // Admin "Generate cartoon" button: medium quality (good detail, ~4x cheaper than high).
+      out = await generateCartoon({ title, description, refImageUrl, quality: "medium" });
     } catch (e) {
       return c.json({ error: String((e as Error)?.message ?? e) }, 502);
     }

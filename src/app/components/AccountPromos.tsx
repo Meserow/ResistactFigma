@@ -34,7 +34,23 @@ export function AccountBenefits() {
   );
 }
 
-export function SignupBanner({ onLoginClick, onDismiss, onSwipeClick }: { onLoginClick: () => void; onDismiss: () => void; onSwipeClick?: () => void }) {
+export function SignupBanner({ onLoginClick, onDismiss, onSwipeClick, completedCount = 0, savedCount = 0 }: { onLoginClick: () => void; onDismiss: () => void; onSwipeClick?: () => void; completedCount?: number; savedCount?: number }) {
+  // Make the pitch concrete when the visitor has already done something on this
+  // device — referencing their real, at-risk activity converts far better than
+  // a generic "create an account". Completions lead (they earn a tier); saves
+  // are the fallback; a cold visitor gets the original generic copy.
+  const lead =
+    completedCount > 0
+      ? <><span className="font-bold">You've completed {completedCount} {completedCount === 1 ? "act" : "acts"} on this device.</span>{" "}</>
+      : savedCount > 0
+        ? <><span className="font-bold">You've saved {savedCount} {savedCount === 1 ? "act" : "acts"} on this device.</span>{" "}</>
+        : <><span className="font-bold">You're browsing anonymously.</span>{" "}</>;
+  const pitch =
+    completedCount > 0
+      ? "Create a free account to keep them, earn your first tier, and sync across devices."
+      : savedCount > 0
+        ? "Create a free account to keep them, track your impact, and sync across devices."
+        : "Create a free account to save your progress, earn tiers, and sync across devices.";
   return (
     // Takes over the bottom footer slot for logged-out users (the white tagline
     // footer is hidden while this shows). Adapts to phones — the longer copy
@@ -56,8 +72,8 @@ export function SignupBanner({ onLoginClick, onDismiss, onSwipeClick }: { onLogi
               most 2 lines — "Stay anonymous…" sits right after "…sync across
               devices." instead of forcing its own third line. */}
           <p className="min-w-0 font-['Poppins',sans-serif] text-[13px] leading-snug md:text-sm">
-            <span className="font-bold">You're browsing anonymously.</span>{" "}
-            <span className="hidden text-gray-600 sm:inline">Create a free account to save your progress, earn tiers, and sync across devices.</span>{" "}
+            {lead}
+            <span className="hidden text-gray-600 sm:inline">{pitch}</span>{" "}
             <span className="hidden italic text-gray-400 sm:inline">Stay anonymous if you like — no tracking, no spam.</span>
           </p>
         </div>
