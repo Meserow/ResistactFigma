@@ -403,6 +403,7 @@ const KNOWN_MIGRATION_FLAG_KEYS: readonly string[] = [
   "migration:moveon-author-link:v1",
   "migration:moveon-role-normalize:v1",
   "migration:no-image-review:v1",
+  "migration:normalise-category-casing:v1",
   "migration:nourl-review:v1",
   "migration:petitions-10min:v1",
   "migration:portland-seattle-yolo-import-2026-05:v1",
@@ -2098,6 +2099,48 @@ app.delete("/make-server-9eb1ae04/admin/matcher-config", async (c) => {
   }
 });
 
+// ─── Category normalisation ─────────────────────────────────────────────────
+// Ported verbatim from the client (App.tsx: CATEGORY_ALIASES / normaliseCategory).
+// KEEP IN SYNC with App.tsx — the client folds stored categories to these
+// canonical Title-Case / merged forms at render time; the migration below
+// rewrites the STORED value to match so raw KV and admin views agree.
+const TITLE_CASE_STOPWORDS = new Set(["of", "to", "a", "the", "and", "or", "in", "on", "for", "at"]);
+const CATEGORY_ALIASES: Record<string, string> = {
+  "art piece": "Art",
+  "art/performance art": "Art",
+  "call/write": "Phoning",
+  "call": "Phoning",
+  "learn": "Training",
+  "letter to editor": "Writing",
+  "bird-dog": "Show Up",
+  "spread positivity": "Kindness",
+  "purchase": "Represent",
+  "boost": "Amplify",
+  "join a group": "Group",
+  "personal commitment": "Commitment",
+  "letter writing": "Writing",
+  "act of kindness": "Kindness",
+  "art": "Art",
+  "email campaign": "Email",
+  "phone calling": "Phoning",
+  "professional skills": "Skills",
+  "transportation": "Transport",
+};
+function normaliseCategory(s: string | undefined | null): string {
+  const trimmed = (s ?? "").trim();
+  if (!trimmed) return "";
+  const lower = trimmed.toLowerCase();
+  if (CATEGORY_ALIASES[lower]) return CATEGORY_ALIASES[lower];
+  return lower
+    .split(/\s+/)
+    .map((w, i) =>
+      i === 0 || !TITLE_CASE_STOPWORDS.has(w)
+        ? w.charAt(0).toUpperCase() + w.slice(1)
+        : w
+    )
+    .join(" ");
+}
+
 // ─── GET /actions ─────────────────────────────────────────────────────────────
 app.get("/make-server-9eb1ae04/actions", async (c) => {
   try {
@@ -3013,6 +3056,39 @@ app.get("/make-server-9eb1ae04/actions", async (c) => {
       }
       await setMigrationFlag("migration:boost-to-amplify-category:v1");
       console.log(`Boost→Amplify category migration: rewrote ${updated} stored categories.`);
+    }
+
+    // One-time: normalise EVERY stored `category` to the canonical Title-Case /
+    // merged form the client already renders via normaliseCategory() +
+    // CATEGORY_ALIASES. Imports and user submissions historically stored mixed
+    // casing ("PROTEST" vs "Protest") and pre-merge names ("Email Campaign",
+    // "Phone Calling", "Bird-Dog", "Personal Commitment", …), so raw KV, admin
+    // views and raw queries disagreed with what users actually see. This
+    // rewrites the STORED value to match. Display is unchanged (the client
+    // normalises regardless). categoryColor is left as-is — the client
+    // recomputes it from category at render time (colorForCategory), same
+    // precedent as the Boost→Amplify migration above. Writes are batched so a
+    // single large upsert can't blow the request budget.
+    const catNormaliseDone = await getMigrationFlag("migration:normalise-category-casing:v1");
+    if (!catNormaliseDone) {
+      const keys: string[] = [];
+      const vals: any[] = [];
+      for (const prefix of ["action:", "user-action:"]) {
+        for (const card of (await kv.getByPrefix(prefix)) as any[]) {
+          if (!card || typeof card !== "object" || typeof card.id !== "number") continue;
+          const canon = normaliseCategory(card.category);
+          if (canon && canon !== card.category) {
+            keys.push(`${prefix}${card.id}`);
+            vals.push({ ...card, category: canon });
+          }
+        }
+      }
+      const CHUNK = 200;
+      for (let i = 0; i < keys.length; i += CHUNK) {
+        await kv.mset(keys.slice(i, i + CHUNK), vals.slice(i, i + CHUNK));
+      }
+      await setMigrationFlag("migration:normalise-category-casing:v1");
+      console.log(`Category casing normalise migration: rewrote ${keys.length} stored categories.`);
     }
 
     // One-time: move a curated set of direct-service volunteering Acts into
@@ -7772,8 +7848,14 @@ app.post("/make-server-9eb1ae04/admin/cards/create", async (c) => {
 // for the 2026-05-17 time-commitment audit and reusable for future passes.
 // Only `timeCommitment` and `quickAction` are touched; everything else on the
 // card is preserved. Supports dryRun:true to preview without writing.
+// Canonical time-commitment values — kept in lock-step with the frontend
+// picker (EditCardModal.tsx / AdminPanel.tsx / AskFlowModal.tsx). Uses
+// en-dashes ("5–10", "1–3"). The legacy "< 1 hour" value was dropped when
+// this synced to the picker (June 2026) — existing cards still holding it are
+// untouched (this Set only gates NEW writes), and the client's matcher still
+// parses it defensively.
 const VALID_TIME_COMMITMENTS = new Set([
-  "< 1 hour", "5–10 minutes", "1–3 hours", "Full day", "Ongoing",
+  "< 5 minutes", "5–10 minutes", "~30 minutes", "1–3 hours", "Full day", "Ongoing",
 ]);
 
 app.post("/make-server-9eb1ae04/admin/bulk-update-time-commitment", async (c) => {

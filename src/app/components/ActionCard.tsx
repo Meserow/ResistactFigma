@@ -325,7 +325,7 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
         className="inline-flex items-center rounded-lg px-3 py-1 shrink-0"
         style={{ backgroundColor: categoryColor }}
       >
-        <span className="font-['Poppins',sans-serif] font-bold tracking-wide text-[13px] text-white">
+        <span className="font-['Poppins',sans-serif] font-bold uppercase tracking-wide text-[13px] text-white">
           {card.category}
         </span>
       </span>
