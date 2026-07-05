@@ -16,6 +16,25 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.118",
+    date: "2026-07-05",
+    title: "Cleaner categories and clearer time estimates",
+    sections: [
+      {
+        heading: "Tidier categories",
+        items: [
+          "Category labels are now consistent everywhere — no more the same category showing up in different capitalizations. Category chips on cards now read in a clean, uppercase style across the whole app.",
+        ],
+      },
+      {
+        heading: "Time estimates filled in",
+        items: [
+          "Many acts that were missing a time estimate now show one, so you can better tell at a glance how long something takes: Protest and Phone Calling acts show '1–3 hours', Email Campaigns '5–10 minutes', Personal Commitment / Amplify / Petition acts '< 5 minutes', and Professional Skills 'Ongoing'.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.117",
     date: "2026-07-05",
     title: "A warmer welcome for first-time visitors",
