@@ -503,11 +503,14 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
           stay distinguishable for red-green color blindness; the words/arrows/
           icons also convey it without relying on hue. Hidden on the terminal
           recap / end screens where there's nothing left to swipe. */}
-      {/* Compact top-row hints for phones/tablets, where there's no room beside
-          the card. On wide screens (lg+) these hide and the side hints below
-          flank the card instead. */}
+      {/* Compact top-row hints. Phones/tablets: split to the edges in tiny
+          type. Desktop (lg+): same row, centered and a touch larger — the old
+          side hints that used to flank the card were removed, which left
+          desktop with no persistent direction labels at all; this row is the
+          replacement. Class-only responsive variants — the buttons and their
+          commit() wiring are identical across breakpoints. */}
       {!done && !summaryOpen && (
-      <div className="flex lg:hidden items-center justify-between gap-2 whitespace-nowrap px-3 py-1.5 font-['Poppins',sans-serif] text-[9.5px] font-semibold">
+      <div className="flex items-center justify-between lg:justify-center gap-2 lg:gap-16 whitespace-nowrap px-3 py-1.5 font-['Poppins',sans-serif] text-[9.5px] lg:text-[12px] font-semibold">
         <button
           type="button"
           onClick={() => commit("left")}

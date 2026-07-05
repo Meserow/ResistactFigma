@@ -66,6 +66,6 @@ Key rules from `docs/INBOX_IMPORT.md` that apply across the codebase:
 
 - Every Act is a verb-led thing a user does themselves — not an account to follow.
 - `boost_only: true` content is capped at 10% of any import batch and 10% of live Acts.
-- Harvested Acts always land with `adminApproved: false`. Approval happens through the admin panel, never automatically.
+- Harvested Acts always land with `adminApproved: false`. Approval happens through the admin panel OR the QA-gated auto-approver (`tools/qa_pending_cards.py --approve`, capped 20/run; enabled by Ellen 2026-07-05) — never by writing `adminApproved` to KV directly. User-submitted cards are never auto-approved.
 - Validation is mandatory before insert. Never insert unvalidated harvest content into KV.
 - Inserts go through the Edge Function (`supabase/functions/make-server-9eb1ae04/index.ts`), not raw Supabase.

@@ -189,20 +189,27 @@ const SPREAD_THE_WORD_TOP_IMAGE = "/og-image.webp";
 // card width) — they're generated at a full 1536px, far larger than the card
 // renders, so resizing cuts each one to a fraction of its weight.
 const STORAGE_OBJECT_SEG = "/storage/v1/object/public/";
-function storageRenderUrl(url: string | undefined, width: number, quality = 60): string | undefined {
+// IMPORTANT — DO NOT route images through Supabase's /render/image transform.
+// The Pro plan caps "Storage Image Transformations" at 100 DISTINCT origin
+// images per billing cycle. Sending our cartoon banners + uploaded top-images
+// through the transform counted every distinct image against that cap and blew
+// past it (249/100 in Jun–Jul 2026), which then *restricts* transforms and
+// breaks those images site-wide. So we serve the stored object DIRECTLY. Egress
+// is cheap and we're at <1% of plan; the transform cap is the binding limit.
+// (Uploaded images are already downscaled at store time; the browser + CSS
+// object-fit handle final sizing.) Signature kept so callers stay unchanged.
+function storageRenderUrl(url: string | undefined, _width?: number, _quality = 60): string | undefined {
   if (!url) return url;
-  if (!url.includes(`${projectId}.supabase.co`)) return url; // only our own storage
-  const i = url.indexOf(STORAGE_OBJECT_SEG);
-  if (i === -1) return url; // not an object URL (already a render URL, signed, etc.)
-  const rendered =
-    url.slice(0, i) + "/storage/v1/render/image/public/" + url.slice(i + STORAGE_OBJECT_SEG.length);
-  const sep = rendered.includes("?") ? "&" : "?";
-  // resize=contain is REQUIRED. The render endpoint defaults to resize=cover,
-  // and with only a width given it crops to the source's original-height box —
-  // i.e. a center crop that silently lops the sides off a wide banner (a 3:2
-  // 1536×1024 came back as a face-only 800×1024). contain scales to the width
-  // and preserves aspect (→ 800×533), letting CSS object-fit do any cropping.
-  return `${rendered}${sep}width=${width}&resize=contain&quality=${quality}`;
+  // Some rows have a render-transform URL baked into the stored value (from when
+  // we routed through the transform). Rewrite those back to the raw object URL
+  // and drop the transform query so they don't keep hitting the cap either.
+  const RENDER_SEG = "/storage/v1/render/image/public/";
+  const j = url.indexOf(RENDER_SEG);
+  if (j !== -1) {
+    const obj = url.slice(j + RENDER_SEG.length).split("?")[0];
+    return url.slice(0, j) + STORAGE_OBJECT_SEG + obj;
+  }
+  return url;
 }
 
 function resolveCard(raw: ServerCard): ActionCardData {
@@ -659,6 +666,22 @@ export default function App() {
   // instead of jumping straight out to the act's external link.
   const [detailCardId, setDetailCardId] = useState<number | null>(null);
   const [infoOpen, setInfoOpen] = useState(false);
+  // Brand-new visitors get the "How does ResistAct work?" explainer opened for
+  // them once, so newcomers understand the site before diving in. Persisted per
+  // device; defaults to "already seen" if localStorage is unavailable so a
+  // broken storage never causes the modal to re-pop on every load.
+  const [introSeen, setIntroSeen] = useState<boolean>(() => {
+    try { return localStorage.getItem("resistact_intro_seen") === "1"; } catch { return true; }
+  });
+  useEffect(() => {
+    if (introSeen) return;
+    setInfoOpen(true);
+    setIntroSeen(true);
+    try { localStorage.setItem("resistact_intro_seen", "1"); } catch {}
+    // Run once on mount for a first-time visitor. Marking seen immediately (not
+    // on close) means a mid-view reload won't re-trigger it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [foundersOpen, setFoundersOpen] = useState(false);
   const [actOpen, setActOpen] = useState(false);
   const [changelogOpen, setChangelogOpen] = useState(false);
@@ -3319,7 +3342,7 @@ export default function App() {
                 <MapPin size={16} className="text-[#ed6624] shrink-0" strokeWidth={2.5} />
                 {geoBanner.kind === "detected" ? (
                   <p className="font-['Poppins',sans-serif] text-sm text-gray-700">
-                    Showing Acts for <strong className="text-[#23297e]">{geoBanner.state}</strong>.
+                    Showing Acts near <strong className="text-[#23297e]">{geoBanner.state}</strong> — plus online ones you can do from anywhere.
                   </p>
                 ) : (
                   <>
@@ -3814,9 +3837,14 @@ export default function App() {
             </div>
 
             {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-10">
-                {Array.from({ length: 10 }).map((_, i) => <CardSkeleton key={i} />)}
-              </div>
+              <>
+                <p className="mb-4 font-['Poppins',sans-serif] text-sm text-gray-500">
+                  Loading this week's Acts…
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-10">
+                  {Array.from({ length: 10 }).map((_, i) => <CardSkeleton key={i} />)}
+                </div>
+              </>
             ) : (
             <>
             <FlipGrid
@@ -4039,6 +4067,8 @@ export default function App() {
           onLoginClick={() => setAuthModalOpen(true)}
           onDismiss={() => setSignupBannerDismissed(true)}
           onSwipeClick={activeTab === "acts" ? () => setSwipeOpen(true) : undefined}
+          completedCount={completedCards.size}
+          savedCount={bookmarkedCards.size}
         />
       )}
 

@@ -16,6 +16,71 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.117",
+    date: "2026-07-05",
+    title: "A warmer welcome for first-time visitors",
+    sections: [
+      {
+        heading: "New here?",
+        items: [
+          "First-time visitors now get a quick 'How does ResistAct work?' walkthrough the moment they arrive — what the site is, how to pick actions that fit your day, the privacy promise, and how to earn your resistance tier. It shows once and then stays out of your way. You can always reopen it from the info button.",
+          "The location banner now explains itself: it shows acts near you plus online ones you can do from anywhere, so nobody thinks they're missing options.",
+          "The feed now says 'Loading this week's Acts…' while it fills in, instead of showing bare placeholder cards.",
+          "Hovering the Boost and 'I did this!' buttons now explains what they do — boosting pushes an act higher so more people see it.",
+          "The 'browsing anonymously' bar now reflects what you've actually done — e.g. 'You've completed 2 acts on this device' — with a nudge to create a free account to keep them and earn your first tier.",
+          "Swipe mode on desktop now shows the same 'Swipe left to PASS / Swipe right to SAVE' hints phones already had, so the gesture is never a mystery.",
+        ],
+      },
+      {
+        heading: "Fresh acts, nightly",
+        items: [
+          "New harvested acts now go through an automated quality check every night — title, description, category, a working link, and a future event date — and the ones that pass everything are published with their cartoon banner, up to 20 per night. Anything borderline waits for human review with a badge explaining why.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.116",
+    date: "2026-07-01",
+    title: "Balanced image generation quality",
+    sections: [
+      {
+        heading: "Under the hood",
+        items: [
+          "The 'Generate cartoon' button now creates card art at medium quality — clear, detailed images at a fraction of the cost of the previous high setting. All generation paths now use the same medium quality.",
+          "Cleaned up a handful of cards whose image links still pointed at Supabase's on-the-fly image transform, which is capped on our plan. Their links now point directly at the stored image, closing off the last source of that overage.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.115",
+    date: "2026-06-27",
+    title: "Fix image transform overage",
+    sections: [
+      {
+        heading: "Under the hood",
+        items: [
+          "Card banners and uploaded images are now served directly instead of through Supabase's on-the-fly image transform, which was capped at 100 images/cycle on our plan and had been exceeded — that cap being hit can make images fail to load. No visible change to the images themselves.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.114",
+    date: "2026-06-27",
+    title: "Smack share counts",
+    sections: [
+      {
+        heading: "Admin",
+        items: [
+          "The Smacks now track how many times each one has been shared, and the admin \"Top Smacks\" view ranks by shares and shows a per-smack share count alongside boosts.",
+          "Counts started accruing from this release — there's no backfill of past shares (historical share data lives in Google Analytics).",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.113",
     date: "2026-06-27",
     title: "Sharper, reliably anti-Trump card art",
