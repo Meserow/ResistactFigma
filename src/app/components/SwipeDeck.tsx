@@ -510,12 +510,12 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
           replacement. Class-only responsive variants — the buttons and their
           commit() wiring are identical across breakpoints. */}
       {!done && !summaryOpen && (
-      <div className="flex items-center justify-between lg:justify-center gap-2 lg:gap-16 whitespace-nowrap px-3 py-1.5 font-['Poppins',sans-serif] text-[9.5px] lg:text-[12px] font-semibold">
+      <div className="flex items-center justify-between lg:justify-center gap-2 lg:gap-16 whitespace-nowrap px-3 py-1.5 font-['Poppins',sans-serif] font-semibold">
         <button
           type="button"
           onClick={() => commit("left")}
           aria-label="Pass on this act"
-          className="inline-flex items-center gap-1 text-gray-300 transition-opacity hover:opacity-80 active:opacity-60"
+          className="inline-flex items-center gap-1 text-[11px] lg:text-[12px] text-gray-300 transition-opacity hover:opacity-80 active:opacity-60"
         >
           <ArrowLeft size={12} strokeWidth={3} className="shrink-0 resistact-anim-nudge-left" />
           Swipe left to PASS
@@ -527,7 +527,7 @@ export function SwipeDeck({ cards, onClose, onInterested, onPass, onCompleted, a
           type="button"
           onClick={() => commit("right")}
           aria-label="Save this act"
-          className="inline-flex items-center gap-1 text-gray-300 transition-opacity hover:opacity-80 active:opacity-60"
+          className="inline-flex items-center gap-1 text-[11px] lg:text-[12px] text-gray-300 transition-opacity hover:opacity-80 active:opacity-60"
         >
           <span className="inline-flex h-3 w-3 shrink-0 items-center justify-center rounded-full bg-gray-300 text-gray-700">
             <Heart size={7} fill="currentColor" />

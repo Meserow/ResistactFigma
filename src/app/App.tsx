@@ -842,6 +842,9 @@ export default function App() {
   const [smacksSortBy, setSmacksSortBy] = useState<"top" | "new" | "pending">("top");
   const [pendingActsVersion, setPendingActsVersion] = useState(0);
   const [showPendingActsOnly, setShowPendingActsOnly] = useState(false);
+  // Batch auto-approve progress (admin power tool). null = not running.
+  const [batchApprove, setBatchApprove] = useState<{ running: boolean; approved: number; blocked: number; total: number } | null>(null);
+  const batchStopRef = useRef(false);
   const [deepLinkId, setDeepLinkId] = useState<number | null>(() => {
     const param = new URLSearchParams(window.location.search).get("act");
     const id = param ? parseInt(param, 10) : NaN;
@@ -2973,6 +2976,83 @@ export default function App() {
     }
   }
 
+  // ── Batch auto-approve QA-passed cards (admin only) ──────────────────────────
+  // Drives the server /admin/auto-approve-batch endpoint in a loop: it approves
+  // a few QA-passed, harvested cards per call (each generating its cartoon) and
+  // reports how many remain, so we keep going until the backlog is drained or
+  // the admin stops. This is the "handle a big batch now" path; the nightly
+  // routine still caps at 20/run for steady state.
+  async function handleAutoApproveBatch() {
+    if (!accessToken || batchApprove?.running) return;
+    const authJson = { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" };
+    // Peek the eligible count (max=0 = count only, no approvals, no spend).
+    let total = 0;
+    try {
+      const peek = await fetch(`${API}/admin/auto-approve-batch`, {
+        method: "POST", headers: authJson, body: JSON.stringify({ max: 0 }),
+      });
+      if (!peek.ok) { showToast("Couldn't check eligible cards — see console"); return; }
+      total = (await peek.json()).totalEligible ?? 0;
+    } catch (err) { console.error("auto-approve peek failed:", err); showToast("Couldn't check eligible cards"); return; }
+    if (total === 0) { showToast("No QA-passed harvested cards are eligible right now."); return; }
+
+    const estCost = (total * 0.06).toFixed(2);
+    const estMin = Math.max(1, Math.round(total * 20 / 60));
+    if (!window.confirm(
+      `Auto-approve ${total} QA-passed card${total === 1 ? "" : "s"}?\n\n` +
+      `Each generates a cartoon (~$0.06), so roughly $${estCost} and about ${estMin} min. ` +
+      `They'll land in the auto-approved audit view and can be undone with one click. ` +
+      `You can stop partway through.`
+    )) return;
+
+    batchStopRef.current = false;
+    setBatchApprove({ running: true, approved: 0, blocked: 0, total });
+    let approved = 0, blocked = 0;
+    const excludeIds: number[] = [];
+    const blockedDetails: { id: number; title: string; error: string }[] = [];
+    try {
+      while (!batchStopRef.current) {
+        const res = await fetch(`${API}/admin/auto-approve-batch`, {
+          method: "POST", headers: authJson, body: JSON.stringify({ max: 3, excludeIds }),
+        });
+        if (!res.ok) {
+          const e = await res.json().catch(() => ({}));
+          showToast(`Batch approve failed: ${(e as any).error ?? res.status}`);
+          break;
+        }
+        const data = await res.json();
+        const justApproved: { id: number }[] = data.approved ?? [];
+        const justBlocked: { id: number; title: string; error: string }[] = data.blocked ?? [];
+        approved += justApproved.length;
+        blocked += justBlocked.length;
+        // Flip approved cards in the local feed so PENDING badges drop live.
+        if (justApproved.length) {
+          const ids = new Set(justApproved.map((a) => a.id));
+          setCards((prev) => prev.map((c) => ids.has(c.id) ? { ...c, adminApproved: true } : c));
+          setServerPendingActsCount((n) => Math.max(0, n - justApproved.length));
+        }
+        // Remember blocked ids so the server skips them next pass (no re-spend,
+        // and the loop is guaranteed to make progress toward remainingEligible=0).
+        for (const b of justBlocked) { excludeIds.push(b.id); blockedDetails.push(b); }
+        setBatchApprove({ running: true, approved, blocked, total });
+        if ((data.remainingEligible ?? 0) === 0) break;
+        // Safety: if a pass did nothing at all, stop rather than spin.
+        if (justApproved.length === 0 && justBlocked.length === 0) break;
+      }
+    } catch (err) {
+      console.error("Batch auto-approve error:", err);
+      showToast("Batch approve hit an error — see console");
+    } finally {
+      const stopped = batchStopRef.current;
+      setBatchApprove(null);
+      if (blockedDetails.length) console.warn("Batch auto-approve — blocked cards:", blockedDetails);
+      showToast(
+        `${stopped ? "Stopped" : "Done"}: approved ${approved}` +
+        (blocked ? `, ${blocked} blocked (see console)` : "") + ".",
+      );
+    }
+  }
+
   // ── Handle card update from EditCardModal ──
   function handleCardSaved(updated: ActionCardData, toast = "Changes saved") {
     // Re-run the raw server card through resolveCard() — the same resolver the
@@ -3632,12 +3712,47 @@ export default function App() {
                 (c) => Boolean(c.topImageUrl) || Boolean(c.topImageKey) || Boolean(c.cartoonImageUrl)
               );
               const allHaveImages = cardsWithImages.length === visibleActsCards.length;
+              // Cards that passed QA AND are harvested — the set the batch
+              // auto-approver will act on. Counted from the visible cards for the
+              // label; the server re-counts the true total when the run starts.
+              const qaPassedCount = visibleActsCards.filter(
+                (c) => (c as any).qaReport?.status === "pass" && (c as any).createdBy === "bulk-import"
+              ).length;
               return (
                 <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-red-300 bg-red-50 px-4 py-2.5">
                   <p className="font-['Poppins',sans-serif] text-sm text-red-700">
                     ⚠️ <strong>Pending approval only</strong> — showing {visibleActsCards.length} unapproved act{visibleActsCards.length !== 1 ? "s" : ""}.
                   </p>
                   <div className="flex items-center gap-3 shrink-0">
+                    {/* Batch auto-approve — the QA-gated path that also generates
+                        cartoons server-side. While running it shows live progress
+                        with a Stop button; otherwise it offers to approve every
+                        QA-passed harvested card (the server counts the true total
+                        and confirms cost before spending). Distinct purple so it
+                        reads apart from the plain green approve-what-I-see
+                        buttons. */}
+                    {batchApprove?.running ? (
+                      <div className="flex items-center gap-2">
+                        <span className="font-['Poppins',sans-serif] text-xs font-semibold text-[#5a3e9e]">
+                          Approving… {batchApprove.approved}/{batchApprove.total}
+                          {batchApprove.blocked > 0 ? ` (${batchApprove.blocked} skipped)` : ""}
+                        </span>
+                        <button
+                          onClick={() => { batchStopRef.current = true; }}
+                          className="font-['Poppins',sans-serif] text-xs font-semibold bg-gray-500 hover:bg-gray-600 text-white rounded-lg px-3 py-1.5 transition-colors"
+                        >
+                          Stop
+                        </button>
+                      </div>
+                    ) : qaPassedCount > 0 && (
+                      <button
+                        onClick={handleAutoApproveBatch}
+                        className="font-['Poppins',sans-serif] text-xs font-semibold bg-[#5a3e9e] hover:bg-[#4a3184] text-white rounded-lg px-3 py-1.5 transition-colors"
+                        title="Auto-approve every QA-passed harvested card, generating each cartoon. Confirms the true count and cost first; results land in the auto-approved audit view."
+                      >
+                        ⚡ Auto-approve {qaPassedCount} QA-passed
+                      </button>
+                    )}
                     {/* "Approve N with images" — surfaces whenever at least one
                         pending card has a recognised image (topImageUrl,
                         topImageKey, or cartoonImageUrl). Lets an admin
@@ -3647,7 +3762,7 @@ export default function App() {
                         will match the "Approve all" button — that's fine,
                         both do the same thing and the label makes it clear
                         the batch is clean. */}
-                    {cardsWithImages.length > 0 && (
+                    {cardsWithImages.length > 0 && !batchApprove?.running && (
                       <button
                         onClick={() => handleApproveAll(cardsWithImages.map((c) => c.id))}
                         className="font-['Poppins',sans-serif] text-xs font-semibold bg-green-600 hover:bg-green-700 text-white rounded-lg px-3 py-1.5 transition-colors"
@@ -3656,12 +3771,14 @@ export default function App() {
                         ✓ Approve {cardsWithImages.length} with images
                       </button>
                     )}
-                    <button
-                      onClick={() => handleApproveAll(visibleActsCards.map((c) => c.id))}
-                      className="font-['Poppins',sans-serif] text-xs font-semibold bg-green-600 hover:bg-green-700 text-white rounded-lg px-3 py-1.5 transition-colors"
-                    >
-                      ✓ Approve all {visibleActsCards.length} showing
-                    </button>
+                    {!batchApprove?.running && (
+                      <button
+                        onClick={() => handleApproveAll(visibleActsCards.map((c) => c.id))}
+                        className="font-['Poppins',sans-serif] text-xs font-semibold bg-green-600 hover:bg-green-700 text-white rounded-lg px-3 py-1.5 transition-colors"
+                      >
+                        ✓ Approve all {visibleActsCards.length} showing
+                      </button>
+                    )}
                     <button
                       onClick={() => setShowPendingActsOnly(false)}
                       className="font-['Poppins',sans-serif] text-xs font-semibold text-red-600 hover:underline"

@@ -6492,11 +6492,91 @@ app.get("/make-server-9eb1ae04/admin/actions/pending", async (c) => {
   }
 });
 
+// Shared approval core, used by BOTH the single-card endpoint and the batch
+// auto-approver. Generates the cartoon at approval time, enforces the image and
+// URL gates, and stamps approval/audit fields. Returns a discriminated result
+// so callers can map failures to per-card outcomes (batch) or HTTP codes
+// (single). `markAuto` controls the audit flag: token-driven single approvals
+// and every batch approval set it (the human didn't eyeball each card), so they
+// surface in the AdminPanel's auto-approved review view; a human single-click in
+// the panel does not.
+type ApproveResult =
+  | { ok: true; card: any }
+  | { ok: false; status: number; error: string };
+
+async function approveOneCard(
+  id: number,
+  opts: { approverId: string; approverName: string; markAuto: boolean },
+): Promise<ApproveResult> {
+  // Try seed card first, then user-created card.
+  let cardKey = `action:${id}`;
+  let card = await kv.get(cardKey) as any;
+  if (!card) {
+    cardKey = `user-action:${id}`;
+    card = await kv.get(cardKey) as any;
+  }
+  if (!card) return { ok: false, status: 404, error: `Card ${id} not found` };
+
+  // URL gate FIRST — before spending on a cartoon. Defense-in-depth: even if
+  // dirty URLs slipped past create-time validation (older records pre-dating
+  // that guard), block them here before the card goes public. Doing this ahead
+  // of cartoon generation means a card doomed by a bad URL never wastes a
+  // ~$0.06 image (important for the batch approver, which would otherwise
+  // regenerate art for the same doomed card on every pass).
+  for (const field of ["targetUrl", "authorLink", "topImageUrl"]) {
+    const check = validateSubmittedUrl(card[field], field);
+    if (!check.ok) return { ok: false, status: 400, error: `${check.reason} Edit the card to fix it before approving.` };
+  }
+
+  // Generate the branded cartoon banner AT APPROVAL TIME. Harvested cards land
+  // pending with no cartoon (art is the expensive step, so we only spend it on
+  // cards actually being approved). Using the source image as reference when
+  // present. This also satisfies the image gate below.
+  if (!card.cartoonImageUrl) {
+    try {
+      const art = await generateCartoon({
+        title: card.title,
+        description: card.description || card.synopsis,
+        refImageUrl: card.topImageUrl,
+      });
+      card.cartoonImageUrl = art.url;
+      console.log(`Generated cartoon on approval for #${id} (${art.mode})`);
+    } catch (e) {
+      console.log(`Cartoon gen failed on approval for #${id}: ${e}`);
+      // Fall through — the image gate below still applies (a source image may
+      // already satisfy it; otherwise approval is blocked as before).
+    }
+  }
+
+  // Hard rule: a card cannot be approved without an image. Imageless cards
+  // render as half-blank tiles in the public feed and look broken — so if
+  // cartoon generation failed AND there's no source image, block approval.
+  const hasImage = Boolean(card.topImageUrl) || Boolean(card.topImageKey) || Boolean(card.topImage) || Boolean(card.cartoonImageUrl);
+  if (!hasImage) {
+    return { ok: false, status: 400, error: "Card has no image and cartoon generation failed — try again, or upload a header image before approving." };
+  }
+
+  card.adminApproved = true;
+  card.approvedBy = opts.approverId;
+  card.approvedAt = new Date().toISOString();
+  if (opts.markAuto) {
+    card.autoApproved = true;
+    card.autoApprovedAt = card.approvedAt;
+  }
+  // Approval implies the approver disagrees with any off-topic signal — clear
+  // it so the card doesn't carry a stale "NOT ON TOPIC" badge into live.
+  if (card.notOnTopic) delete card.notOnTopic;
+  await kv.set(cardKey, card);
+  invalidateActionsCache();
+  console.log(`${opts.approverName} approved card #${id}: "${card.title}"`);
+  return { ok: true, card };
+}
+
 // ─── POST /admin/approve-action/:id — approve a card ─────────────────────────
 app.post("/make-server-9eb1ae04/admin/approve-action/:id", async (c) => {
   try {
     // Auth: admin login (AdminPanel) OR the shared ADMIN_IMPORT_TOKEN (the
-    // headless approve_pending_cards routine). Either may approve.
+    // headless approve routine). Either may approve.
     const importToken = c.req.header("X-Admin-Import-Token");
     const expectedToken = Deno.env.get("ADMIN_IMPORT_TOKEN");
     const viaToken = !!expectedToken && importToken === expectedToken;
@@ -6510,72 +6590,85 @@ app.post("/make-server-9eb1ae04/admin/approve-action/:id", async (c) => {
     }
 
     const id = Number(c.req.param("id"));
-
-    // Try seed card first, then user-created card
-    let cardKey = `action:${id}`;
-    let card = await kv.get(cardKey) as any;
-    if (!card) {
-      cardKey = `user-action:${id}`;
-      card = await kv.get(cardKey) as any;
-    }
-    if (!card) return c.json({ error: `Card ${id} not found` }, 404);
-
-    // Generate the branded cartoon banner AT APPROVAL TIME. Harvested cards land
-    // pending with no cartoon (art is the expensive step, so we only spend it on
-    // cards you actually approve). On approval, if the card has no cartoon yet,
-    // generate one with gpt-image-1 (using the source image as reference when
-    // present). This also satisfies the image gate below.
-    if (!card.cartoonImageUrl) {
-      try {
-        const art = await generateCartoon({
-          title: card.title,
-          description: card.description || card.synopsis,
-          refImageUrl: card.topImageUrl,
-        });
-        card.cartoonImageUrl = art.url;
-        console.log(`Generated cartoon on approval for #${id} (${art.mode})`);
-      } catch (e) {
-        console.log(`Cartoon gen failed on approval for #${id}: ${e}`);
-        // Fall through — the image gate below still applies (a source image may
-        // already satisfy it; otherwise approval is blocked as before).
-      }
-    }
-
-    // Hard rule: a card cannot be approved without an image. Imageless cards
-    // render as half-blank tiles in the public feed and look broken — so if
-    // cartoon generation failed AND there's no source image, block approval.
-    const hasImage = Boolean(card.topImageUrl) || Boolean(card.topImageKey) || Boolean(card.topImage) || Boolean(card.cartoonImageUrl);
-    if (!hasImage) {
-      return c.json({ error: "Card has no image and cartoon generation failed — try again, or upload a header image before approving." }, 400);
-    }
-
-    // Defense-in-depth: even if dirty URLs slipped past create-time validation
-    // (older records pre-dating that guard), block them here at the last gate
-    // before the card goes public.
-    for (const field of ["targetUrl", "authorLink", "topImageUrl"]) {
-      const check = validateSubmittedUrl(card[field], field);
-      if (!check.ok) return c.json({ error: `${check.reason} Edit the card to fix it before approving.` }, 400);
-    }
-
-    card.adminApproved = true;
-    card.approvedBy = approverId;
-    card.approvedAt = new Date().toISOString();
-    // Flag bot-approvals so the AdminPanel can surface an audit view of exactly
-    // what the auto-approver published (human approvals via the panel won't set
-    // this). The qaReport that justified it is already on the card.
-    if (viaToken) {
-      card.autoApproved = true;
-      card.autoApprovedAt = card.approvedAt;
-    }
-    // Approval implies the admin disagrees with any off-topic signal — clear
-    // it so the card doesn't carry a stale "NOT ON TOPIC" badge into live.
-    if (card.notOnTopic) delete card.notOnTopic;
-    await kv.set(cardKey, card);
-    invalidateActionsCache();
-    console.log(`${approverName} approved card #${id}: "${card.title}"`);
-    return c.json({ card });
+    // Token-driven single approvals are the headless routine → audit-flag them;
+    // a human clicking approve in the panel is a deliberate review → don't.
+    const res = await approveOneCard(id, { approverId, approverName, markAuto: viaToken });
+    if (!res.ok) return c.json({ error: res.error }, res.status as any);
+    return c.json({ card: res.card });
   } catch (err) {
     return c.json({ error: `Approval failed: ${err}` }, 500);
+  }
+});
+
+// ─── POST /admin/auto-approve-batch — approve a batch of QA-passed cards ──────
+// Manual "handle a big backlog now" companion to the nightly routine's 20/run
+// cap. Approves up to `max` (default 3, hard cap 5) pending cards that are
+// harvested (createdBy=bulk-import) AND passed QA (qaReport.status=pass), each
+// through approveOneCard (cartoon gen + image/URL gates). Small batches per call
+// because each cartoon generation takes ~20s and edge invocations are
+// time-bounded — the client loops until remainingEligible hits 0. max=0 is a
+// no-op count-peek so the UI can show the eligible total before committing spend.
+// Every approval here is audit-flagged (autoApproved) since no human eyeballed
+// the individual card. Auth: admin login OR the shared ADMIN_IMPORT_TOKEN.
+app.post("/make-server-9eb1ae04/admin/auto-approve-batch", async (c) => {
+  try {
+    const importToken = c.req.header("X-Admin-Import-Token");
+    const expectedToken = Deno.env.get("ADMIN_IMPORT_TOKEN");
+    const viaToken = !!expectedToken && importToken === expectedToken;
+    let approverId = "import-token";
+    let approverName = "import-token";
+    if (!viaToken) {
+      const admin = await requireAdmin(c.req.header("Authorization")?.split(" ")[1]);
+      if (!admin) return c.json({ error: "Forbidden" }, 403);
+      approverId = admin.user.id;
+      approverName = admin.record.name;
+    }
+
+    const body = await c.req.json<{ max?: number; excludeIds?: number[] }>().catch(() => ({}));
+    const max = Math.min(5, Math.max(0, Math.floor(Number(body.max ?? 3)) || 0));
+    // Cards the client already saw block this session — skip them so a blocked
+    // card can't be retried (and re-attempt cartoon gen) on every loop pass, and
+    // so `remainingEligible` strictly shrinks and the client loop terminates.
+    const exclude = new Set((Array.isArray(body.excludeIds) ? body.excludeIds : []).map((n) => Number(n)));
+
+    const isEligible = (card: any): boolean =>
+      card && typeof card === "object" &&
+      card.adminApproved !== true &&
+      card.createdBy === "bulk-import" &&
+      card?.qaReport?.status === "pass" &&
+      !exclude.has(card.id);
+
+    // Gather eligible ids across both stores. Harvested cards live under
+    // user-action:*, but we scan action:* too for completeness (seed cards are
+    // filtered out by createdBy). user-action:ids may itself surface under the
+    // prefix scan as a plain array — isEligible's object/createdBy checks drop it.
+    const eligible: { id: number; title: string }[] = [];
+    for (const card of (await kv.getByPrefix("action:")) as any[]) {
+      if (isEligible(card)) eligible.push({ id: card.id, title: card.title });
+    }
+    const userCardIds = (await kv.get("user-action:ids") ?? []) as number[];
+    for (const uid of userCardIds) {
+      const card = await kv.get(`user-action:${uid}`) as any;
+      if (isEligible(card)) eligible.push({ id: card.id, title: card.title });
+    }
+    eligible.sort((a, b) => a.id - b.id);
+
+    const approved: { id: number; title: string }[] = [];
+    const blocked: { id: number; title: string; error: string }[] = [];
+    for (const e of eligible.slice(0, max)) {
+      const res = await approveOneCard(e.id, { approverId, approverName, markAuto: true });
+      if (res.ok) approved.push({ id: e.id, title: e.title });
+      else blocked.push({ id: e.id, title: e.title, error: res.error });
+    }
+    // Remaining = still-eligible after this pass. Approved cards drop out
+    // (adminApproved flips); blocked ones stay eligible by this query but would
+    // just re-block, so exclude them from "remaining" to avoid an infinite
+    // client loop — the client surfaces blocked separately.
+    const remainingEligible = Math.max(0, eligible.length - approved.length - blocked.length);
+    console.log(`auto-approve-batch: approved=${approved.length} blocked=${blocked.length} remaining=${remainingEligible} (of ${eligible.length} eligible)`);
+    return c.json({ approved, blocked, remainingEligible, totalEligible: eligible.length });
+  } catch (err) {
+    return c.json({ error: `auto-approve-batch failed: ${err}` }, 500);
   }
 });
 
@@ -7271,6 +7364,50 @@ async function draftCardFromUrl(target: string): Promise<{ draft: any; refImageU
   return { draft, refImageUrl: sig.ogImage || null };
 }
 
+/** Verify a card's link actually leads to the specific action it describes —
+ * not a homepage, landing page, or the wrong thing. Fetches the destination,
+ * feeds the card text + page signals to gpt-4o-mini, and returns one verdict:
+ *   action      — the page IS / directly contains the described action
+ *   generic     — a real, related site but a homepage/landing, not the action
+ *   mismatch    — the page is about something clearly different (or a dead/
+ *                 parked/login wall unrelated to the action)
+ *   unfetchable — couldn't fetch or judge (caller keeps its own liveness verdict)
+ * Cheap (~$0.0001/card). Never throws — degrades to "unfetchable". */
+async function linkCheck(url: string, title: string, description: string): Promise<{ verdict: string; reason: string }> {
+  let html = "";
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 12000);
+    const r = await fetch(url, { headers: { "User-Agent": _BROWSER_UA }, signal: ctrl.signal });
+    clearTimeout(t);
+    if (!r.ok) return { verdict: "unfetchable", reason: `page returned HTTP ${r.status}` };
+    html = await r.text();
+  } catch (e) {
+    return { verdict: "unfetchable", reason: `fetch failed: ${String(e).slice(0, 120)}` };
+  }
+  const sig = extractPageSignals(html);
+  const system =
+    "You verify whether the link on a civic-action card actually leads to the SPECIFIC action the card describes. " +
+    "You are given the card's title + description and the destination page's title, description, and a text excerpt. " +
+    "Choose exactly ONE verdict: " +
+    "'action' = the page IS, or directly contains, the specific action described — an event page/signup, petition, form, a specific post/campaign, or the exact org profile the card says to follow or support. " +
+    "'generic' = a real and related site, but a homepage / landing / broad section page, not the specific action (a user would still have to hunt for it). " +
+    "'mismatch' = the page is about something clearly different from the card, OR it's an error / parked-domain / login wall / unrelated page. " +
+    'Return STRICT JSON only: { "verdict": "action" | "generic" | "mismatch", "reason": "under 12 words" }.';
+  const userMsg =
+    `CARD title: ${title}\nCARD description: ${description}\n\n` +
+    `DESTINATION url: ${url}\nDESTINATION page title: ${sig.title}\nDESTINATION page description: ${sig.description}\n\n` +
+    `DESTINATION text excerpt:\n${sig.text.slice(0, 2000)}`;
+  try {
+    const out = await openaiChatJSON(system, userMsg);
+    const v = String(out.verdict ?? "").toLowerCase().trim();
+    const verdict = (v === "action" || v === "generic" || v === "mismatch") ? v : "generic";
+    return { verdict, reason: String(out.reason ?? "").slice(0, 120) };
+  } catch (e) {
+    return { verdict: "unfetchable", reason: `judge failed: ${String(e).slice(0, 120)}` };
+  }
+}
+
 /** Shared core for the /generate-image endpoints (admin + member): make a brand
  * cartoon banner. Prefers the cheaper text-to-image path; only uses the source
  * page's art (image-to-image) when the card text alone isn't concrete enough to
@@ -7282,7 +7419,8 @@ async function generateCartoon(opts: { title: string; description?: string; refI
   const d = (opts.description ?? "").trim();
   // gpt-image-1 "low" garbles sign text + linework (e.g. "DEFEND DEMOCRACY" →
   // "DEFEND ROMIA BESH1S"). "medium" renders legible slogans at banner sizes.
-  // Callers override: admin modal = "high", auto-approve/member = "medium".
+  // Every live caller (approval, batch, admin "Generate cartoon" button, member
+  // add-act) uses medium; "high" is available but not wired to any button.
   const quality = opts.quality ?? "medium";
 
   const { sufficient, scene } = await judgeTextSufficiency(t, d);
@@ -7440,6 +7578,44 @@ app.post("/make-server-9eb1ae04/admin/cards/generate-image", async (c) => {
   } catch (err) {
     console.log("generate-image error:", err);
     return c.json({ error: `generate-image failed: ${err}` }, 500);
+  }
+});
+
+// ─── POST /admin/qa/link-check — does a card's link go to the real action? ────
+// Fetches the card's targetUrl and asks gpt-4o-mini whether it leads to the
+// specific action the card describes vs a generic homepage / the wrong page.
+// Called per-card by tools/qa_pending_cards.py; folded into the qaReport so only
+// "goes to the real action" cards stay eligible for auto-approval. Body: {id}
+// (looks the card up) OR {url, title, description}. Auth: admin OR shared token.
+app.post("/make-server-9eb1ae04/admin/qa/link-check", async (c) => {
+  try {
+    const importToken = c.req.header("X-Admin-Import-Token");
+    const expectedToken = Deno.env.get("ADMIN_IMPORT_TOKEN");
+    const viaToken = !!expectedToken && importToken === expectedToken;
+    if (!viaToken) {
+      const admin = await requireAdmin(c.req.header("Authorization")?.split(" ")[1]);
+      if (!admin) return c.json({ error: "Forbidden" }, 403);
+    }
+
+    const body = await c.req.json<{ id?: number; url?: string; title?: string; description?: string }>().catch(() => ({}));
+    let url = (body.url ?? "").trim();
+    let title = (body.title ?? "").trim();
+    let description = (body.description ?? "").trim();
+    if (body.id != null && (!url || !title)) {
+      let card = await kv.get(`user-action:${body.id}`) as any;
+      if (!card) card = await kv.get(`action:${body.id}`) as any;
+      if (!card) return c.json({ error: `Card ${body.id} not found` }, 404);
+      url = url || (card.targetUrl ?? "");
+      title = title || (card.title ?? "");
+      description = description || (card.description ?? card.synopsis ?? "");
+    }
+    if (!/^https?:\/\//i.test(url)) return c.json({ error: "A valid http(s) targetUrl is required." }, 400);
+
+    const result = await linkCheck(url, title, description);
+    return c.json(result);
+  } catch (err) {
+    console.log("link-check error:", err);
+    return c.json({ error: `link-check failed: ${err}` }, 500);
   }
 });
 
