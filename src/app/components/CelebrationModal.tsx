@@ -17,6 +17,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { getUserTier } from "../lib/tiers";
 import { TierIcon } from "./TierBadge";
+import { newUnlocksFor } from "../lib/journey";
+import { colorForCategory } from "../lib/categoryGroups";
 
 interface CelebrationModalProps {
   prevCount: number;
@@ -604,6 +606,29 @@ export function CelebrationModal({ prevCount, newCount, onClose }: CelebrationMo
           <p className="mt-3 max-w-[18rem] font-['Poppins',sans-serif] text-sm leading-snug text-white/85">
             {renderEmphasis(copy.nextLine, tier.glowColor)}
           </p>
+
+          {/* Tier-up bonus: the journey ladder's newly unlocked act categories,
+              so leveling up visibly OPENS something — the gamified payoff the
+              "Find your path" flow promises. Nothing renders at Inferno (its
+              unlock list is empty — everything already opened at Wildfire). */}
+          {justLeveledUp && newUnlocksFor(tier.key).length > 0 && (
+            <div className="mt-4 max-w-[22rem]">
+              <p className="font-['Poppins',sans-serif] text-[10px] font-extrabold uppercase tracking-[0.16em] text-white/60">
+                New ways to act unlocked
+              </p>
+              <div className="mt-2 flex flex-wrap justify-center gap-1.5">
+                {newUnlocksFor(tier.key).map((cat) => (
+                  <span
+                    key={cat}
+                    className="rounded-full px-2.5 py-1 font-['Poppins',sans-serif] text-[10px] font-bold leading-none text-white shadow"
+                    style={{ background: colorForCategory(cat) }}
+                  >
+                    {cat}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>

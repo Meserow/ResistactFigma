@@ -1,4 +1,4 @@
-import { Sparkles, X } from "lucide-react";
+import { Compass, Sparkles, X } from "lucide-react";
 
 /**
  * WelcomeHero — a one-time, dismissible welcome card shown above the Acts feed.
@@ -21,6 +21,7 @@ export function WelcomeHero({
   filtered = false,
   quickActionsOnly = false,
   onQuickActions,
+  onJourney,
   onDismiss,
 }: {
   personalized: boolean;
@@ -31,6 +32,9 @@ export function WelcomeHero({
   filtered?: boolean;
   /** Whether the "5 Mins Max" quick filter is currently on. */
   quickActionsOnly?: boolean;
+  /** Opens the "Find your path" activist-journey wizard. Passed only for
+   *  logged-out visitors — the wizard is their shame-free on-ramp. */
+  onJourney?: () => void;
   /** Toggle the "5 Mins Max" quick filter. When provided AND the visitor is
    *  logged out, the banner offers a one-tap "filter to quick acts" invite.
    *  (Signed-in users get the same offer in the tagline footer instead.) */
@@ -82,6 +86,18 @@ export function WelcomeHero({
                 This feed is yours to shape. Filter using the buttons above, and then boost, save for later, or do a few acts now and the results will start tuning themselves to you — {signedIn ? "" : "no account, no tracking, "}just your corner of the resistance.
               </p>
             </>
+          )}
+          {/* Re-entry point for the "Find your path" journey wizard — rendered
+              for both copy variants (a visitor can become "personalized" after
+              a few boosts without ever having taken the guided path). */}
+          {onJourney && (
+            <button
+              onClick={onJourney}
+              className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[#23297e] px-3 py-1.5 font-['Poppins',sans-serif] text-[12px] font-bold text-white transition-colors hover:bg-[#ed6624]"
+            >
+              <Compass size={13} strokeWidth={2.5} />
+              Get Started — find your path
+            </button>
           )}
         </div>
         <button

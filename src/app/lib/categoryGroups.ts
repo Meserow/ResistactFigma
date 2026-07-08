@@ -17,7 +17,7 @@ import {
   HandCoins, DoorOpen, House, Drama, UserPlus, HardHat, PenLine, Calendar,
   Brain, Newspaper, Lightbulb, Heart, FileSignature, Sparkles, Briefcase,
   Megaphone, Shirt, Footprints, Share2, GraduationCap, Car, Video, Eye, Tag,
-  MessageSquare, HandHelping,
+  MessageSquare, HandHelping, BookOpen,
 } from "lucide-react";
 
 export interface CategoryGroup {
@@ -53,7 +53,10 @@ export const CATEGORY_GROUPS: CategoryGroup[] = [
     // "Host" → hosting an event is showing up from the organizer side.
     // "Transportation" → giving people rides to actions / canvasses /
     // hearings is showing up by enabling others' presence.
-    categories: ["Group", "Host", "Labor", "Meeting", "Show Up", "Skills", "Training", "Transport", "Volunteer", "Witness"],
+    // "Educate" → teaching others (teach-ins, explainers) — the outward twin
+    // of "Training" (getting trained yourself). Live on cards since mid-2026;
+    // added here so it stops falling through to the runtime "Other" sweep.
+    categories: ["Educate", "Group", "Host", "Labor", "Meeting", "Show Up", "Skills", "Training", "Transport", "Volunteer", "Witness"],
   },
   {
     heading: "Care",
@@ -94,6 +97,7 @@ export const CATEGORY_COLORS: Record<string, string> = {
   "Art":                 "#8b6f47", // warm sienna (renamed from "Art/Performance Art")
   "Boycott":             "#7c2d12", // rust
   "Crafting":            "#c34e00", // warm orange
+  "Educate":             "#3a6d80", // muted teal — teaching others; kin to Training
   "Email":               "#b84545", // muted brick red (renamed from "Email Campaign")
   "Flash Mob":           "#d4516a", // coral-pink (replaces hot pink)
   "Funding":             "#4a7c59", // forest green
@@ -146,6 +150,7 @@ export const CATEGORY_ICONS: Record<string, LucideIcon> = {
   "Art":                 Palette,
   "Boycott":             Ban,
   "Crafting":            Scissors,
+  "Educate":             BookOpen,       // teaching others — teach-ins, explainers
   "Email":               Mail,
   "Flash Mob":           Users,
   "Funding":             HandCoins,

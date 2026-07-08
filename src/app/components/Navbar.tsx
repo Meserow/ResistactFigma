@@ -2,7 +2,7 @@ import logoImg from "../../assets/resistact-logo-horizontal.webp";
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import type { ReactNode } from "react";
 import { FACT_CARDS } from "../data/factCards";
-import { Bell, Heart, ChevronDown, Clock, Flag, Flame, Info, Layers, LayoutList, Loader2, LogOut, Megaphone, Menu, MessageCircle, Search, ShieldCheck, SlidersHorizontal, Sparkles, Tag, X, Zap } from "lucide-react";
+import { Bell, Compass, Heart, ChevronDown, Clock, Flag, Flame, Info, Layers, LayoutList, Loader2, LogOut, Megaphone, Menu, MessageCircle, Search, ShieldCheck, SlidersHorizontal, Sparkles, Tag, X, Zap } from "lucide-react";
 import type { UserApproval } from "../lib/supabase";
 import { TierProgress } from "./TierProgress";
 import { getUserTier } from "../lib/tiers";
@@ -32,6 +32,9 @@ interface NavbarProps {
   onLogout: () => void;
   onAdminClick: () => void;
   onInfoClick: () => void;
+  /** Opens the "Get Started" onboarding wizard. Shown as an outlined navy pill
+   *  next to "Join The Resistance" for logged-out visitors only. */
+  onGetStarted?: () => void;
   onActClick: () => void;
   /** True when match preferences are currently filtering the feed. */
   matchActive?: boolean;
@@ -99,7 +102,7 @@ interface NavbarProps {
   completedCount?: number;
 }
 
-export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, isSearchPending = false, activeTab, onTabChange, heroSlot, hasHero = false, quickActionsOnly, onQuickActionsChange, showDone, onShowDoneChange, completedCount, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onSwipeClick, swipeOpen = false, onSwipeOpenChange, onFeedbackClick, onMatchClick, onAskClick, onPendingSmacksClick, onPendingActsClick, onFlaggedActsClick, pendingActsCount, pendingSmacksCount, flagsCount = 0, pendingUsersCount = 0, onTierClick, smacksAvailableTags, smacksActiveTags, onSmacksTagToggle, onSmacksTagsClear, smacksSortBy, onSmacksSortChange, smacksIsAdmin }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
+export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdminClick, onInfoClick, onGetStarted, onActClick, matchActive, onMatchClear, statsActsCount, statsSmacksCount, statsResistorsCount, statsCitiesCount, statsSynced, activeFilters, actsCategories, actsLocations, onFilterChange, searchQuery, onSearchChange, isSearchPending = false, activeTab, onTabChange, heroSlot, hasHero = false, quickActionsOnly, onQuickActionsChange, showDone, onShowDoneChange, completedCount, sortBy = "popular", onSortChange, onBookmarksClick, bookmarkCount, onSwipeClick, swipeOpen = false, onSwipeOpenChange, onFeedbackClick, onMatchClick, onAskClick, onPendingSmacksClick, onPendingActsClick, onFlaggedActsClick, pendingActsCount, pendingSmacksCount, flagsCount = 0, pendingUsersCount = 0, onTierClick, smacksAvailableTags, smacksActiveTags, onSmacksTagToggle, onSmacksTagsClear, smacksSortBy, onSmacksSortChange, smacksIsAdmin }: NavbarProps & { activeTab: "facts" | "acts" | "receipts"; onTabChange: (tab: "facts" | "acts" | "receipts") => void }) {
   // Acts filters in render order: Location dropdown first, Category pills second.
   // Used for "Clear all" and the mobile filter row that shows just the names.
   const ACTS_FILTER_OPTIONS: Record<string, string[]> = {
@@ -599,6 +602,17 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
                 >
                   <span aria-hidden>🔥</span>
                   {myCompletions.total > 99 ? "99+" : myCompletions.total} done
+                </button>
+              )}
+              {/* Get Started — the path IN, styled as an outlined navy pill so it
+                  reads as a lower-key step before the orange Join CTA. */}
+              {onGetStarted && (
+                <button
+                  onClick={onGetStarted}
+                  className="hidden md:inline-flex items-center gap-1.5 rounded-2xl border-2 border-[#23297e] px-4 py-[7px] font-['Poppins',sans-serif] text-sm font-semibold text-[#23297e] transition-colors hover:bg-[#23297e] hover:text-white"
+                >
+                  <Compass size={15} strokeWidth={2.25} className="shrink-0" />
+                  Get Started
                 </button>
               )}
               <button
@@ -1225,7 +1239,17 @@ export function Navbar({ approval, myCompletions, onLoginClick, onLogout, onAdmi
               </button>
             </div>
           ) : (
-            <div className="px-5 py-4 border-b border-gray-100">
+            <div className="px-5 py-4 border-b border-gray-100 space-y-2.5">
+              {/* Get Started — outlined navy pill, above the orange Join CTA. */}
+              {onGetStarted && (
+                <button
+                  onClick={() => { setMobileMenuOpen(false); onGetStarted(); }}
+                  className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-2xl border-2 border-[#23297e] text-[#23297e] font-['Poppins',sans-serif] text-sm font-bold hover:bg-[#23297e] hover:text-white transition-colors"
+                >
+                  <Compass size={15} strokeWidth={2.25} />
+                  Get Started
+                </button>
+              )}
               <button
                 onClick={() => { setMobileMenuOpen(false); onLoginClick(); }}
                 className="resistact-anim-shimmer w-full flex flex-col items-center py-2.5 rounded-2xl bg-[#23297e] text-white font-['Poppins',sans-serif] hover:bg-[#1a1f63] transition-colors"

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback, useDeferredValue, lazy, Suspense, Fragment } from "react";
-import { Wrench, Flame, Smile, VenetianMask, Sun, Zap, MapPin, Globe, Users, DollarSign, EyeOff, Loader2, Eye, X, Star, Heart } from "lucide-react";
+import { Wrench, Flame, Smile, VenetianMask, Sun, Zap, MapPin, Globe, Users, DollarSign, EyeOff, Loader2, Eye, X, Star, Heart, Sparkles } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { initAnalytics, analytics, disableAnalyticsForAdmin, clearAdminAnalyticsOptOut } from "./lib/analytics";
 import { GAMIFICATION_KEYFRAMES } from "./lib/animations";
@@ -42,6 +42,8 @@ const ChangelogModal = lazy(() =>
   import("./components/ChangelogModal").then((m) => ({ default: m.ChangelogModal })),
 );
 import { TierModal } from "./components/TierModal";
+import { OnboardingWizard, type OnboardingApplyPayload } from "./components/OnboardingWizard";
+import { getUserTier } from "./lib/tiers";
 import { CelebrationModal } from "./components/CelebrationModal";
 import { FeedbackModal } from "./components/FeedbackModal";
 import { SmacksPage, STATIC_SMACKS, type ReceiptCard } from "./components/SmacksPage";
@@ -666,23 +668,22 @@ export default function App() {
   // instead of jumping straight out to the act's external link.
   const [detailCardId, setDetailCardId] = useState<number | null>(null);
   const [infoOpen, setInfoOpen] = useState(false);
-  // Brand-new visitors get the "How does ResistAct work?" explainer opened for
-  // them once, so newcomers understand the site before diving in. Persisted per
-  // device; defaults to "already seen" if localStorage is unavailable so a
-  // broken storage never causes the modal to re-pop on every load.
-  const [introSeen, setIntroSeen] = useState<boolean>(() => {
-    try { return localStorage.getItem("resistact_intro_seen") === "1"; } catch { return true; }
-  });
-  useEffect(() => {
-    if (introSeen) return;
-    setInfoOpen(true);
-    setIntroSeen(true);
-    try { localStorage.setItem("resistact_intro_seen", "1"); } catch {}
-    // Run once on mount for a first-time visitor. Marking seen immediately (not
-    // on close) means a mid-view reload won't re-trigger it.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // InfoModal no longer auto-opens — the OnboardingWizard ("Get Started") is now
+  // the single first-visit experience (see the wizard auto-open effect below).
+  // InfoModal survives only as the reference "About" page, reached from the nav.
   const [foundersOpen, setFoundersOpen] = useState(false);
+  // "Get Started" onboarding wizard — the shame-free first-visit experience
+  // for visitors without accounts (replaces both the old InfoModal auto-open
+  // and the JourneyModal). Auto-opens once per device; reopenable from the
+  // navbar "Get Started" button and the WelcomeHero CTA. Defaults to "already
+  // seen" when localStorage is unavailable so broken storage never re-pops it.
+  const [journeyOpen, setJourneyOpen] = useState(false);
+  const [journeySeen, setJourneySeen] = useState<boolean>(() => {
+    try { return localStorage.getItem("resistact_journey_seen") === "1"; } catch { return true; }
+  });
+  // One-time confirmation banner shown above the feed after the wizard applies
+  // a path (component state only — reappears each apply, never persisted).
+  const [pathBanner, setPathBanner] = useState<{ tierName: string; count: number } | null>(null);
   const [actOpen, setActOpen] = useState(false);
   const [changelogOpen, setChangelogOpen] = useState(false);
   const [tierModalOpen, setTierModalOpen] = useState(false);
@@ -1707,6 +1708,21 @@ export default function App() {
   // card. Once the welcome is dismissed, those banners show the count again.
   const welcomeShowing = !welcomeSeen && activeTab === "acts" && synced;
 
+  // Auto-open the "Get Started" wizard once per device for visitors without
+  // accounts. Waits for the feed to be synced (by which point the local auth
+  // session has resolved, so we don't flash it at logged-in users), and for
+  // the visitor to actually be on the Acts tab with no overlay up. This is now
+  // THE first-visit surface — the old InfoModal auto-open is retired, so the
+  // gate no longer waits on it (a fresh visitor has no intro_seen flag).
+  useEffect(() => {
+    if (journeySeen) return;
+    if (approval || accessToken) return;
+    if (!synced || activeTab !== "acts" || swipeOpen) return;
+    setJourneyOpen(true);
+    setJourneySeen(true);
+    try { localStorage.setItem("resistact_journey_seen", "1"); } catch {}
+  }, [journeySeen, approval, accessToken, synced, activeTab, swipeOpen]);
+
   // ── Swipe mode is opt-in on phones ──────────────────────────────────────────
   // Phones used to drop straight into the swipe deck on load. That hijacked the
   // first impression, so swipe is now something the user *initiates*: a "Swipe
@@ -1724,6 +1740,93 @@ export default function App() {
       return true;
     }),
   [cards, todayISO]);
+
+  // Live act counts per canonical category — feeds the journey wizard's
+  // "Show my Spark acts (N)" CTA and lets the apply handler drop unlocked
+  // categories that currently have zero visible cards (an active filter for
+  // an absent category renders no pill, which would read as a ghost filter).
+  const journeyCategoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const c of approvedCards) counts[c.category] = (counts[c.category] ?? 0) + 1;
+    return counts;
+  }, [approvedCards]);
+
+  // Exact count of the acts a wizard path will surface in the feed. A naive
+  // sum of journeyCategoryCounts under-counts because the real feed (a) always
+  // prepends the pinned "Spread the Word" card and (b) treats "Texting" as a
+  // fuzzy title match (cards titled like a texting act count even if filed
+  // under another category). This mirrors applyFilters + the pin layer for the
+  // logged-out wizard visitor so the CTA and the "path set" banner promise the
+  // same number the feed then shows. Category intersection matches
+  // handleJourneyApply: only categories with live cards apply; an empty result
+  // means "no category filter" (everything).
+  const countPathMatches = useCallback(
+    ({ categories, timeBucket, state, remoteOnly }: OnboardingApplyPayload): number => {
+      const applied = categories?.filter((c) => (journeyCategoryCounts[c] ?? 0) > 0) ?? [];
+      const cats = categories === null || applied.length === 0 ? null : applied;
+      const quickOnly = timeBucket === "5min";
+      const stateFilters = state ? [state] : [];
+      // Wizard is logged-out only → gate as a non-admin public visitor.
+      const gated = cards.filter((c) => actPassesGate(c, false));
+      const pinned = hasSharedSpread ? 0 : gated.filter((c) => c.pinToTop).length;
+      const matches = gated.filter((card) => {
+        if (card.pinToTop) return false; // counted via `pinned`
+        if (cats !== null) {
+          const matchesCat = cats.includes(card.category);
+          const matchesTexting = cats.includes("Texting") && cardIsTexting(card);
+          if (!matchesCat && !matchesTexting) return false;
+        }
+        if (remoteOnly && !card.isOnline) return false;
+        if (stateFilters.length > 0) {
+          const cardState = locationToState(card.location);
+          const matchesState = cardState !== null && stateFilters.includes(cardState);
+          if (!matchesState && !isLocationAgnostic(card)) return false;
+        }
+        if (quickOnly && !card.quickAction) return false;
+        if (!showDone && completedCards.has(card.id)) return false;
+        return true;
+      }).length;
+      return pinned + matches;
+    },
+    [cards, journeyCategoryCounts, hasSharedSpread, showDone, completedCards, todayISO],
+  );
+
+  // Apply the onboarding wizard's outcome to the feed:
+  //  • Category pills become the visitor's unlocked ladder rungs, intersected
+  //    with categories that have live cards (null = everything → clear the pill)
+  //  • "barely any time" (5min) maps onto the existing 5-Mins-Max filter
+  //  • place picks (state / remoteOnly) mirror into the Location pill using the
+  //    same mode-token-preserving pattern MatchMeModal's onApply uses
+  // Then it lands a one-time confirmation banner above the feed (same count the
+  // wizard's CTA promised).
+  function handleJourneyApply({ timeBucket, state, remoteOnly, categories }: OnboardingApplyPayload) {
+    const present = categories?.filter((c) => (journeyCategoryCounts[c] ?? 0) > 0) ?? [];
+    setActiveFilters((prev) => {
+      const next = { ...prev };
+      if (categories && present.length > 0) next["Category"] = present;
+      else delete next["Category"];
+      // Mirror the Place step into the Location pill. Preserve the "In Person"
+      // mode token if set; the wizard owns the "Remote" mode token and the
+      // state token, so rebuild those from the payload.
+      const modes = (prev.Location ?? []).filter((l) => l === "In Person");
+      const loc = [...modes];
+      if (remoteOnly) loc.push("Remote");
+      if (state) loc.push(state);
+      if (loc.length) next["Location"] = loc;
+      else delete next["Location"];
+      return next;
+    });
+    setQuickActionsOnly(timeBucket === "5min");
+    setJourneyOpen(false);
+    setStaggerKey((k) => k + 1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    // Confirmation banner — same count the wizard CTA promised, computed with
+    // the exact feed logic (pinned card + Texting fuzzy match + time/place),
+    // so the banner number equals what the feed now shows.
+    const count = countPathMatches({ timeBucket, state, remoteOnly, categories });
+    const { tier } = getUserTier((effectiveMyCompletions ?? localCompletions)?.total ?? 0);
+    setPathBanner({ tierName: tier.name, count });
+  }
 
   // Drives the Category pills in the navbar — built from approved cards only
   // so no empty-result pills appear.
@@ -1758,6 +1861,14 @@ export default function App() {
     }
     return LOCATION_OPTIONS.filter((opt) => opt !== "Remote" && set.has(opt));
   }, [approvedCards]);
+
+  // Best-guess home state for the onboarding wizard's "Near me" select: the
+  // state already in the Location pill if any, else the geo-detected state.
+  const detectedState = useMemo(() => {
+    const fromPill = (activeFilters["Location"] ?? []).find((l) => l !== "Remote" && l !== "In Person");
+    if (fromPill) return fromPill;
+    return geoBanner?.kind === "detected" ? geoBanner.state : null;
+  }, [activeFilters, geoBanner]);
 
   // Does the visitor already have a real state in the Location pill? (A bare
   // "Remote" pick doesn't count — that's not a place.) Used to decide whether
@@ -3181,6 +3292,7 @@ export default function App() {
         pendingUsersCount={isImpersonating ? 0 : pendingUsersCount}
         flagsCount={isAdminUser && !isImpersonating ? flagsCount : 0}
         onInfoClick={() => setInfoOpen(true)}
+        onGetStarted={effectiveApproval ? undefined : () => setJourneyOpen(true)}
         onActClick={() => setActOpen(true)}
         onAskClick={() => isImpersonating ? showToast("View-as is read-only") : setAskOpen(true)}
         onBookmarksClick={() => setBookmarksOpen(true)}
@@ -3392,6 +3504,35 @@ export default function App() {
             {/* Phone Scroll/Swipe toggle moved up into the Navbar's mobile
                 filter bar, above the Category dropdown. */}
 
+            {/* Onboarding "path set" confirmation — shown after the Get Started
+                wizard applies a path. Reuses the WelcomeHero visual (orange
+                accent rail); dismissible, and re-shown on each apply. */}
+            {pathBanner && activeTab === "acts" && (
+              <div className="relative mb-4 overflow-hidden rounded-xl border border-[#ed6624]/30 bg-gradient-to-r from-[#ed6624]/[0.08] via-white to-[#23297e]/[0.05] px-4 py-3.5 sm:px-5">
+                <span aria-hidden className="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-[#ed6624] to-[#f5853f]" />
+                <div className="flex items-start gap-3 pl-2">
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#ed6624] to-[#f5853f] text-white shadow-sm">
+                    <Sparkles size={16} strokeWidth={2.5} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-['Poppins',sans-serif] text-[15px] font-extrabold text-[#23297e]">
+                      Your {pathBanner.tierName} path is set — <span className="text-[#ed6624]">{pathBanner.count.toLocaleString()}</span> {pathBanner.count === 1 ? "act fits" : "acts fit"} your life right now.
+                    </p>
+                    <p className="mt-0.5 font-['Poppins',sans-serif] text-[13px] leading-snug text-gray-700">
+                      Clear or change any filter above whenever you like.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setPathBanner(null)}
+                    aria-label="Dismiss"
+                    className="-mr-1 -mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-[#23297e]/5 hover:text-[#23297e]"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Feed-intro stack — the welcome greeting and whichever chrome
                 banner sits below it (geo / unfiltered / filtered / pending /
                 match) are FUSED into a single card via the child selectors on
@@ -3407,7 +3548,7 @@ export default function App() {
                 Warm vs. cold-start copy keys off whether the feed is actually
                 personalized yet. Shown once per device, then dismissed for good. */}
             {!welcomeSeen && activeTab === "acts" && synced && (
-              <WelcomeHero personalized={feedIsPersonalized} signedIn={!!accessToken} count={displayedCards.length} filtered={hasActiveFilters} quickActionsOnly={quickActionsOnly} onQuickActions={setQuickActionsOnly} onDismiss={dismissWelcome} />
+              <WelcomeHero personalized={feedIsPersonalized} signedIn={!!accessToken} count={displayedCards.length} filtered={hasActiveFilters} quickActionsOnly={quickActionsOnly} onQuickActions={setQuickActionsOnly} onJourney={accessToken ? undefined : () => setJourneyOpen(true)} onDismiss={dismissWelcome} />
             )}
 
             {/* Geo banner — first-visit location auto-detect, MERGED with the
@@ -4605,6 +4746,25 @@ export default function App() {
 
       {/* Tier modal — available to all logged-in users, not just admins */}
       {tierModalOpen && <TierModal actionCount={myCompletions?.total ?? null} byCategory={myCompletions?.byCategory} onClose={() => setTierModalOpen(false)} />}
+
+      {/* "Get Started" onboarding wizard — the shame-free first-visit flow that
+          explains the site and walks a visitor from "what fits my life?" to a
+          feed filtered to their tier's unlocked act categories. Suppressed
+          during view-as so an admin can't rewrite their own filters
+          mid-impersonation. */}
+      {journeyOpen && !isImpersonating && (
+        <OnboardingWizard
+          actionCount={(effectiveMyCompletions ?? localCompletions)?.total ?? 0}
+          isLoggedIn={!!effectiveApproval}
+          categoryCounts={journeyCategoryCounts}
+          countMatches={countPathMatches}
+          detectedState={detectedState}
+          stateOptions={dynamicLocations}
+          onClose={() => setJourneyOpen(false)}
+          onApply={handleJourneyApply}
+          onJoin={() => { setJourneyOpen(false); setAuthModalOpen(true); }}
+        />
+      )}
 
       {/* Celebration modal — fires for ALL users on a fresh "I did this".
           Rendered outside the admin block so anon + approved users both see
