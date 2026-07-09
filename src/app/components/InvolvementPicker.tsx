@@ -53,24 +53,35 @@ interface InvolvementPickerProps {
   /** "match" = user perspective (default, used in MatchMe wizard).
    *  "plan"  = action-planner perspective (used in Add an Action). */
   variant?: "match" | "plan";
+  /** "large" renders roomier cards + type for the onboarding wizard, where
+   *  the picker gets the whole screen instead of a cramped modal. Default
+   *  keeps the compact sizing used by Quick Match and Add an Action. */
+  size?: "default" | "large";
+  /** When true, a null `value` highlights NOTHING (the wizard wants an
+   *  un-preselected first impression). Default false preserves the existing
+   *  behaviour where null falls back to the "A little" card being lit. */
+  allowUnselected?: boolean;
 }
 
-export function InvolvementPicker({ value, onChange, question, hint, variant = "match" }: InvolvementPickerProps) {
-  const selected = involvementLevelFor(value);
+export function InvolvementPicker({ value, onChange, question, hint, variant = "match", size = "default", allowUnselected = false }: InvolvementPickerProps) {
+  const large = size === "large";
+  // With allowUnselected, a null value lights no card; otherwise the legacy
+  // fallback (null → "30min") keeps a default highlighted.
+  const selected = allowUnselected && value == null ? null : involvementLevelFor(value);
   const levels = variant === "plan" ? LEVELS_PLAN : LEVELS_MATCH;
   return (
     <div>
       {question && (
-        <h3 className="font-['Poppins',sans-serif] font-bold text-[#23297e] text-base leading-tight">
+        <h3 className={`font-['Poppins',sans-serif] font-bold text-[#23297e] leading-tight ${large ? "text-lg" : "text-base"}`}>
           {question}
         </h3>
       )}
       {hint && (
-        <p className="font-['Poppins',sans-serif] text-xs text-gray-500 mt-1 mb-3">
+        <p className={`font-['Poppins',sans-serif] text-gray-500 mt-1 mb-3 ${large ? "text-[15px] leading-relaxed" : "text-xs"}`}>
           {hint}
         </p>
       )}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2">
+      <div className={`grid grid-cols-2 ${large ? "md:grid-cols-5 gap-3" : "lg:grid-cols-5 gap-2"}`}>
         {levels.map(({ key, title, subtitle, desc }) => {
           const isSelected = selected === key;
           return (
@@ -79,19 +90,23 @@ export function InvolvementPicker({ value, onChange, question, hint, variant = "
               type="button"
               onClick={() => onChange(key)}
               aria-pressed={isSelected}
-              className={`text-left px-3 py-2.5 rounded-xl border-2 transition-colors ${
+              className={`text-left rounded-xl border-2 transition-colors ${large ? "px-4 py-4" : "px-3 py-2.5"} ${
                 isSelected
                   ? "border-[#ed6624] bg-[#ed6624]/5"
                   : "border-gray-200 bg-white hover:border-gray-300"
               }`}
             >
-              <p className="font-['Poppins',sans-serif] font-bold text-gray-900 text-sm leading-tight">
+              {/* Reserve 2 lines for the title and 2 for the uppercase label so
+                  the three text rows line up across all five cards regardless of
+                  how many lines each wraps to (em-based, so it scales with each
+                  font size). */}
+              <p className={`font-['Poppins',sans-serif] font-bold text-gray-900 leading-tight min-h-[2.5em] ${large ? "text-base" : "text-sm"}`}>
                 {title}
               </p>
-              <p className="font-['Poppins',sans-serif] font-semibold text-[10px] uppercase tracking-wider text-[#ed6624] mt-1">
+              <p className={`font-['Poppins',sans-serif] font-semibold uppercase tracking-wider text-[#ed6624] leading-tight mt-1 min-h-[2.5em] ${large ? "text-[12px]" : "text-[10px]"}`}>
                 {subtitle}
               </p>
-              <p className="font-['Poppins',sans-serif] text-xs text-gray-500 mt-1.5 leading-snug">
+              <p className={`font-['Poppins',sans-serif] text-gray-500 mt-1.5 leading-snug ${large ? "text-[13px]" : "text-xs"}`}>
                 {desc}
               </p>
             </button>

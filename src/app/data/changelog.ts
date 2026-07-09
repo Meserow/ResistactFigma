@@ -16,6 +16,48 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.120",
+    date: "2026-07-08",
+    title: "Get Started — one beautiful way in",
+    sections: [
+      {
+        heading: "A brand-new welcome",
+        items: [
+          "First visit? Instead of two little pop-ups stacked back to back, there's now a single, full-size \"Get Started\" guide. It explains the site, asks what kind of activism fits your life — how much time you have and where you want to act — and shows you exactly where you land on the Spark → Inferno ladder.",
+          "Everything's bigger and easier to read: the tier ladder finally gets the room it deserves instead of being squeezed into fine print on a photo.",
+          "New \"Get Started\" button in the top nav, next to Join The Resistance — open the guide anytime, not just on your first visit.",
+          "Tell us \"Near me\" and/or \"From my couch\" and your feed filters to acts that actually fit — then a banner confirms how many are waiting.",
+          "\"Near me\" now fills in your state for you when we can tell roughly where you are — no typing needed. Not sure or not right? Just pick it from the list.",
+          "Cleaned up the dropdown menus across the site — the little arrow no longer crowds the edge.",
+          "Warmer first screen: a full-width cartoon of neighbors taking action across the top, then \"You don't have to do everything — you just have to do something,\" and a plain-English rundown of the kinds of acts you'll find.",
+        ],
+      },
+      {
+        heading: "Still no strings",
+        items: [
+          "No account needed, no tracking — your path lives on your device. Signing up just lets your progress follow you across devices, whenever you want it to.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.119",
+    date: "2026-07-07",
+    title: "Find your path — a shame-free way in",
+    sections: [
+      {
+        heading: "New: the activist journey",
+        items: [
+          "First time here? A new \"Find your path\" guide asks one question — how much room does your life have right now? — and shows you acts that actually fit it. No account needed, and nobody's grading you for skipping the protest.",
+          "Your path follows the tier ladder you already know: Sparks start with quiet acts like boosting, crafting, wearing your values, and texting. Each tier you reach unlocks new ways to act — reaching out, creating, showing up — until Wildfire opens everything.",
+          "Level up and the celebration now shows exactly which new ways to act you just unlocked.",
+          "Missed the guide or want to redo it? The welcome banner has a \"Find your path\" button.",
+          "\"Educate\" is now a first-class category with its own icon and color — it unlocks at Flame.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.118",
     date: "2026-07-05",
     title: "Cleaner categories and clearer time estimates",
