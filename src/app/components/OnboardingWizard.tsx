@@ -18,7 +18,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { X, ArrowRight, ChevronLeft, Lock, Zap, Flame, TrendingUp, MapPin, House, Check } from "lucide-react";
-import logoImg from "../../assets/6f09d83b1b948a5a0a2a9e7558c073db252c1f59.png";
+import welcomeBanner from "../../assets/onboarding-welcome-banner.webp";
 import { TIERS, getUserTier } from "../lib/tiers";
 import type { TierKey } from "../lib/tiers";
 import { TierIcon } from "./TierBadge";
@@ -104,9 +104,22 @@ export function OnboardingWizard({
 }: OnboardingWizardProps) {
   const [step, setStep] = useState(0); // 0..4
   const [timeBucket, setTimeBucket] = useState<TimeBucket | null>(null);
-  const [nearMe, setNearMe] = useState(false);
+  // Default "Near me" ON when we already know the visitor's state (from silent
+  // IP geo) — otherwise the pre-filled state would be ignored, since apply()
+  // only uses selectedState when nearMe is on.
+  const [nearMe, setNearMe] = useState<boolean>(!!detectedState);
   const [selectedState, setSelectedState] = useState<string | null>(detectedState);
   const [fromCouch, setFromCouch] = useState(false);
+  // Geo (IP) usually resolves AFTER this wizard has mounted — both fire on first
+  // visit — so the mount-time detectedState is often null and the useState above
+  // captures nothing. Sync it in when it arrives, but never override a choice the
+  // visitor has already made on the Place step.
+  const placeTouched = useRef(false);
+  useEffect(() => {
+    if (placeTouched.current || !detectedState) return;
+    setSelectedState((cur) => cur ?? detectedState);
+    setNearMe(true);
+  }, [detectedState]);
 
   const reduceMotion = usePrefersReducedMotion();
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -207,13 +220,16 @@ export function OnboardingWizard({
   };
 
   // Skip everything on the Place step.
-  const skipPlace = () => { setNearMe(false); setSelectedState(null); setFromCouch(false); next(); };
+  const skipPlace = () => { placeTouched.current = true; setNearMe(false); setSelectedState(null); setFromCouch(false); next(); };
 
   // ── Shared button styles ──
   const primaryBtn =
     "inline-flex w-full sm:w-auto items-center justify-center gap-2 whitespace-nowrap rounded-full bg-[#ed6624] h-12 px-7 font-['Poppins',sans-serif] text-[15px] font-bold text-white transition-colors hover:bg-[#c2521b]";
+  // Quiet secondary ("Skip — just let me browse" / "Just browsing"): muted gray,
+  // not headline-navy, so it never competes with the blue title up top. The
+  // orange primary CTA is the one thing meant to draw the eye.
   const secondaryBtn =
-    "inline-flex w-full sm:w-auto items-center justify-center gap-1.5 whitespace-nowrap rounded-full h-12 px-5 font-['Poppins',sans-serif] text-[15px] font-semibold text-[#23297e] transition-colors hover:bg-[#23297e]/5";
+    "inline-flex w-full sm:w-auto items-center justify-center gap-1.5 whitespace-nowrap rounded-full h-12 px-5 font-['Poppins',sans-serif] text-[14px] font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700";
 
   const stepTitle = [
     "You're here. That already counts.",
@@ -244,6 +260,19 @@ export function OnboardingWizard({
         onClick={(e) => e.stopPropagation()}
         className="flex h-full w-full flex-col overflow-hidden bg-white outline-none md:h-auto md:max-h-[92vh] md:min-h-[620px] md:max-w-[880px] md:rounded-3xl md:shadow-2xl"
       >
+        {/* Step 1 only: the welcome cartoon runs full-bleed across the very top,
+            bleeding off the top/left/right edges (the modal's overflow-hidden
+            clips it to the rounded top corners). "GET STARTED" + the title sit
+            BELOW it in the header. */}
+        {step === 0 && (
+          <img
+            src={welcomeBanner}
+            alt=""
+            aria-hidden
+            className="h-40 w-full shrink-0 object-cover object-[center_30%] sm:h-52"
+          />
+        )}
+
         {/* ── Header ── */}
         <div className="flex shrink-0 items-start gap-3 border-b border-gray-100 px-5 py-5 md:px-10 md:pt-8 md:pb-5">
           {step > 0 && (
@@ -286,12 +315,12 @@ export function OnboardingWizard({
             {step === 3 && (
               <StepPlace
                 nearMe={nearMe}
-                onToggleNearMe={() => setNearMe((v) => !v)}
+                onToggleNearMe={() => { placeTouched.current = true; setNearMe((v) => !v); }}
                 selectedState={selectedState}
-                onSelectState={setSelectedState}
+                onSelectState={(s) => { placeTouched.current = true; setSelectedState(s); }}
                 stateOptions={stateOptions}
                 fromCouch={fromCouch}
-                onToggleCouch={() => setFromCouch((v) => !v)}
+                onToggleCouch={() => { placeTouched.current = true; setFromCouch((v) => !v); }}
                 onSkip={skipPlace}
               />
             )}
@@ -375,17 +404,22 @@ export function OnboardingWizard({
 // ─── Step 1 — Welcome ─────────────────────────────────────────────────────────
 function StepWelcome() {
   return (
-    <div className="mx-auto max-w-[560px] text-center">
-      <img src={logoImg} alt="" aria-hidden className="mx-auto mb-5 h-12 w-12 object-contain" />
-      <p className="font-['Poppins',sans-serif] text-[16px] leading-relaxed text-gray-700">
-        Feeling helpless? Tired of hearing that voting and donating are the only levers you've got?
-        ResistAct is a daily menu of small, doable acts of resistance — vetted, matched to your real
-        life, and private. No tracking, no email list you can't escape, no account required.
+    <div className="mx-auto max-w-[620px]">
+      {/* The welcome cartoon lives full-bleed at the top of the modal (see the
+          OnboardingWizard header block), so this step is copy-only. */}
+      <p className="font-['Poppins',sans-serif] text-[17px] leading-relaxed text-gray-700">
+        <span className="font-semibold text-[#23297e]">You don't have to do everything — you just have to do something.</span>{" "}
+        ResistAct is a daily menu of small, doable acts of resistance — protests, postcards, phone
+        calls, boycotts, a hat you knit for a march. Each one is vetted, matched to your real life,
+        and yours to do at your own pace.
       </p>
-      <blockquote className="mx-auto mt-6 max-w-[480px] border-l-[3px] border-[#ed6624] pl-4 text-left font-['Poppins',sans-serif] text-[14px] italic leading-relaxed text-[#767574]">
+      <p className="mt-3 font-['Poppins',sans-serif] text-[16px] font-semibold leading-relaxed text-[#23297e]">
+        No account. No tracking. No email list you can't escape. Just your corner of the resistance.
+      </p>
+      <blockquote className="mt-6 border-l-[3px] border-[#ed6624] pl-4 font-['Poppins',sans-serif] text-[14px] italic leading-relaxed text-[#767574]">
         "Never doubt that a small group of thoughtful, committed citizens can change the world.
         Indeed, it's the only thing that ever has."
-        <span className="mt-1.5 block not-italic font-semibold text-[#23297e]">— Margaret Mead</span>
+        <span className="mt-1.5 block not-italic font-semibold text-gray-500">— Margaret Mead</span>
       </blockquote>
     </div>
   );

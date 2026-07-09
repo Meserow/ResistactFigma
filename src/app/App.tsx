@@ -1826,6 +1826,11 @@ export default function App() {
     const count = countPathMatches({ timeBucket, state, remoteOnly, categories });
     const { tier } = getUserTier((effectiveMyCompletions ?? localCompletions)?.total ?? 0);
     setPathBanner({ tierName: tier.name, count });
+    // Setting a path IS the engaged version of the welcome — retire the generic
+    // "You're here, this feed is yours to shape" greeting so the two don't stack
+    // (both were showing the same count in orange). Persisted, so it won't pop
+    // back when the path banner is dismissed.
+    dismissWelcome();
   }
 
   // Drives the Category pills in the navbar — built from approved cards only
@@ -3547,7 +3552,7 @@ export default function App() {
                 the feed as something the visitor shapes (not surveillance).
                 Warm vs. cold-start copy keys off whether the feed is actually
                 personalized yet. Shown once per device, then dismissed for good. */}
-            {!welcomeSeen && activeTab === "acts" && synced && (
+            {!welcomeSeen && !pathBanner && activeTab === "acts" && synced && (
               <WelcomeHero personalized={feedIsPersonalized} signedIn={!!accessToken} count={displayedCards.length} filtered={hasActiveFilters} quickActionsOnly={quickActionsOnly} onQuickActions={setQuickActionsOnly} onJourney={accessToken ? undefined : () => setJourneyOpen(true)} onDismiss={dismissWelcome} />
             )}
 
