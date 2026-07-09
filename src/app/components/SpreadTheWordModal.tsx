@@ -254,7 +254,7 @@ export function SpreadTheWordModal({ onClose, onShared, artUrl }: { onClose: () 
             src={artUrl}
             alt=""
             aria-hidden="true"
-            className="w-full h-[180px] object-cover"
+            className="w-full h-[236px] object-cover object-top"
           />
         )}
         {/* Intro copy */}

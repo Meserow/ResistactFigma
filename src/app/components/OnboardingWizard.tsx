@@ -19,6 +19,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { X, ArrowRight, ChevronLeft, Lock, Zap, Flame, TrendingUp, MapPin, House, Check } from "lucide-react";
 import welcomeBanner from "../../assets/onboarding-welcome-banner.webp";
+import howItWorksArt from "../../assets/onboarding-howitworks.webp";
+import timeArt from "../../assets/onboarding-time.webp";
+import placeArt from "../../assets/onboarding-place.webp";
+import pathArt from "../../assets/onboarding-path.webp";
 import { TIERS, getUserTier } from "../lib/tiers";
 import type { TierKey } from "../lib/tiers";
 import { TierIcon } from "./TierBadge";
@@ -26,6 +30,18 @@ import { JOURNEY_UNLOCKS, JOURNEY_PITCH, unlockedCategoriesFor } from "../lib/jo
 import { colorForCategory, iconForCategory } from "../lib/categoryGroups";
 import { InvolvementPicker } from "./InvolvementPicker";
 import type { TimeBucket } from "../lib/matcher";
+
+// A little cartoon for the top of each step, in the house comic style. Indexed
+// by step (0-4). Each is heavily optimized (13–44KB) so all five together weigh
+// less than the old single hero banner. `pos` tunes the object-position crop per
+// image so each subject sits well in the short strip.
+const STEP_BANNERS: { src: string; pos: string }[] = [
+  { src: welcomeBanner, pos: "center 35%" },
+  { src: howItWorksArt, pos: "center 40%" },
+  { src: timeArt,       pos: "center 40%" },
+  { src: placeArt,      pos: "center 45%" },
+  { src: pathArt,       pos: "center 40%" },
+];
 
 export interface OnboardingApplyPayload {
   timeBucket: TimeBucket | null;
@@ -78,7 +94,7 @@ function CategoryChip({ category, locked }: { category: string; locked: boolean 
   const Icon = iconForCategory(category);
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 font-['Poppins',sans-serif] text-[13px] font-bold leading-none"
+      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-['Poppins',sans-serif] text-[12px] font-bold leading-none"
       style={
         locked
           ? { background: "#f3f4f6", color: "#9ca3af" }
@@ -125,18 +141,17 @@ export function OnboardingWizard({
   const dialogRef = useRef<HTMLDivElement>(null);
   const autoAdvanceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { tier, nextTier, actionsToNext } = getUserTier(actionCount);
+  const { tier, actionsToNext } = getUserTier(actionCount);
   const tierIdx = TIERS.findIndex((t) => t.key === tier.key);
   const unlocked = unlockedCategoriesFor(tier.key); // null = everything (Wildfire+)
   const everythingUnlocked = unlocked === null;
 
-  // Which ladder rung's teaser is expanded on step 5. Defaults to the next
-  // tier so the "what's next" payoff shows without a click — but only if that
-  // tier actually offers new categories (Inferno adds nothing, so a Wildfire
-  // visitor opens to no teaser rather than an empty "unlocks these:" card).
-  const [openRung, setOpenRung] = useState<TierKey | null>(
-    nextTier && JOURNEY_UNLOCKS[nextTier.key].length > 0 ? nextTier.key : null,
-  );
+  // Which ladder rung's teaser is expanded on step 5. Starts closed — the
+  // teaser card is tall, and this step already has a lot to fit under a fixed
+  // modal height; a locked rung is still one click away. (Previously defaulted
+  // open on the next tier; that cost ~110px of body height every visitor paid
+  // for on load.)
+  const [openRung, setOpenRung] = useState<TierKey | null>(null);
 
   // How many live acts the CTA will reveal — computed with the real feed
   // pipeline when App supplies `countMatches` (so the CTA reflects the visitor's
@@ -258,23 +273,24 @@ export function OnboardingWizard({
         aria-labelledby="ow-title"
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="flex h-full w-full flex-col overflow-hidden bg-white outline-none md:h-auto md:max-h-[92vh] md:min-h-[620px] md:max-w-[880px] md:rounded-3xl md:shadow-2xl"
+        className="flex h-full w-full flex-col overflow-hidden bg-white outline-none md:h-[780px] md:max-h-[94vh] md:max-w-[880px] md:rounded-3xl md:shadow-2xl"
       >
-        {/* Step 1 only: the welcome cartoon runs full-bleed across the very top,
-            bleeding off the top/left/right edges (the modal's overflow-hidden
-            clips it to the rounded top corners). "GET STARTED" + the title sit
-            BELOW it in the header. */}
-        {step === 0 && (
-          <img
-            src={welcomeBanner}
-            alt=""
-            aria-hidden
-            className="h-40 w-full shrink-0 object-cover object-[center_30%] sm:h-52"
-          />
-        )}
+        {/* Every step gets its own little cartoon, full-bleed across the very
+            top (bleeding off the top/left/right edges — the modal's
+            overflow-hidden clips it to the rounded top corners). Uniform height
+            so all steps are the same size. "GET STARTED" + the title sit below
+            it in the header. */}
+        <img
+          key={step}
+          src={STEP_BANNERS[step].src}
+          alt=""
+          aria-hidden
+          style={{ objectPosition: STEP_BANNERS[step].pos }}
+          className="h-48 w-full shrink-0 object-cover sm:h-64"
+        />
 
         {/* ── Header ── */}
-        <div className="flex shrink-0 items-start gap-3 border-b border-gray-100 px-5 py-5 md:px-10 md:pt-8 md:pb-5">
+        <div className="flex shrink-0 items-start gap-3 border-b border-gray-100 px-5 py-4 md:px-10 md:pt-6 md:pb-4">
           {step > 0 && (
             <button
               onClick={back}
@@ -305,7 +321,7 @@ export function OnboardingWizard({
         </div>
 
         {/* ── Body ── */}
-        <div className="flex-1 overflow-y-auto px-5 py-6 md:px-10 md:py-8">
+        <div className="flex-1 overflow-y-auto px-5 py-5 md:px-10 md:py-6">
           <div key={step} style={reduceMotion ? undefined : { animation: "owStepIn 200ms ease-out" }}>
             {step === 0 && <StepWelcome />}
             {step === 1 && <StepHowItWorks />}
@@ -341,7 +357,7 @@ export function OnboardingWizard({
         </div>
 
         {/* ── Footer ── */}
-        <div className="shrink-0 border-t border-gray-100 px-5 py-4 md:px-10 md:py-5">
+        <div className="shrink-0 border-t border-gray-100 px-5 py-3 md:px-10 md:py-4">
           <div className="flex items-center justify-between gap-3">
             {/* Progress dots */}
             <div className="hidden sm:flex items-center gap-2 shrink-0" aria-hidden>
@@ -413,7 +429,12 @@ function StepWelcome() {
         calls, boycotts, a hat you knit for a march. Each one is vetted, matched to your real life,
         and yours to do at your own pace.
       </p>
-      <p className="mt-3 font-['Poppins',sans-serif] text-[16px] font-semibold leading-relaxed text-[#23297e]">
+      {/* One line on desktop (the 620px content column fits it exactly at
+          13px) — but nowrap unconditionally overflowed sideways on mobile,
+          where this column is much narrower. md: scopes the nowrap to the
+          width it was actually measured against; below that it wraps
+          normally (2 short lines), which is fine. */}
+      <p className="mt-3 font-['Poppins',sans-serif] text-[13px] font-semibold leading-relaxed text-[#23297e] md:whitespace-nowrap">
         No account. No tracking. No email list you can't escape. Just your corner of the resistance.
       </p>
       <blockquote className="mt-6 border-l-[3px] border-[#ed6624] pl-4 font-['Poppins',sans-serif] text-[14px] italic leading-relaxed text-[#767574]">
@@ -428,15 +449,15 @@ function StepWelcome() {
 // ─── Step 2 — How it works ─────────────────────────────────────────────────────
 function HowCard({ icon, tileColor, heading, children }: { icon: React.ReactNode; tileColor: string; heading: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-1 flex-col rounded-2xl border border-gray-100 bg-gray-50/60 p-5">
+    <div className="flex flex-1 flex-col rounded-2xl border border-gray-100 bg-gray-50/60 p-4">
       <span
-        className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-sm"
+        className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl text-white shadow-sm"
         style={{ backgroundColor: tileColor }}
       >
         {icon}
       </span>
-      <h3 className="font-['Poppins',sans-serif] text-[18px] font-bold leading-tight text-[#23297e]">{heading}</h3>
-      <p className="mt-1.5 font-['Poppins',sans-serif] text-[15px] leading-relaxed text-gray-600">{children}</p>
+      <h3 className="font-['Poppins',sans-serif] text-[16px] font-bold leading-tight text-[#23297e]">{heading}</h3>
+      <p className="mt-1 font-['Poppins',sans-serif] text-[13px] leading-snug text-gray-600">{children}</p>
     </div>
   );
 }
@@ -444,39 +465,36 @@ function HowCard({ icon, tileColor, heading, children }: { icon: React.ReactNode
 function StepHowItWorks() {
   return (
     <div>
-      <div className="flex flex-col gap-4 md:flex-row">
-        <HowCard icon={<Zap size={20} strokeWidth={2.5} />} tileColor="#23297e" heading="Find your act.">
-          Filter by time, mood, and place — or let Quick Match deal you a hand. Text your reps, drop a
-          flyer, knit a hat for a march. New acts daily.
+      <div className="flex flex-col gap-3 md:flex-row">
+        <HowCard icon={<Zap size={18} strokeWidth={2.5} />} tileColor="#23297e" heading="Find your act.">
+          Filter by time, mood, and place — or let Quick Match deal you a hand. New acts daily.
         </HowCard>
-        <HowCard icon={<Flame size={20} strokeWidth={2.5} />} tileColor="#ed6624" heading="Do it. Count it.">
-          Hit "I did this!" and it counts — for you and for the movement's momentum. No account needed;
-          your progress lives on your device.
+        <HowCard icon={<Flame size={18} strokeWidth={2.5} />} tileColor="#ed6624" heading="Do it. Count it.">
+          Hit "I did this!" and it counts. No account needed — your progress lives on your device.
         </HowCard>
-        <HowCard icon={<TrendingUp size={20} strokeWidth={2.5} />} tileColor="#5a3e9e" heading="Level up. Unlock more.">
-          Every act moves you up the ladder, from Spark to Inferno. Each tier opens new kinds of acts —
-          when you're ready, never before.
+        <HowCard icon={<TrendingUp size={18} strokeWidth={2.5} />} tileColor="#5a3e9e" heading="Level up. Unlock more.">
+          Every act moves you up the ladder, from Spark to Inferno — new kinds of acts as you go.
         </HowCard>
       </div>
 
       {/* The six tier badges — a proper, legible ladder moment. */}
-      <div className="mt-6 flex items-end justify-center gap-4 sm:gap-6">
+      <div className="mt-4 flex items-end justify-center gap-3 sm:gap-5">
         {TIERS.map((t) => (
-          <div key={t.key} className="flex flex-col items-center gap-1.5">
+          <div key={t.key} className="flex flex-col items-center gap-1">
             <span
-              className="flex h-9 w-9 items-center justify-center rounded-full"
+              className="flex h-8 w-8 items-center justify-center rounded-full"
               style={{ backgroundColor: t.color }}
             >
-              <TierIcon tier={t} size={16} />
+              <TierIcon tier={t} size={14} />
             </span>
-            <span className="font-['Poppins',sans-serif] text-[12px] font-semibold" style={{ color: t.labelColor }}>
+            <span className="font-['Poppins',sans-serif] text-[11px] font-semibold" style={{ color: t.labelColor }}>
               {t.name}
             </span>
           </div>
         ))}
       </div>
 
-      <p className="mt-6 text-center font-['Poppins',sans-serif] text-[13px] leading-relaxed text-gray-500">
+      <p className="mt-4 text-center font-['Poppins',sans-serif] text-[12px] leading-snug text-gray-500">
         The Facts (ready-made rebuttals) and The Smacks (shareable receipts) live in the top nav
         whenever you need ammo.
       </p>
@@ -504,22 +522,22 @@ function ToggleCard({ active, onToggle, icon, title, children }: { active: boole
       type="button"
       onClick={onToggle}
       aria-pressed={active}
-      className={`flex flex-1 flex-col items-start rounded-2xl border-2 p-5 text-left transition-colors ${
+      className={`flex flex-1 flex-col items-start rounded-2xl border-2 p-4 text-left transition-colors ${
         active ? "border-[#ed6624] bg-[#ed6624]/5" : "border-gray-200 bg-white hover:border-gray-300"
       }`}
     >
       <span
-        className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
+        className={`mb-2 flex h-9 w-9 items-center justify-center rounded-xl transition-colors ${
           active ? "bg-[#ed6624] text-white" : "bg-gray-100 text-[#23297e]"
         }`}
       >
         {icon}
       </span>
-      <span className="flex items-center gap-2 font-['Poppins',sans-serif] text-[17px] font-bold text-[#23297e]">
+      <span className="flex items-center gap-2 font-['Poppins',sans-serif] text-[16px] font-bold text-[#23297e]">
         {title}
         {active && <Check size={16} strokeWidth={3} className="text-[#ed6624]" />}
       </span>
-      <span className="mt-1 font-['Poppins',sans-serif] text-[14px] leading-relaxed text-gray-600">{children}</span>
+      <span className="mt-0.5 font-['Poppins',sans-serif] text-[13px] leading-snug text-gray-600">{children}</span>
     </button>
   );
 }
@@ -539,11 +557,11 @@ function StepPlace({
 }) {
   return (
     <div>
-      <p className="mb-5 font-['Poppins',sans-serif] text-[15px] leading-relaxed text-gray-600">
+      <p className="mb-3 font-['Poppins',sans-serif] text-[15px] leading-snug text-gray-600">
         Pick either, both, or neither — you can change it anytime with the filters up top.
       </p>
-      <div className="flex flex-col gap-4 sm:flex-row">
-        <div className="flex flex-1 flex-col gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="flex flex-1 flex-col gap-2">
           <ToggleCard active={nearMe} onToggle={onToggleNearMe} icon={<MapPin size={20} strokeWidth={2.5} />} title="Near me">
             In-person acts happening around your state.
           </ToggleCard>
@@ -552,7 +570,7 @@ function StepPlace({
               value={selectedState ?? ""}
               onChange={(e) => onSelectState(e.target.value || null)}
               onClick={(e) => e.stopPropagation()}
-              className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-3 font-['Poppins',sans-serif] text-[15px] font-semibold text-[#23297e] focus:border-[#ed6624] focus:outline-none"
+              className="w-full rounded-xl border-2 border-gray-200 bg-white px-4 py-2 font-['Poppins',sans-serif] text-[15px] font-semibold text-[#23297e] focus:border-[#ed6624] focus:outline-none"
             >
               <option value="">Choose your state…</option>
               {stateOptions.map((s) => (
@@ -567,7 +585,7 @@ function StepPlace({
           </ToggleCard>
         </div>
       </div>
-      <div className="mt-5 text-center">
+      <div className="mt-3 text-center">
         <button
           onClick={onSkip}
           className="font-['Poppins',sans-serif] text-[14px] font-semibold text-gray-500 underline underline-offset-2 transition-colors hover:text-[#23297e]"
@@ -599,26 +617,26 @@ function StepPath({
   const openTierLocked = openTier ? TIERS.findIndex((t) => t.key === openTier.key) > tierIdx : false;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-2">
       {/* 1. Hero zone — the visitor's current tier, big. */}
       <div className="flex flex-col items-center text-center">
         <span
-          className="flex h-[72px] w-[72px] items-center justify-center rounded-full"
+          className="flex h-12 w-12 items-center justify-center rounded-full"
           style={{ backgroundColor: tier.color, boxShadow: `0 0 0 4px ${tier.glowColor}66` }}
         >
-          <TierIcon tier={tier} size={34} />
+          <TierIcon tier={tier} size={22} />
         </span>
-        <p className="mt-4 font-['Poppins',sans-serif] text-[16px] leading-relaxed text-gray-600">
+        <p className="mt-2 font-['Poppins',sans-serif] text-[14px] leading-snug text-gray-600">
           {JOURNEY_PITCH[tier.key]}
         </p>
         {!everythingUnlocked && unlocked && (
-          <div className="mt-4 flex flex-wrap justify-center gap-2">
+          <div className="mt-2 flex flex-wrap justify-center gap-1.5">
             {unlocked.map((cat) => (
               <CategoryChip key={cat} category={cat} locked={false} />
             ))}
           </div>
         )}
-        <p className="mt-4 font-['Poppins',sans-serif] text-[15px] font-semibold text-[#23297e]">
+        <p className="mt-2 font-['Poppins',sans-serif] text-[14px] font-semibold text-[#23297e]">
           {everythingUnlocked ? (
             "Every act on the site is yours."
           ) : (
@@ -631,11 +649,11 @@ function StepPath({
 
       {/* 2. The road ahead — all six rungs. */}
       <div>
-        <p className="mb-3 font-['Poppins',sans-serif] text-[13px] font-bold uppercase tracking-[0.14em] text-gray-400">
+        <p className="mb-1.5 font-['Poppins',sans-serif] text-[12px] font-bold uppercase tracking-[0.14em] text-gray-400">
           The road ahead
         </p>
         {/* Rung strip: horizontal on desktop, vertical timeline on mobile. */}
-        <div className="flex flex-col gap-2 md:flex-row md:items-start md:gap-1">
+        <div className="flex flex-col gap-1 md:flex-row md:items-start md:gap-1">
           {TIERS.map((t, i) => {
             const isYou = i === tierIdx;
             const isPast = i < tierIdx;
@@ -647,30 +665,30 @@ function StepPath({
                 type="button"
                 onClick={() => isLocked && setOpenRung(isOpen ? null : t.key)}
                 aria-expanded={isLocked ? isOpen : undefined}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors md:flex-1 md:flex-col md:items-center md:gap-1.5 md:text-center ${
+                className={`flex items-center gap-2 rounded-xl px-2.5 py-1 text-left transition-colors md:flex-1 md:flex-col md:items-center md:gap-0.5 md:text-center ${
                   isYou ? "bg-[#ed6624]/[0.07] ring-1 ring-[#ed6624]/40" : ""
                 } ${isLocked ? "cursor-pointer hover:bg-gray-50" : "cursor-default"} ${isOpen && isLocked ? "bg-gray-50" : ""}`}
               >
                 <span
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
                   style={{ backgroundColor: t.color, filter: isLocked ? "grayscale(0.55) opacity(0.8)" : undefined }}
                 >
-                  <TierIcon tier={t} size={15} />
+                  <TierIcon tier={t} size={12} />
                 </span>
                 <span className="min-w-0 md:flex md:flex-col md:items-center">
                   <span
-                    className="font-['Poppins',sans-serif] text-[14px] font-bold"
+                    className="font-['Poppins',sans-serif] text-[13px] font-bold"
                     style={{ color: isLocked ? "#9ca3af" : t.labelColor }}
                   >
                     {t.name}
                   </span>
                   {isLocked ? (
-                    <span className="ml-2 inline-flex items-center gap-1 font-['Poppins',sans-serif] text-[12px] font-semibold text-gray-400 md:ml-0">
-                      <Lock size={12} aria-hidden /> at {t.min} acts
+                    <span className="ml-2 inline-flex items-center gap-1 font-['Poppins',sans-serif] text-[11px] font-semibold text-gray-400 md:ml-0">
+                      <Lock size={11} aria-hidden /> at {t.min} acts
                     </span>
                   ) : (
-                    <span className="ml-2 inline-flex items-center gap-1 font-['Poppins',sans-serif] text-[12px] font-semibold text-[#4a7c59] md:ml-0">
-                      <Check size={12} strokeWidth={3} aria-hidden /> unlocked
+                    <span className="ml-2 inline-flex items-center gap-1 font-['Poppins',sans-serif] text-[11px] font-semibold text-[#4a7c59] md:ml-0">
+                      <Check size={11} strokeWidth={3} aria-hidden /> unlocked
                     </span>
                   )}
                 </span>
@@ -680,16 +698,19 @@ function StepPath({
         </div>
 
         {/* Teaser card for the expanded rung — only when that rung actually
-            unlocks something new (skip empty teasers, e.g. Inferno). */}
+            unlocks something new (skip empty teasers, e.g. Inferno). Closed by
+            default (see openRung init above); opens on a click and pushes the
+            footer down within the scrollable body rather than the fixed
+            modal, so it never causes layout jumps elsewhere. */}
         {openTier && openTierLocked && JOURNEY_UNLOCKS[openTier.key].length > 0 && (
-          <div className="mt-3 rounded-2xl border border-gray-100 bg-gray-50/70 p-4">
-            <p className="font-['Poppins',sans-serif] text-[15px] font-semibold text-[#23297e]">
+          <div className="mt-2 rounded-2xl border border-gray-100 bg-gray-50/70 p-3">
+            <p className="font-['Poppins',sans-serif] text-[14px] font-semibold text-[#23297e]">
               <span className="text-[#ed6624]">
                 {Math.max(0, openTier.min - actionCount)} act{Math.max(0, openTier.min - actionCount) === 1 ? "" : "s"} from {openTier.name}
               </span>{" "}
               — unlocks these:
             </p>
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mt-2 flex flex-wrap gap-1.5">
               {JOURNEY_UNLOCKS[openTier.key].map((cat) => (
                 <CategoryChip key={cat} category={cat} locked />
               ))}
@@ -698,7 +719,7 @@ function StepPath({
         )}
 
         {actionsToNext != null && !everythingUnlocked && (
-          <p className="mt-4 text-center font-['Poppins',sans-serif] text-[14px] text-gray-500">
+          <p className="mt-2 text-center font-['Poppins',sans-serif] text-[13px] text-gray-500">
             No rush — they'll wait. Do acts at your own pace.
           </p>
         )}
