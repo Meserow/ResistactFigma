@@ -677,9 +677,15 @@ export default function App() {
   // and the JourneyModal). Auto-opens once per device; reopenable from the
   // navbar "Get Started" button and the WelcomeHero CTA. Defaults to "already
   // seen" when localStorage is unavailable so broken storage never re-pops it.
+  //
+  // Key is versioned (`_v2`, was unsuffixed) as a one-time reset: everyone who
+  // already had the old flag set (from before the wizard existed in its
+  // current form) gets shown it once more on their next visit. After that,
+  // it's the same permanent once-per-device gate as before — just don't bump
+  // this again casually, since every bump re-shows it to every past visitor.
   const [journeyOpen, setJourneyOpen] = useState(false);
   const [journeySeen, setJourneySeen] = useState<boolean>(() => {
-    try { return localStorage.getItem("resistact_journey_seen") === "1"; } catch { return true; }
+    try { return localStorage.getItem("resistact_journey_seen_v2") === "1"; } catch { return true; }
   });
   // One-time confirmation banner shown above the feed after the wizard applies
   // a path (component state only — reappears each apply, never persisted).
@@ -1720,7 +1726,7 @@ export default function App() {
     if (!synced || activeTab !== "acts" || swipeOpen) return;
     setJourneyOpen(true);
     setJourneySeen(true);
-    try { localStorage.setItem("resistact_journey_seen", "1"); } catch {}
+    try { localStorage.setItem("resistact_journey_seen_v2", "1"); } catch {}
   }, [journeySeen, approval, accessToken, synced, activeTab, swipeOpen]);
 
   // ── Swipe mode is opt-in on phones ──────────────────────────────────────────
