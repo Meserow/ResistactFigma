@@ -16,6 +16,19 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.121",
+    date: "2026-07-09",
+    title: "Batch auto-approve actually works now",
+    sections: [
+      {
+        heading: "Admin fixes",
+        items: [
+          "The \"Auto-approve QA-passed\" button was timing out before it could approve anything — it would spin for a long time, ask to confirm, then quietly finish having done nothing. Under the hood it checked pending actions one at a time, which grew painfully slow as the library filled up and ran past the server's time limit. It now checks them all in a single pass, so the button approves cards the way it's supposed to.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.120",
     date: "2026-07-08",
     title: "Get Started — one beautiful way in",
