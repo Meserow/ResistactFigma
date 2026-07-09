@@ -96,10 +96,14 @@ export function InvolvementPicker({ value, onChange, question, hint, variant = "
                   : "border-gray-200 bg-white hover:border-gray-300"
               }`}
             >
-              <p className={`font-['Poppins',sans-serif] font-bold text-gray-900 leading-tight ${large ? "text-base" : "text-sm"}`}>
+              {/* Reserve 2 lines for the title and 2 for the uppercase label so
+                  the three text rows line up across all five cards regardless of
+                  how many lines each wraps to (em-based, so it scales with each
+                  font size). */}
+              <p className={`font-['Poppins',sans-serif] font-bold text-gray-900 leading-tight min-h-[2.5em] ${large ? "text-base" : "text-sm"}`}>
                 {title}
               </p>
-              <p className={`font-['Poppins',sans-serif] font-semibold uppercase tracking-wider text-[#ed6624] mt-1 ${large ? "text-[12px]" : "text-[10px]"}`}>
+              <p className={`font-['Poppins',sans-serif] font-semibold uppercase tracking-wider text-[#ed6624] leading-tight mt-1 min-h-[2.5em] ${large ? "text-[12px]" : "text-[10px]"}`}>
                 {subtitle}
               </p>
               <p className={`font-['Poppins',sans-serif] text-gray-500 mt-1.5 leading-snug ${large ? "text-[13px]" : "text-xs"}`}>

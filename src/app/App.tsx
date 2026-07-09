@@ -677,9 +677,15 @@ export default function App() {
   // and the JourneyModal). Auto-opens once per device; reopenable from the
   // navbar "Get Started" button and the WelcomeHero CTA. Defaults to "already
   // seen" when localStorage is unavailable so broken storage never re-pops it.
+  //
+  // Key is versioned (`_v2`, was unsuffixed) as a one-time reset: everyone who
+  // already had the old flag set (from before the wizard existed in its
+  // current form) gets shown it once more on their next visit. After that,
+  // it's the same permanent once-per-device gate as before — just don't bump
+  // this again casually, since every bump re-shows it to every past visitor.
   const [journeyOpen, setJourneyOpen] = useState(false);
   const [journeySeen, setJourneySeen] = useState<boolean>(() => {
-    try { return localStorage.getItem("resistact_journey_seen") === "1"; } catch { return true; }
+    try { return localStorage.getItem("resistact_journey_seen_v2") === "1"; } catch { return true; }
   });
   // One-time confirmation banner shown above the feed after the wizard applies
   // a path (component state only — reappears each apply, never persisted).
@@ -1720,7 +1726,7 @@ export default function App() {
     if (!synced || activeTab !== "acts" || swipeOpen) return;
     setJourneyOpen(true);
     setJourneySeen(true);
-    try { localStorage.setItem("resistact_journey_seen", "1"); } catch {}
+    try { localStorage.setItem("resistact_journey_seen_v2", "1"); } catch {}
   }, [journeySeen, approval, accessToken, synced, activeTab, swipeOpen]);
 
   // ── Swipe mode is opt-in on phones ──────────────────────────────────────────
@@ -1826,6 +1832,11 @@ export default function App() {
     const count = countPathMatches({ timeBucket, state, remoteOnly, categories });
     const { tier } = getUserTier((effectiveMyCompletions ?? localCompletions)?.total ?? 0);
     setPathBanner({ tierName: tier.name, count });
+    // Setting a path IS the engaged version of the welcome — retire the generic
+    // "You're here, this feed is yours to shape" greeting so the two don't stack
+    // (both were showing the same count in orange). Persisted, so it won't pop
+    // back when the path banner is dismissed.
+    dismissWelcome();
   }
 
   // Drives the Category pills in the navbar — built from approved cards only
@@ -3547,7 +3558,7 @@ export default function App() {
                 the feed as something the visitor shapes (not surveillance).
                 Warm vs. cold-start copy keys off whether the feed is actually
                 personalized yet. Shown once per device, then dismissed for good. */}
-            {!welcomeSeen && activeTab === "acts" && synced && (
+            {!welcomeSeen && !pathBanner && activeTab === "acts" && synced && (
               <WelcomeHero personalized={feedIsPersonalized} signedIn={!!accessToken} count={displayedCards.length} filtered={hasActiveFilters} quickActionsOnly={quickActionsOnly} onQuickActions={setQuickActionsOnly} onJourney={accessToken ? undefined : () => setJourneyOpen(true)} onDismiss={dismissWelcome} />
             )}
 

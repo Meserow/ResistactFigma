@@ -40,6 +40,9 @@ export const CHANGELOG: ChangelogEntry[] = [
           "Everything's bigger and easier to read: the tier ladder finally gets the room it deserves instead of being squeezed into fine print on a photo.",
           "New \"Get Started\" button in the top nav, next to Join The Resistance — open the guide anytime, not just on your first visit.",
           "Tell us \"Near me\" and/or \"From my couch\" and your feed filters to acts that actually fit — then a banner confirms how many are waiting.",
+          "\"Near me\" now fills in your state for you when we can tell roughly where you are — no typing needed. Not sure or not right? Just pick it from the list.",
+          "Cleaned up the dropdown menus across the site — the little arrow no longer crowds the edge.",
+          "Warmer first screen: a full-width cartoon of neighbors taking action across the top, then \"You don't have to do everything — you just have to do something,\" and a plain-English rundown of the kinds of acts you'll find.",
         ],
       },
       {
