@@ -6716,15 +6716,21 @@ app.post("/make-server-9eb1ae04/admin/auto-approve-batch", async (c) => {
 
     // Gather eligible ids across both stores. Harvested cards live under
     // user-action:*, but we scan action:* too for completeness (seed cards are
-    // filtered out by createdBy). user-action:ids may itself surface under the
-    // prefix scan as a plain array — isEligible's object/createdBy checks drop it.
+    // filtered out by createdBy). Both stores are read with a single bulk
+    // getByPrefix each — NOT a per-id kv.get loop over user-action:ids. That
+    // loop issued one DB round-trip (and spun up a fresh Supabase client) per
+    // user card, which on a store with hundreds of user submissions took ~100s
+    // just to count. Because the client re-invokes this endpoint once per pass,
+    // that scan ran on every pass and, combined with cartoon generation, blew
+    // past the edge/gateway timeout before any card was approved — so the batch
+    // loop always returned 0 approved. The prefix scan also naturally surfaces
+    // the `user-action:ids` array itself; isEligible's object/createdBy checks
+    // drop it (and any other non-card rows).
     const eligible: { id: number; title: string }[] = [];
     for (const card of (await kv.getByPrefix("action:")) as any[]) {
       if (isEligible(card)) eligible.push({ id: card.id, title: card.title });
     }
-    const userCardIds = (await kv.get("user-action:ids") ?? []) as number[];
-    for (const uid of userCardIds) {
-      const card = await kv.get(`user-action:${uid}`) as any;
+    for (const card of (await kv.getByPrefix("user-action:")) as any[]) {
       if (isEligible(card)) eligible.push({ id: card.id, title: card.title });
     }
     eligible.sort((a, b) => a.id - b.id);
