@@ -6545,7 +6545,7 @@ app.get("/make-server-9eb1ae04/admin/actions/pending", async (c) => {
 
     // Check all action: cards
     for (const card of (await kv.getByPrefix("action:")) as any[]) {
-      if (card && typeof card === "object" && card.adminApproved !== true) {
+      if (card && typeof card === "object" && card.adminApproved !== true && card.expired !== true) {
         pending.push({ ...card, _store: "action" });
       }
     }
@@ -6554,7 +6554,7 @@ app.get("/make-server-9eb1ae04/admin/actions/pending", async (c) => {
     const userCardIds = (await kv.get("user-action:ids") ?? []) as number[];
     for (const id of userCardIds) {
       const card = await kv.get(`user-action:${id}`) as any;
-      if (card && typeof card === "object" && card.adminApproved !== true) {
+      if (card && typeof card === "object" && card.adminApproved !== true && card.expired !== true) {
         pending.push({ ...card, _store: "user-action" });
       }
     }
