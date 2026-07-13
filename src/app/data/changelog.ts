@@ -16,6 +16,34 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.122",
+    date: "2026-07-12",
+    title: "Sharing that actually shares the thing",
+    sections: [
+      {
+        heading: "Smacks share the image now — not a generic link",
+        items: [
+          "Sharing a Smack from your phone now sends the actual Smack image. Before, tapping \"Share image via…\" could quietly fall back to a plain resistact.org link that previewed the generic \"Spread the Word\" graphic instead of the Smack you picked. Fixed.",
+          "On phones, the Facebook and Instagram buttons now open your share sheet with the image attached, instead of asking you to copy-and-paste (which never worked inside those apps on a phone anyway).",
+          "Sharing a Smack to Bluesky, Threads, X, Reddit, Pinterest, or Tumblr now carries a link to that specific Smack, so the post shows the real image — and clicking a shared Smack link now actually opens that Smack in the app instead of dumping you on the home page.",
+        ],
+      },
+      {
+        heading: "Sharing works properly from your phone's browser",
+        items: [
+          "Share menus now open fully on screen with the main button reachable, the page behind them no longer scrolls under your thumb, and text/email share buttons reliably open Messages and Mail.",
+          "Sharing an Act now offers your phone's native share sheet, and copy buttons show a clear checkmark so you know it worked.",
+        ],
+      },
+      {
+        heading: "Sharing comes to the iPhone app",
+        items: [
+          "You can now share any act from My List (and the end-of-swipe recap) — tap the share button or press and hold a row. Friends who tap your link land right on that act.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.121",
     date: "2026-07-09",
     title: "Batch auto-approve actually works now",
