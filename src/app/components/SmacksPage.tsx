@@ -8,6 +8,8 @@ import type { UserApproval } from "../lib/supabase";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { analytics } from "../lib/analytics";
 import { safeHref } from "../lib/safeUrl";
+import { isMobile, openShareWindow } from "../lib/share";
+import { SMACK_SHARE_PAGE_IDS } from "../data/smack-share-pages";
 
 const API = `https://${projectId}.supabase.co/functions/v1/make-server-9eb1ae04`;
 
@@ -331,12 +333,70 @@ export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds =
   const [copied, setCopied] = useState(false);
   const [captionDraft, setCaptionDraft] = useState("");
 
+  // Prefetched share File for the currently-open smack. The native share sheet
+  // MUST be invoked synchronously inside the tap handler to keep iOS Safari's
+  // transient user-activation alive (same rule that governs clipboard.write —
+  // see startClipboardWrite). If we `await fetch(...)` inside the tap handler
+  // first, Safari treats the gesture as expired and rejects navigator.share,
+  // which used to drop users onto a bare-URL fallback that previewed the
+  // generic homepage og-image instead of the Smack itself. So we start the
+  // fetch the moment the modal opens (>300ms before any human can tap) and
+  // stash the resolved File here for a synchronous share.
+  const shareFileRef = useRef<{ id: number; file: File | null; promise: Promise<File | null> } | null>(null);
+
+  /** Build the File for a smack's share-optimised image. Never throws — resolves
+   *  to null if the image can't be fetched, so callers can fall back to a URL. */
+  async function buildShareFile(r: ReceiptCard): Promise<File | null> {
+    try {
+      const blob = await fetchImageBlob(r.imageUrl);
+      const ext = blob.type.split("/")[1] || "jpg";
+      return new File(
+        [blob],
+        `${r.title.replace(/[^a-z0-9]/gi, "-").toLowerCase()}.${ext}`,
+        { type: blob.type },
+      );
+    } catch {
+      return null;
+    }
+  }
+
   function openShare(r: ReceiptCard) {
     setShareReceipt(r);
     setCaptionDraft(r.caption ?? "");
     setCopied(false);
+    // Kick off the image fetch immediately so a File is ready by tap time.
+    const promise = buildShareFile(r);
+    shareFileRef.current = { id: r.id, file: null, promise };
+    promise.then((file) => {
+      // Only record if this is still the smack we prefetched for.
+      if (shareFileRef.current?.id === r.id) shareFileRef.current.file = file;
+    });
   }
-  function closeShare() { setShareReceipt(null); setLightboxOpen(false); }
+  function closeShare() { setShareReceipt(null); setLightboxOpen(false); shareFileRef.current = null; }
+
+  // Lock body scroll while the share modal is open — on iOS the page behind an
+  // unlocked fixed overlay scrolls under the user's thumb.
+  useEffect(() => {
+    if (!shareReceipt) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [shareReceipt]);
+
+  /** The canonical, unfurl-safe URL for a smack. Smacks with a per-smack OG
+   *  page at /s/<id>.html (og:image = the smack itself, so platforms preview
+   *  the actual image) get that URL; the build generates pages for static
+   *  smacks (id ≥ 5000) AND approved KV smacks, tracked in SMACK_SHARE_PAGE_IDS.
+   *  A brand-new KV smack shared before the next build isn't in the manifest —
+   *  it falls back to the ?smack=<id> deep link, which still works (no 404, no
+   *  rich preview). NEVER share a bare resistact.org — that previews the generic
+   *  homepage og-image. */
+  function shareUrlFor(r: ReceiptCard): string {
+    const hasOgPage = r.id >= 5000 || SMACK_SHARE_PAGE_IDS.has(r.id);
+    return hasOgPage
+      ? `https://www.resistact.org/s/${r.id}.html`
+      : `https://www.resistact.org/?smack=${r.id}`;
+  }
 
   // Mark a smack as shared — fires once per smack (guards against double-fire).
   function markShared(id: number) {
@@ -363,8 +423,14 @@ export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds =
     }).catch(() => {});
   }
 
-  const [copyImageState, setCopyImageState] = useState<"idle" | "copying" | "done">("idle");
-  const [fbInstruction, setFbInstruction] = useState<"idle" | "copied" | "downloaded">("idle");
+  const [copyImageState, setCopyImageState] = useState<"idle" | "copying" | "done" | "link">("idle");
+  // Post-click instruction banner for Facebook / Instagram. Tracks WHICH
+  // platform so consecutive clicks don't show the wrong instructions, and
+  // whether the image was copied to the clipboard or downloaded as a fallback.
+  const [shareInstruction, setShareInstruction] = useState<
+    { platform: "facebook" | "instagram"; state: "copied" | "downloaded" } | null
+  >(null);
+  const [preparingShare, setPreparingShare] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
   async function handleCopyCaption() {
@@ -408,28 +474,50 @@ export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds =
   }
 
 
-  async function handleNativeShare() {
+  function handleNativeShare() {
     if (!shareReceipt) return;
-    try {
-      const blob = await fetchImageBlob(shareReceipt.imageUrl);
-      const ext = blob.type.split("/")[1] || "jpg";
-      const file = new File(
-        [blob],
-        `${shareReceipt.title.replace(/[^a-z0-9]/gi, "-").toLowerCase()}.${ext}`,
-        { type: blob.type }
-      );
+    const receipt = shareReceipt;
+    const prefetch = shareFileRef.current;
+
+    // URL fallback — used ONLY when file sharing is genuinely unavailable.
+    // Carries the per-smack unfurl URL (shareUrlFor), never a bare homepage
+    // link, so the recipient's preview shows the Smack — not the generic
+    // "Spread the Word" og-image. We deliberately drop `sourceUrl` here: that's
+    // the news-citation link and would send people to a third-party article.
+    const urlFallback = () => {
+      const data: ShareData = {
+        title: receipt.title,
+        text: `${captionDraft}\n\n${shareUrlFor(receipt)}`,
+      };
+      if (navigator.canShare?.(data)) navigator.share(data).catch(() => {});
+    };
+
+    // Fast path: the prefetched File is ready — call navigator.share()
+    // SYNCHRONOUSLY (no await first) so iOS keeps the user-gesture alive and
+    // the actual image file is attached to the share sheet.
+    if (prefetch?.id === receipt.id && prefetch.file) {
+      const file = prefetch.file;
       if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], text: captionDraft });
+        navigator.share({ files: [file], text: captionDraft }).catch(() => {});
         return;
       }
-    } catch { /* fall through */ }
-    // Fallback: share URL
-    const data: ShareData = {
-      title: shareReceipt.title,
-      text: captionDraft,
-      url: shareReceipt.sourceUrl ?? "https://resistact.org",
-    };
-    if (navigator.canShare?.(data)) navigator.share(data).catch(() => {});
+      urlFallback();
+      return;
+    }
+
+    // Slow path: prefetch hasn't resolved (slow network). Await the File and
+    // still try to share the image. Some Safari versions reject because the
+    // gesture expired during the await — in that case we fall back to the URL
+    // share (which now unfurls correctly), never a broken image share.
+    setPreparingShare(true);
+    (prefetch?.id === receipt.id ? prefetch.promise : buildShareFile(receipt)).then((file) => {
+      setPreparingShare(false);
+      if (file && navigator.canShare?.({ files: [file] })) {
+        navigator.share({ files: [file], text: captionDraft }).catch(() => urlFallback());
+      } else {
+        urlFallback();
+      }
+    });
   }
 
   async function handleCopyImage() {
@@ -456,15 +544,30 @@ export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds =
         console.warn("[Smacks copy] clipboard.write failed:", err);
       }
     }
-    // Last-resort fallback: copy URL as text. Better than silently doing
-    // nothing — at least the user gets *something* on the clipboard.
-    await navigator.clipboard.writeText(receipt.imageUrl).catch(() => {});
-    setCopyImageState("done");
-    setTimeout(() => setCopyImageState("idle"), 2000);
+    // Last-resort fallback: copy the smack's share LINK as text. Better than
+    // silently doing nothing — but say so honestly ("link copied", not "image
+    // copied") so the user knows a paste yields a URL, not the picture.
+    await navigator.clipboard.writeText(shareUrlFor(receipt)).catch(() => {});
+    setCopyImageState("link");
+    setTimeout(() => setCopyImageState("idle"), 2500);
+  }
+
+  /** Absolute-ify an image path. KV smacks may store a fully-qualified Supabase
+   *  storage URL; static smacks store a root-relative path. Gluing origin onto
+   *  an already-absolute URL produced "https://site https://…" garbage. */
+  function absUrl(u: string) {
+    return /^https?:\/\//i.test(u) ? u : window.location.origin + u;
+  }
+
+  /** Caption for share text, falling back to the title. Uses `||` (not `??`)
+   *  so an empty-string caption — common on KV smacks — still falls back to the
+   *  title instead of posting just a bare URL with no text. */
+  function shareCaption(r: ReceiptCard) {
+    return r.caption?.trim() || r.title;
   }
 
   function twitterUrl(r: ReceiptCard) {
-    const text = encodeURIComponent((r.caption ?? r.title) + "\n\nresistact.org");
+    const text = encodeURIComponent(shareCaption(r) + "\n\n" + shareUrlFor(r));
     return `https://twitter.com/intent/tweet?text=${text}`;
   }
 
@@ -571,7 +674,8 @@ export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds =
     // (see scripts/generate-smack-share-pages.mjs), so the FB share dialog
     // shows the smack itself as the preview — no clipboard paste needed.
     // For user-submitted smacks (id < 5000) that don't have static pages
-    // yet, fall back to the homepage URL.
+    // yet, shareUrlFor() falls back to the ?smack=<id> deep link (Phase 4
+    // gives them OG pages too).
     //
     // We still copy the image to the clipboard as belt-and-suspenders —
     // if the user closes the share dialog and wants to paste into a regular
@@ -581,34 +685,16 @@ export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds =
     //   1. Start clipboard write SYNCHRONOUSLY (preserves user-gesture).
     //   2. Open the Facebook sharer popup synchronously (popup-blocker rule).
     //   3. Await the clipboard promise.
-    const hasStaticPage = r.id >= 5000;
-    const sharedUrl = hasStaticPage
-      ? `https://www.resistact.org/s/${r.id}.html`
-      : "https://www.resistact.org";
+    const sharedUrl = shareUrlFor(r);
     const clipboardPromise = startClipboardWrite(r);
     const fbShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(sharedUrl)}`;
-    // iOS Safari silently blocks `window.open` from inside a modal's button
-    // handler. The reliable workaround: build a real <a> and click it —
-    // Safari treats programmatic anchor clicks as legit link navigation
-    // and skips the popup blocker. Desktop keeps the popup window.open
-    // behaviour so users don't lose their place on resistact.org.
-    const isIOS = typeof navigator !== "undefined"
-      && /iPhone|iPad|iPod/i.test(navigator.userAgent);
-    if (isIOS) {
-      const a = document.createElement("a");
-      a.href = fbShareUrl;
-      a.target = "_blank";
-      a.rel = "noopener,noreferrer";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    } else {
-      window.open(fbShareUrl, "_blank", "noopener,noreferrer");
-    }
+    // openShareWindow handles the iOS anchor-click workaround (Safari blocks
+    // window.open from a modal button) and the desktop named-window behaviour.
+    openShareWindow(fbShareUrl, "facebook");
     const ok = await clipboardPromise;
-    setFbInstruction(ok ? "copied" : "downloaded");
+    setShareInstruction({ platform: "facebook", state: ok ? "copied" : "downloaded" });
     if (!ok) await handleDownload(r);
-    setTimeout(() => setFbInstruction("idle"), 12000);
+    setTimeout(() => setShareInstruction((cur) => (cur?.platform === "facebook" ? null : cur)), 12000);
   }
 
   async function handleInstagramShare(r: ReceiptCard) {
@@ -617,38 +703,43 @@ export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds =
     // share API, so the image-on-clipboard + manual paste is the only way to
     // get a Smack into an IG post / story / DM from the desktop browser.
     const clipboardPromise = startClipboardWrite(r);
-    window.open("https://www.instagram.com/", "_blank");
+    openShareWindow("https://www.instagram.com/", "instagram");
     const ok = await clipboardPromise;
-    setFbInstruction(ok ? "copied" : "downloaded");
+    setShareInstruction({ platform: "instagram", state: ok ? "copied" : "downloaded" });
     if (!ok) await handleDownload(r);
-    setTimeout(() => setFbInstruction("idle"), 8000);
+    setTimeout(() => setShareInstruction((cur) => (cur?.platform === "instagram" ? null : cur)), 8000);
   }
 
   function threadsUrl(r: ReceiptCard) {
-    const text = encodeURIComponent((r.caption ?? r.title) + "\n\nresistact.org");
+    const text = encodeURIComponent(shareCaption(r) + "\n\n" + shareUrlFor(r));
     return `https://www.threads.net/intent/post?text=${text}`;
   }
 
   function blueskyUrl(r: ReceiptCard) {
-    const text = encodeURIComponent((r.caption ?? r.title) + "\n\nresistact.org");
+    const text = encodeURIComponent(shareCaption(r) + "\n\n" + shareUrlFor(r));
     return `https://bsky.app/intent/compose?text=${text}`;
   }
 
   function pinterestUrl(r: ReceiptCard) {
-    const media = encodeURIComponent(window.location.origin + r.imageUrl);
-    const desc = encodeURIComponent(r.caption ?? r.title);
-    return `https://pinterest.com/pin/create/button/?media=${media}&description=${desc}`;
+    // Pinterest is image-native — pin the actual image. Route clicks back to
+    // the smack's page rather than the raw image file.
+    const media = encodeURIComponent(absUrl(r.imageUrl));
+    const desc = encodeURIComponent(shareCaption(r));
+    const url = encodeURIComponent(shareUrlFor(r));
+    return `https://pinterest.com/pin/create/button/?media=${media}&url=${url}&description=${desc}`;
   }
 
   function redditUrl(r: ReceiptCard) {
+    // Submit the smack's unfurl page (link post) so Reddit shows the image
+    // preview AND clicks land on ResistAct — not a dead-end raw image URL.
     const title = encodeURIComponent(r.title);
-    const url = encodeURIComponent(window.location.origin + r.imageUrl);
+    const url = encodeURIComponent(shareUrlFor(r));
     return `https://www.reddit.com/submit?url=${url}&title=${title}`;
   }
 
   function tumblrUrl(r: ReceiptCard) {
-    const source = encodeURIComponent(window.location.origin + r.imageUrl);
-    const caption = encodeURIComponent(r.caption ?? r.title);
+    const source = encodeURIComponent(absUrl(r.imageUrl));
+    const caption = encodeURIComponent(shareCaption(r));
     return `https://www.tumblr.com/widgets/share/tool?posttype=photo&content=${source}&caption=${caption}`;
   }
 
@@ -916,7 +1007,7 @@ export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds =
           onClick={closeShare}
         >
           <div
-            className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden"
+            className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -977,14 +1068,14 @@ export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds =
                   opening the platform tab. */}
               <div className="grid grid-cols-4 gap-2">
                 {/* Native share with image file — mobile only */}
-                {typeof navigator !== "undefined" && "share" in navigator
-                    && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && (
+                {typeof navigator !== "undefined" && "share" in navigator && isMobile() && (
                   <button
                     onClick={() => { trackShare(shareReceipt.id, "native"); handleNativeShare(); }}
-                    className="col-span-4 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#23297e] hover:bg-[#1a2060] text-white font-['Poppins',sans-serif] font-bold text-sm transition-colors"
+                    disabled={preparingShare}
+                    className="col-span-4 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#23297e] hover:bg-[#1a2060] disabled:opacity-70 text-white font-['Poppins',sans-serif] font-bold text-sm transition-colors"
                   >
-                    <Share2 size={15} />
-                    Share image via…
+                    {preparingShare ? <Loader2 size={15} className="animate-spin" /> : <Share2 size={15} />}
+                    {preparingShare ? "Preparing image…" : "Share image via…"}
                   </button>
                 )}
 
@@ -994,35 +1085,52 @@ export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds =
                   className="col-span-4 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#ed6624] hover:bg-[#c2521b] text-white font-['Poppins',sans-serif] font-bold text-sm transition-colors"
                 >
                   {copyImageState === "done" ? <Check size={15} className="text-white" /> : <Copy size={15} />}
-                  {copyImageState === "copying" ? "Copying…" : copyImageState === "done" ? "Image copied! Paste anywhere." : "Copy image to clipboard"}
+                  {copyImageState === "copying" ? "Copying…"
+                    : copyImageState === "done" ? "Image copied! Paste anywhere."
+                    : copyImageState === "link" ? "Link copied (image copy unsupported here)"
+                    : "Copy image to clipboard"}
                 </button>
 
                 {/* Paste instruction — appears after clicking Facebook or
-                    Instagram. The smack image is on the clipboard as a
-                    backup; the FB share dialog will also show the smack
-                    image directly thanks to the per-smack /s/<id>.html
-                    pages with proper og:image meta tags. */}
-                {fbInstruction !== "idle" && (
+                    Instagram. Platform-aware so clicking one then the other
+                    swaps the guidance instead of showing stale text. For
+                    Facebook the smack image is on the clipboard as a backup and
+                    the FB share dialog also shows the smack directly (per-smack
+                    /s/<id>.html og:image); Instagram has no web share, so it's
+                    clipboard-paste or an uploaded download. */}
+                {shareInstruction && !isMobile() && (
                   <div className="col-span-4 flex items-start gap-3 bg-[#ed6624]/10 border-2 border-[#ed6624] rounded-xl px-4 py-3 text-[12px] text-[#23297e] font-['Poppins',sans-serif] leading-snug">
                     <span className="text-xl leading-none mt-0.5">✅</span>
                     <span>
-                      {fbInstruction === "copied"
-                        ? <>
-                            <strong className="block text-[13px] mb-1">Ready to share!</strong>
-                            The Facebook share dialog will show this Smack as the preview — just add a comment and hit Share.
-                            <span className="block mt-1 text-[11px] text-gray-600 italic">Backup: the image is also on your clipboard (⌘V / Ctrl+V) if you'd rather paste it into a regular post or DM.</span>
-                          </>
+                      {shareInstruction.state === "copied"
+                        ? shareInstruction.platform === "facebook"
+                          ? <>
+                              <strong className="block text-[13px] mb-1">Ready to share on Facebook!</strong>
+                              The Facebook share dialog will show this Smack as the preview — just add a comment and hit Share.
+                              <span className="block mt-1 text-[11px] text-gray-600 italic">Backup: the image is also on your clipboard (⌘V / Ctrl+V) if you'd rather paste it into a regular post or DM.</span>
+                            </>
+                          : <>
+                              <strong className="block text-[13px] mb-1">Image copied for Instagram!</strong>
+                              Instagram opened in a new tab — start a post or DM and paste the image (⌘V / Ctrl+V).
+                            </>
                         : <>
                             <strong className="block text-[13px] mb-1">Image downloaded.</strong>
-                            In the post composer, click "Photo/Video" and upload it from your Downloads folder.
+                            In the {shareInstruction.platform === "facebook" ? "Facebook" : "Instagram"} composer, add a photo and upload it from your Downloads folder.
                           </>}
                     </span>
                   </div>
                 )}
 
-                {/* Facebook — spot 1 */}
+                {/* Facebook — spot 1. On mobile the FB app can't paste an
+                    image from the clipboard, so route to the native share
+                    sheet (which lists Facebook and carries the actual image).
+                    Desktop keeps the clipboard + sharer-popup dance. */}
                 <button
-                  onClick={() => { trackShare(shareReceipt.id, "facebook"); handleFacebookShare(shareReceipt); }}
+                  onClick={() => {
+                    trackShare(shareReceipt.id, "facebook");
+                    if (isMobile()) handleNativeShare();
+                    else handleFacebookShare(shareReceipt);
+                  }}
                   className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl bg-[#1877f2] hover:bg-[#1464cc] text-white font-['Poppins',sans-serif] font-bold text-[10px] transition-colors"
                 >
                   <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" /></svg>
@@ -1053,9 +1161,14 @@ export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds =
                   Bluesky
                 </a>
 
-                {/* Instagram — spot 4 */}
+                {/* Instagram — spot 4. Mobile → native share sheet (IG can't
+                    paste from clipboard in-app); desktop → clipboard + open IG. */}
                 <button
-                  onClick={() => { trackShare(shareReceipt.id, "instagram"); handleInstagramShare(shareReceipt); }}
+                  onClick={() => {
+                    trackShare(shareReceipt.id, "instagram");
+                    if (isMobile()) handleNativeShare();
+                    else handleInstagramShare(shareReceipt);
+                  }}
                   className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl bg-[#e1306c] hover:bg-[#c0275d] text-white font-['Poppins',sans-serif] font-bold text-[10px] transition-colors"
                 >
                   <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
@@ -1129,10 +1242,19 @@ export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds =
                 </button>
               </div>
 
-              <p className="font-['Poppins',sans-serif] text-[11px] text-gray-400 text-center leading-relaxed">
-                📱 On mobile, "Share image via…" sends the image directly to Instagram, WhatsApp, and more.<br/>
-                📘 Facebook copies the image to your clipboard — paste it into a new post. Instagram downloads it — upload from your camera roll.
-              </p>
+              {/* Desktop-only guidance. On mobile the FB/IG tiles and the
+                  "Share image via…" button both route to the native share
+                  sheet (no clipboard paste), so this ⌘V-flavoured copy would
+                  be misleading — hide it. */}
+              {isMobile() ? (
+                <p className="font-['Poppins',sans-serif] text-[11px] text-gray-400 text-center leading-relaxed">
+                  📱 Tap any platform to open your share sheet — the image comes with it.
+                </p>
+              ) : (
+                <p className="font-['Poppins',sans-serif] text-[11px] text-gray-400 text-center leading-relaxed">
+                  🖥️ Facebook copies the image to your clipboard — paste it into a new post. Instagram downloads it — upload from your camera roll.
+                </p>
+              )}
 
               {/* Caption — below the fold, for users who want to customise text */}
               <div className="border-t border-gray-100 pt-4">
@@ -1253,6 +1375,7 @@ function ReceiptTile({
   return (
     <>
     <div
+      id={`smack-${receipt.id}`}
       className={`rounded-2xl overflow-hidden border border-gray-200 bg-white flex flex-col transform-gpu transition-[transform,box-shadow,opacity] duration-200 ease-out shadow-md hover:shadow-lg hover:border-[#23297e] hover:ring-2 hover:ring-[#23297e] motion-safe:hover:-translate-y-1 motion-safe:hover:scale-[1.02] hover:z-10 ${!receipt.adminApproved && isAdmin ? "ring-2 ring-red-400" : ""}`}
     >
       {/* Pending banner */}

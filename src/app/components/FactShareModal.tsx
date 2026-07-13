@@ -15,6 +15,7 @@
 import { useEffect, useState } from "react";
 import { Check, Copy, X } from "lucide-react";
 import type { FactCard as FactCardData } from "../data/factCards";
+import { analytics } from "../lib/analytics";
 
 interface FactShareModalProps {
   card: FactCardData;
@@ -71,14 +72,23 @@ export function FactShareModal({ card, color, onClose }: FactShareModalProps) {
   const variants = buildVariants(card);
   const [copied, setCopied] = useState<string | null>(null);
 
-  // Esc closes.
+  // Esc closes; lock body scroll while open (iOS scroll-behind guard).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
   }, [onClose]);
 
   const copyText = async (key: string, text: string) => {
+    // `key` is the variant copied (short / conversational / receipts / source)
+    // — recorded as the share "method" so we can see which pushback format
+    // resonates. Surface "fact_pushback" keeps it comparable to other shares.
+    analytics.shareClicked(key, "fact_pushback", card.id);
     try {
       await navigator.clipboard.writeText(text);
       setCopied(key);
@@ -98,7 +108,7 @@ export function FactShareModal({ card, color, onClose }: FactShareModalProps) {
       aria-label="Push back — get a pre-written comment"
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[calc(100dvh-2rem)] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

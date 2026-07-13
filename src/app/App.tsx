@@ -857,6 +857,14 @@ export default function App() {
     const id = param ? parseInt(param, 10) : NaN;
     return isNaN(id) ? null : id;
   });
+  // Deep link into a shared Smack: /?smack=<id>. Shared smack links (the
+  // per-smack /s/<id>.html OG pages, plus the ?smack= fallback for KV smacks)
+  // redirect here — without this handler they landed on the Acts homepage.
+  const [smackDeepLinkId, setSmackDeepLinkId] = useState<number | null>(() => {
+    const param = new URLSearchParams(window.location.search).get("smack");
+    const id = param ? parseInt(param, 10) : NaN;
+    return isNaN(id) ? null : id;
+  });
   // Hydrate receipts + hidden-id list from the localStorage cache so the very
   // first paint already knows which static smacks to suppress (no flash of
   // hidden/deleted ones). `smacksReady` is true on a cache hit and flips true
@@ -2669,6 +2677,30 @@ export default function App() {
     });
     return () => cancelAnimationFrame(frame);
   }, [deepLinkId, displayedCards, displayLimit]);
+
+  // ── Deep link: ?smack=<smackId> ──
+  // Switch to the Smacks (receipts) tab and scroll the target smack into view.
+  // Mirrors the ?act= handler above. This effect re-runs as `receipts` /
+  // `smacksReady` change, so it retries as the /receipts sync lands after first
+  // paint. If the smack is never rendered (pending, hidden, or bad id), we
+  // still land on the Smacks tab — better than the Acts homepage — and simply
+  // leave the ?smack param in place.
+  useEffect(() => {
+    if (smackDeepLinkId === null) return;
+    setActiveTab("receipts");
+    const frame = requestAnimationFrame(() => {
+      const el = document.getElementById(`smack-${smackDeepLinkId}`);
+      if (!el) return; // not rendered yet — a later receipts change re-runs us
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("ring-2", "ring-[#ed6624]", "ring-offset-2");
+      setTimeout(() => el.classList.remove("ring-2", "ring-[#ed6624]", "ring-offset-2"), 2500);
+      setSmackDeepLinkId(null);
+      const url = new URL(window.location.href);
+      url.searchParams.delete("smack");
+      window.history.replaceState({}, "", url.toString());
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [smackDeepLinkId, receipts, smacksReady]);
 
   useEffect(() => {
     if (pendingActsVersion > 0) setShowPendingActsOnly(true);
