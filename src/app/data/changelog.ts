@@ -26,6 +26,7 @@ export const CHANGELOG: ChangelogEntry[] = [
           "Sharing a Smack from your phone now sends the actual Smack image. Before, tapping \"Share image via…\" could quietly fall back to a plain resistact.org link that previewed the generic \"Spread the Word\" graphic instead of the Smack you picked. Fixed.",
           "On phones, the Facebook and Instagram buttons now open your share sheet with the image attached, instead of asking you to copy-and-paste (which never worked inside those apps on a phone anyway).",
           "Sharing a Smack to Bluesky, Threads, X, Reddit, Pinterest, or Tumblr now carries a link to that specific Smack, so the post shows the real image — and clicking a shared Smack link now actually opens that Smack in the app instead of dumping you on the home page.",
+          "When someone taps your shared Smack link, they now land on ResistAct with the Smack shown big — full-size, front and center — with a one-tap button to share it onward.",
         ],
       },
       {
