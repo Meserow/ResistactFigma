@@ -291,9 +291,14 @@ interface SmacksPageProps {
   onActiveTagsChange?: (tags: string[]) => void;
   sortBy?: "top" | "new" | "pending";
   onSortByChange?: (s: "top" | "new" | "pending") => void;
+  /** A shared-link arrival (?smack=<id>). When set and the smack has loaded,
+   *  the page opens it in the enlarged full-screen view. Cleared via
+   *  onSpotlightConsumed once shown. */
+  spotlightSmackId?: number | null;
+  onSpotlightConsumed?: () => void;
 }
 
-export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds = [], ready = true, searchQuery = "", accessToken, approval, onReceiptAdded, onReceiptDeleted, onReceiptApproved, onReceiptUpdated, pendingFilterVersion, onComplete, completedSmackIds, activeTags: activeTagsProp, onActiveTagsChange, sortBy: sortByProp, onSortByChange }: SmacksPageProps) {
+export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds = [], ready = true, searchQuery = "", accessToken, approval, onReceiptAdded, onReceiptDeleted, onReceiptApproved, onReceiptUpdated, pendingFilterVersion, onComplete, completedSmackIds, activeTags: activeTagsProp, onActiveTagsChange, sortBy: sortByProp, onSortByChange, spotlightSmackId, onSpotlightConsumed }: SmacksPageProps) {
   const isAdmin = approval?.isAdmin === true;
   const canSubmit = !!accessToken && (approval?.status === "approved");
 
@@ -382,6 +387,32 @@ export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds =
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prev; };
   }, [shareReceipt]);
+
+  // ── Shared-link arrival: open the smack in the enlarged full-screen view ────
+  // Someone tapped a shared Smack link (?smack=<id>, where the /s/<id>.html OG
+  // page redirects). Show that Smack big — the same "view full size" experience
+  // as tapping a tile — instead of just landing on the grid. Re-runs as
+  // `receipts` load so it works even when the smack arrives from /receipts a
+  // beat after first paint. `spotlight` owns the lightbox lifecycle, so we
+  // consume the incoming id immediately once matched.
+  const [spotlight, setSpotlight] = useState<ReceiptCard | null>(null);
+  useEffect(() => {
+    if (spotlightSmackId == null) return;
+    const found = receipts.find((r) => r.id === spotlightSmackId);
+    if (found) {
+      setSpotlight(found);
+      onSpotlightConsumed?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spotlightSmackId, receipts]);
+
+  // Lock body scroll while the spotlight lightbox is open.
+  useEffect(() => {
+    if (!spotlight) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [spotlight]);
 
   /** The canonical, unfurl-safe URL for a smack. Smacks with a per-smack OG
    *  page at /s/<id>.html (og:image = the smack itself, so platforms preview
@@ -1311,6 +1342,56 @@ export function SmacksPage({ receipts: apiReceipts, hiddenIds: serverHiddenIds =
           />
           <button
             onClick={() => setLightboxOpen(false)}
+            className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors"
+          >
+            <X size={18} />
+          </button>
+        </div>
+      )}
+
+      {/* ── Shared-link spotlight ── */}
+      {/* A visitor arrived from a shared Smack link (?smack=<id>). Greet them
+          with the Smack shown large — the same enlarged view as "view full
+          size" — with a one-tap "Share this Smack" to keep the chain going.
+          Tapping the backdrop closes to reveal the full grid. */}
+      {spotlight && (
+        <div
+          className="fixed inset-0 bg-black/90 z-[70] flex flex-col items-center justify-center gap-5 p-4"
+          onClick={() => setSpotlight(null)}
+        >
+          <div onClick={(e) => e.stopPropagation()} className="max-w-full max-h-[74vh]">
+            <ImageWithFallback
+              src={spotlight.imageUrl}
+              alt={spotlight.title}
+              className="max-w-full max-h-[74vh] object-contain rounded-xl shadow-2xl"
+            />
+          </div>
+          <div
+            className="flex flex-col items-center gap-3 max-w-lg text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="font-['Poppins',sans-serif] font-bold text-white text-base sm:text-lg leading-snug">
+              {spotlight.title}
+            </p>
+            <div className="flex items-center gap-2.5">
+              <button
+                onClick={() => { const s = spotlight; setSpotlight(null); openShare(s); }}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#ed6624] hover:bg-[#c2521b] text-white font-['Poppins',sans-serif] font-bold text-sm transition-colors"
+              >
+                <Share2 size={15} />
+                Share this Smack
+              </button>
+              <button
+                onClick={() => setSpotlight(null)}
+                className="px-5 py-2.5 rounded-full bg-white/15 hover:bg-white/25 text-white font-['Poppins',sans-serif] font-bold text-sm transition-colors"
+              >
+                See all Smacks
+              </button>
+            </div>
+          </div>
+          <button
+            onClick={() => setSpotlight(null)}
+            aria-label="Close"
             className="absolute top-4 right-4 w-9 h-9 flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 text-white transition-colors"
           >
             <X size={18} />

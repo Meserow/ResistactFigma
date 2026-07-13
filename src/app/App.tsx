@@ -2679,28 +2679,22 @@ export default function App() {
   }, [deepLinkId, displayedCards, displayLimit]);
 
   // ── Deep link: ?smack=<smackId> ──
-  // Switch to the Smacks (receipts) tab and scroll the target smack into view.
-  // Mirrors the ?act= handler above. This effect re-runs as `receipts` /
-  // `smacksReady` change, so it retries as the /receipts sync lands after first
-  // paint. If the smack is never rendered (pending, hidden, or bad id), we
-  // still land on the Smacks tab — better than the Acts homepage — and simply
-  // leave the ?smack param in place.
+  // Someone opened a shared Smack link (the /s/<id>.html OG page redirects here,
+  // as does the ?smack= fallback). Switch to the Smacks (receipts) tab and hand
+  // the id to SmacksPage, which opens that Smack in the enlarged full-screen
+  // view on arrival (see `spotlightSmackId`). We clean the ?smack param from the
+  // URL immediately but keep `smackDeepLinkId` in state until SmacksPage has
+  // consumed it (the smack may still be loading from /receipts), at which point
+  // it calls back to clear it.
   useEffect(() => {
     if (smackDeepLinkId === null) return;
     setActiveTab("receipts");
-    const frame = requestAnimationFrame(() => {
-      const el = document.getElementById(`smack-${smackDeepLinkId}`);
-      if (!el) return; // not rendered yet — a later receipts change re-runs us
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-      el.classList.add("ring-2", "ring-[#ed6624]", "ring-offset-2");
-      setTimeout(() => el.classList.remove("ring-2", "ring-[#ed6624]", "ring-offset-2"), 2500);
-      setSmackDeepLinkId(null);
-      const url = new URL(window.location.href);
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("smack")) {
       url.searchParams.delete("smack");
       window.history.replaceState({}, "", url.toString());
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [smackDeepLinkId, receipts, smacksReady]);
+    }
+  }, [smackDeepLinkId]);
 
   useEffect(() => {
     if (pendingActsVersion > 0) setShowPendingActsOnly(true);
@@ -3455,6 +3449,8 @@ export default function App() {
             onActiveTagsChange={setSmacksActiveTags}
             sortBy={smacksSortBy}
             onSortByChange={setSmacksSortBy}
+            spotlightSmackId={smackDeepLinkId}
+            onSpotlightConsumed={() => setSmackDeepLinkId(null)}
           />
         ) : activeTab === "facts" ? (
           /* ── Facts view ── */
