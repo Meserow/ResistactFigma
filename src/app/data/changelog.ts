@@ -16,6 +16,25 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.123",
+    date: "2026-08-11",
+    title: "Bulk approve tells you what it costs",
+    sections: [
+      {
+        heading: "Admin: approving a batch of Acts no longer spends money silently",
+        items: [
+          "Approving pending Acts in bulk now shows the price before it starts. Every Act without a banner gets one drawn at approval time, which costs real money — the buttons now say so up front (\"Approve 63 with photos · ~$3.78\") and ask you to confirm the total before spending anything.",
+          "Clearing up a misleading label: \"with images\" suggested those Acts were already illustrated and free to approve. They weren't — a scraped source photo only gives the illustrator something to work from; the banner is still drawn (and still billed). The button now reads \"with photos\" and carries its own price.",
+          "Bulk approve now shows live progress and a Stop button, the same as the auto-approver. Before, it ran silently for over an hour on a big batch with no sign anything was happening.",
+          "Fixed double-charging: because the old bulk approve gave no feedback, clicking it again started a second run over the same Acts, and two runs hitting the same Act could pay for two banners for one image. The button is now blocked while a run is in progress.",
+          "Approving a big batch no longer buries the screen in error messages — you get one summary at the end (\"Done: approved 180, 2 blocked\") instead of one per Act.",
+          "The Pending Acts count in the admin bar now ticks down when you approve an Act straight from the feed, instead of staying stale until the next refresh.",
+          "Retired Acts no longer clog the review queue. Acts the nightly QA sweep had already pulled — dead event dates, links that go to the wrong page — were still sitting in \"pending approval\" as though they needed a decision (74 of 187 when we found it), and the bulk-approve buttons counted them. Approving would have drawn new artwork for, and re-published, Acts that had already been rejected.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.122",
     date: "2026-07-12",
     title: "Sharing that actually shares the thing",
