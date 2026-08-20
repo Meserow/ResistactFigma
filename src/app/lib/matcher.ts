@@ -374,14 +374,26 @@ export function cardIsAtHome(card: ActionCardData): boolean {
 
 // ─── Location / state filter ──────────────────────────────────────────────────
 // Cards stored with state-scoped locations only show when the user is in that
-// state. Online / National / Multi-state / at-home cards always pass.
+// state. Online / National / Multi-State / at-home cards always pass.
+
+// "National" and "Multi-State" are location-agnostic sentinels, not real
+// geography — cards carrying them are doable from anywhere and must clear the
+// state filter for every user. Match BOTH the current canonical casing
+// ("Multi-State", per LOCATION_OPTIONS in locations.ts) and the legacy
+// lowercase form ("Multi-state") that older cards still store. App.tsx's
+// browse-feed filter already guards both spellings; the matcher must too, or a
+// current "Multi-State" card gets wrongly hard-filtered out of Match Me the
+// moment a user picks a state.
+function isNationwideLocation(loc: string): boolean {
+  return loc === "National" || loc === "Multi-state" || loc === "Multi-State";
+}
 
 export function stateMatches(card: ActionCardData, userState: string | null): boolean {
   if (!userState) return true;                         // "Anywhere"
   if (cardIsAtHome(card)) return true;                  // Online / From Home / atHome flag travels
   const cardLoc = (card.location ?? "").trim();
   if (!cardLoc) return true;                           // No location specified
-  if (cardLoc === "National" || cardLoc === "Multi-state") return true;
+  if (isNationwideLocation(cardLoc)) return true;
   // Normalize "City, ST" → "Full State Name" using the same helper the navbar uses.
   // (Inlined import to keep matcher.ts dependency-free at the type level.)
   const lower = cardLoc.toLowerCase();
@@ -415,7 +427,7 @@ export function stateMatches(card: ActionCardData, userState: string | null): bo
 }
 
 /** Stricter than `stateMatches`: returns true only when the card is
- * specifically tied to the user's state. National / Multi-state / online
+ * specifically tied to the user's state. National / Multi-State / online
  * cards do NOT count as "local" here — they travel to anyone. Used to
  * prioritize and inject genuinely state-local cards into samples. */
 export function cardIsLocalToState(card: ActionCardData, userState: string | null): boolean {
@@ -423,7 +435,7 @@ export function cardIsLocalToState(card: ActionCardData, userState: string | nul
   if (card.isOnline) return false;
   const cardLoc = (card.location ?? "").trim();
   if (!cardLoc) return false;
-  if (cardLoc === "National" || cardLoc === "Multi-state") return false;
+  if (isNationwideLocation(cardLoc)) return false;
   const userLower = userState.toLowerCase();
   if (cardLoc.toLowerCase() === userLower) return true;
   const m = cardLoc.match(/,\s*([^,]+)\s*$/);
@@ -669,10 +681,10 @@ export function explainMatch(card: ActionCardData, prefs: Preferences, ctx?: Use
   // tied to a state still reads as "local" even if it's ALSO doable remotely,
   // so the isOnline flag no longer suppresses this (location is geography-only
   // now). Cards reaching here already passed stateMatches, so a specific,
-  // non-National/Multi-state location means it's tied to the user's state.
+  // non-nationwide location means it's tied to the user's state.
   if (prefs.state) {
     const cardLoc = (card.location ?? "").trim();
-    if (cardLoc && cardLoc !== "National" && cardLoc !== "Multi-state") {
+    if (cardLoc && !isNationwideLocation(cardLoc)) {
       reasons.push(`local to ${prefs.state}`);
     }
   }
