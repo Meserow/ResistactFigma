@@ -16,6 +16,21 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.124",
+    date: "2026-08-28",
+    title: "No more paying to approve expired Acts",
+    sections: [
+      {
+        heading: "Admin: approval now refuses Acts whose event already happened",
+        items: [
+          "Approving an Act whose event date has passed is now blocked with a clear explanation. Expired Acts never appear in anyone's feed, so approving one only spent money drawing a banner for a card nobody could ever see — that money is no longer spendable.",
+          "The batch auto-approver no longer counts expired Acts as eligible, so the total it quotes before you confirm (and the amount it offers to spend) reflects only Acts that can actually go live. A backlog of long-past July events once inflated that count to 220.",
+          "If an expired Act is genuinely still happening (say, a recurring event that was re-listed), fix its event date first and it approves normally.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.123",
     date: "2026-08-11",
     title: "Bulk approve tells you what it costs",

@@ -6593,6 +6593,17 @@ async function approveOneCard(
   }
   if (!card) return { ok: false, status: 404, error: `Card ${id} not found` };
 
+  // Expiry gate — before ANY spend. The client's eligibility gate hides
+  // past-dated events from every feed (public and admin alike), so approving
+  // an expired card buys a ~$0.06 cartoon for a card nobody can ever see.
+  // This burned real money on 2026-08-28: a backlog batch of July-dated cards
+  // was bulk-approved and each one generated art. Same-day events still pass
+  // (mirrors the client's `eventDate < todayISO` comparison).
+  const approvalTodayISO = new Date().toISOString().slice(0, 10);
+  if (card.eventDate && card.eventDate < approvalTodayISO) {
+    return { ok: false, status: 400, error: `Event date ${card.eventDate} has already passed — expired cards never appear in the feed, so approving one only spends cartoon money on an invisible card. Update the event date first if this act is genuinely still live.` };
+  }
+
   // URL gate FIRST — before spending on a cartoon. Defense-in-depth: even if
   // dirty URLs slipped past create-time validation (older records pre-dating
   // that guard), block them here before the card goes public. Doing this ahead
@@ -6707,11 +6718,19 @@ app.post("/make-server-9eb1ae04/admin/auto-approve-batch", async (c) => {
     // so `remainingEligible` strictly shrinks and the client loop terminates.
     const exclude = new Set((Array.isArray(body.excludeIds) ? body.excludeIds : []).map((n) => Number(n)));
 
+    // Expired cards are ineligible OUTRIGHT — not merely blocked at approval
+    // time. Keeping them out of `eligible` matters twice over: the max=0
+    // count-peek is what the AdminPanel's confirm dialog quotes as the batch
+    // total (a backlog of long-dead July events once inflated it to 220), and
+    // every expired card that reached approveOneCard would now just bounce off
+    // its expiry gate, wasting a loop pass per card.
+    const batchTodayISO = new Date().toISOString().slice(0, 10);
     const isEligible = (card: any): boolean =>
       card && typeof card === "object" &&
       card.adminApproved !== true &&
       card.createdBy === "bulk-import" &&
       card?.qaReport?.status === "pass" &&
+      !(card.eventDate && card.eventDate < batchTodayISO) &&
       !exclude.has(card.id);
 
     // Gather eligible ids across both stores. Harvested cards live under
