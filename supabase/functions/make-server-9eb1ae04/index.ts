@@ -5651,7 +5651,11 @@ app.get("/make-server-9eb1ae04/stats", async (c) => {
     const usersCount = validUsers.length;
     const pendingUsersCount = validUsers.filter((u) => u.status === "pending").length;
 
-    const pendingActsCount = allCards.filter((c: any) => c.adminApproved === false).length;
+    // Match the /admin/actions/pending list exactly (adminApproved !== true,
+    // expired excluded) — the old `=== false` counted already-expired cards
+    // and missed never-stamped ones, so the AdminPanel badge disagreed with
+    // the queue it opens (badge said 55 while the tab showed 34).
+    const pendingActsCount = allCards.filter((c: any) => c.adminApproved !== true && c.expired !== true).length;
 
     // Active user-submitted flags awaiting admin review. Cheap — just a
     // prefix scan since dismissed flags are deleted, not flagged.
@@ -8036,6 +8040,59 @@ app.post("/make-server-9eb1ae04/admin/unflag-off-topic/:id", async (c) => {
     return c.json({ card });
   } catch (err) {
     return c.json({ error: `Unflag failed: ${err}` }, 500);
+  }
+});
+
+// ─── POST /admin/bulk-flag-off-topic — flag many cards off-topic at once ─────
+// Batch companion to /admin/flag-off-topic/:id for sweeping audit results
+// (e.g. the topical-relevance audit) without one HTTP round-trip per card.
+// Same effect per id: adminApproved=false, notOnTopic=true, flaggedBy/At
+// stamped. Auth: admin login OR the shared ADMIN_IMPORT_TOKEN, same dual-auth
+// pattern as approve-action/unapprove-action so the headless audit tooling
+// can run this without a human's browser session.
+app.post("/make-server-9eb1ae04/admin/bulk-flag-off-topic", async (c) => {
+  try {
+    const importToken = c.req.header("X-Admin-Import-Token");
+    const expectedToken = Deno.env.get("ADMIN_IMPORT_TOKEN");
+    const viaToken = !!expectedToken && importToken === expectedToken;
+    let flaggedBy = "import-token";
+    let actorName = "import-token";
+    if (!viaToken) {
+      const admin = await requireAdmin(c.req.header("Authorization")?.split(" ")[1]);
+      if (!admin) return c.json({ error: "Forbidden" }, 403);
+      flaggedBy = admin.user.id;
+      actorName = admin.record.name;
+    }
+
+    const body = await c.req.json<{ ids?: number[] }>().catch(() => ({}));
+    const ids = Array.from(new Set((Array.isArray(body.ids) ? body.ids : []).map((n) => Number(n)).filter((n) => Number.isFinite(n))));
+    if (ids.length === 0) return c.json({ error: "ids must be a non-empty array of numbers" }, 400);
+    if (ids.length > 500) return c.json({ error: "Max 500 ids per call" }, 400);
+
+    const flagged: { id: number; title: string }[] = [];
+    const notFound: number[] = [];
+    const now = new Date().toISOString();
+    for (const id of ids) {
+      let cardKey = `action:${id}`;
+      let card = await kv.get(cardKey) as any;
+      if (!card) {
+        cardKey = `user-action:${id}`;
+        card = await kv.get(cardKey) as any;
+      }
+      if (!card) { notFound.push(id); continue; }
+
+      card.adminApproved = false;
+      card.notOnTopic = true;
+      card.flaggedBy = flaggedBy;
+      card.flaggedAt = now;
+      await kv.set(cardKey, card);
+      flagged.push({ id, title: card.title });
+    }
+    invalidateActionsCache();
+    console.log(`${actorName} bulk-flagged ${flagged.length} card(s) off-topic (${notFound.length} not found).`);
+    return c.json({ flagged, notFound });
+  } catch (err) {
+    return c.json({ error: `Bulk flag failed: ${err}` }, 500);
   }
 });
 

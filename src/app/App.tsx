@@ -851,6 +851,18 @@ export default function App() {
   const [showPendingActsOnly, setShowPendingActsOnly] = useState(false);
   // Batch auto-approve progress (admin power tool). null = not running.
   const [batchApprove, setBatchApprove] = useState<{ running: boolean; approved: number; blocked: number; total: number } | null>(null);
+  // ⚡ preview mode: filters the pending grid down to exactly the QA-passed
+  // harvested cards the batch auto-approver would act on, so the admin SEES
+  // the set before confirming the spend. Entered by the ⚡ button, exited by
+  // Cancel, batch completion, or the set draining to empty.
+  const [qaPreview, setQaPreview] = useState(false);
+  // Cards with a single-approve request in flight (cartoon gen takes ~20s) —
+  // drives the green button's "Approving…" spinner and blocks double-clicks
+  // (a double-click used to fire two POSTs = two cartoon spends). The ref is
+  // the authoritative guard: handlers are invoked through cardHandlersRef, so
+  // the state snapshot they closed over can be a render behind.
+  const approvingIdsRef = useRef<Set<number>>(new Set());
+  const [approvingIds, setApprovingIds] = useState<Set<number>>(new Set());
   const batchStopRef = useRef(false);
   const [deepLinkId, setDeepLinkId] = useState<number | null>(() => {
     const param = new URLSearchParams(window.location.search).get("act");
@@ -2710,7 +2722,7 @@ export default function App() {
   //    the same predicate as the queue filter so the two can't disagree. ──
   const sawPendingRef = useRef(false);
   const pendingCardCount = isAdminUser
-    ? cards.filter((c) => c.adminApproved === false).length
+    ? cards.filter((c) => c.adminApproved === false && (c as any).expired !== true).length
     : 0;
   useEffect(() => {
     if (!showPendingActsOnly) { sawPendingRef.current = false; return; }
@@ -2721,6 +2733,24 @@ export default function App() {
       showToast("✓ All pending acts reviewed — showing all acts.");
     }
   }, [showPendingActsOnly, pendingCardCount]);
+
+  // ── Auto-exit the ⚡ QA-preview filter when it no longer applies: the
+  //    pending view closed underneath it, or the previewed set drained to
+  //    empty outside a batch run (a run's own `finally` already clears it,
+  //    and mid-run the shrinking grid IS the live progress display). ──
+  const qaPreviewCount = qaPreview
+    ? cards.filter((c) =>
+        c.adminApproved === false &&
+        (c as any).expired !== true &&
+        (c as any).qaReport?.status === "pass" &&
+        (c as any).createdBy === "bulk-import").length
+    : 0;
+  useEffect(() => {
+    if (!qaPreview) return;
+    if (!showPendingActsOnly || (qaPreviewCount === 0 && !batchApprove?.running)) {
+      setQaPreview(false);
+    }
+  }, [qaPreview, showPendingActsOnly, qaPreviewCount, batchApprove?.running]);
 
   // ── Load more ──
   const handleLoadMore = async () => {
@@ -3081,7 +3111,15 @@ export default function App() {
   // ── One-click approve from the main feed (admin only) ────────────────────────
   async function handleApproveCard(id: number) {
     if (blockWriteIfImpersonating()) return;
-    if (!accessToken) return;
+    // This used to be a SILENT return — a lost/expired session made the green
+    // button look dead. Say so instead.
+    if (!accessToken) { showToast("Session expired — sign out and back in, then retry"); return; }
+    if (approvingIdsRef.current.has(id)) return; // request already in flight
+    approvingIdsRef.current.add(id);
+    setApprovingIds(new Set(approvingIdsRef.current));
+    // Approval generates the gpt-image-1 cartoon server-side (~20s). Announce
+    // immediately so the wait reads as progress, not a dead button.
+    showToast(`Approving #${id} — generating cartoon, ~20s…`);
     try {
       const res = await fetch(`${API}/admin/approve-action/${id}`, {
         method: "POST",
@@ -3094,9 +3132,13 @@ export default function App() {
       }
       const data = await res.json();
       setCards((prev) => prev.map((c) => c.id === id ? { ...c, adminApproved: true, ...data.card } : c));
+      showToast(`Approved #${id} ✓`);
     } catch (err) {
       console.error("Approve card error:", err);
       showToast("Approval failed — check console");
+    } finally {
+      approvingIdsRef.current.delete(id);
+      setApprovingIds(new Set(approvingIdsRef.current));
     }
   }
 
@@ -3130,7 +3172,13 @@ export default function App() {
   // reports how many remain, so we keep going until the backlog is drained or
   // the admin stops. This is the "handle a big batch now" path; the nightly
   // routine still caps at 20/run for steady state.
-  async function handleAutoApproveBatch() {
+  // `previewedCount` — how many cards the admin was LOOKING AT when they hit
+  // approve from the ⚡ preview banner. When the server's eligible count
+  // matches it, the click itself was the confirmation (they saw the exact
+  // cards + cost on the button), so no extra dialog. If the counts differ
+  // (another session approved/imported meanwhile), fall back to the dialog
+  // with the server's true number.
+  async function handleAutoApproveBatch(previewedCount?: number) {
     if (!accessToken || batchApprove?.running) return;
     const authJson = { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" };
     // Peek the eligible count (max=0 = count only, no approvals, no spend).
@@ -3142,11 +3190,12 @@ export default function App() {
       if (!peek.ok) { showToast("Couldn't check eligible cards — see console"); return; }
       total = (await peek.json()).totalEligible ?? 0;
     } catch (err) { console.error("auto-approve peek failed:", err); showToast("Couldn't check eligible cards"); return; }
-    if (total === 0) { showToast("No QA-passed harvested cards are eligible right now."); return; }
+    if (total === 0) { showToast("No QA-passed harvested cards are eligible right now."); setQaPreview(false); return; }
 
     const estCost = (total * 0.06).toFixed(2);
     const estMin = Math.max(1, Math.round(total * 20 / 60));
-    if (!window.confirm(
+    const alreadyConfirmed = previewedCount !== undefined && previewedCount === total;
+    if (!alreadyConfirmed && !window.confirm(
       `Auto-approve ${total} QA-passed card${total === 1 ? "" : "s"}?\n\n` +
       `Each generates a cartoon (~$0.06), so roughly $${estCost} and about ${estMin} min. ` +
       `They'll land in the auto-approved audit view and can be undone with one click. ` +
@@ -3193,6 +3242,7 @@ export default function App() {
     } finally {
       const stopped = batchStopRef.current;
       setBatchApprove(null);
+      setQaPreview(false); // restore the full pending view after a run
       if (blockedDetails.length) console.warn("Batch auto-approve — blocked cards:", blockedDetails);
       showToast(
         `${stopped ? "Stopped" : "Done"}: approved ${approved}` +
@@ -3517,13 +3567,29 @@ export default function App() {
           (() => {
             const visibleActsCards = (isAdminUser && showPendingActsOnly)
               // Pull from the raw card list so match-scoring / ranking can't hide
-              // unapproved cards from the admin review queue. Show EVERY pending
-              // card — including past-dated events — so the queue matches the
-              // server's pending count exactly. Filtering out past events here
-              // (the old `c.eventDate < todayISO` clause) made stale event cards
-              // count toward the "Pending Acts" badge while being invisible in
-              // the queue, so admins could never clear them.
-              ? cards.filter((c) => c.adminApproved === false)
+              // unapproved cards from the admin review queue. Deliberately NOT
+              // filtered on `eventDate < todayISO`: a past date is a reason to
+              // review a card, not to hide it, and the old date clause made
+              // stale events count toward the badge while being invisible here,
+              // so admins could never clear them.
+              // `expired !== true` IS excluded though — an expired card has
+              // already been dealt with (swept by the nightly QA run or by an
+              // admin) and is hidden everywhere else. Without this clause they
+              // came back as zombies: 37 of the 56 rows in this queue were
+              // already-expired June cards, which is why a "6/27" act kept
+              // reappearing weeks later. Same predicate as the server's
+              // /admin/actions/pending list and its pendingActsCount badge, so
+              // all three now agree.
+              // ⚡ preview narrows further to the exact set the batch
+              // auto-approver targets (same predicate as the server's
+              // isEligible: unapproved + harvested + QA pass), so what's on
+              // screen is what gets approved on confirm.
+              ? cards.filter((c) =>
+                  c.adminApproved === false &&
+                  (c as any).expired !== true &&
+                  (!qaPreview ||
+                    ((c as any).qaReport?.status === "pass" &&
+                     (c as any).createdBy === "bulk-import")))
               // Hide acts the user passed (left-swiped) in Discover — a pass means
               // "not for me", so keep it out of the feed. A card still shows if
               // it's since been saved or marked done (those signals override a
@@ -3898,6 +3964,37 @@ export default function App() {
               const qaPassedCount = visibleActsCards.filter(
                 (c) => (c as any).qaReport?.status === "pass" && (c as any).createdBy === "bulk-import"
               ).length;
+              // ⚡ preview banner — the grid below is narrowed to exactly the
+              // cards the batch will approve (visibleActsCards === that set
+              // here), so the admin confirms what they can literally see.
+              // While the batch runs this falls through to the normal banner's
+              // progress + Stop UI, with the grid still narrowed so the cards
+              // visibly drain as they're approved.
+              if (qaPreview && !batchApprove?.running) {
+                const estCost = (qaPassedCount * 0.06).toFixed(2);
+                return (
+                  <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-[#5a3e9e] bg-[#f3effc] px-4 py-2.5">
+                    <p className="font-['Poppins',sans-serif] text-sm text-[#5a3e9e]">
+                      ⚡ <strong>Preview</strong> — the {qaPassedCount} card{qaPassedCount !== 1 ? "s" : ""} below {qaPassedCount !== 1 ? "are" : "is"} what auto-approve will publish (cartoon each, ~${estCost} total, undoable one-click).
+                    </p>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <button
+                        onClick={() => handleAutoApproveBatch(qaPassedCount)}
+                        className="font-['Poppins',sans-serif] text-xs font-semibold bg-[#5a3e9e] hover:bg-[#4a3184] text-white rounded-lg px-3 py-1.5 transition-colors"
+                        title="Approve exactly the cards shown below. No further confirmation unless the server's count differs from what you're seeing."
+                      >
+                        ✓ Approve these {qaPassedCount}
+                      </button>
+                      <button
+                        onClick={() => setQaPreview(false)}
+                        className="font-['Poppins',sans-serif] text-xs font-semibold text-[#5a3e9e] hover:underline"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
               return (
                 <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-red-300 bg-red-50 px-4 py-2.5">
                   <p className="font-['Poppins',sans-serif] text-sm text-red-700">
@@ -3926,9 +4023,9 @@ export default function App() {
                       </div>
                     ) : qaPassedCount > 0 && (
                       <button
-                        onClick={handleAutoApproveBatch}
+                        onClick={() => setQaPreview(true)}
                         className="font-['Poppins',sans-serif] text-xs font-semibold bg-[#5a3e9e] hover:bg-[#4a3184] text-white rounded-lg px-3 py-1.5 transition-colors"
-                        title="Auto-approve every QA-passed harvested card, generating each cartoon. Confirms the true count and cost first; results land in the auto-approved audit view."
+                        title="First filters the grid below to the exact QA-passed cards the batch will approve, so you can eyeball them before confirming. Results land in the auto-approved audit view."
                       >
                         ⚡ Auto-approve {qaPassedCount} QA-passed
                       </button>
@@ -4176,6 +4273,7 @@ export default function App() {
                   canEdit={!isImpersonating && canEditCard(card)}
                   isPending={!isImpersonating && isAdminUser && card.adminApproved === false}
                   onApprove={!isImpersonating && isAdminUser ? cardCb.onApprove : undefined}
+                  isApproving={approvingIds.has(card.id)}
                   accessToken={accessToken}
                   onCardUpdated={cardCb.onCardUpdated}
                   onSpreadShared={cardCb.onSpreadShared}
