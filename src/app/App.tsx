@@ -2722,7 +2722,7 @@ export default function App() {
   //    the same predicate as the queue filter so the two can't disagree. ──
   const sawPendingRef = useRef(false);
   const pendingCardCount = isAdminUser
-    ? cards.filter((c) => c.adminApproved === false).length
+    ? cards.filter((c) => c.adminApproved === false && (c as any).expired !== true).length
     : 0;
   useEffect(() => {
     if (!showPendingActsOnly) { sawPendingRef.current = false; return; }
@@ -2741,6 +2741,7 @@ export default function App() {
   const qaPreviewCount = qaPreview
     ? cards.filter((c) =>
         c.adminApproved === false &&
+        (c as any).expired !== true &&
         (c as any).qaReport?.status === "pass" &&
         (c as any).createdBy === "bulk-import").length
     : 0;
@@ -3566,18 +3567,26 @@ export default function App() {
           (() => {
             const visibleActsCards = (isAdminUser && showPendingActsOnly)
               // Pull from the raw card list so match-scoring / ranking can't hide
-              // unapproved cards from the admin review queue. Show EVERY pending
-              // card — including past-dated events — so the queue matches the
-              // server's pending count exactly. Filtering out past events here
-              // (the old `c.eventDate < todayISO` clause) made stale event cards
-              // count toward the "Pending Acts" badge while being invisible in
-              // the queue, so admins could never clear them.
+              // unapproved cards from the admin review queue. Deliberately NOT
+              // filtered on `eventDate < todayISO`: a past date is a reason to
+              // review a card, not to hide it, and the old date clause made
+              // stale events count toward the badge while being invisible here,
+              // so admins could never clear them.
+              // `expired !== true` IS excluded though — an expired card has
+              // already been dealt with (swept by the nightly QA run or by an
+              // admin) and is hidden everywhere else. Without this clause they
+              // came back as zombies: 37 of the 56 rows in this queue were
+              // already-expired June cards, which is why a "6/27" act kept
+              // reappearing weeks later. Same predicate as the server's
+              // /admin/actions/pending list and its pendingActsCount badge, so
+              // all three now agree.
               // ⚡ preview narrows further to the exact set the batch
               // auto-approver targets (same predicate as the server's
               // isEligible: unapproved + harvested + QA pass), so what's on
               // screen is what gets approved on confirm.
               ? cards.filter((c) =>
                   c.adminApproved === false &&
+                  (c as any).expired !== true &&
                   (!qaPreview ||
                     ((c as any).qaReport?.status === "pass" &&
                      (c as any).createdBy === "bulk-import")))
