@@ -1347,7 +1347,23 @@ export default function App() {
   // the public. Admins still see (and count) unapproved + imageless cards so
   // they can review and fix them.
   const actPassesGate = (card: ActionCardData, asAdmin: boolean): boolean => {
-    // Hide expired events from everyone.
+    // Hide explicitly-expired cards from EVERYONE, admins included. `expired`
+    // is the "swept / retired" flag set by the nightly QA sweeps and by
+    // /admin/expire-acts — it is the card's deleted state, so it must win over
+    // every other consideration here.
+    //
+    // This clause was missing, and the `eventDate` check below did NOT cover
+    // for it: most swept cards carry no eventDate at all (their datedness
+    // lives in the prose — "Memorial Day", "6/27"), so they sailed through.
+    // The result was 173 expired-but-approved cards still being served to the
+    // PUBLIC feed, plus 22 expired-and-unapproved ones rendering to admins
+    // with a "PENDING APPROVAL" badge even though the pending queue and the
+    // navbar to-do count had correctly dropped them — a card you could see
+    // but not act on. Expiring a card now actually removes it.
+    if ((card as any).expired === true) return false;
+    // Hide date-expired events from everyone. Separate from the flag above:
+    // this catches events whose date has simply passed without anyone sweeping
+    // them yet.
     if (card.eventDate && card.eventDate < todayISO) return false;
     // Hide unapproved cards from non-admins. `!== true` (not `=== false`) so
     // cards with `adminApproved: undefined` ALSO get hidden — explicit approval
