@@ -16,6 +16,26 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.123",
+    date: "2026-08-03",
+    title: "A feed that stays on mission",
+    sections: [
+      {
+        heading: "Off-topic cards cleared out",
+        items: [
+          "We audited every card in the catalog and removed 167 that weren't actually about resisting the administration — generic volunteer drives, wellness resources, and community events that had slipped in through automated imports. The feed is back to what you came here for.",
+          "New cards from the automated pipeline now have to show real resistance relevance before they can go live — not just a working link and a future date.",
+        ],
+      },
+      {
+        heading: "For admins",
+        items: [
+          "Cards flagged off-topic can now be swept in bulk instead of one at a time, and a flagged card stays out of the feed until a human clears the flag — automation can't quietly re-approve it.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.122",
     date: "2026-07-12",
     title: "Sharing that actually shares the thing",

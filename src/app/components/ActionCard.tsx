@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from "react";
-import { CheckCircle2, Clock, Globe, Heart, MapPin, Pencil, X } from "lucide-react";
+import { CheckCircle2, Clock, Globe, Heart, Loader2, MapPin, Pencil, X } from "lucide-react";
 import { useAnimatedNumber } from "../lib/animations";
 import { safeHref } from "../lib/safeUrl";
 import { ShareModal } from "./ShareModal";
@@ -127,6 +127,9 @@ interface ActionCardProps {
   onPass?: (id: number) => void;
   onEdit?: (id: number) => void;
   onApprove?: (id: number) => void;
+  /** True while this card's approve request is in flight (cartoon generation
+      takes ~20s) — renders the green button as a disabled spinner. */
+  isApproving?: boolean;
   onInfoClick?: () => void;
   isBoosted?: boolean;
   isCompleted?: boolean;
@@ -161,7 +164,7 @@ interface ActionCardProps {
   onSignal?: (id: number, kind: "opened" | "shared") => void;
 }
 
-function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPass, onEdit, onApprove, onInfoClick, isBoosted, isCompleted, isBookmarked, isPassed, canEdit, isPending, compact = false, accessToken, onCardUpdated, onSpreadShared, onSwipeToDeck, onSignal }: ActionCardProps) {
+function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPass, onEdit, onApprove, isApproving, onInfoClick, isBoosted, isCompleted, isBookmarked, isPassed, canEdit, isPending, compact = false, accessToken, onCardUpdated, onSpreadShared, onSwipeToDeck, onSignal }: ActionCardProps) {
   const [shareOpen, setShareOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
@@ -684,11 +687,15 @@ function ActionCardInner({ card, onBoost, onComplete, onShare, onBookmark, onPas
               )}
               <button
                 type="button"
-                onClick={(e) => { e.stopPropagation(); onApprove?.(card.id); }}
-                className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-green-600 hover:bg-green-700 text-white font-['Poppins',sans-serif] font-bold text-[10px] uppercase tracking-wide transition-colors"
+                disabled={isApproving}
+                onClick={(e) => { e.stopPropagation(); if (!isApproving) onApprove?.(card.id); }}
+                className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-white font-['Poppins',sans-serif] font-bold text-[10px] uppercase tracking-wide transition-colors ${
+                  isApproving ? "bg-green-400 cursor-wait" : "bg-green-600 hover:bg-green-700"
+                }`}
+                title={isApproving ? "Approving — the server is generating this card's cartoon (~20s)" : undefined}
               >
-                <CheckCircle2 size={11} />
-                Approve
+                {isApproving ? <Loader2 size={11} className="animate-spin" /> : <CheckCircle2 size={11} />}
+                {isApproving ? "Approving…" : "Approve"}
               </button>
             </div>
           </div>
