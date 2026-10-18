@@ -1,0 +1,100 @@
+# Deploys www.resistact.org to S3 + CloudFront on every push to main.
+#
+# The site is a Vite build (npm run build; the prebuild step generates the
+# share pages and the .webp siblings). "Deploy" is: build into dist/, sync
+# dist/ to S3 in cache tiers, then invalidate CloudFront so the edge serves
+# the new pages at once.
+#
+# The bucket, distribution, certificate, DNS, the apex redirect, index
+# resolution and security headers are managed in Meserow.Infrastructure
+# (sites/resistact, module static-site). Change them there, never in the
+# console.
+#
+# Auth: no stored AWS keys. The job asks GitHub for a short-lived OIDC token
+# (permissions: id-token: write) and exchanges it for temporary credentials of
+# the role github-deploy-resistact, which trusts only this repository's main
+# branch and can only write this site's bucket and invalidate its
+# distribution.
+#
+# Required repository VARIABLES (Settings > Secrets and variables > Actions >
+# Variables; none secret), the outputs of `tofu output` in
+# Meserow.Infrastructure/sites/resistact:
+#   AWS_DEPLOY_ROLE_ARN          deploy_role_arn
+#   S3_BUCKET                    bucket_name
+#   CLOUDFRONT_DISTRIBUTION_ID   distribution_id
+#
+# Until those exist, runs fail loudly, touching nothing.
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # lets the job request its OIDC token; grants no repo access
+
+concurrency:
+  group: deploy-resistact
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-west-2
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Check the repository variables
+        run: |
+          for v in AWS_DEPLOY_ROLE_ARN S3_BUCKET CLOUDFRONT_DISTRIBUTION_ID; do
+            if [ -z "${!v}" ]; then echo "::error::Repository variable $v is not set"; missing=1; fi
+          done
+          [ -z "$missing" ]
+        env:
+          AWS_DEPLOY_ROLE_ARN: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          S3_BUCKET: ${{ vars.S3_BUCKET }}
+          CLOUDFRONT_DISTRIBUTION_ID: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          role-session-name: resistact-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Three cache tiers. Vite's hashed bundles under assets/ never change
+      # under the same name; images and other files change rarely; HTML must
+      # not be cached by browsers so a deploy is visible at once.
+      - name: Sync to S3
+        run: |
+          aws s3 sync dist/assets "s3://${{ vars.S3_BUCKET }}/assets" \
+            --delete --cache-control "public, max-age=31536000, immutable"
+          aws s3 sync dist/ "s3://${{ vars.S3_BUCKET }}" \
+            --delete --exclude "assets/*" --exclude "*.html" \
+            --cache-control "public, max-age=604800"
+          aws s3 sync dist/ "s3://${{ vars.S3_BUCKET }}" \
+            --exclude "*" --include "*.html" \
+            --cache-control "no-cache, must-revalidate"
+          echo "Deployed $(find dist -type f | wc -l) files, $(du -sh dist | cut -f1)"
+
+      - name: Invalidate CloudFront
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}" \
+            --paths "/*" --query 'Invalidation.{Id:Id,Status:Status}' --output text
