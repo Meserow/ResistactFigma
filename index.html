@@ -11,6 +11,17 @@
       <title>ResistAct — Join The Resistance</title>
       <meta name="description" content="Find small, doable actions to push back. Join the resistance at ResistAct." />
 
+      <!-- Canonical URL. Two things make this worth stating explicitly:
+           (1) resistact.org 301s to www.resistact.org, so www is the real home;
+           (2) the app's deep links live in the query string (/?act=123,
+               /?smack=45), and without a canonical each of those reads as a
+               separate URL serving identical HTML.
+           Consolidating them onto "/" is correct TODAY because those deep links
+           have no distinct server-rendered content. Once act pages are
+           prerendered this must become per-page (each act canonical to its own
+           URL) or the prerendered pages will de-index themselves. -->
+      <link rel="canonical" href="https://www.resistact.org/" />
+
       <!-- Open Graph / Facebook
            Note: og:image is intentionally pointed at a NEW filename (og-image-v4.jpg)
            rather than overwriting the old og-image.jpg. Facebook caches OG images by
