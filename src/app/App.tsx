@@ -15,7 +15,7 @@ import { synopsisFor } from "./data/synopsis-manifest";
 import { FactCard } from "./components/FactCard";
 import { FACT_CARDS } from "./data/factCards";
 import { STATIC_CARDS, IMAGE_MAP } from "./data/actionCards";
-import { AuthModal } from "./components/AuthModal";
+import { AuthModal, SetPasswordModal } from "./components/AuthModal";
 import { AdminPanel } from "./components/AdminPanel";
 import { FlagsAdminModal } from "./components/FlagsAdminModal";
 import { AskFlowModal } from "./components/AskFlowModal";
@@ -51,7 +51,7 @@ import { rankCards, score as scoreCard, loadPreferences, clearPreferences, apply
 import { parseSignalLog, appendSignal, SIGNAL_LOG_KEY, buildProfile, personalRank, type SignalEvent, type SignalKind } from "./lib/personalize";
 import svgPaths from "../imports/svg-77lgd1zdt6";
 import { projectId, publicAnonKey } from "/utils/supabase/info";
-import { supabase } from "./lib/supabase";
+import { supabase, authLinkAtLoad, recoveryLinkRejected } from "./lib/supabase";
 import type { UserApproval } from "./lib/supabase";
 
 // Raw shape coming back from the server (uses string keys instead of imports).
@@ -628,6 +628,11 @@ export default function App() {
     return { total: ids.length, byCategory, completedIds: ids };
   }, [completedCards, cards]);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  // Landed from a password-reset email: "recovery" shows the choose-a-new-
+  // password form, "expired" shows the link-expired note.
+  const [passwordLink, setPasswordLink] = useState<"recovery" | "expired" | null>(
+    () => authLinkAtLoad.recovery ? "recovery" : authLinkAtLoad.linkExpired ? "expired" : null,
+  );
   // Sticky "create an account" banner for logged-out users — dismissible for
   // the session so it nudges without nagging forever.
   const [signupBannerDismissed, setSignupBannerDismissed] = useState(false);
@@ -1731,6 +1736,10 @@ export default function App() {
   useEffect(() => {
     if (journeySeen) return;
     if (approval || accessToken) return;
+    // Arriving from an account email link means an existing member — and a
+    // reset link's session can resolve after the feed syncs on a fresh device,
+    // so without this the wizard (z-[115]) could cover the reset/sign-in modals.
+    if (authLinkAtLoad.recovery || authLinkAtLoad.linkExpired) return;
     if (!synced || activeTab !== "acts" || swipeOpen) return;
     setJourneyOpen(true);
     setJourneySeen(true);
@@ -2118,7 +2127,22 @@ export default function App() {
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    // An expired email link leaves #error=…&error_code=otp_expired in the URL
+    // (auth-js only clears the hash on success). Drop it so a refresh doesn't
+    // re-show the "link expired" note.
+    if (authLinkAtLoad.linkExpired) {
+      window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search);
+    }
+    // A reset link auth-js rejected: show the expired note instead of a form
+    // that would act on whatever session already exists, and drop the tokens.
+    recoveryLinkRejected.then((rejected) => {
+      if (!rejected) return;
+      window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search);
+      setPasswordLink("expired");
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") setPasswordLink("recovery");
       if (session?.access_token) {
         setAccessToken(session.access_token);
         fetchApprovalStatus(session.access_token, session.user);
@@ -4547,6 +4571,16 @@ export default function App() {
         <AuthModal
           onClose={() => setAuthModalOpen(false)}
           onApproval={(a) => setApproval(a)}
+        />
+      )}
+
+      {/* Landing from a password-reset email */}
+      {passwordLink && (
+        <SetPasswordModal
+          key={passwordLink}
+          expired={passwordLink === "expired"}
+          onClose={() => setPasswordLink(null)}
+          onOpenSignIn={() => { setPasswordLink(null); setAuthModalOpen(true); }}
         />
       )}
 

@@ -16,6 +16,22 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.125",
+    date: "2026-10-29",
+    title: "Forgot your password? Reset it yourself",
+    sections: [
+      {
+        heading: "Sign-in: reset a forgotten password",
+        items: [
+          "There's now a \"Forgot password?\" link next to the password box. Tap it and we'll email you a link to choose a new password — no need to contact us.",
+          "Opening the link signs you in and asks you to pick a new password, so it works on your next device too.",
+          "If the link has expired or was already used, you'll see a clear note and a way back to sign in to request a fresh one, instead of nothing happening.",
+          "Signed up with Google? You never needed a password — the reset screen reminds you to use Continue with Google instead.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.124",
     date: "2026-08-28",
     title: "No more paying to approve expired Acts",
