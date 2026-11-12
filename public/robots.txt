@@ -1,0 +1,20 @@
+# ResistAct — https://www.resistact.org
+#
+# Everything here is public by design: the acts feed, the facts, the smacks.
+# Admin surfaces aren't listed because they don't exist as separate URLs —
+# the app is a single page and admin tools render only for a logged-in admin,
+# so there is nothing crawlable to hide.
+#
+# Deliberately NO "Disallow: /s/". Those are the per-smack share pages that
+# carry the Open Graph tags for social previews; Facebook's and X's scrapers
+# read robots.txt, so disallowing that path would break every share preview.
+#
+# Before this file existed, /robots.txt returned a 403 from CloudFront. Google
+# treats a 4xx as "no restrictions", but several crawlers historically read a
+# 401/403 on robots.txt as disallow-everything — the exact opposite of what we
+# want. Serving a real 200 removes that ambiguity.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://www.resistact.org/sitemap.xml

@@ -16,6 +16,34 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.126",
+    date: "2026-11-12",
+    title: "A feed that stays on mission",
+    sections: [
+      {
+        heading: "Off-topic cards cleared out",
+        items: [
+          "We audited every card in the catalog and removed 167 that weren't actually about resisting the administration — generic volunteer drives, wellness resources, and community events that had slipped in through automated imports. The feed is back to what you came here for.",
+          "New cards from the automated pipeline now have to show real resistance relevance before they can go live — not just a working link and a future date.",
+        ],
+      },
+      {
+        heading: "For admins",
+        items: [
+          "Cards flagged off-topic can now be swept in bulk instead of one at a time, and a flagged card stays out of the feed until a human clears the flag — automation can't quietly re-approve it.",
+          "The ⚡ Auto-approve button now shows you the exact cards it will publish, and what they'll cost, before you confirm.",
+          "The green Approve button on a card shows a spinner while its banner is being drawn, and can't be double-clicked into paying twice.",
+        ],
+      },
+      {
+        heading: "Retired Acts stay retired",
+        items: [
+          "Acts that had been swept as expired could still show up in the public feed when they had no event date. Expiring an Act now removes it everywhere.",
+        ],
+      },
+    ],
+  },
+  {
     version: "1.4.125",
     date: "2026-10-29",
     title: "Forgot your password? Reset it yourself",
