@@ -16,8 +16,8 @@ export interface ChangelogSection {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: "1.4.123",
-    date: "2026-08-03",
+    version: "1.4.126",
+    date: "2026-11-12",
     title: "A feed that stays on mission",
     sections: [
       {
@@ -31,6 +31,64 @@ export const CHANGELOG: ChangelogEntry[] = [
         heading: "For admins",
         items: [
           "Cards flagged off-topic can now be swept in bulk instead of one at a time, and a flagged card stays out of the feed until a human clears the flag — automation can't quietly re-approve it.",
+          "The ⚡ Auto-approve button now shows you the exact cards it will publish, and what they'll cost, before you confirm.",
+          "The green Approve button on a card shows a spinner while its banner is being drawn, and can't be double-clicked into paying twice.",
+        ],
+      },
+      {
+        heading: "Retired Acts stay retired",
+        items: [
+          "Acts that had been swept as expired could still show up in the public feed when they had no event date. Expiring an Act now removes it everywhere.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.125",
+    date: "2026-10-29",
+    title: "Forgot your password? Reset it yourself",
+    sections: [
+      {
+        heading: "Sign-in: reset a forgotten password",
+        items: [
+          "There's now a \"Forgot password?\" link next to the password box. Tap it and we'll email you a link to choose a new password — no need to contact us.",
+          "Opening the link signs you in and asks you to pick a new password, so it works on your next device too.",
+          "If the link has expired or was already used, you'll see a clear note and a way back to sign in to request a fresh one, instead of nothing happening.",
+          "Signed up with Google? You never needed a password — the reset screen reminds you to use Continue with Google instead.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.124",
+    date: "2026-08-28",
+    title: "No more paying to approve expired Acts",
+    sections: [
+      {
+        heading: "Admin: approval now refuses Acts whose event already happened",
+        items: [
+          "Approving an Act whose event date has passed is now blocked with a clear explanation. Expired Acts never appear in anyone's feed, so approving one only spent money drawing a banner for a card nobody could ever see — that money is no longer spendable.",
+          "The batch auto-approver no longer counts expired Acts as eligible, so the total it quotes before you confirm (and the amount it offers to spend) reflects only Acts that can actually go live. A backlog of long-past July events once inflated that count to 220.",
+          "If an expired Act is genuinely still happening (say, a recurring event that was re-listed), fix its event date first and it approves normally.",
+        ],
+      },
+    ],
+  },
+  {
+    version: "1.4.123",
+    date: "2026-08-11",
+    title: "Bulk approve tells you what it costs",
+    sections: [
+      {
+        heading: "Admin: approving a batch of Acts no longer spends money silently",
+        items: [
+          "Approving pending Acts in bulk now shows the price before it starts. Every Act without a banner gets one drawn at approval time, which costs real money — the buttons now say so up front (\"Approve 63 with photos · ~$3.78\") and ask you to confirm the total before spending anything.",
+          "Clearing up a misleading label: \"with images\" suggested those Acts were already illustrated and free to approve. They weren't — a scraped source photo only gives the illustrator something to work from; the banner is still drawn (and still billed). The button now reads \"with photos\" and carries its own price.",
+          "Bulk approve now shows live progress and a Stop button, the same as the auto-approver. Before, it ran silently for over an hour on a big batch with no sign anything was happening.",
+          "Fixed double-charging: because the old bulk approve gave no feedback, clicking it again started a second run over the same Acts, and two runs hitting the same Act could pay for two banners for one image. The button is now blocked while a run is in progress.",
+          "Approving a big batch no longer buries the screen in error messages — you get one summary at the end (\"Done: approved 180, 2 blocked\") instead of one per Act.",
+          "The Pending Acts count in the admin bar now ticks down when you approve an Act straight from the feed, instead of staying stale until the next refresh.",
+          "Retired Acts no longer clog the review queue. Acts the nightly QA sweep had already pulled — dead event dates, links that go to the wrong page — were still sitting in \"pending approval\" as though they needed a decision (74 of 187 when we found it), and the bulk-approve buttons counted them. Approving would have drawn new artwork for, and re-published, Acts that had already been rejected.",
         ],
       },
     ],

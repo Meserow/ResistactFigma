@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Eye, EyeOff, Loader2, CheckCircle2, Clock, Flame, Mail, Zap, ArrowRight } from "lucide-react";
-import { supabase } from "../lib/supabase";
+import { X, Eye, EyeOff, Loader2, CheckCircle2, Clock, Flame, Mail, Zap, ArrowRight, KeyRound } from "lucide-react";
+import { isAuthSessionMissingError } from "@supabase/supabase-js";
+import { supabase, recoveryLinkRejected } from "../lib/supabase";
 import { analytics } from "../lib/analytics";
 import { projectId } from "/utils/supabase/info";
 import type { UserApproval } from "../lib/supabase";
@@ -101,7 +102,7 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
   const returning = !!knownUser && !useDifferent;
   const knownFirstName = knownUser?.name?.trim().split(/\s+/)[0] || "";
 
-  const [step, setStep] = useState<"email" | "password">("email");
+  const [step, setStep] = useState<"email" | "password" | "reset">("email");
   const [email, setEmail] = useState(() => readKnownUser()?.email ?? "");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
@@ -114,6 +115,7 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
   const [pendingSignUp, setPendingSignUp] = useState(false);
   const [captchaKey, setCaptchaKey] = useState(0);
   const [emailConsent, setEmailConsent] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
   const resetCaptcha = () => { setCaptchaToken(null); setCaptchaKey(k => k + 1); };
 
@@ -199,11 +201,41 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
 
       // Credentials wrong, no name → nudge them to fill in name if new
       if (isCredErr) {
-        setError("That didn't match. New here? Add your name above and we'll create your account. Already a member? Double-check your password.");
+        setError("That didn't match. New here? Add your name above and we'll create your account. Already a member? Double-check your password, or tap Forgot password?");
       } else {
         setError(signInErr.message);
       }
       resetCaptcha();
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ── Forgot password ──────────────────────────────────────────────────────
+  // Supabase emails a one-time link back to this site; App opens
+  // SetPasswordModal when it lands. The confirmation screen is worded the same
+  // whether or not the email has an account.
+  async function handleSendReset(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (TURNSTILE_SITE_KEY && !captchaToken) { setError("Please complete the CAPTCHA."); return; }
+    setLoading(true);
+    try {
+      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: window.location.origin,
+        ...(captchaToken ? { captchaToken } : {}),
+      });
+      // over_email_send_rate_limit can mean "this account was emailed in the
+      // last minute", which an unknown email never triggers — show the same
+      // confirmation so the response doesn't reveal whether the account exists.
+      // Other errors (incl. per-IP throttling) aren't account-specific.
+      if (resetErr && resetErr.code !== "over_email_send_rate_limit") {
+        setError(resetErr.status === 429 ? "Too many requests — try again in a minute." : resetErr.message);
+        resetCaptcha();
+        return;
+      }
+      if (resetErr) console.warn("Password reset email rate-limited:", resetErr.message);
+      setResetSent(true);
     } finally {
       setLoading(false);
     }
@@ -222,6 +254,26 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
     } finally {
       setOauthLoading(null);
     }
+  }
+
+  // ── Reset link sent ──────────────────────────────────────────────────────
+  if (resetSent) {
+    return (
+      <Backdrop onClose={onClose}>
+        <div className="flex flex-col items-center gap-4 py-4 px-2 text-center">
+          <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center">
+            <Mail size={32} className="text-[#23297e]" />
+          </div>
+          <h2 className="font-['Poppins',sans-serif] font-bold text-gray-900 text-xl">Check your email</h2>
+          <p className="font-['Poppins',sans-serif] text-gray-500 text-sm leading-relaxed max-w-xs">
+            If <span className="font-semibold text-gray-700">{email.trim()}</span> has a ResistAct account, a reset link is on its way. Open it to choose a new password. It can take a minute — check spam too.
+          </p>
+          <button onClick={onClose} className="mt-2 px-8 py-2.5 bg-[#23297e] text-white rounded-xl font-['Poppins',sans-serif] font-semibold text-sm hover:bg-[#1a2060] transition-colors">
+            Got it
+          </button>
+        </div>
+      </Backdrop>
+    );
   }
 
   // ── Post-register screens ────────────────────────────────────────────────
@@ -374,6 +426,60 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
     );
   }
 
+  // ── Forgot password: request a reset link ───────────────────────────────
+  if (step === "reset") {
+    return (
+      <Backdrop onClose={onClose}>
+        <div className="mb-5">
+          <div className="flex items-center gap-2 mb-1">
+            <KeyRound size={20} className="text-[#ed6624]" strokeWidth={2.5} />
+            <h2 className="font-['Poppins',sans-serif] font-bold text-gray-900 text-[22px] leading-tight">
+              Reset your password
+            </h2>
+          </div>
+          <button
+            onClick={() => { setStep("password"); setError(null); resetCaptcha(); }}
+            className="font-['Poppins',sans-serif] text-[12px] text-gray-400 hover:text-[#ed6624] transition-colors flex items-center gap-1"
+          >
+            ← Back to sign in
+          </button>
+        </div>
+
+        <form onSubmit={handleSendReset} className="space-y-3">
+          <p className="font-['Poppins',sans-serif] text-sm text-gray-600 leading-relaxed">
+            We'll email a reset link to <span className="font-semibold text-gray-800">{email.trim()}</span>. Open it to choose a new password.
+          </p>
+
+          {TURNSTILE_SITE_KEY && (
+            <div className="pt-1">
+              <Turnstile key={captchaKey} onToken={setCaptchaToken} />
+            </div>
+          )}
+
+          {error && (
+            <p className="font-['Poppins',sans-serif] text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+              {error}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading || (!!TURNSTILE_SITE_KEY && !captchaToken)}
+            className="w-full py-3 bg-[#ed6624] hover:bg-[#c2521b] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-bold text-sm rounded-full transition-colors flex items-center justify-center gap-2 mt-1"
+          >
+            {loading && <Loader2 size={16} className="animate-spin" />}
+            Email me a reset link
+            {!loading && <ArrowRight size={16} />}
+          </button>
+        </form>
+
+        <p className="mt-3 text-center font-['Poppins',sans-serif] text-[11px] text-gray-400 leading-relaxed">
+          Signed up with Google? No password needed — use Continue with Google on the first screen.
+        </p>
+      </Backdrop>
+    );
+  }
+
   // ── Step 2: Password (+ optional name for new users) ────────────────────
   return (
     <Backdrop onClose={onClose}>
@@ -410,9 +516,18 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
 
         {/* Password */}
         <div>
-          <label className="block font-['Poppins',sans-serif] text-sm font-semibold text-gray-700 mb-1.5">
-            Password
-          </label>
+          <div className="flex items-baseline justify-between mb-1.5">
+            <label className="block font-['Poppins',sans-serif] text-sm font-semibold text-gray-700">
+              Password
+            </label>
+            <button
+              type="button"
+              onClick={() => { setStep("reset"); setError(null); setPendingSignUp(false); resetCaptcha(); }}
+              className="font-['Poppins',sans-serif] text-[12px] font-semibold text-[#ed6624] hover:underline"
+            >
+              Forgot password?
+            </button>
+          </div>
           <div className="relative">
             <input
               type={showPass ? "text" : "password"}
@@ -489,12 +604,159 @@ export function AuthModal({ onClose, onApproval }: AuthModalProps) {
   );
 }
 
+// ─── Set a new password ──────────────────────────────────────────────────────
+// Opened by App when the page loads from a Supabase reset link — the link's
+// one-time session has already signed the user in — or from an expired link.
+export function SetPasswordModal({ expired, onClose, onOpenSignIn }: {
+  expired: boolean;
+  onClose: () => void;
+  onOpenSignIn: () => void;
+}) {
+  const [password, setPassword] = useState("");
+  const [showPass, setShowPass] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [linkDead, setLinkDead] = useState(expired);
+  const [saved, setSaved] = useState(false);
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (password.length < 6) { setError("Password must be at least 6 characters."); return; }
+    setLoading(true);
+    try {
+      // Never update the password on whatever session is signed in if auth-js
+      // rejected the reset link (see recoveryLinkRejected).
+      if (await recoveryLinkRejected) { setLinkDead(true); return; }
+      const { error: updateErr } = await supabase.auth.updateUser({ password });
+      if (updateErr) {
+        // No usable session (missing, expired, revoked in another tab) means the
+        // link's sign-in is gone — show the expired note, not a raw auth error.
+        if (
+          isAuthSessionMissingError(updateErr) ||
+          updateErr.status === 401 || updateErr.status === 403 ||
+          updateErr.code === "refresh_token_not_found" || updateErr.code === "refresh_token_already_used"
+        ) {
+          setLinkDead(true);
+          return;
+        }
+        setError(updateErr.message);
+        return;
+      }
+      setSaved(true);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (linkDead) {
+    return (
+      <Backdrop onClose={onClose}>
+        <div className="flex flex-col items-center gap-4 py-4 px-2 text-center">
+          <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center">
+            <Clock size={32} className="text-amber-500" />
+          </div>
+          <h2 className="font-['Poppins',sans-serif] font-bold text-gray-900 text-xl">That link has expired</h2>
+          <p className="font-['Poppins',sans-serif] text-gray-500 text-sm leading-relaxed max-w-xs">
+            Email links work once and expire after a while. Sign in again — if you were resetting your password, tap <span className="font-semibold text-gray-700">Forgot password?</span> there for a fresh link.
+          </p>
+          <button onClick={onOpenSignIn} className="mt-2 px-8 py-2.5 bg-[#23297e] text-white rounded-xl font-['Poppins',sans-serif] font-semibold text-sm hover:bg-[#1a2060] transition-colors">
+            Back to sign in
+          </button>
+        </div>
+      </Backdrop>
+    );
+  }
+
+  if (saved) {
+    return (
+      <Backdrop onClose={onClose}>
+        <div className="flex flex-col items-center gap-4 py-4 px-2 text-center">
+          <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+            <CheckCircle2 size={32} className="text-green-500" />
+          </div>
+          <h2 className="font-['Poppins',sans-serif] font-bold text-gray-900 text-xl">Password updated</h2>
+          <p className="font-['Poppins',sans-serif] text-gray-500 text-sm leading-relaxed max-w-xs">
+            You're signed in. Use your new password next time.
+          </p>
+          <button onClick={onClose} className="mt-2 px-8 py-2.5 bg-[#23297e] text-white rounded-xl font-['Poppins',sans-serif] font-semibold text-sm hover:bg-[#1a2060] transition-colors">
+            Done
+          </button>
+        </div>
+      </Backdrop>
+    );
+  }
+
+  // The reset link is single-use, so a stray tap outside shouldn't throw the
+  // form away — only the X closes it.
+  return (
+    <Backdrop onClose={onClose} closeOnBackdrop={false}>
+      <div className="mb-5">
+        <div className="flex items-center gap-2 mb-1">
+          <KeyRound size={20} className="text-[#ed6624]" strokeWidth={2.5} />
+          <h2 className="font-['Poppins',sans-serif] font-bold text-gray-900 text-[22px] leading-tight">
+            Choose a new password
+          </h2>
+        </div>
+        <p className="font-['Poppins',sans-serif] text-gray-500 text-[13px] leading-snug">
+          Your reset link signed you in. Pick a new password for next time.
+        </p>
+      </div>
+
+      <form onSubmit={handleSave} className="space-y-3">
+        <div>
+          <label className="block font-['Poppins',sans-serif] text-sm font-semibold text-gray-700 mb-1.5">
+            New password
+          </label>
+          <div className="relative">
+            <input
+              type={showPass ? "text" : "password"}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+              autoFocus
+              id="new-password"
+              name="new-password"
+              autoComplete="new-password"
+              placeholder="At least 6 characters"
+              className="w-full px-4 py-3 pr-11 border border-gray-200 rounded-xl font-['Poppins',sans-serif] text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-[#ed6624]/30 focus:border-[#ed6624] transition-colors"
+            />
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setShowPass((v) => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+            </button>
+          </div>
+        </div>
+
+        {error && (
+          <p className="font-['Poppins',sans-serif] text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+            {error}
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full py-3 bg-[#ed6624] hover:bg-[#c2521b] disabled:opacity-60 text-white font-['Poppins',sans-serif] font-bold text-sm rounded-full transition-colors flex items-center justify-center gap-2 mt-1"
+        >
+          {loading && <Loader2 size={16} className="animate-spin" />}
+          Save new password
+        </button>
+      </form>
+    </Backdrop>
+  );
+}
+
 // ─── Backdrop ────────────────────────────────────────────────────────────────
-function Backdrop({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+function Backdrop({ children, onClose, closeOnBackdrop = true }: { children: React.ReactNode; onClose: () => void; closeOnBackdrop?: boolean }) {
   return (
     <div
       className="fixed inset-0 bg-black/50 backdrop-blur-sm z-60 flex items-center justify-center p-4"
-      onClick={onClose}
+      onClick={closeOnBackdrop ? onClose : undefined}
     >
       <div
         className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 relative"
