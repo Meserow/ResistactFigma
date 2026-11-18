@@ -1,14 +1,14 @@
 {
   "name": "@figma/my-make-file",
   "private": true,
-  "version": "1.4.123",
+  "version": "1.4.126",
   "type": "module",
   "scripts": {
     "build": "vite build",
     "dev": "vite",
     "gen:smacks": "node scripts/generate-smack-share-pages.mjs",
     "gen:webp": "node scripts/generate-webp-siblings.mjs",
-    "prebuild": "node scripts/generate-smack-share-pages.mjs && node scripts/generate-webp-siblings.mjs"
+    "prebuild": "node scripts/generate-smack-share-pages.mjs && node scripts/generate-webp-siblings.mjs && node scripts/generate-sitemap.mjs"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",

@@ -29,6 +29,7 @@ export const SMACK_SHARE_PAGE_IDS: ReadonlySet<number> = new Set([
   28,
   29,
   30,
+  31,
   5000,
   5001,
   5002,

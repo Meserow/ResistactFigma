@@ -15,7 +15,7 @@ import { synopsisFor } from "./data/synopsis-manifest";
 import { FactCard } from "./components/FactCard";
 import { FACT_CARDS } from "./data/factCards";
 import { STATIC_CARDS, IMAGE_MAP } from "./data/actionCards";
-import { AuthModal } from "./components/AuthModal";
+import { AuthModal, SetPasswordModal } from "./components/AuthModal";
 import { AdminPanel } from "./components/AdminPanel";
 import { FlagsAdminModal } from "./components/FlagsAdminModal";
 import { AskFlowModal } from "./components/AskFlowModal";
@@ -51,7 +51,7 @@ import { rankCards, score as scoreCard, loadPreferences, clearPreferences, apply
 import { parseSignalLog, appendSignal, SIGNAL_LOG_KEY, buildProfile, personalRank, type SignalEvent, type SignalKind } from "./lib/personalize";
 import svgPaths from "../imports/svg-77lgd1zdt6";
 import { projectId, publicAnonKey } from "/utils/supabase/info";
-import { supabase } from "./lib/supabase";
+import { supabase, authLinkAtLoad, recoveryLinkRejected } from "./lib/supabase";
 import type { UserApproval } from "./lib/supabase";
 
 // Raw shape coming back from the server (uses string keys instead of imports).
@@ -628,6 +628,11 @@ export default function App() {
     return { total: ids.length, byCategory, completedIds: ids };
   }, [completedCards, cards]);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  // Landed from a password-reset email: "recovery" shows the choose-a-new-
+  // password form, "expired" shows the link-expired note.
+  const [passwordLink, setPasswordLink] = useState<"recovery" | "expired" | null>(
+    () => authLinkAtLoad.recovery ? "recovery" : authLinkAtLoad.linkExpired ? "expired" : null,
+  );
   // Sticky "create an account" banner for logged-out users — dismissible for
   // the session so it nudges without nagging forever.
   const [signupBannerDismissed, setSignupBannerDismissed] = useState(false);
@@ -1759,6 +1764,10 @@ export default function App() {
   useEffect(() => {
     if (journeySeen) return;
     if (approval || accessToken) return;
+    // Arriving from an account email link means an existing member — and a
+    // reset link's session can resolve after the feed syncs on a fresh device,
+    // so without this the wizard (z-[115]) could cover the reset/sign-in modals.
+    if (authLinkAtLoad.recovery || authLinkAtLoad.linkExpired) return;
     if (!synced || activeTab !== "acts" || swipeOpen) return;
     setJourneyOpen(true);
     setJourneySeen(true);
@@ -2146,7 +2155,22 @@ export default function App() {
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    // An expired email link leaves #error=…&error_code=otp_expired in the URL
+    // (auth-js only clears the hash on success). Drop it so a refresh doesn't
+    // re-show the "link expired" note.
+    if (authLinkAtLoad.linkExpired) {
+      window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search);
+    }
+    // A reset link auth-js rejected: show the expired note instead of a form
+    // that would act on whatever session already exists, and drop the tokens.
+    recoveryLinkRejected.then((rejected) => {
+      if (!rejected) return;
+      window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search);
+      setPasswordLink("expired");
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") setPasswordLink("recovery");
       if (session?.access_token) {
         setAccessToken(session.access_token);
         fetchApprovalStatus(session.access_token, session.user);
@@ -3125,17 +3149,28 @@ export default function App() {
   }
 
   // ── One-click approve from the main feed (admin only) ────────────────────────
-  async function handleApproveCard(id: number) {
-    if (blockWriteIfImpersonating()) return;
+  // Returns the outcome so a batch caller can tally failures itself. `silent`
+  // suppresses the per-card toasts — approving 180 cards one at a time would
+  // otherwise fire up to 180 "Approving…" / failure toasts.
+  async function handleApproveCard(
+    id: number,
+    opts: { silent?: boolean } = {},
+  ): Promise<{ ok: boolean; error?: string }> {
+    if (blockWriteIfImpersonating()) return { ok: false, error: "view-as is read-only" };
     // This used to be a SILENT return — a lost/expired session made the green
     // button look dead. Say so instead.
-    if (!accessToken) { showToast("Session expired — sign out and back in, then retry"); return; }
-    if (approvingIdsRef.current.has(id)) return; // request already in flight
+    if (!accessToken) {
+      if (!opts.silent) showToast("Session expired — sign out and back in, then retry");
+      return { ok: false, error: "not signed in" };
+    }
+    // Request already in flight (a double-click used to fire two POSTs = two
+    // cartoon spends).
+    if (approvingIdsRef.current.has(id)) return { ok: false, error: "already approving" };
     approvingIdsRef.current.add(id);
     setApprovingIds(new Set(approvingIdsRef.current));
     // Approval generates the gpt-image-1 cartoon server-side (~20s). Announce
     // immediately so the wait reads as progress, not a dead button.
-    showToast(`Approving #${id} — generating cartoon, ~20s…`);
+    if (!opts.silent) showToast(`Approving #${id} — generating cartoon, ~20s…`);
     try {
       const res = await fetch(`${API}/admin/approve-action/${id}`, {
         method: "POST",
@@ -3143,15 +3178,19 @@ export default function App() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        showToast(`Approval failed: ${(err as any).error ?? res.status}`);
-        return;
+        const msg = String((err as any).error ?? res.status);
+        if (!opts.silent) showToast(`Approval failed: ${msg}`);
+        return { ok: false, error: msg };
       }
       const data = await res.json();
       setCards((prev) => prev.map((c) => c.id === id ? { ...c, adminApproved: true, ...data.card } : c));
-      showToast(`Approved #${id} ✓`);
+      setServerPendingActsCount((n) => Math.max(0, n - 1));
+      if (!opts.silent) showToast(`Approved #${id} ✓`);
+      return { ok: true };
     } catch (err) {
       console.error("Approve card error:", err);
-      showToast("Approval failed — check console");
+      if (!opts.silent) showToast("Approval failed — check console");
+      return { ok: false, error: String(err) };
     } finally {
       approvingIdsRef.current.delete(id);
       setApprovingIds(new Set(approvingIdsRef.current));
@@ -3175,10 +3214,71 @@ export default function App() {
 
   // ── Approve all pending acts at once (admin only) ────────────────────────────
   // Pass an explicit list of IDs to approve only the currently-visible filtered set.
+  //
+  // This LOOKS like a cheap bulk flag-flip. It is not. The server generates a
+  // fresh gpt-image-1 banner at approval time for every card whose stored record
+  // has no `cartoonImageUrl` (~$0.06 and ~20-60s each), so a 180-card run is
+  // real money and well over an hour of wall clock. Critically, a source photo
+  // (`topImageUrl`) does NOT avoid the spend — it's only used as the reference
+  // image for the same paid call — so the "with photos" button costs exactly the
+  // same per card as "approve all".
+  //
+  // It therefore behaves like the batch auto-approver rather than a plain loop:
+  //   • refuses to start while another run is in flight — without this the
+  //     button stayed live during the (silent, hours-long) run, so a second
+  //     click kicked off an overlapping loop over the same captured ids and two
+  //     loops racing the same card billed two images for one banner;
+  //   • confirms the spend before the first request;
+  //   • reports live progress and honours the existing Stop button;
+  //   • summarises once at the end instead of toasting per card.
   async function handleApproveAll(ids: number[]) {
-    if (!accessToken) return;
-    for (const id of ids) {
-      await handleApproveCard(id);
+    if (!accessToken || batchApprove?.running) return;
+    if (blockWriteIfImpersonating()) return;
+    if (!ids.length) return;
+
+    // Cards with no banner yet are the ones that cost money. Read from the
+    // resolved feed: for harvested pending cards `cartoonImageUrl` is absent in
+    // KV and absent from the static manifest, so this matches what the server
+    // will decide. (If a manifest hit ever gave a pending card a banner the
+    // server can't see, this under-estimates the cost rather than hiding it.)
+    const byId = new Map(cards.map((c) => [c.id, c]));
+    const willGenerate = ids.filter((id) => !byId.get(id)?.cartoonImageUrl).length;
+    const estCost = (willGenerate * 0.06).toFixed(2);
+    const estMin = Math.max(1, Math.round(willGenerate * 30 / 60));
+    if (willGenerate > 0 && !window.confirm(
+      `Approve ${ids.length} card${ids.length === 1 ? "" : "s"}?\n\n` +
+      `${willGenerate} of them have no banner yet, so each one generates a cartoon ` +
+      `(~$0.06) — roughly $${estCost} and about ${estMin} min.\n\n` +
+      `Cards are approved one at a time and saved as they go, so you can stop ` +
+      `partway through and keep what's already done.`
+    )) return;
+
+    batchStopRef.current = false;
+    setBatchApprove({ running: true, approved: 0, blocked: 0, total: ids.length });
+    let approved = 0, blocked = 0;
+    const blockedDetails: { id: number; error: string }[] = [];
+    try {
+      for (const id of ids) {
+        if (batchStopRef.current) break;
+        const res = await handleApproveCard(id, { silent: true });
+        if (res.ok) approved++;
+        // A single-click approve of this same card is already in flight — that
+        // request will finish it, so it's neither approved-by-us nor blocked.
+        else if (res.error === "already approving") { /* not counted */ }
+        else { blocked++; blockedDetails.push({ id, error: res.error ?? "unknown" }); }
+        setBatchApprove({ running: true, approved, blocked, total: ids.length });
+      }
+    } catch (err) {
+      console.error("Approve-all error:", err);
+      showToast("Approve-all hit an error — see console");
+    } finally {
+      const stopped = batchStopRef.current;
+      setBatchApprove(null);
+      if (blockedDetails.length) console.warn("Approve-all — blocked cards:", blockedDetails);
+      showToast(
+        `${stopped ? "Stopped" : "Done"}: approved ${approved}` +
+        (blocked ? `, ${blocked} blocked (see console)` : "") + ".",
+      );
     }
   }
 
@@ -3973,7 +4073,14 @@ export default function App() {
               const cardsWithImages = visibleActsCards.filter(
                 (c) => Boolean(c.topImageUrl) || Boolean(c.topImageKey) || Boolean(c.cartoonImageUrl)
               );
-              const allHaveImages = cardsWithImages.length === visibleActsCards.length;
+              // Approving a card with no banner makes the server generate one
+              // (~$0.06 of gpt-image-1), so put the price on the button — having
+              // a source photo does NOT make a card free, it just gives the
+              // generator a reference to draw from. Without this the green
+              // buttons looked like free bulk flag-flips next to the purple
+              // auto-approver, which is the only one that used to warn.
+              const costOf = (list: typeof visibleActsCards) =>
+                (list.filter((c) => !c.cartoonImageUrl).length * 0.06).toFixed(2);
               // Cards that passed QA AND are harvested — the set the batch
               // auto-approver will act on. Counted from the visible cards for the
               // label; the server re-counts the true total when the run starts.
@@ -4046,30 +4153,30 @@ export default function App() {
                         ⚡ Auto-approve {qaPassedCount} QA-passed
                       </button>
                     )}
-                    {/* "Approve N with images" — surfaces whenever at least one
-                        pending card has a recognised image (topImageUrl,
-                        topImageKey, or cartoonImageUrl). Lets an admin
-                        one-click approve only the image-bearing cards and
-                        leave truly imageless cards pending for a manual
-                        image upload. When every card has an image the count
-                        will match the "Approve all" button — that's fine,
-                        both do the same thing and the label makes it clear
-                        the batch is clean. */}
+                    {/* "Approve N with photos" — the subset that already has a
+                        source image (topImageUrl / topImageKey / cartoonImageUrl).
+                        The value here is resilience, NOT cost: if cartoon
+                        generation fails, these cards still clear the server's
+                        image gate, whereas a card with nothing would be blocked.
+                        It is NOT the cheap option — every card without a banner
+                        costs the same ~$0.06 either way, which is why both green
+                        buttons now carry a price and confirm before spending. */}
                     {cardsWithImages.length > 0 && !batchApprove?.running && (
                       <button
                         onClick={() => handleApproveAll(cardsWithImages.map((c) => c.id))}
                         className="font-['Poppins',sans-serif] text-xs font-semibold bg-green-600 hover:bg-green-700 text-white rounded-lg px-3 py-1.5 transition-colors"
-                        title={`Approve only the ${cardsWithImages.length} pending acts that have a top image (server rejects approval on imageless cards).`}
+                        title={`Approve the ${cardsWithImages.length} pending acts that already have a source photo, leaving imageless ones pending. Each card without a banner still generates one (~$0.06) — about $${costOf(cardsWithImages)} total. Confirms before spending; you can stop partway.`}
                       >
-                        ✓ Approve {cardsWithImages.length} with images
+                        ✓ Approve {cardsWithImages.length} with photos · ~${costOf(cardsWithImages)}
                       </button>
                     )}
                     {!batchApprove?.running && (
                       <button
                         onClick={() => handleApproveAll(visibleActsCards.map((c) => c.id))}
                         className="font-['Poppins',sans-serif] text-xs font-semibold bg-green-600 hover:bg-green-700 text-white rounded-lg px-3 py-1.5 transition-colors"
+                        title={`Approve every one of the ${visibleActsCards.length} pending acts showing. Each card without a banner generates one (~$0.06) — about $${costOf(visibleActsCards)} total. Confirms before spending; you can stop partway.`}
                       >
-                        ✓ Approve all {visibleActsCards.length} showing
+                        ✓ Approve all {visibleActsCards.length} showing · ~${costOf(visibleActsCards)}
                       </button>
                     )}
                     <button
@@ -4577,6 +4684,16 @@ export default function App() {
         <AuthModal
           onClose={() => setAuthModalOpen(false)}
           onApproval={(a) => setApproval(a)}
+        />
+      )}
+
+      {/* Landing from a password-reset email */}
+      {passwordLink && (
+        <SetPasswordModal
+          key={passwordLink}
+          expired={passwordLink === "expired"}
+          onClose={() => setPasswordLink(null)}
+          onOpenSignIn={() => { setPasswordLink(null); setAuthModalOpen(true); }}
         />
       )}
 
